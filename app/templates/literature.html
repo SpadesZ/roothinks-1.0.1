@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Roothinks - Literature Manager</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-9ndCyUaIbzAi2FUVXJi0CjmCapSmO7SnpJef0486qhLnuZ2cdeRhO02iuK6FUUVM" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" integrity="sha384-4LISF5TTJX/fLmGSxO53rV4miRxdg84mZsxmO8Rx5jGtp/LbrixFETvWa5a6sESd" crossorigin="anonymous">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=1.6">
+    <style>
+        /* 2.3 Pipeline Table Specific Styles */
+        
+        /* Log Box: 模擬終端機風格，自動滾動 */
+        .log-box {
+            font-family: 'Consolas', monospace;
+            font-size: 0.8rem;
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            line-height: 1.4em;
+            height: 4.8em; 
+            overflow: hidden; 
+            padding: 5px;
+            color: #0d6efd;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+        }
+
+        /* 閃爍動畫 */
+        @keyframes blink {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        .blink-text {
+            animation: blink 1.5s infinite;
+            font-weight: bold;
+        }
+
+        .result-badge {
+            font-size: 0.75rem;
+            opacity: 0.4;
+            transition: opacity 0.3s;
+        }
+        .result-badge.done {
+            opacity: 1;
+            font-weight: bold;
+        }
+        
+        /* Preview Modal Styles (Optimized Data Inspector) */
+        .preview-content-area {
+            min-height: 60vh;
+            max-height: 70vh;
+            overflow-y: auto;
+            background-color: #fff;
+            border: 1px solid #dee2e6;
+            border-top: none;
+            padding: 20px;
+        }
+        
+        /* [New] Split View Styles */
+        .split-container {
+            display: flex;
+            height: 100%;
+            min-height: 0;
+            flex: 1 1 auto;
+            overflow: hidden;
+        }
+        .split-left {
+            flex: 1;
+            padding: 10px;
+            background: #222;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            position: relative;
+        }
+        .image-stage {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+        .split-left img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            border: 2px solid #555;
+            display: block;
+        }
+        .bbox-overlay {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            display: none;
+        }
+        .bbox-rect {
+            position: absolute;
+            border: 2px solid rgba(25, 135, 84, 0.75);
+            background: rgba(25, 135, 84, 0.12);
+            border-radius: 2px;
+            transition: all 0.15s ease;
+        }
+        .bbox-rect.active {
+            border-color: rgba(220, 53, 69, 0.95);
+            background: rgba(220, 53, 69, 0.16);
+            box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.55);
+        }
+        .split-right {
+            flex: 1;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+            overflow: hidden;
+        }
+        .split-editor {
+            flex-grow: 1;
+            min-height: 0;
+            width: 100%;
+            padding: 10px;
+            background: #ffffff;
+            overflow-y: auto;
+        }
+        /* 防止 fullscreen correction modal 出現外層第二條捲軸 */
+        #correctionModal {
+            overflow-x: hidden !important;
+            overflow-y: hidden !important;
+        }
+        #correctionModal.modal.show {
+            overflow-y: hidden !important;
+        }
+        #correctionModal .modal-body {
+            min-height: 0;
+            overflow: hidden !important;
+        }
+        #correctionModal .modal-dialog.modal-fullscreen {
+            height: 100dvh;
+            max-height: 100dvh;
+            margin: 0;
+        }
+        #correctionModal .modal-content {
+            height: 100dvh;
+            max-height: 100dvh;
+        }
+        html.correction-modal-open,
+        body.correction-modal-open {
+            overflow: hidden !important;
+        }
+        .text-block-card {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            padding: 12px;
+            margin-bottom: 12px;
+            transition: all 0.2s;
+        }
+        .text-block-card:hover {
+            border-color: #0d6efd;
+            box-shadow: 0 2px 8px rgba(13, 110, 253, 0.15);
+        }
+        .text-block-card.active {
+            border-color: #dc3545;
+            box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.15);
+            background: #fff5f5;
+        }
+        .text-block-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+            font-size: 0.85rem;
+            color: #6c757d;
+        }
+        .text-block-content {
+            width: 100%;
+            min-height: 60px;
+            padding: 8px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            font-size: 0.95rem;
+            font-family: 'Microsoft JhengHei', Arial, sans-serif;
+            resize: vertical;
+        }
+        .text-block-content:focus {
+            border-color: #0d6efd;
+            outline: none;
+            box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+        }
+        .confidence-badge {
+            font-size: 0.75rem;
+            padding: 2px 6px;
+        }
+        
+        /* JSON Pretty Print */
+        pre.json-view {
+            background: #2d2d2d;
+            color: #ccc;
+            padding: 15px;
+            border-radius: 5px;
+            font-size: 0.85rem;
+        }
+    </style>
+</head>
+<body class="bg-light">
+
+{% include '_header.html' %}
+
+<div class="container-fluid px-4 pb-5" style="max-width: 1920px;">
+    
+    <div class="management-bar-container mb-4">
+        <div class="management-bar p-3 shadow-sm rounded d-flex justify-content-between align-items-center">
+            <div class="d-flex align-items-center gap-3">
+                <div class="fw-bold text-dark fs-5 text-nowrap"><i class="bi bi-folder-fill text-primary me-2"></i> 文獻(Literatures)管理</div>
+                <div class="vr mx-2"></div>
+                <div class="dropdown">
+                    <button class="btn btn-outline-primary btn-sm px-3 fw-bold dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="bi bi-list-ul me-1"></i>1.1 研究列表
+                    </button>
+                    <ul id="formalProjectList" class="dropdown-menu shadow-sm" style="max-height: 360px; overflow-y: auto; overflow-x: hidden; min-width: 360px; width: clamp(360px, 68vw, 760px); max-width: calc(100vw - 24px);">
+                        <li><span class="dropdown-item-text text-muted small">Loading formal projects...</span></li>
+                    </ul>
+                </div>
+                <a class="btn btn-outline-secondary btn-sm px-3" href="/?status=formal"><i class="bi bi-grid-3x3-gap me-1"></i>回 Dashboard 列表</a>
+            </div>
+            <div class="d-flex align-items-center bg-light px-4 py-2 rounded-pill border">
+                <span class="text-muted small me-2">Active Project:</span>
+                <span id="currentPid" class="fw-bold text-dark fs-5">--</span>
+            </div>
+            <div class="d-flex gap-2">
+                <button class="btn btn-outline-secondary btn-sm" onclick="window.literatureApp.unlockProject()">
+                    <i class="bi bi-unlock-fill me-1"></i> 取消鎖定
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-warning-subtle text-dark fw-bold py-2 border-bottom border-warning border-opacity-25">
+                    <i class="bi bi-lightbulb-fill me-2"></i>2.1 研究主題定義 (Context Definition)
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-12">
+                            <label class="form-label fw-bold small text-secondary">請輸入研究主題與研究策略 (Manual Context):</label>
+                            <div class="input-group mb-3">
+                                <textarea id="manualTopic" class="form-control bg-light shadow-inner" rows="2" placeholder="例如: 使用雙軌 CV 架構進行學術文檔解析..."></textarea>
+                                <button class="btn btn-warning text-dark fw-bold px-4" type="button" id="btnConfirmContext">
+                                    <i class="bi bi-check-circle-fill me-1"></i>確認<br>(Save)
+                                </button>
+                            </div>
+                            <div class="mt-2">
+                                <div class="small text-muted fw-bold mb-1"><i class="bi bi-clock-history me-1"></i>History (Click to load):</div>
+                                <div id="contextHistoryList" class="bg-white border rounded p-0">
+                                    <div class="text-center text-muted small py-3">Loading history...</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4 mb-4">
+        <div class="col-lg-6">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-header bg-white border-bottom fw-bold py-3 d-flex justify-content-between">
+                    <span><i class="bi bi-search text-primary me-2"></i>2.2A 開啟文獻搜尋 (Search)</span>
+                </div>
+                <div class="card-body d-flex flex-column">
+                    <button class="btn btn-dark w-100 py-1 mb-3 fw-bold" id="btnSearch">
+                        <span id="btnSearchText"><i class="bi bi-google me-2"></i>執行雲端分析並開啟 Scholar</span>
+                        <span id="btnSearchSpinner" class="spinner-border spinner-border-sm ms-2" style="display:none;"></span>
+                    </button>
+                    
+                    <div id="searchResultArea" class="mt-auto p-3 bg-light border rounded flex-grow-1" style="display:none; min-height: 200px;">
+                        <div class="d-flex justify-content-between align-items-center mb-2 border-bottom pb-2">
+                            <span class="fw-bold small text-success"><i class="bi bi-robot me-1"></i>AI 推薦文獻 (APA)</span>
+                            <span class="badge bg-secondary" id="resultCount">0 papers</span>
+                        </div>
+                        <div id="apaList" class="small text-dark"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-6">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-header bg-white border-bottom fw-bold py-3 d-flex justify-content-between">
+                    <span><i class="bi bi-cloud-upload-fill text-success me-2"></i>2.2B 上傳文件 (Upload)</span>
+                    <span class="badge bg-success-subtle text-success border border-success">Local</span>
+                </div>
+                <div class="card-body d-flex flex-column align-items-center">
+                    <input type="file" id="pdfUploadInput" accept=".pdf,image/*" style="display: none;">
+                    
+                    <div class="w-100 text-center mb-3">
+                        <button class="btn btn-success w-75 py-2 fw-bold shadow-sm rounded-pill" id="btnUpload">
+                            <i class="bi bi-upload me-2"></i>選擇並上傳 PDF/圖片
+                        </button>
+                        <div class="progress w-75 mt-3 mx-auto" style="height: 5px; display:none;" id="uploadProgressContainer">
+                            <div id="uploadProgressBar" class="progress-bar progress-bar-striped progress-bar-animated bg-success" style="width: 0%"></div>
+                        </div>
+                    </div>
+
+                    <div class="w-100 mt-2">
+                        <div class="d-flex justify-content-between align-items-end border-bottom pb-1 mb-2">
+                            <div class="small text-muted fw-bold"><i class="bi bi-files me-1"></i>Upload History (Server Files):</div>
+                            <button class="btn btn-xs btn-link text-decoration-none p-0" onclick="window.literatureOrigins?.loadFileList()">
+                                <i class="bi bi-arrow-clockwise"></i> Refresh
+                            </button>
+                        </div>
+                        <div id="fileListContainer" class="bg-white border rounded p-0" style="max-height: 250px; overflow-y: auto;">
+                            <div class="text-center text-muted small py-3">No files uploaded.</div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-5">
+        <div class="col-12">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-info-subtle text-dark fw-bold py-3 d-flex justify-content-between align-items-center">
+                    <span><i class="bi bi-cpu-fill me-2"></i>2.3 研究流程 (Flow A / Flow B)</span>
+                </div>
+                
+                <div class="card-body p-0">
+                    <div class="p-3 border-bottom bg-light d-flex align-items-center gap-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="checkAllPipeline">
+                            <label class="form-check-label fw-bold" for="checkAllPipeline">全選</label>
+                        </div>
+                        <button class="btn btn-primary btn-sm px-4 fw-bold" onclick="window.literatureApp.runPipelineBatch()">
+                            <i class="bi bi-play-circle-fill me-1"></i> 產生辨識成果 (Flow A)
+                        </button>
+                        <button id="btnRunFlowBBatch" class="btn btn-success btn-sm px-4 fw-bold" onclick="window.literatureApp.runTranslationBatch()" disabled title="請先勾選且完成 Flow A 的文件">
+                            <i class="bi bi-translate me-1"></i> 產生雙語對照 (Flow B)
+                        </button>
+                        <button id="btnPreloadNllb" class="btn btn-outline-secondary btn-sm px-3" onclick="window.literatureApp.preloadTranslationModels()">
+                            <i class="bi bi-lightning-charge me-1"></i> 預熱翻譯模型
+                        </button>
+                        <div id="runtimeModeBadges" class="d-flex align-items-center gap-2 ms-2"></div>
+                        <span class="text-muted small ms-auto">
+                            <i class="bi bi-info-circle me-1"></i> 對外僅保留 A/B 兩流程；對內仍保留子任務鏈以便研究追蹤。
+                        </span>
+                    </div>
+
+                    <div class="table-responsive" style="max-height: 500px; overflow-y: auto;">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light sticky-top">
+                                <tr>
+                                    <th style="width: 5%;"></th>
+                                    <th style="width: 25%;">Table 1: 文件基本資訊</th>
+                                    <th style="width: 40%;">Table 2: 處理狀態 (Flow A/B)</th>
+                                    <th style="width: 20%;">Table 3: 流程狀態</th>
+                                    <th style="width: 15%;">操作 (Correction)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="pipelineTableBody">
+                                <tr><td colspan="5" class="text-center py-4 text-muted">Loading papers...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="previewModal" tabindex="-1">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header bg-light">
+                <h5 class="modal-title fw-bold text-primary">
+                    <i class="bi bi-file-earmark-medical-fill me-2"></i>認知層數據檢視: <span id="previewTitle"></span>
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            
+            <div class="px-3 pt-3 bg-white border-bottom">
+                <ul class="nav nav-tabs card-header-tabs" id="previewTabs" role="tablist">
+                    <li class="nav-item">
+                        <button class="nav-link active fw-bold" id="tab-summary" data-bs-toggle="tab" data-bs-target="#pane-summary">
+                            <i class="bi bi-stars text-warning me-1"></i> LAVA 摘要
+                        </button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link fw-bold" id="tab-fulltext" data-bs-toggle="tab" data-bs-target="#pane-fulltext">
+                            <i class="bi bi-translate text-success me-1"></i> 全文對照
+                        </button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link" id="tab-json" data-bs-toggle="tab" data-bs-target="#pane-json">
+                            <i class="bi bi-code-slash text-secondary me-1"></i> 原始 JSON
+                        </button>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="modal-body bg-light p-0">
+                <div class="tab-content" id="previewTabContent">
+                    <div class="tab-pane fade show active preview-content-area" id="pane-summary">
+                        <div id="content-summary" class="container py-3">Loading...</div>
+                    </div>
+                    
+                    <div class="tab-pane fade preview-content-area" id="pane-fulltext">
+                        <div id="content-fulltext" class="container py-3">Loading...</div>
+                    </div>
+                    
+                    <div class="tab-pane fade preview-content-area" id="pane-json">
+                        <pre id="content-json" class="json-view m-3">Loading...</pre>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="modal-footer bg-white">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">關閉</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="correctionModal" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal-dialog modal-fullscreen">
+        <div class="modal-content">
+            <div class="modal-header bg-dark text-white">
+                <h5 class="modal-title">
+                    <i class="bi bi-layout-split me-2"></i>Task 4 Data Correction (Split View)
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-0">
+                <div class="split-container">
+                    <div class="split-left">
+                        <div class="text-white small position-absolute top-0 start-0 m-2 bg-black bg-opacity-50 px-2 rounded">
+                            <i class="bi bi-image me-1"></i>原始頁面參考
+                        </div>
+                        <div class="image-stage" id="correctionImageStage">
+                            <img id="correctionImage" src="" alt="Page Image">
+                            <div id="correctionOverlay" class="bbox-overlay"></div>
+                        </div>
+                    </div>
+                    <div class="split-right">
+                        <div class="alert alert-info alert-dismissible fade show m-2" role="alert">
+                            <i class="bi bi-info-circle me-2"></i>
+                            <strong>使用說明：</strong>請直接修改右側文字方塊中的文字內容，系統會自動將您的修改儲存並重新執行後續分析。
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2 px-2">
+                            <label class="fw-bold text-secondary"><i class="bi bi-list-ul me-1"></i>識別文字內容列表</label>
+                            <div class="d-flex align-items-center gap-2">
+                                <select id="correctionPageSelect" class="form-select form-select-sm" style="width:auto;"></select>
+                                <span class="badge bg-success">可編輯</span>
+                            </div>
+                        </div>
+                        <div id="correctionEditor" class="split-editor" style="overflow-y: auto;"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer bg-light">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-success fw-bold" id="btnSaveCorrection">
+                    <i class="bi bi-save me-1"></i> Save & Run Flow B
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz" crossorigin="anonymous"></script>
+<script src="{{ url_for('static', filename='js/literature_app.js') }}?v=4.4"></script>
+<script src="{{ url_for('static', filename='js/literature_scholar.js') }}?v=1.4"></script>
+<script src="{{ url_for('static', filename='js/literature_origins.js') }}?v=0.8"></script>
+</body>
+</html>
+

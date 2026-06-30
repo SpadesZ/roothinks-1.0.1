@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>roothinks</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-9ndCyUaIbzAi2FUVXJi0CjmCapSmO7SnpJef0486qhLnuZ2cdeRhO02iuK6FUUVM" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" integrity="sha384-4LISF5TTJX/fLmGSxO53rV4miRxdg84mZsxmO8Rx5jGtp/LbrixFETvWa5a6sESd" crossorigin="anonymous">
+    
+    <link rel="stylesheet" href="/static/css/paq.css">
+    
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js" integrity="sha384-Hl48Kq2HifOWdXEjMsKo6qxqvRLTYqIGbvlENBmkHAxZKIGCXv43H6W1jA671RzC" crossorigin="anonymous"></script>
+
+    <script>
+        // 系統載入時立即執行，讀取記憶的字體大小，避免畫面閃爍
+        (function() {
+            const savedSize = localStorage.getItem('globalFontSize');
+            if (savedSize) {
+                document.documentElement.style.fontSize = savedSize + '%';
+            }
+        })();
+
+        // 動態調整字體大小並寫入 localStorage
+        function adjustFontSize(step) {
+            let currentSize = localStorage.getItem('globalFontSize');
+            currentSize = currentSize ? parseInt(currentSize) : 85; // paq.css 預設為 85%
+            
+            let newSize = currentSize + step;
+            // 設定縮放上下限 (70% ~ 120%) 確保畫面不崩潰
+            if (newSize < 70) newSize = 70;
+            if (newSize > 120) newSize = 120;
+            
+            document.documentElement.style.fontSize = newSize + '%';
+            localStorage.setItem('globalFontSize', newSize);
+        }
+    </script>
+</head>
+<body class="bg-light">
+
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-3 shadow-sm">
+    <div class="container-fluid">
+        <a class="navbar-brand fw-bold" href="/">
+            <i class="bi bi-box-seam-fill text-info me-2"></i>roothinks
+            <span class="badge bg-secondary text-white" style="font-size:0.6em">v8</span>
+        </a>
+
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                <li class="nav-item">
+                    <a class="nav-link" href="/"><i class="bi bi-speedometer2"></i> Dashboard</a>
+                </li>
+            </ul>
+
+            <div class="d-flex align-items-center gap-2">
+                <a href="{% if pid %}/paq?pid={{ pid }}{% else %}/paq{% endif %}" class="btn btn-outline-secondary btn-sm d-flex align-items-center"
+                   title="問題定義建模 (PAQ)">
+                    <i class="bi bi-box me-1"></i>
+                    <span class="d-none d-lg-inline">PAQ</span>
+                </a>
+
+                     <a href="/literature{% if pid %}?pid={{ pid }}{% endif %}" class="btn btn-outline-secondary btn-sm d-flex align-items-center"
+                         title="文獻回顧學習 (Literature)">
+                    <i class="bi bi-book me-1"></i>
+                    <span class="d-none d-lg-inline">Literature</span>
+                </a>
+
+                     <a href="{% if pid %}/study/project/{{ pid }}{% else %}/study{% endif %}" class="btn btn-outline-secondary btn-sm d-flex align-items-center"
+                         title="研究主題學習 (Study)">
+                    <i class="bi bi-journal-text me-1"></i>
+                    <span class="d-none d-lg-inline">Study</span>
+                </a>
+
+                     <a href="/manuscript{% if pid %}?pid={{ pid }}{% endif %}" class="btn btn-outline-secondary btn-sm d-flex align-items-center"
+                         title="撰寫論文手稿 (Manuscript)">
+                    <i class="bi bi-pen me-1"></i>
+                    <span class="d-none d-lg-inline">Manuscript</span>
+                </a>
+
+                <a href="#" class="btn btn-outline-secondary btn-sm d-flex align-items-center opacity-75"
+                   onclick="alert('模組開發中: 論文格式處理 (Submission)')" title="論文格式處理 (Submission)">
+                    <i class="bi bi-file-earmark-check me-1"></i>
+                    <span class="d-none d-lg-inline">Submit</span>
+                </a>
+
+                <div class="vr bg-secondary mx-2" style="height: 20px;"></div>
+
+                <a href="/setup" class="btn btn-outline-warning btn-sm d-flex align-items-center" title="LAVA 連線設定">
+                    <i class="bi bi-router me-1"></i>
+                    <span class="d-none d-lg-inline">LAVA Setup</span>
+                </a>
+
+                <div class="btn-group shadow-sm ms-1" role="group" aria-label="Font Size Control">
+                    <button type="button" class="btn btn-outline-light btn-sm" onclick="adjustFontSize(5)" title="放大字體 (A+)">
+                        <i class="bi bi-zoom-in"></i> A+
+                    </button>
+                    <button type="button" class="btn btn-outline-light btn-sm" onclick="adjustFontSize(-5)" title="縮小字體 (A-)">
+                        <i class="bi bi-zoom-out"></i> A-
+                    </button>
+                </div>
+
+                <div class="dropdown ms-2">
+                    <button class="btn btn-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                        <i class="bi bi-person-circle"></i> User
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><a class="dropdown-item" href="#">Profile</a></li>
+                        <li><a class="dropdown-item" href="#">Logout</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</nav>

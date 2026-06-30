@@ -1,0 +1,18 @@
+roothinks_progress_slim
+|- app\
+|- data\
+|- test\
+|- .dockerignore
+|- BOSS_PROGRESS_README.md
+|- deploy_preflight.ps1
+|- deploy_preflight.py
+|- docker-compose.override.yml
+|- docker-compose.prod.yml
+|- docker-compose.yml
+|- Dockerfile
+|- env.prod.template
+|- fix_db_schema.py
+|- main.py
+|- PROD_TRANSITION_PLAN.md
+|- requirements.txt
+|- TREE_SIMPLIFIED.txt

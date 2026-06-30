@@ -1,0 +1,29 @@
+# Roothinks production override
+# Usage:
+# docker compose -f docker-compose.yml -f docker-compose.prod.yml --env-file env.prod up -d --build
+
+services:
+  roothinks-paq:
+    # Production must run image-packaged code only (no source-code bind mount).
+    volumes:
+      - ./data:/app/data
+    environment:
+      - FLASK_ENV=production
+      - FLASK_DEBUG=0
+      - API_AUTH_ENABLED=1
+      - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS}
+      - SOCKETIO_MESSAGE_QUEUE=${SOCKETIO_MESSAGE_QUEUE}
+      - RATELIMIT_STORAGE_URI=${RATELIMIT_STORAGE_URI}
+      - LOCK_ROOT=/tmp/roothinks-locks
+      # Transitional SQLite-safe defaults; if PostgreSQL is enabled, adjust upward.
+      - DB_POOL_SIZE=${DB_POOL_SIZE:-2}
+      - DB_MAX_OVERFLOW=${DB_MAX_OVERFLOW:-4}
+      - DB_POOL_TIMEOUT=${DB_POOL_TIMEOUT:-30}
+      - DB_CONNECT_TIMEOUT_SEC=${DB_CONNECT_TIMEOUT_SEC:-30}
+      # Web process profile (transitional): gthread reduces single-worker starvation risk.
+      - GUNICORN_WORKERS=${GUNICORN_WORKERS:-2}
+      - GUNICORN_WORKER_CLASS=${GUNICORN_WORKER_CLASS:-gthread}
+      - GUNICORN_THREADS=${GUNICORN_THREADS:-4}
+      - GUNICORN_TIMEOUT=${GUNICORN_TIMEOUT:-300}
+      - GUNICORN_GRACEFUL_TIMEOUT=${GUNICORN_GRACEFUL_TIMEOUT:-60}
+      - LITERATURE_MAX_WORKERS=${LITERATURE_MAX_WORKERS:-1}

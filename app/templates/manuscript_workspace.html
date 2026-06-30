@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<!-- CHANGE_PLAN_STUDY_FLOWB_2026-04-20: MVP prototype - add Word import (.docx) entry points -->
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Roothinks - Manuscript (Collab)</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-9ndCyUaIbzAi2FUVXJi0CjmCapSmO7SnpJef0486qhLnuZ2cdeRhO02iuK6FUUVM" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" integrity="sha384-4LISF5TTJX/fLmGSxO53rV4miRxdg84mZsxmO8Rx5jGtp/LbrixFETvWa5a6sESd" crossorigin="anonymous">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/manuscript.css') }}?v=1.2">
+    <script>
+        (function () {
+            const savedSize = localStorage.getItem('globalFontSize');
+            if (savedSize) {
+                document.documentElement.style.fontSize = savedSize + '%';
+            }
+        })();
+
+        function adjustFontSize(step) {
+            let currentSize = localStorage.getItem('globalFontSize');
+            currentSize = currentSize ? parseInt(currentSize, 10) : 85;
+            let newSize = currentSize + step;
+            if (newSize < 70) newSize = 70;
+            if (newSize > 120) newSize = 120;
+            document.documentElement.style.fontSize = newSize + '%';
+            localStorage.setItem('globalFontSize', newSize);
+        }
+    </script>
+</head>
+<body class="bg-light manuscript-page">
+
+    {% include '_navbar.html' %}
+    <input type="hidden" id="initialPid" value="{{ pid or '' }}">
+
+    <div class="manuscript-root">
+    <div class="research-toolbar px-3 py-2 bg-white border-bottom d-flex align-items-center justify-content-between shadow-sm">
+        <div class="d-flex align-items-center gap-2">
+            <h6 class="mb-0 fw-bold text-dark me-2">
+                <i class="bi bi-folder-fill text-primary me-2"></i>手稿(Manuscript)管理
+            </h6>
+            <div class="vr mx-2"></div>
+            <div class="dropdown">
+                <button class="btn btn-outline-primary btn-sm px-3 fw-bold dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="bi bi-list-ul me-1"></i>1.1 研究列表
+                </button>
+                <ul id="formalProjectList" class="dropdown-menu shadow-sm" style="max-height: 360px; overflow-y: auto; overflow-x: hidden; min-width: 360px; width: clamp(360px, 68vw, 760px); max-width: calc(100vw - 24px);">
+                    <li><span class="dropdown-item-text text-muted small">Loading formal projects...</span></li>
+                </ul>
+            </div>
+            <a class="btn btn-outline-secondary btn-sm px-3 bg-white" href="/?status=formal">
+                <i class="bi bi-grid-3x3-gap me-1"></i>1.2 Dashboard 列表
+            </a>
+            
+            <div class="vr mx-2"></div>
+            <div id="panelRestoreGroup" class="d-flex gap-1 align-items-center" style="min-width: 150px;">
+                <span class="text-muted small" id="restoreHintText" style="display: none;"><i class="bi bi-info-circle me-1"></i>已隱藏視窗:</span>
+            </div>
+        </div>
+
+        <div class="d-flex align-items-center gap-3">
+            <span class="text-muted small bg-light px-3 py-1 rounded-pill border">
+                Active Project: <span class="fw-bold text-dark font-monospace" id="toolbarPidDisplay">loading...</span>
+            </span>
+            <button class="btn btn-sm btn-outline-secondary bg-white text-muted">
+                <i class="bi bi-unlock me-1"></i>取消鎖定
+            </button>
+        </div>
+    </div>
+
+    <div class="container-fluid px-2 manuscript-main">
+        
+        <div class="manu-flex-container" id="workspaceContainer">
+            
+            <div class="manu-panel panel-2c d-flex flex-column" id="panel2C" style="width: 33.33%;">
+                <div class="panel-header bg-dark text-white d-flex justify-content-between align-items-center px-3 py-2">
+                    <span class="fw-bold fs-6">
+                        <i class="bi bi-journal-check text-success me-2"></i>2C: Fusor
+                    </span>
+                    <div class="d-flex align-items-center gap-1">
+                        <button class="btn btn-sm btn-outline-light py-0 border-0" onclick="wsApp.hidePanel('2C')" title="Hide Window">
+                            <i class="bi bi-eye-slash"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-light py-0 border-0" onclick="wsApp.fullscreenPanel('2C')" title="Fullscreen">
+                            <i class="bi bi-arrows-angle-expand"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="global-bar px-3 py-2 bg-white border-bottom d-flex align-items-center gap-2">
+                    <div class="input-group input-group-sm flex-grow-1">
+                        <span class="input-group-text bg-white fw-bold">Title</span>
+                        <input type="text" class="form-control fw-bold" id="paperTitle" placeholder="Enter Paper Title..." value="{{ initial_title or pid }}">
+                    </div>
+                    <div class="input-group input-group-sm" style="width: 120px;">
+                        <span class="input-group-text small">G.Ver</span>
+                        <input type="text" class="form-control text-center" id="globalVersion" value="0.0">
+                    </div>
+                    
+                    <button class="btn btn-sm btn-outline-primary px-2 shadow-sm" id="btnOpenOldPaper" onclick="wsApp.openOldPaperFlow()" title="開啟舊版論文">
+                        <i class="bi bi-folder2-open"></i>
+                    </button>
+                    <button class="btn btn-sm btn-primary px-3 shadow-sm" id="btnSaveGlobal" title="Save Paper JSON">
+                        <i class="bi bi-floppy-fill"></i>
+                    </button>
+                </div>
+                
+                <div class="section-toolbar toolbar-wrap px-3 py-1 bg-light border-bottom d-flex align-items-center gap-2">
+                    <button type="button" class="btn btn-sm btn-outline-primary fw-bold" onclick="wsApp.importWordToCanvas('2C')" title="將 .docx 內容直接匯入 2C（不經 AI 重寫）">
+                        <i class="bi bi-file-earmark-word me-1"></i>匯入 Word→2C
+                    </button>
+                    <button type="button" class="btn btn-sm btn-success fw-bold" id="btnExportWord"><i class="bi bi-download me-1"></i>匯出 Word</button>
+                    
+                    <button class="btn btn-sm btn-outline-primary fw-bold shadow-sm ms-2" onclick="wsApp.openAssetGallery('2C')" title="從圖庫插入圖片或表格">
+                        <i class="bi bi-images me-1"></i>插入素材
+                    </button>
+
+                    <div class="ms-auto btn-group btn-group-sm">
+                        <button type="button" class="btn btn-light border" title="Bold" onmousedown="event.preventDefault();" onclick="wsApp.soed.formatText('bold', null, 'fusion')"><i class="bi bi-type-bold"></i></button>
+                        <button type="button" class="btn btn-light border" title="Italic" onmousedown="event.preventDefault();" onclick="wsApp.soed.formatText('italic', null, 'fusion')"><i class="bi bi-type-italic"></i></button>
+                        <button type="button" class="btn btn-light border" title="Underline" onmousedown="event.preventDefault();" onclick="wsApp.soed.formatText('underline', null, 'fusion')"><i class="bi bi-type-underline"></i></button>
+                    </div>
+                </div>
+                
+                <div id="fusionCanvas" class="flex-grow-1 p-5 bg-white editor-paper manus-editor-canvas shadow-sm mx-auto my-2" contenteditable="true">
+                    <p class="text-muted text-center mt-4">來自 2B 的段落將會依序插入於此處...</p>
+                </div>
+            </div>
+
+            <div class="resizer" id="dragHandle1"></div>
+
+            <div class="manu-panel panel-2b d-flex flex-column" id="panel2B" style="width: 33.33%;">
+                <div class="panel-header bg-dark text-white d-flex justify-content-between align-items-center px-3 py-2">
+                    <span class="fw-bold fs-6">
+                        <i class="bi bi-layout-text-sidebar-reverse text-info me-2"></i>2B: Sectionar
+                    </span>
+                    <div class="d-flex align-items-center gap-1">
+                        <button class="btn btn-sm btn-outline-light py-0 border-0" onclick="wsApp.hidePanel('2B')" title="Hide Window">
+                            <i class="bi bi-eye-slash"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-light py-0 border-0" id="btnExpand2B" onclick="wsApp.fullscreenPanel('2B')" title="Fullscreen">
+                            <i class="bi bi-arrows-angle-expand"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="section-toolbar toolbar-wrap px-3 py-1 bg-light border-bottom d-flex align-items-center gap-2">
+                    
+                    <div class="dropdown d-flex align-items-center">
+                        <button class="btn btn-sm btn-outline-primary fw-bold bg-white" type="button" 
+                                id="sectionDropdownBtn" data-bs-toggle="dropdown" aria-expanded="false" style="min-width: 160px; text-align:left;" title="切換目前編輯段落">
+                            <i class="bi bi-file-text me-2"></i>Abstract
+                        </button>
+                        <ul class="dropdown-menu shadow" id="sectionDropdownMenu" style="min-width: 250px;"></ul>
+                    </div>
+
+                    <button class="btn btn-sm btn-outline-primary px-2" onclick="wsApp.openOldBlockFlow()" title="讀取舊檔或切換章節">
+                        <i class="bi bi-folder2-open"></i>
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-primary fw-bold" onclick="wsApp.importWordToCanvas('2B')" title="將 .docx 內容直接匯入 2B（不經 AI 重寫）">
+                        <i class="bi bi-file-earmark-word me-1"></i>匯入 Word→2B
+                    </button>
+
+                    <div class="input-group input-group-sm" style="width: 100px;">
+                        <span class="input-group-text small px-1">S.Ver</span>
+                        <input type="text" class="form-control text-center px-1" id="sectionVersion" value="0.0">
+                    </div>
+                    
+                    <button class="btn btn-sm btn-primary px-2 shadow-sm" onclick="wsApp.saveAllBlocks()" title="單一段落強制存檔">
+                        <i class="bi bi-floppy-fill"></i> Save
+                    </button>
+
+                    <div class="vr mx-1"></div>
+
+                    <button class="btn btn-sm btn-outline-primary shadow-sm fw-bold" onclick="wsApp.openAssetGallery('2B')" title="從圖庫插入圖片或表格">
+                        <i class="bi bi-images"></i>
+                    </button>
+
+                    <div class="vr mx-1"></div>
+
+                    <div class="btn-group btn-group-sm">
+                        <button type="button" class="btn btn-light border" title="Bold" onmousedown="event.preventDefault();" onclick="wsApp.soed.formatText('bold', null, 'editor')"><i class="bi bi-type-bold"></i></button>
+                        <button type="button" class="btn btn-light border" title="Italic" onmousedown="event.preventDefault();" onclick="wsApp.soed.formatText('italic', null, 'editor')"><i class="bi bi-type-italic"></i></button>
+                        <button type="button" class="btn btn-light border" title="Underline" onmousedown="event.preventDefault();" onclick="wsApp.soed.formatText('underline', null, 'editor')"><i class="bi bi-type-underline"></i></button>
+                    </div>
+
+                    <div class="btn-group btn-group-sm ms-1">
+                        <button type="button" class="btn btn-light border" title="Heading 1" onmousedown="event.preventDefault();" onclick="wsApp.soed.formatText('h1', null, 'editor')">H1</button>
+                        <button type="button" class="btn btn-light border" title="Heading 2" onmousedown="event.preventDefault();" onclick="wsApp.soed.formatText('h2', null, 'editor')">H2</button>
+                        <button type="button" class="btn btn-light border" title="List" onmousedown="event.preventDefault();" onclick="wsApp.soed.formatText('insertUnorderedList', null, 'editor')"><i class="bi bi-list-ul"></i></button>
+                    </div>
+                </div>
+
+                <div id="editorCanvas" class="flex-grow-1 p-5 bg-white editor-paper manus-editor-canvas shadow-sm mx-auto my-2" contenteditable="true">
+                    <p class="text-muted mt-4">Select a section above to start editing...</p>
+                </div>
+                
+                <div class="editor-status-bar px-3 py-1 bg-light border-top text-muted small d-flex justify-content-between font-monospace">
+                    <span id="wordCountDisplay">Waiting for input...</span>
+                    <span id="saveStatus">All changes saved locally</span>
+                </div>
+            </div>
+
+            <div class="resizer" id="dragHandle2"></div>
+
+            <div class="manu-panel panel-2a d-flex flex-column" id="panel2A" style="width: 33.33%;">
+                <div class="panel-header bg-dark text-white d-flex justify-content-between align-items-center px-3 py-2">
+                    <span class="fw-bold fs-6">
+                        <i class="bi bi-pen-fill me-2 text-warning"></i>2A: Drafter
+                    </span>
+                    
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="d-flex align-items-center gap-1 bg-secondary rounded px-1 me-1">
+                            <i class="bi bi-translate text-light px-1"></i>
+                            <select class="form-select form-select-sm border-0 bg-secondary text-white fw-bold shadow-none" 
+                                    id="targetLang" style="width: auto; cursor: pointer;">
+                                <option value="English" selected>English</option>
+                                <option value="繁體中文">繁體中文</option>
+                                <option value="简体中文">简体中文</option>
+                                <option value="日本語">日本語</option>
+                                <option value="한국어">한국어</option>
+                            </select>
+                        </div>
+                        <span class="badge bg-success border border-light me-1">Online</span>
+                        <button class="btn btn-sm btn-outline-light py-0 border-0" onclick="wsApp.hidePanel('2A')" title="Hide Window"><i class="bi bi-eye-slash"></i></button>
+                        <button class="btn btn-sm btn-outline-light py-0 border-0" id="btnExpand2A" onclick="wsApp.fullscreenPanel('2A')" title="Toggle Fullscreen"><i class="bi bi-arrows-angle-expand"></i></button>
+                    </div>
+                </div>
+                
+                <div class="drafter-toolbar bg-secondary-subtle border-bottom px-3 py-2 d-flex align-items-center gap-2">
+                    <div class="d-flex align-items-center gap-2">
+                        <button class="btn btn-sm btn-outline-secondary border-0 bg-white shadow-sm" id="btnEditSections" title="Edit Section" onclick="wsApp.openSectionManager()">
+                            <i class="bi bi-pencil-square"></i>
+                        </button>
+                        <i class="bi bi-bookmark-fill text-success ms-1"></i>
+                        <select class="form-select form-select-sm border-secondary fw-bold text-success" id="drafterTargetSection" style="max-width: 160px;"></select>
+                    </div>
+
+                    <div class="d-flex align-items-center gap-2 ms-auto">
+                        <button class="btn btn-sm btn-success fw-bold text-nowrap ms-1 shadow-sm" onclick="wsApp.triggerAutoDraft()" title="整合上下文生成草稿">
+                            <i class="bi bi-magic me-1"></i>草稿生成
+                        </button>
+                    </div>
+                </div>
+                
+                <div id="chatCanvas" class="flex-grow-1 p-3 chat-canvas-bg">
+                    <div class="text-center text-muted small mt-5">
+                        <div class="spinner-border spinner-border-sm text-secondary mb-2"></div>
+                        <div>Initializing Drafter Core...</div>
+                    </div>
+                </div>
+                
+                <div class="p-2 bg-white border-top flex-shrink-0">
+                    <div id="filePreviewArea" class="d-none mb-2 px-2">
+                        <div class="d-inline-flex align-items-center bg-light border rounded px-2 py-1 small">
+                            <span class="badge bg-warning text-dark me-2" id="importTypeBadge">附件</span>
+                            <i class="bi bi-file-earmark-text me-1 text-primary"></i>
+                            <span id="fileNameDisplay" class="fw-bold text-truncate" style="max-width: 200px;">file.txt</span>
+                            <button class="btn btn-link text-danger p-0 ms-2" onclick="wsApp.clearFile()"><i class="bi bi-x"></i></button>
+                        </div>
+                    </div>
+                    
+                    <div class="input-group shadow-sm">
+                        <button class="btn btn-dark dropdown-toggle px-3" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="匯入資料與檔案">
+                            <i class="bi bi-plus-circle text-warning fs-6"></i>
+                        </button>
+                        <ul class="dropdown-menu shadow">
+                            <li class="px-3 py-2 border-bottom bg-light">
+                                <label class="small fw-bold text-muted mb-1">匯入類型 (Import Type)</label>
+                                <select class="form-select form-select-sm" id="importType">
+                                    <option value="notes">重點筆記 (Key Notes)</option>
+                                    <option value="experiment">實驗數據 (Exp. Data)</option>
+                                    <option value="template">範本 (Template)</option>
+                                    <option value="coauthor">共同作者手稿 (Draft)</option>
+                                    <option value="ai_summary">AI 摘要 (AI Summary)</option>
+                                    <option value="other">其他參考資料 (Other)</option>
+                                </select>
+                            </li>
+                            <li><a class="dropdown-item py-2" href="#" onclick="wsApp.triggerFileUpload()"><i class="bi bi-folder2-open me-2 text-warning"></i>本地檔案上傳</a></li>
+                            <li><a class="dropdown-item py-2" href="#" onclick="wsApp.triggerGoogleDrive()"><i class="bi bi-google me-2 text-success"></i>Google Drive 匯入</a></li>
+                        </ul>
+                        <input type="file" id="fileInput" class="d-none" accept=".csv, .txt, .md, .json, image/*, .xls, .xlsx, .doc, .docx, application/msword, application/vnd.openxmlformats-officedocument.wordprocessingml.document">
+                        <input type="file" id="wordImportInput" class="d-none" accept=".doc, .docx, application/msword, application/vnd.openxmlformats-officedocument.wordprocessingml.document">
+                        
+                        <input type="text" class="form-control" placeholder="輸入指令 (文字 + 附件 將打包傳送)..." id="chatInput">
+                        <button class="btn btn-primary fw-bold px-4" type="button" id="btnSend">
+                            <i class="bi bi-send-fill"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+    </div>
+
+    <div class="modal fade" id="sectionManagerModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold"><i class="bi bi-list-columns-reverse me-2"></i>管理章節</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="sectionListContainer"></div>
+                    <div class="mt-3 border-top pt-3">
+                        <label class="form-label small text-muted">新增章節</label>
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="newSectionName" placeholder="e.g. Literature Review">
+                            <button class="btn btn-outline-primary" onclick="wsApp.addSectionItem()"><i class="bi bi-plus-lg"></i></button>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary btn-sm" onclick="wsApp.saveSectionConfig()">
+                        <i class="bi bi-save me-1"></i>Save Changes
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="oldPaperModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title fw-bold"><i class="bi bi-folder2-open me-2"></i>開啟舊版全篇論文 (2C)</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="list-group" id="oldPaperListContainer"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="oldBlockModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-info text-white">
+                    <h5 class="modal-title fw-bold"><i class="bi bi-folder2-open me-2"></i>開啟舊檔或切換章節 (2B)</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold text-muted small">選擇目標章節 (Section)</label>
+                        <select class="form-select border-info" id="oldBlockSectionSelect" onchange="wsApp.fetchOldBlocks()"></select>
+                    </div>
+                    <div class="list-group" id="oldBlockListContainer"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="assetGalleryModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title fw-bold"><i class="bi bi-images me-2"></i>論文素材庫 (Asset Gallery)</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body bg-light">
+                    <ul class="nav nav-tabs mb-3" id="assetTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active fw-bold text-primary" id="tab-images" data-bs-toggle="tab" data-bs-target="#content-images" type="button" role="tab">🖼️ 圖片庫</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link fw-bold text-secondary" id="tab-tables" data-bs-toggle="tab" data-bs-target="#content-tables" type="button" role="tab">📊 表格庫</button>
+                        </li>
+                    </ul>
+                    <div class="tab-content" id="assetTabsContent">
+                        <div class="tab-pane fade show active" id="content-images" role="tabpanel">
+                            <div class="row g-3" id="galleryImageContainer">
+                                <div class="text-center text-muted p-4 w-100">
+                                    <div class="spinner-border spinner-border-sm me-2"></div>同步伺服器素材中...
+                                </div>
+                            </div>
+                        </div>
+                        <div class="tab-pane fade" id="content-tables" role="tabpanel">
+                            <div class="list-group" id="galleryTableContainer">
+                                <div class="text-center text-muted p-4 border rounded bg-white">
+                                    <i class="bi bi-info-circle me-2"></i>尚未生成任何表格素材
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer bg-white d-flex justify-content-between">
+                    <span class="text-muted small" id="assetGalleryStatus">Select an asset to inject into <b class="text-primary" id="assetTargetDisplay">2B</b>.</span>
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.min.js" integrity="sha384-mZLF4UVrpi/QTWPA7BjNPEnkIfRFn4ZEO3Qt/HFklTJBj/gBOV8G3HcKn4NfQblz" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz" crossorigin="anonymous"></script>
+    <script src="{{ url_for('static', filename='js/google_driveapi.js') }}?v=0.2"></script>
+    <script async defer src="https://apis.google.com/js/api.js" integrity="sha384-g64Y2rxnMkygAR8l69comjp8tBeEw0wKGPzjF1Ze8A5GVOpH8f/3DXzKZIvRnhja" crossorigin="anonymous" onload="window.driveAdapter.loadGapi()"></script>
+    <script async defer src="https://accounts.google.com/gsi/client" integrity="sha384-PDFx1gvyInp8EheVgdrq37F4dlvWZaxgQ8amZ9lLhZHXqsCaG86UhVj6DbbqmWfV" crossorigin="anonymous" onload="window.driveAdapter.loadGis()"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js" integrity="sha384-enVdc7lTHDGtpROV85t9+VqPC2EyyB0hsRD0MrvQnHUsHmTHIz2D8SPP4EnBkstH" crossorigin="anonymous"></script>
+    <script>
+        mermaid.initialize({
+            startOnLoad: false,
+            theme: 'default',
+            securityLevel: 'strict'
+        });
+        console.log("[ManuscriptWS] Mermaid loaded.");
+    </script>
+    
+    <script src="{{ url_for('static', filename='js/manuscript_ioruling.js') }}?v=0.1"></script>
+    
+    <script src="{{ url_for('static', filename='js/manuscript_wsui.js') }}?v=1.4"></script>
+    <script src="{{ url_for('static', filename='js/manuscript_image.js') }}?v=1.8"></script>
+    <script src="{{ url_for('static', filename='js/manuscript_soed.js') }}?v=0.8"></script>
+    <script src="{{ url_for('static', filename='js/manuscript_ws.js') }}?v=4.6"></script>
+
+</body>
+</html>

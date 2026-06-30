@@ -1,0 +1,198 @@
+{% include '_header.html' %}
+
+<div class="container-fluid px-3 pb-3 d-flex flex-column" style="height: calc(105vh - 70px); overflow: hidden;">
+    
+    <div class="card shadow-sm mb-2 bg-white project-header-block" style="border-top: 4px solid var(--bs-primary) !important; flex-shrink: 0; height: 60px; overflow: hidden;">
+        <div class="card-body py-0 h-100 d-flex align-items-center">
+            
+            <div class="d-flex align-items-center gap-3 flex-grow-1" style="min-width: 0;">
+                
+                <div class="text-center px-2 flex-shrink-0">
+                    <small class="text-muted d-block text-uppercase" style="font-size: 0.65rem; letter-spacing: 1px; line-height: 1;">Temp_ID</small>
+                    <span class="font-monospace fw-bold text-primary header-id-text" id="header-pid" style="line-height: 1;">--</span>
+                </div>
+                
+                <div class="vr bg-secondary opacity-25" style="height: 60%;"></div>
+
+                <div class="flex-grow-1" style="min-width: 0; overflow: hidden;">
+                    <small class="text-muted d-block" style="font-size: 0.65rem; line-height: 1;">Project Name</small>
+                    <h5 class="m-0 fw-bold text-dark header-pname-text text-nowrap" id="header-pname" style="line-height: 1.1; overflow: hidden; text-overflow: ellipsis;" title="Loading Project...">
+                        Loading Project...
+                    </h5>
+                </div>
+
+                <div class="vr bg-secondary opacity-25" style="height: 60%;"></div>
+
+                <div class="flex-shrink-0 text-end px-2" style="max-width: 200px;">
+                    <small class="text-muted d-block" style="font-size: 0.65rem; line-height: 1;">Principal Investigator</small>
+                    <span class="fw-bold text-secondary text-truncate d-block header-pi-text" id="header-pi" style="line-height: 1;">Loading...</span>
+                </div>
+            </div>
+
+            <div class="ms-3 flex-shrink-0 d-flex gap-2">
+                <button class="btn btn-outline-danger btn-sm" onclick="openPromoteModal()" title="轉為正式專案 (Promote)">
+                    <i class="bi bi-award-fill"></i> <span class="d-none d-lg-inline">Promote</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="workspace-container" class="d-flex flex-row flex-grow-1 w-100 border rounded bg-white shadow-sm" style="min-height: 0; overflow: hidden;">
+        
+        <div id="panel-tax" class="panel-box border-end d-flex flex-column" style="width: 30%; min-width: 250px;">
+            <div class="panel-header bg-light p-2 border-bottom d-flex justify-content-between align-items-center flex-shrink-0">
+                <span class="fw-bold text-secondary small"><i class="bi bi-list-ul"></i> Taxonomy (Task 1)</span>
+                <div class="window-controls text-muted">
+                    <i class="bi bi-arrows-fullscreen me-2 cursor-pointer" id="icon-max-panel-tax" onclick="toggleMaximize('panel-tax')" title="Maximize"></i>
+                    <i class="bi bi-dash-lg cursor-pointer" onclick="togglePanel('panel-tax')" title="Minimize"></i>
+                </div>
+            </div>
+            
+            <div class="panel-body position-relative flex-grow-1 overflow-auto p-3">
+                <div id="loading-taxonomy" class="position-absolute top-0 start-0 w-100 h-100 bg-white bg-opacity-90 d-flex flex-column align-items-center justify-content-center d-none" style="z-index: 1050;">
+                    <div class="spinner-border text-primary mb-2" role="status"></div>
+                    <span class="text-primary fw-bold small">AI Generating Taxonomy...</span>
+                </div>
+
+                <div class="mb-3 d-flex gap-2">
+                    <button id="btn-tax-fresh" class="btn btn-primary btn-sm flex-grow-1 shadow-sm" onclick="runTaxonomyTask('fresh')">
+                        <i class="bi bi-stars"></i> AI Auto-Gen
+                        <div style="font-size: 0.7em; opacity: 0.8;">(全新生成)</div>
+                    </button>
+                    <button id="btn-tax-refine" class="btn btn-outline-success btn-sm flex-grow-1 shadow-sm" onclick="runTaxonomyTask('refine')">
+                        <i class="bi bi-pencil-square"></i> Manual Modify
+                        <div style="font-size: 0.7em; opacity: 0.8;">(基於修改優化)</div>
+                    </button>
+                </div>
+                
+                <hr class="text-secondary opacity-25 my-3">
+
+                <div class="mb-3 p-2 bg-light rounded border border-danger border-opacity-25">
+                    <label class="form-label fw-bold text-danger mb-1 small" for="label-x">
+                        <i class="bi bi-x-square-fill"></i> X軸label說明 X-axis instruction
+                    </label>
+                    <input type="text" id="label-x" class="form-control form-control-sm mb-2 fw-bold" placeholder="e.g. Methodology">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <label class="form-label small text-muted mb-0">Tags (分類標籤)</label>
+                        <span class="badge bg-danger bg-opacity-10 text-danger rounded-pill" style="font-size: 0.6em;">Axis X</span>
+                    </div>
+                    <ul class="list-group list-group-flush small mt-1 border-top" id="list-x"></ul>
+                </div>
+
+                <div class="mb-3 p-2 bg-light rounded border border-success border-opacity-25">
+                    <label class="form-label fw-bold text-success mb-1 small" for="label-y">
+                        <i class="bi bi-y-square-fill"></i> Y軸label說明 Y-axis instruction
+                    </label>
+                    <input type="text" id="label-y" class="form-control form-control-sm mb-2 fw-bold" placeholder="e.g. Domain">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <label class="form-label small text-muted mb-0">Tags (分類標籤)</label>
+                        <span class="badge bg-success bg-opacity-10 text-success rounded-pill" style="font-size: 0.6em;">Axis Y</span>
+                    </div>
+                    <ul class="list-group list-group-flush small mt-1 border-top" id="list-y"></ul>
+                </div>
+
+                <div class="mb-3 p-2 bg-light rounded border border-primary border-opacity-25">
+                    <label class="form-label fw-bold text-primary mb-1 small" for="label-z">
+                        <i class="bi bi-z-square-fill"></i> Z軸label說明 Z-axis instruction
+                    </label>
+                    <input type="text" id="label-z" class="form-control form-control-sm mb-2 fw-bold" placeholder="e.g. Level">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <label class="form-label small text-muted mb-0">Tags (分類標籤)</label>
+                        <span class="badge bg-primary bg-opacity-10 text-primary rounded-pill" style="font-size: 0.6em;">Axis Z</span>
+                    </div>
+                    <ul class="list-group list-group-flush small mt-1 border-top" id="list-z"></ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="resizer bg-secondary bg-opacity-25" id="resizer-1" style="width: 5px; cursor: col-resize; flex-shrink: 0;"></div>
+
+        <div id="panel-cube" class="panel-box border-end d-flex flex-column" style="width: 40%; min-width: 300px;">
+            <div class="panel-header bg-light p-2 border-bottom d-flex justify-content-between align-items-center flex-shrink-0">
+                <span class="fw-bold text-primary small"><i class="bi bi-box"></i> Academic Cube (Task 2)</span>
+                <div class="window-controls text-muted">
+                    <i class="bi bi-display me-2 cursor-pointer text-info" onclick="requestCubeFullscreen()" title="實體全螢幕 (True Fullscreen)"></i>
+                    <i class="bi bi-arrows-fullscreen me-2 cursor-pointer" id="icon-max-panel-cube" onclick="toggleMaximize('panel-cube')" title="最大化工作區"></i>
+                    <i class="bi bi-dash-lg cursor-pointer" onclick="togglePanel('panel-cube')" title="最小化"></i>
+                </div>
+            </div>
+            
+            <div class="panel-body position-relative flex-grow-1 p-0 bg-dark overflow-hidden d-flex flex-column">
+                <div id="loading-cube" class="position-absolute top-0 start-0 w-100 h-100 bg-dark bg-opacity-90 d-flex flex-column align-items-center justify-content-center d-none" style="z-index: 1050;">
+                    <div class="spinner-border text-info mb-2" role="status"></div>
+                    <span class="text-info fw-bold small">Calculating Research Potential Index (RPI)...</span>
+                </div>
+                
+                <div class="p-2 border-bottom border-secondary bg-white bg-opacity-10 flex-shrink-0">
+                    <button id="btn-run-cube" class="btn btn-outline-info btn-sm w-100" onclick="runCubeTask()">
+                        <i class="bi bi-cpu"></i> Generate Cube Analysis
+                    </button>
+                </div>
+                
+                <div id="cube-container" class="flex-grow-1 w-100 position-relative">
+                    </div>
+            </div>
+        </div>
+
+        <div class="resizer bg-secondary bg-opacity-25" id="resizer-2" style="width: 5px; cursor: col-resize; flex-shrink: 0;"></div>
+
+        <div id="panel-chat" class="panel-box d-flex flex-column" style="flex-grow: 1; min-width: 250px;">
+            <div class="panel-header bg-light p-2 border-bottom d-flex justify-content-between align-items-center flex-shrink-0">
+                <span class="fw-bold text-success small"><i class="bi bi-chat-dots"></i> Co-Pilot Chat</span>
+                <div class="window-controls text-muted">
+                    <i class="bi bi-arrows-fullscreen me-2 cursor-pointer" id="icon-max-panel-chat" onclick="toggleMaximize('panel-chat')"></i>
+                    <i class="bi bi-dash-lg cursor-pointer" onclick="togglePanel('panel-chat')"></i>
+                </div>
+            </div>
+            
+            <div class="panel-body d-flex flex-column flex-grow-1 p-0 overflow-hidden">
+                <div id="chat-history" class="flex-grow-1 p-3 overflow-auto bg-light bg-opacity-50">
+                    <div class="chat-bubble ai-bubble bg-white border shadow-sm p-3 mb-3">
+                        <strong class="text-success"><i class="bi bi-robot"></i> System:</strong><br>
+                        Hello! I am your research assistant. <br>
+                        I can help you define the taxonomy or analyze the cube.
+                    </div>
+                </div>
+                
+                <div class="chat-input-area border-top p-2 bg-white flex-shrink-0">
+                    <div class="input-group">
+                        <input type="text" id="chat-input" class="form-control" placeholder="Ask AI about methodology..." onkeypress="handleChatKey(event)">
+                        <button class="btn btn-primary" onclick="sendChat()" title="Send Message"><i class="bi bi-send-fill"></i></button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<div class="modal fade" id="promoteModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title"><i class="bi bi-exclamation-triangle-fill"></i> 確認主題並轉正 (Promote Project)</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-warning small">
+                    <i class="bi bi-info-circle"></i> 專案轉為正式狀態後，PAQ 軸向定義將被<b>鎖定 (Locked)</b>，無法再進行修改。請確認目前的研究架構已定案。
+                </div>
+                <div class="mb-3">
+                    <label class="fw-bold form-label">最終確認主題 (Final Research Topic)</label>
+                    <input type="text" id="modal-final-topic" class="form-control" readonly>
+                    <div class="form-text text-muted">此主題將作為後續 Study 與 Manuscript 模組的核心標題。</div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消 (Cancel)</button>
+                <button type="button" class="btn btn-danger" onclick="submitPromote()">確認鎖定 (Confirm & Lock)</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz" crossorigin="anonymous"></script>
+<script src="/static/js/paq_initial.js?v=0.2"></script>
+<script src="/static/js/paq_interact.js?v=0.1"></script>
+<script src="/static/js/paq_project.js?v=0.2"></script>
+<script src="/static/js/cube_renderer.js?v=1.4"></script>

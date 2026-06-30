@@ -1,0 +1,179 @@
+/* 路徑(./app/static/css/paq.css) #版本 v2.7 #更版時間 20260223-0107 */
+/* ==========================================================================
+ */
+:root {
+    --paq-header-min-height: 80px;
+    /* [v2.7 Update] 依據 105vh 需求動態拉伸，取代原先寫死的 1300px，確保超過螢幕 5% 且保有內部捲動 */
+    --paq-workspace-height: 105vh; 
+    --paq-panel-min-height: 800px;
+    /* 把底下的 min-height 和 height 刪除，保持全域變數乾淨 */
+}
+
+/* === 1. Global === */
+html { 
+    font-size: 85%; 
+    height: 100%;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f0f2f5;
+    margin: 0;
+    /* [v2.0 Fix] 恢復網頁捲軸，避免內容被切斷 */
+    overflow-y: auto !important; 
+    height: auto;
+    padding-bottom: 50px;
+}
+
+/* === 2. Header Typography & Layout (Responsive) === */
+.header-id-text {
+    font-size: clamp(0.8rem, 1.2vw, 1.1rem);
+}
+.header-pname-text {
+    font-size: clamp(0.8rem, 2vw, 1.1rem); 
+}
+.header-pi-text {
+    font-size: clamp(0.6rem, 1.2vw, 1.0rem);
+}
+
+/* [v2.4 New] 專案資訊頂部區塊的高度控制綁定 
+   (可將此 class 加在 paq.html 的頂部專案資訊 container 上) */
+.project-header-block {
+    min-height: var(--paq-header-min-height);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+/* === 3. Workspace Panels (Layout Engine) === */
+/* [v2.4 Fix] 移除寫死的 600px，改由全域變數動態控制視窗高度 */
+#workspace-container {
+    height: var(--paq-workspace-height);
+    min-height: var(--paq-panel-min-height); 
+    /* Flexbox properties already in HTML classes (d-flex flex-column) */
+}
+
+/* 面板容器 */
+.panel-box {
+    background-color: #fff;
+    transition: width 0.1s ease; /* Smooth resizing */
+    display: flex; /* 確保內部元件 (Header/Body) 正確排列 */
+    flex-direction: column;
+}
+
+.panel-header {
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #dee2e6;
+    padding: 8px 12px;
+    height: 40px; /* 固定標題高度 */
+}
+
+/* [v2.3 Fix] 關鍵修正：設定 Panel Body 為可捲動區域 */
+.panel-body {
+    flex-grow: 1;      /* 佔滿剩餘空間 */
+    overflow-y: auto;  /* 內容過長時出現垂直捲軸 */
+    padding: 15px;
+    position: relative;
+}
+
+/* Maximized Mode */
+.panel-box.maximized {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100% !important;
+    height: 100% !important;
+    z-index: 1000;
+}
+
+/* Minimized Mode */
+.panel-box.minimized {
+    display: none !important;
+}
+
+/* Resizer Handle */
+.resizer {
+    width: 5px;
+    background-color: #e9ecef;
+    cursor: col-resize;
+    transition: background-color 0.2s;
+    z-index: 10;
+}
+.resizer:hover, .resizer.active {
+    background-color: #0d6efd; /* Bootstrap Primary */
+}
+
+/* === 4. Component Styles === */
+
+/* Tag Badges */
+.list-group-item .badge {
+    font-size: 0.9em;
+    font-weight: normal;
+    white-space: pre-wrap; /* Allow line breaks */
+    text-align: left;
+}
+
+/* 3D Cube Container */
+#cube-container {
+    width: 100%;
+    height: 100%;
+    /* Plotly needs block display usually, but flex child is okay */
+}
+
+/* Chat History */
+#chat-history {
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #dee2e6;
+    padding: 15px;
+    overflow-y: auto;
+}
+
+/* Chat Input Area */
+.chat-input-area {
+    padding: 10px;
+    background-color: #fff;
+    border-top: 1px solid #dee2e6;
+}
+
+/* Custom Scrollbar */
+.overflow-auto::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+.overflow-auto::-webkit-scrollbar-track {
+    background: #f1f1f1; 
+}
+.overflow-auto::-webkit-scrollbar-thumb {
+    background: #c1c1c1; 
+    border-radius: 4px;
+}
+.overflow-auto::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8; 
+}
+
+/* Chat Bubbles */
+.chat-bubble {
+    max-width: 90%;
+    padding: 8px 12px;
+    border-radius: 12px;
+    font-size: 0.9rem;
+    line-height: 1.4;
+    word-wrap: break-word;
+}
+.user-bubble {
+    align-self: flex-end;
+    background-color: #0d6efd;
+    color: white;
+    border-bottom-right-radius: 2px;
+}
+.ai-bubble {
+    align-self: flex-start;
+    background-color: #fff;
+    border: 1px solid #dee2e6;
+    border-bottom-left-radius: 2px;
+}
+
+/* Utility */
+.cursor-pointer {
+    cursor: pointer;
+}

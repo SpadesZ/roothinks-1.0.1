@@ -1,0 +1,187 @@
+/* #路徑(./app/static/css/study.css) #版本 v3.0 #更版時間 20260207-2315 */
+
+/* --- 1. Global Utilities --- */
+.custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background: #6c757d;
+    border-radius: 3px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+    background: rgba(0,0,0,0.1);
+}
+
+/* --- 2. Sidebar Specifics (Dark Theme) --- */
+.sidebar-content .nav-pills .nav-link {
+    color: #adb5bd;
+    background: rgba(255,255,255,0.05);
+    margin-right: 5px;
+    border-radius: 4px;
+}
+.sidebar-content .nav-pills .nav-link.active {
+    color: #fff;
+    background: #0d6efd;
+}
+.sidebar-item {
+    padding: 8px;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    font-size: 0.85rem;
+    cursor: pointer;
+    color: #e0e0e0;
+}
+.sidebar-item:hover {
+    background: rgba(255,255,255,0.1);
+    color: #fff;
+}
+
+/* --- 3. Matrix Table Styling (Double Sticky) --- */
+.matrix-container {
+    overflow: auto; /* 關鍵: 啟用雙向捲動 */
+    position: relative;
+    background-color: #fff;
+    padding-bottom: 20px; 
+    width: 100%;
+    height: 100%;
+}
+
+.roothinks-matrix {
+    border-collapse: separate; /* 必須分離以支援 Sticky */
+    border-spacing: 0;
+    width: 100%;
+    min-width: 800px; 
+    font-size: 0.9rem;
+    color: #333;
+}
+
+.roothinks-matrix th, 
+.roothinks-matrix td {
+    padding: 12px 15px;
+    border-right: 1px solid #dee2e6;
+    border-bottom: 1px solid #dee2e6;
+    vertical-align: top;
+    position: relative;
+    background-clip: padding-box; /* 防止邊框重疊問題 */
+}
+
+/* A. Sticky Column Headers (Top) - Paper Titles */
+.roothinks-matrix thead th {
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    background-color: #f8f9fa;
+    border-bottom: 2px solid #adb5bd;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    font-weight: 700;
+    color: #495057;
+    height: 50px;
+    vertical-align: middle;
+}
+
+/* B. Sticky Row Headers (Left) - Dimensions */
+.roothinks-matrix tbody th {
+    position: sticky;
+    left: 0;
+    z-index: 20;
+    background-color: #e9ecef; /* 深一點的灰 */
+    border-right: 2px solid #adb5bd;
+    box-shadow: 2px 0 4px rgba(0,0,0,0.05);
+    min-width: 150px;
+    max-width: 200px;
+    text-align: left;
+    color: #212529;
+    font-weight: 600;
+}
+
+/* C. The Corner Cell (Top-Left Intersection) */
+.roothinks-matrix thead th:first-child {
+    position: sticky;
+    left: 0;
+    top: 0;
+    z-index: 40; /* Header corner should stay above table only */
+    background-color: #dee2e6;
+    border-right: 2px solid #adb5bd;
+    border-bottom: 2px solid #adb5bd;
+}
+
+/* --- 4. Cell Interaction & Content --- */
+.matrix-cell {
+    cursor: pointer;
+    transition: all 0.2s;
+    min-width: 200px;
+    max-width: 400px;
+}
+.cell-content {
+    /* 限制內容高度，過長可捲動或截斷 */
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.matrix-cell:hover {
+    background-color: #fff3cd !important; /* Yellow hover */
+    z-index: 5;
+    box-shadow: inset 0 0 0 2px rgba(255, 193, 7, 0.5);
+}
+.matrix-cell.active-context {
+    background-color: #cfe2ff !important;
+    border: 2px solid #0d6efd;
+    z-index: 6;
+}
+
+/* SOTA Highlight */
+.matrix-cell.sota-highlight {
+    background-color: #d1e7dd; /* Light Green */
+}
+.matrix-cell.sota-highlight::after {
+    content: "★ SOTA";
+    position: absolute;
+    top: 0;
+    right: 0;
+    background: #198754;
+    color: #fff;
+    font-size: 0.6rem;
+    padding: 1px 4px;
+    border-bottom-left-radius: 4px;
+    font-weight: bold;
+}
+
+/* N/A Data */
+.matrix-cell.na-data {
+    color: #adb5bd;
+    background-color: #fcfcfc;
+    font-style: italic;
+    background-image: repeating-linear-gradient(
+        45deg,
+        transparent,
+        transparent 5px,
+        #f1f3f5 5px,
+        #f1f3f5 10px
+    );
+}
+
+/* --- 5. Dropdown Layering & Overflow Guards --- */
+.matrix-toolbar {
+    position: relative;
+    /* Keep above matrix sticky cells, but below Bootstrap modal/backdrop. */
+    z-index: 60;
+    overflow: visible;
+}
+
+#matrix-pane .matrix-toolbar .dropdown {
+    position: relative;
+    z-index: 70;
+}
+
+#dimensionFilterMenu {
+    z-index: 80;
+    width: clamp(280px, 40vw, 420px);
+    max-width: calc(100vw - 24px);
+    overflow-x: hidden;
+}
+
+#dimensionFilterMenu .dropdown-item {
+    white-space: normal;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+}

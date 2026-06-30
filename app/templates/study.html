@@ -1,0 +1,517 @@
+<!-- 路徑(app/templates/study.html) 版本(v2.6-MediaMode) 更版時間(20260430-1835)
+[MVP+Prototype Handoff Header]
+本模板目前定位為 MVP/Prototype 實作；非最終產品級設計。
+對應規劃檔：CHANGE_PLAN_STUDY_FLOWB_2026-04-20.md
+Study 的 Matrix/Fulltext 內嵌切換為階段性方案，後續請由人類團隊接手進行產品化調整。
+-->
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ROOTHINKS-B Study Field</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-9ndCyUaIbzAi2FUVXJi0CjmCapSmO7SnpJef0486qhLnuZ2cdeRhO02iuK6FUUVM" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" integrity="sha384-4LISF5TTJX/fLmGSxO53rV4miRxdg84mZsxmO8Rx5jGtp/LbrixFETvWa5a6sESd" crossorigin="anonymous">
+    <style>
+        .gutter {
+            background-color: #f1f3f5;
+            background-repeat: no-repeat;
+            background-position: 50%;
+            transition: background-color 0.3s;
+        }
+        .gutter:hover { background-color: #ced4da; }
+        .gutter.gutter-horizontal {
+            cursor: col-resize;
+            width: 8px; /* 加寬 Gutter 方便拖曳 */
+        }
+        /*
+         * 版面高度修復：
+         * 1) 避免固定扣 76px 導致不同字體縮放下出現上下留白
+         * 2) 覆蓋 paq.css 的 body padding-bottom 與 navbar mb-3 造成的空隙
+         */
+        html, body {
+            height: 100dvh !important;
+            min-height: 100dvh !important;
+            margin: 0 !important;
+            overflow: hidden !important;
+            font-family: 'Segoe UI', sans-serif;
+            display: flex;
+            flex-direction: column;
+        }
+        body {
+            padding-bottom: 0 !important;
+        }
+        body > nav.navbar {
+            margin-bottom: 0 !important;
+            flex: 0 0 auto;
+        }
+        #main-wrapper {
+            flex: 1 1 auto;
+            min-height: 0;
+            height: auto;
+            display: flex;
+            overflow: hidden;
+            min-width: 0;
+        }
+        
+        /* 側邊欄過渡動畫 */
+        #sidebar-pane {
+            transition: width 0.3s ease, min-width 0.3s ease;
+            overflow: hidden;
+            background-color: #212529; /* 深色主題 */
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            flex: 0 0 auto;
+            position: relative;
+            z-index: 200;
+        }
+        #sidebar-pane.collapsed {
+            width: 50px !important;
+            min-width: 50px !important;
+            max-width: 50px !important;
+        }
+        /* 收合時隱藏內容，僅顯示 Icon */
+        #sidebar-pane.collapsed .sidebar-content { display: none; }
+        #sidebar-pane.collapsed .sidebar-mini { display: flex; }
+        
+        /* 展開時隱藏 Mini Icon */
+        #sidebar-pane:not(.collapsed) .sidebar-mini { display: none; }
+
+        .sidebar-mini {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            padding-top: 15px;
+            gap: 20px;
+        }
+        .sidebar-content {
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            min-width: 250px; /* 防止內容擠壓 */
+        }
+
+        #split-wrapper {
+            flex: 1 1 auto;
+            min-width: 0;
+            width: 0;
+            overflow: hidden;
+        }
+
+        #matrix-pane,
+        #aux-pane {
+            min-width: 0;
+        }
+    </style>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/study.css') }}">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" crossorigin="anonymous">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" crossorigin="anonymous"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" crossorigin="anonymous"></script>
+</head>
+<body>
+
+<!-- 加載指示器 -->
+<div id="app-loading-indicator" style="
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: white;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9998;
+    font-family: sans-serif;">
+    <div style="text-align: center;">
+        <div class="spinner-border text-primary mb-3" style="width: 3rem; height: 3rem;"></div>
+        <p>正在初始化頁面...</p>
+        <small style="color: #999;">如果頁面長時間無反應，請按 F12 查看控制台錯誤</small>
+    </div>
+</div>
+
+{% include '_header.html' %}
+
+<div class="container-fluid px-0" id="main-wrapper">
+    
+    <div id="sidebar-pane" class="collapsed"> <div class="sidebar-mini">
+            <button class="btn btn-sm btn-outline-light border-0" onclick="window.studyView.toggleSidebar()" title="展開選單">
+                <i class="bi bi-list fs-5"></i>
+            </button>
+            <div class="vr bg-secondary w-75 my-2"></div>
+            <button class="btn btn-sm btn-outline-secondary border-0" onclick="window.studyView.toggleSidebar('tab-conversations')" title="對話歷史">
+                <i class="bi bi-chat-dots fs-5"></i>
+            </button>
+            <button class="btn btn-sm btn-outline-secondary border-0" onclick="window.studyView.toggleSidebar('tab-papers')" title="文獻選取">
+                <i class="bi bi-check2-square fs-5"></i>
+            </button>
+            <button class="btn btn-sm btn-outline-secondary border-0" onclick="window.studyView.toggleSidebar('tab-history')" title="矩陣記錄">
+                <i class="bi bi-grid-3x3 fs-5"></i>
+            </button>
+        </div>
+
+        <div class="sidebar-content p-3">
+            <div class="d-flex justify-content-between align-items-center mb-3 border-bottom border-secondary pb-2">
+                <h6 class="m-0 fw-bold text-light"><i class="bi bi-sliders me-2"></i>控制中心</h6>
+                <button class="btn btn-sm btn-link text-secondary text-decoration-none" onclick="window.studyView.toggleSidebar()">
+                    <i class="bi bi-chevron-left"></i> 收合
+                </button>
+            </div>
+
+            <ul class="nav nav-pills nav-fill mb-3" id="sidebarTabs" role="tablist">
+                <li class="nav-item">
+                    <button class="nav-link active btn-sm" id="btn-tab-conversations" data-bs-toggle="pill" data-bs-target="#tab-conversations">
+                        <i class="bi bi-chat-dots me-1"></i> 對話
+                    </button>
+                </li>
+                <li class="nav-item">
+                    <button class="nav-link btn-sm" id="btn-tab-papers" data-bs-toggle="pill" data-bs-target="#tab-papers">
+                        <i class="bi bi-file-earmark-text me-1"></i> 文獻
+                    </button>
+                </li>
+                <li class="nav-item">
+                    <button class="nav-link btn-sm" id="btn-tab-history" data-bs-toggle="pill" data-bs-target="#tab-history">
+                        <i class="bi bi-clock-history me-1"></i> 記錄
+                    </button>
+                </li>
+            </ul>
+
+            <div class="tab-content flex-grow-1 overflow-auto custom-scrollbar">
+                <!-- 對話歷史標籤頁 (類似 Gemini 風格) -->
+                <div class="tab-pane fade show active" id="tab-conversations">
+                    <div class="d-grid mb-3">
+                        <button class="btn btn-light fw-bold shadow-sm" onclick="window.studyChat.createNewConversation()">
+                            <i class="bi bi-plus-lg me-2"></i>新的對話
+                        </button>
+                    </div>
+                    <div id="conversationListContainer" style="max-height: calc(100vh - 300px); overflow-y: auto;">
+                        <div class="text-center text-secondary py-4">
+                            <div class="spinner-border spinner-border-sm mb-2"></div>
+                            <p class="small mb-0">載入中...</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 文獻選取標籤頁 -->
+                <div class="tab-pane fade" id="tab-papers">
+                    <div id="paperListContainer" class="text-secondary small py-2">
+                        <div class="spinner-border spinner-border-sm me-2"></div>Loading papers...
+                    </div>
+                    <div class="mt-3 pt-3 border-top border-secondary sticky-bottom bg-dark">
+                        <button class="btn btn-success w-100 fw-bold shadow" onclick="window.studyCore.runTask6()">
+                            <i class="bi bi-play-fill me-1"></i> 生成比較矩陣
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- 矩陣歷史標籤頁 -->
+                <div class="tab-pane fade" id="tab-history">
+                    <div id="historyListContainer" class="text-secondary small">
+                        <i class="bi bi-info-circle me-1"></i> 暫無記錄
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="split-wrapper" class="flex-grow-1 d-flex bg-white">
+        
+        <div id="matrix-pane" class="d-flex flex-column position-relative" style="background-color: #f8f9fa;">
+            <div class="bg-white border-bottom p-2 d-flex justify-content-between align-items-center shadow-sm matrix-toolbar">
+                <div class="d-flex align-items-center gap-2">
+                    <span id="matrix-mode-badge" class="badge bg-secondary"><i class="bi bi-display me-1"></i>Idle</span>
+                    <div class="btn-group btn-group-sm" role="group" aria-label="Study display mode">
+                        <button id="btn-view-matrix" class="btn btn-outline-primary" onclick="window.studyView.switchToMatrixView()">
+                            <i class="bi bi-grid-3x3-gap me-1"></i>Matrix
+                        </button>
+                        <button id="btn-view-fulltext" class="btn btn-outline-primary" onclick="window.studyView.switchToFulltextView()" disabled>
+                            <i class="bi bi-book-half me-1"></i>Fulltext
+                        </button>
+                    </div>
+                    <div class="input-group input-group-sm" style="width: 220px;">
+                        <span class="input-group-text bg-white text-secondary">
+                            <i class="bi bi-collection"></i>
+                        </span>
+                        <select id="study-content-mode-select" class="form-select form-select-sm" disabled>
+                            <option value="fulltext_block" selected>Fulltext (Block)</option>
+                            <option value="fulltext_reflow">Fulltext (Reflow)</option>
+                            <option value="figure">Figures</option>
+                            <option value="table">Tables</option>
+                        </select>
+                    </div>
+                    <div class="vr mx-1"></div>
+                    <span id="matrix-title" class="fw-bold small text-dark">等待任務啟動...</span>
+                </div>
+                <div class="d-flex gap-2">
+                    <button id="btn-media-refresh" class="btn btn-sm btn-outline-secondary" onclick="window.studyView.refreshCurrentMediaAnalysis()" title="重跑目前圖表的 LLM 解說" disabled>
+                        <i class="bi bi-arrow-clockwise"></i> 重跑解說
+                    </button>
+                    <div class="dropdown">
+                        <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                            <i class="bi bi-funnel"></i> 維度篩選
+                        </button>
+                        <ul class="dropdown-menu shadow dropdown-menu-end" id="dimensionFilterMenu" style="max-height: 55vh; overflow-y: auto; overflow-x: hidden; min-width: 280px; width: clamp(280px, 40vw, 420px); max-width: calc(100vw - 24px);">
+                            <li><h6 class="dropdown-header">顯示維度 (Toggle)</h6></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li class="px-3 text-muted small">No matrix loaded.</li>
+                        </ul>
+                    </div>
+                    <button class="btn btn-sm btn-outline-dark" onclick="window.studyView.resetZoom()" title="全螢幕切換 (F11)">
+                        <i class="bi bi-arrows-fullscreen"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div id="matrixContainer" class="matrix-container flex-grow-1">
+                <div class="d-flex flex-column align-items-center justify-content-center h-100 text-muted">
+                    <i class="bi bi-table display-1 opacity-25"></i>
+                    <p class="mt-3">請展開左側欄勾選文獻</p>
+                </div>
+            </div>
+
+            <div id="inline-fulltext-panel" class="h-100 flex-column bg-white d-none" style="display:none;">
+                <div class="p-2 border-bottom bg-light d-flex justify-content-between align-items-center">
+                    <div class="fw-bold text-primary">
+                        <i class="bi bi-file-text me-2"></i>全文閱讀（內嵌）
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-sm btn-outline-secondary" onclick="window.studyView.toggleHighlight()" title="標記選字">
+                            <i class="bi bi-highlighter"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-secondary" onclick="window.studyView.toggleFullscreenPane()" title="切換全螢幕">
+                            <i class="bi bi-arrows-fullscreen"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-secondary" onclick="window.studyView.closeFulltext()" title="返回矩陣">
+                            <i class="bi bi-x-lg"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="flex-grow-1 overflow-auto" style="font-size: 1.05rem; line-height: 1.8;">
+                    <div class="text-center text-muted py-5" id="fulltext-content-placeholder">
+                        <i class="bi bi-book display-4 opacity-25"></i>
+                        <p class="mt-3">點擊文獻列表中的「閱讀」按鈕載入全文</p>
+                    </div>
+                    <div id="fulltext-content" style="display: none;"></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="aux-pane" class="bg-white border-start d-flex flex-column">
+            
+            <div class="d-flex flex-column h-50 border-bottom" style="min-height: 200px;">
+                <div class="p-2 bg-light border-bottom fw-bold text-primary d-flex justify-content-between align-items-center">
+                    <span><i class="bi bi-robot me-2"></i>AI 家教 (Task 7)</span>
+                    <span class="badge bg-secondary" id="chat-context-badge" title="Current Context">Context: None</span>
+                </div>
+                
+                <div id="chat-history" class="flex-grow-1 p-3 overflow-auto bg-white">
+                    <div class="text-center text-muted small mt-4">
+                        <i class="bi bi-lightbulb mb-2 fs-4"></i><br>
+                        點擊左側矩陣單元格，<br>AI 將針對該內容進行解說。
+                    </div>
+                </div>
+                
+                <div class="p-2 border-top bg-light">
+                    <div class="input-group input-group-sm">
+                        <input type="text" id="chat-input" class="form-control" placeholder="提問... (Enter)">
+                        <button class="btn btn-primary" onclick="window.studyChat.sendMessage()">
+                            <i class="bi bi-send-fill"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="d-flex flex-column h-50 bg-light" style="min-height: 150px;">
+                <div class="p-2 border-bottom fw-bold text-success d-flex justify-content-between">
+                    <span><i class="bi bi-journal-text me-2"></i>研究筆記</span>
+                    <button class="btn btn-xs btn-link text-success p-0" onclick="window.studyCore.saveNotes()">儲存</button>
+                </div>
+                <textarea id="study-notes" class="form-control border-0 flex-grow-1 p-3" 
+                          style="resize: none; background: #fffdf0; font-family: monospace;" 
+                          placeholder="在此記錄您的發現與 Insight... (自動儲存)"></textarea>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/split.js/1.6.0/split.min.js" integrity="sha384-0blL3GqHy6+9fw0cyY2Aoiwg4onHAtslAs4OkqZY7UQBrR65/K4gI+hxLdWDrjpz" crossorigin="anonymous"></script>
+
+<script src="{{ url_for('static', filename='js/study_view.js') }}?v=3.9"></script>
+<script src="{{ url_for('static', filename='js/study_core.js') }}?v=2.4"></script>
+<script src="{{ url_for('static', filename='js/study_chat.js') }}?v=1.4"></script>
+
+<script>
+    // 全局錯誤捕捉
+    window.addEventListener('error', function(event) {
+        console.error('[Global Error]', event.error);
+    });
+
+    // 延遲初始化
+    window.addEventListener('load', function() {
+        console.log('[App] Page fully loaded');
+        initializeApp();
+    });
+    
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('[App] DOM Content Loaded');
+        // 不在這裡初始化，等待 load 事件
+    });
+    
+    function initializeApp() {
+        console.log('[App Init] DOM 完全加載，開始初始化...');
+        
+        try {
+            // 檢查必要的 DOM 元素
+            const requiredElements = [
+                'matrixContainer',
+                'sidebar-pane',
+                'matrix-pane',
+                'aux-pane',
+                'chat-context-badge',
+                'dimensionFilterMenu',
+                'matrix-title',
+                'fulltext-content',
+                'inline-fulltext-panel',
+                'btn-view-matrix',
+                'btn-view-fulltext',
+                'matrix-mode-badge'
+            ];
+            let missingElements = [];
+            
+            requiredElements.forEach(id => {
+                if (!document.getElementById(id)) {
+                    missingElements.push(id);
+                    console.warn(`[App Init] 缺少 DOM 元素: #${id}`);
+                }
+            });
+            
+            if (missingElements.length > 0) {
+                throw new Error(`缺少必要的 DOM 元素: ${missingElements.join(', ')}`);
+            }
+            
+            // 初始化各模組
+            console.log('[App Init] 1/3 - 初始化 StudyView...');
+            window.studyView = new StudyView();
+            console.log('[App Init] ✓ StudyView 初始化完成');
+            
+            console.log('[App Init] 2/3 - 初始化 StudyCore...');
+            window.studyCore = new StudyCore();
+            console.log('[App Init] ✓ StudyCore 初始化完成');
+            
+            console.log('[App Init] 3/3 - 初始化 StudyChat...');
+            window.studyChat = new StudyChat();
+            console.log('[App Init] ✓ StudyChat 初始化完成');
+            
+            // 初始化 Split.js
+            console.log('[App Init] 初始化 Split.js...');
+            if (typeof Split !== 'undefined') {
+                Split(['#matrix-pane', '#aux-pane'], {
+                    sizes: [70, 30], 
+                    minSize: [400, 300],
+                    gutterSize: 8,
+                    snapOffset: 0
+                });
+                console.log('[App Init] ✓ Split.js 初始化完成');
+            } else {
+                console.warn('[App Init] ⚠ Split.js 庫未載入');
+            }
+            
+            // 隱藏加載指示器
+            const loader = document.getElementById('app-loading-indicator');
+            if (loader) {
+                loader.style.display = 'none';
+            }
+            
+            console.log('[App Init] 🎉 初始化成功完成！');
+            
+        } catch (error) {
+            console.error('[App Init ERROR]', error.message);
+            console.error('[App Init STACK]', error.stack);
+            
+            // 隱藏加載指示器並顯示錯誤
+            const loader = document.getElementById('app-loading-indicator');
+            if (loader) {
+                loader.style.display = 'none';
+            }
+            
+            // 顯示友好的錯誤訊息
+            const errorHtml = `
+            <div style="
+                position: fixed;
+                top: 0; left: 0; width: 100%; height: 100%;
+                background: #f8f9fa;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                align-items: center;
+                padding: 20px;
+                font-family: monospace;
+                z-index: 9999;">
+                
+                <div style="
+                    background: white;
+                    border: 2px solid #dc3545;
+                    border-radius: 8px;
+                    padding: 30px;
+                    max-width: 600px;
+                    box-shadow: 0 0 20px rgba(0,0,0,0.1);">
+                    
+                    <h2 style="color: #dc3545; margin-top: 0;">❌ 初始化失敗</h2>
+                    
+                    <p style="color: #666; margin: 15px 0;">
+                        <strong>錯誤訊息：</strong><br>
+                        <code style="
+                            background: #f5f5f5;
+                            padding: 10px;
+                            border-left: 3px solid #dc3545;
+                            display: block;
+                            margin: 10px 0;
+                            overflow-x: auto;
+                        ">${error.message}</code>
+                    </p>
+                    
+                    <p style="color: #999; font-size: 12px; margin: 15px 0;">
+                        <strong>詳細資訊：</strong><br>
+                        <code style="
+                            background: #f5f5f5;
+                            padding: 10px;
+                            border-left: 3px solid #999;
+                            display: block;
+                            margin: 10px 0;
+                            overflow-x: auto;
+                            max-height: 200px;
+                            overflow-y: auto;
+                        ">${error.stack}</code>
+                    </p>
+                    
+                    <p style="color: #666;">
+                        ✓ 請按 <kbd>F12</kbd> 打開開發者工具 > Console 標籤查看完整錯誤訊息<br>
+                        ✓ 可用的全局物件：
+                        <code style="background: #f5f5f5; padding: 2px 6px;">
+                            window.studyView, window.studyCore, window.studyChat
+                        </code>
+                    </p>
+                    
+                    <button onclick="location.reload()" style="
+                        background: #007bff;
+                        color: white;
+                        border: none;
+                        padding: 10px 20px;
+                        border-radius: 4px;
+                        cursor: pointer;
+                        font-size: 14px;
+                        margin-top: 10px;">
+                        🔄 重新加載
+                    </button>
+                </div>
+            </div>
+            `;
+            
+            document.body.innerHTML = errorHtml;
+        }
+    }
+</script>
+
+</body>
+</html>

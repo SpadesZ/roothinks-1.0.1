@@ -1,0 +1,300 @@
+/* #路徑(./app/static/css/manuscript.css) */
+/* #版本 v1.2 (Layout Overflow & Toolbar Wrap Fix) */
+/* #更版時間 20260411-1735 */
+
+html,
+body.manuscript-page {
+    height: 100%;
+}
+
+body.manuscript-page {
+    height: 100vh; 
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.manuscript-root {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.manuscript-main {
+    max-width: 1920px;
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Keep all Manuscript modals above workspace/header/fullscreen layers. */
+.modal-backdrop.show {
+    z-index: 11000 !important;
+}
+
+.modal.show {
+    z-index: 11010 !important;
+}
+
+.manu-flex-container {
+    display: flex;
+    width: 100%;
+    flex: 1; 
+    min-height: 0;
+    overflow: hidden;
+    padding-bottom: 5px; 
+}
+
+.research-toolbar {
+    background-color: #fff;
+    position: relative;
+    z-index: 1200;
+    overflow: visible;
+}
+
+.research-toolbar .dropdown-menu {
+    z-index: 1300;
+}
+
+#formalProjectList .dropdown-item {
+    max-width: 100%;
+    white-space: normal;
+    overflow: hidden;
+}
+
+#formalProjectList .dropdown-item .fw-bold {
+    display: block;
+    white-space: normal;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    line-height: 1.35;
+}
+
+#formalProjectList .dropdown-item .small {
+    display: block;
+    white-space: normal;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+}
+
+/* Panels - 更新預設三視窗寬度 */
+.manu-panel {
+    height: 100%;
+    background-color: #fff;
+    border: 1px solid #dee2e6;
+    overflow: hidden;
+    min-height: 0;
+    transition: width 0.2s ease, flex 0.2s ease; /* 增加過場動畫 */
+}
+
+/* Default Widths for 3 Panels */
+.panel-2c { width: 33.33%; display: flex; } /* Fusion */
+.panel-2b { width: 33.33%; display: flex; } /* Editor */
+.panel-2a { width: 33.33%; display: flex; } /* Drafter */
+
+/* 全螢幕模式 (覆蓋整個畫面，包含 Navbar) */
+.fullscreen-mode {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    z-index: 9999 !important;
+    border: none !important;
+}
+
+.drafter-toolbar {
+    background-color: #f8f9fa;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+
+.global-bar,
+.section-toolbar,
+.drafter-toolbar {
+    flex-wrap: wrap;
+    row-gap: 0.35rem;
+    flex-shrink: 0;
+}
+
+.toolbar-wrap .btn-group {
+    flex-wrap: wrap;
+}
+
+.chat-canvas-bg { 
+    background-color: #f0f2f5; 
+    overflow-y: auto; 
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
+.message-bubble {
+    width: 100%;
+    margin-bottom: 15px;
+    display: flex;
+    flex-direction: column;
+}
+
+.message-bubble.user { 
+    align-items: flex-end; 
+}
+.message-bubble.user .bubble-content {
+    background-color: #0d6efd; color: white;
+    border-radius: 15px 15px 0 15px; padding: 10px 15px;
+    text-align: left;
+    max-width: 68%;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+}
+
+.message-bubble.ai { 
+    align-items: flex-start; 
+}
+.message-bubble.ai .bubble-content {
+    background-color: #e8f5e9; color: #212529;
+    border-radius: 15px 15px 15px 0; padding: 10px 15px;
+    border: 1px solid #c8e6c9;
+    max-width: 85%;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+}
+
+.gen-card {
+    background: white; border: 1px solid #ced4da;
+    border-radius: 8px; margin-top: 5px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    overflow: hidden;
+}
+.gen-card-header {
+    background: #f8f9fa; padding: 6px 12px;
+    border-bottom: 1px solid #dee2e6;
+    font-weight: bold; font-size: 0.85rem;
+    display: flex; justify-content: space-between; align-items: center;
+}
+.gen-card-body { padding: 10px; font-size: 0.9rem; max-height: 300px; overflow-y: auto; }
+
+.editor-paper {
+    width: 100%; 
+    max-width: 900px; 
+    overflow-y: auto; 
+    color: #212529; 
+    line-height: 1.8;
+    border: 1px solid #eee;
+    min-height: 0;
+    outline: none;
+    padding: 1.5rem 3rem !important; 
+    background-color: #fff;
+}
+
+.manus-editor-canvas {
+    flex: 1 1 auto;
+    min-height: 0 !important;
+}
+
+.editor-status-bar {
+    flex-shrink: 0;
+}
+
+.editor-card {
+    position: relative;
+    border: 1px solid #e2e8f0;
+    border-left: 4px solid #0d6efd;
+    border-radius: 6px;
+    padding: 15px;
+    margin-bottom: 20px;
+    background-color: #f8f9fa;
+    transition: all 0.2s ease;
+}
+
+.editor-card:hover {
+    border-color: #cbd5e1;
+    border-left-color: #0b5ed7;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    background-color: #fff;
+}
+
+.editor-card .card-actions {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    display: none;
+    gap: 5px;
+    background: rgba(255,255,255,0.95);
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    padding: 2px;
+    z-index: 10;
+}
+
+.editor-card:hover .card-actions { display: flex; }
+
+.editor-card .card-actions button {
+    border: none;
+    background: transparent;
+    color: #64748b;
+    border-radius: 4px;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.editor-card .card-actions button:hover {
+    background: #e9ecef;
+    color: #0d6efd;
+}
+
+.editor-card .card-content {
+    outline: none;
+    min-height: 24px;
+}
+
+/* Resizer */
+.resizer {
+    width: 8px;
+    background-color: #f1f3f5;
+    cursor: col-resize;
+    border-left: 1px solid #dee2e6;
+    border-right: 1px solid #dee2e6;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0; /* 防止被擠壓 */
+}
+.resizer:hover, .resizer.active { background-color: #0d6efd; }
+
+/* 草稿桌布 */
+.draft-card-wrapper {
+    background-color: #fff9e6; 
+    border: 1px solid #ffe69c;
+    border-radius: 8px;
+    padding: 12px;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    width: 100%;
+}
+.draft-card-btn {
+    flex-shrink: 0;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+.draft-card-text {
+    flex-grow: 1;
+    font-family: inherit;
+    line-height: 1.6;
+    color: #212529;
+    word-break: break-word;
+}

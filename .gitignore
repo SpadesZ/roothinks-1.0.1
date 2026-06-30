@@ -1,0 +1,53 @@
+# Local environment and secrets
+.env
+.env.*
+!.env.example
+!.env.*.example
+
+# Python/runtime caches
+__pycache__/
+**/__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+venv/
+.venv/
+env/
+*.egg-info/
+
+# Local data, models, databases, and generated runs
+data/
+instance/
+tmp_*/
+tmp_rerun_backup/
+*.db
+*.sqlite
+*.sqlite3
+*.db-shm
+*.db-wal
+*.log
+*.err.log
+*.out.log
+
+# Debug prompts may contain copied source text or local context.
+debug_task*_prompt*.txt
+
+# Generated media/artifacts
+*.png
+*.jpg
+*.jpeg
+*.pdf
+*.pth
+*.pt
+*.onnx
+*.zip
+*.7z
+*.tar
+*.tar.gz
+
+# OS/editor noise
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
