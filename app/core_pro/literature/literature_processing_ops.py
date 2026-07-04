@@ -143,11 +143,6 @@ def update_paper_status_impl(deps, pid, paper_id, status, log_msg=""):
     except Exception as e:
         deps.logger.error(f"[DB] Failed to update Paper status: {e}")
         deps.db.session.rollback()
-    finally:
-        try:
-            deps.db.session.remove()
-        except Exception:
-            pass
 
 
 def update_paper_metadata_impl(deps, pid, paper_id, meta):
@@ -182,11 +177,6 @@ def update_paper_metadata_impl(deps, pid, paper_id, meta):
     except Exception as e:
         deps.logger.error(f"[DB] Failed to update Paper metadata: {e}")
         deps.db.session.rollback()
-    finally:
-        try:
-            deps.db.session.remove()
-        except Exception:
-            pass
 
 
 def trigger_gold_bridge_impl(deps, pid, paper_id):
