@@ -1,11 +1,19 @@
-#路徑(app/core_pro/literature/literature_bflow.py) #版本 v0.2 #更版時間 20260429
-#功能概要:
-#1. 定義 Flow B 路由依賴資料結構與主執行入口。
-#2. 處理翻譯流程、品質閘門、subprocess 與事件記錄。
-#3. 提供 Flow B runtime helper 供 routes/worker 共同使用。
+# 檔案路徑: app/core_pro/literature/literature_bflow.py
+# 產生時間: 2026-07-04 21:10 +08:00
+# 版本: v0.3
+# 模組定位:
+#   Flow B translation/reflow route adapter and runtime helpers.
+# 主要責任:
+#   1. 驗證 Flow A 產物是否可供 Flow B 翻譯。
+#   2. 排程 local/subprocess translation worker。
+#   3. 產生 reflow artifact 並寫入狀態與事件紀錄。
+# 維護提醒:
+#   - 讀取既有 artifact 時相容 legacy literature layout；寫入仍維持現有 canonical layout。
+#   - 不在此處重建 Paper PK 或改變 Flow A/B 狀態機。
 
 import json
 import os
+import shutil
 import subprocess
 import sys
 import threading
@@ -25,6 +33,106 @@ def _paper_dir(data_root: str, pid: str, paper_id: str, for_write: bool = False)
         for_write=for_write,
         migrate_legacy=True,
     )
+
+
+def _paper_dir_candidates(data_root: str, safe_join_under: Callable[..., str], pid: str, paper_id: str) -> list[str]:
+    primary = _paper_dir(data_root, pid, paper_id, for_write=False)
+    candidates = [primary]
+    try:
+        legacy_dir = safe_join_under(safe_join_under(data_root, pid), paper_id)
+    except Exception:
+        legacy_dir = ""
+    if legacy_dir and legacy_dir not in candidates:
+        candidates.append(legacy_dir)
+    return candidates
+
+
+def _first_existing_candidate(safe_join_under: Callable[..., str], base_dirs: list[str], *parts: str) -> str:
+    fallback = ""
+    for base_dir in base_dirs:
+        candidate = safe_join_under(base_dir, *parts)
+        if not fallback:
+            fallback = candidate
+        if os.path.exists(candidate):
+            return candidate
+    return fallback
+
+
+def _flowb_input_paths(deps: Any, pid: str, paper_id: str, *, primary_dir: str = "") -> dict[str, str]:
+    candidates = [primary_dir] if primary_dir else []
+    for item in _paper_dir_candidates(deps.DATA_ROOT, deps.safe_join_under, pid, paper_id):
+        if item and item not in candidates:
+            candidates.append(item)
+
+    fusion_input = _first_existing_candidate(
+        deps.safe_join_under,
+        candidates,
+        "05_interprets",
+        "fusion",
+        "full_text.json",
+    )
+    summary_input = _first_existing_candidate(
+        deps.safe_join_under,
+        candidates,
+        "05_interprets",
+        "summary.json",
+    )
+
+    existing_trans_candidates = [
+        ("06_translates", "fusion", "full_text_trans.json"),
+        ("05_interprets", "fusion", "full_text_trans.json"),
+        ("05_interprets", "full_text_trans.json"),
+    ]
+    existing_trans_output = ""
+    for parts in existing_trans_candidates:
+        existing_trans_output = _first_existing_candidate(deps.safe_join_under, candidates, *parts)
+        if existing_trans_output and os.path.exists(existing_trans_output):
+            break
+    if existing_trans_output and not os.path.exists(existing_trans_output):
+        existing_trans_output = ""
+
+    return {
+        "fusion_input": fusion_input,
+        "summary_input": summary_input,
+        "existing_trans_output": existing_trans_output,
+    }
+
+
+def _mirror_reflow_to_legacy_if_needed(deps: Any, pid: str, paper_id: str, reflow_path: str, trans_input: str) -> str:
+    if not reflow_path or not trans_input or not os.path.exists(reflow_path):
+        return ""
+    try:
+        legacy_dir = deps.safe_join_under(deps.safe_join_under(deps.DATA_ROOT, pid), paper_id)
+        if not os.path.isdir(legacy_dir):
+            return ""
+        legacy_abs = os.path.normcase(os.path.abspath(legacy_dir))
+        trans_abs = os.path.normcase(os.path.abspath(trans_input))
+        if os.path.commonpath([legacy_abs, trans_abs]) != legacy_abs:
+            return ""
+        legacy_reflow_dir = deps.safe_join_under(legacy_dir, "06_translates", "reflow")
+        os.makedirs(legacy_reflow_dir, exist_ok=True)
+        legacy_reflow_path = deps.safe_join_under(legacy_reflow_dir, "semantic_sections.json")
+        if os.path.normcase(os.path.abspath(legacy_reflow_path)) == os.path.normcase(os.path.abspath(reflow_path)):
+            return ""
+        shutil.copyfile(reflow_path, legacy_reflow_path)
+        return legacy_reflow_path
+    except Exception:
+        return ""
+
+
+def _copy_existing_file_if_missing(source_path: str, target_path: str) -> str:
+    try:
+        if not source_path or not target_path or not os.path.exists(source_path):
+            return ""
+        if os.path.normcase(os.path.abspath(source_path)) == os.path.normcase(os.path.abspath(target_path)):
+            return target_path
+        if os.path.exists(target_path):
+            return target_path
+        os.makedirs(os.path.dirname(target_path), exist_ok=True)
+        shutil.copyfile(source_path, target_path)
+        return target_path
+    except Exception:
+        return ""
 
 
 @dataclass
@@ -105,8 +213,9 @@ def run_translation_impl(deps: FlowBRouteDeps):
                 continue
 
         paper_dir = _paper_dir(deps.DATA_ROOT, pid, pid_paper, for_write=False)
-        fusion_input = deps.safe_join_under(paper_dir, "05_interprets", "fusion", "full_text.json")
-        summary_input = deps.safe_join_under(paper_dir, "05_interprets", "summary.json")
+        input_paths = _flowb_input_paths(deps, pid, pid_paper, primary_dir=paper_dir)
+        fusion_input = input_paths["fusion_input"]
+        summary_input = input_paths["summary_input"]
         # summary.json is optional for Flow B; reflow can still proceed with bilingual content only.
         if not os.path.exists(fusion_input):
             flow_a_not_ready.append(pid_paper)
@@ -154,13 +263,23 @@ def run_translation_impl(deps: FlowBRouteDeps):
             try:
                 started_ts = time.time()
                 paper_dir = _paper_dir(deps.DATA_ROOT, target_pid, pid_paper, for_write=True)
-                fusion_input = deps.safe_join_under(
+                input_paths = _flowb_input_paths(deps, target_pid, pid_paper, primary_dir=paper_dir)
+                fusion_input = input_paths["fusion_input"]
+                summary_input = input_paths["summary_input"]
+                existing_trans_output = input_paths["existing_trans_output"]
+                canonical_fusion_input = deps.safe_join_under(
                     paper_dir,
                     "05_interprets",
                     "fusion",
                     "full_text.json",
                 )
-                summary_input = deps.safe_join_under(paper_dir, "05_interprets", "summary.json")
+                canonical_summary_input = deps.safe_join_under(paper_dir, "05_interprets", "summary.json")
+                mirrored_fusion_input = _copy_existing_file_if_missing(fusion_input, canonical_fusion_input)
+                mirrored_summary_input = _copy_existing_file_if_missing(summary_input, canonical_summary_input)
+                if mirrored_fusion_input:
+                    fusion_input = mirrored_fusion_input
+                if mirrored_summary_input:
+                    summary_input = mirrored_summary_input
                 if not os.path.exists(fusion_input):
                     deps._append_flow_event(
                         target_pid,
@@ -217,9 +336,10 @@ def run_translation_impl(deps: FlowBRouteDeps):
                 result_path = deps.safe_join_under(jobs_dir, "flow_b_result.json")
 
                 # Guard: 若已存在含 content_zh 的翻譯檔，跳過翻譯避免覆蓋好的結果
-                if os.path.exists(trans_output):
+                fast_path_trans_output = existing_trans_output if existing_trans_output else trans_output
+                if os.path.exists(fast_path_trans_output):
                     try:
-                        with open(trans_output, "r", encoding="utf-8") as _tf:
+                        with open(fast_path_trans_output, "r", encoding="utf-8") as _tf:
                             _existing = json.load(_tf)
                         _has_zh = any(
                             isinstance(b, dict) and str(b.get("content_zh", "")).strip()
@@ -227,6 +347,22 @@ def run_translation_impl(deps: FlowBRouteDeps):
                             for b in (p.get("blocks", []) if isinstance(p, dict) else [])
                         )
                         if _has_zh:
+                            canonical_fast_path = fast_path_trans_output
+                            canonical_copy_path = ""
+                            if os.path.normcase(os.path.abspath(fast_path_trans_output)) != os.path.normcase(os.path.abspath(trans_output)):
+                                try:
+                                    os.makedirs(os.path.dirname(trans_output), exist_ok=True)
+                                    if not os.path.exists(trans_output):
+                                        shutil.copyfile(fast_path_trans_output, trans_output)
+                                        canonical_copy_path = trans_output
+                                    canonical_fast_path = trans_output
+                                except Exception as copy_err:
+                                    deps.logger.warning(
+                                        "[FlowB] %s/%s: failed to mirror bilingual output to canonical path: %s",
+                                        target_pid,
+                                        pid_paper,
+                                        copy_err,
+                                    )
                             deps.logger.info(
                                 "[FlowB] %s/%s: trans output already has content_zh, skipping re-translate",
                                 target_pid,
@@ -236,8 +372,15 @@ def run_translation_impl(deps: FlowBRouteDeps):
                                 pid=target_pid,
                                 paper_id=pid_paper,
                                 fusion_input=fusion_input,
-                                trans_output=trans_output,
+                                trans_output=canonical_fast_path,
                                 summary_input=summary_input,
+                            )
+                            legacy_reflow_path = _mirror_reflow_to_legacy_if_needed(
+                                deps,
+                                target_pid,
+                                pid_paper,
+                                reflow_path,
+                                fast_path_trans_output,
                             )
                             llm_ready = bool(reflow_ok and deps._flowb_is_ready_generation_mode(reflow_generation_mode))
                             deps._append_flow_event(
@@ -259,7 +402,11 @@ def run_translation_impl(deps: FlowBRouteDeps):
                                     )
                                 ),
                                 extra={
+                                    "bilingual_input": canonical_fast_path,
+                                    "legacy_bilingual_input": fast_path_trans_output if fast_path_trans_output != canonical_fast_path else "",
+                                    "canonical_bilingual_output": canonical_copy_path,
                                     "reflow_output": reflow_path,
+                                    "legacy_reflow_output": legacy_reflow_path,
                                     "generation_mode": reflow_generation_mode,
                                     "generation_note": reflow_err if reflow_ok else "",
                                 },
@@ -291,7 +438,7 @@ def run_translation_impl(deps: FlowBRouteDeps):
                             trans_exist_err,
                         )
                         # [Fix] 讀取失敗但輸出檔案已存在：保守回寫 ready_B，避免重複翻譯覆蓋好的結果
-                        if os.path.exists(trans_output):
+                        if os.path.exists(fast_path_trans_output):
                             deps._append_flow_event(
                                 target_pid,
                                 pid_paper,

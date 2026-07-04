@@ -1,6 +1,15 @@
-#路徑(./app/core_proc/manuscript/manuscript_ruling.py)
-#版本 v0.1
-#更版時間 20260318-1000
+# 檔案路徑: app/core_pro/manuscript/manuscript_ruling.py
+# 產生時間: 2026-07-04 19:10 +08:00
+# 版本: v0.2
+# 模組定位:
+#   Manuscript 規則引擎與上下文管制中樞。
+# 主要責任:
+#   1. 攔截缺 title 的生成請求。
+#   2. 彙整 history / upstream / paragraph-level injected context。
+#   3. 寫入 context audit sidecar 以保留 provenance。
+# 維護提醒:
+#   - 本檔只接最小 context injection，不改 Manuscript 生成主流程。
+# -----------------------------------------------------------------------------
 
 import os
 import json
@@ -44,16 +53,43 @@ class ManuscriptRuling:
             upstream_ctx = cls._load_upstream_context(pid)
             if upstream_ctx:
                 final_context = f"{upstream_ctx}\n\n{final_context}".strip()
-                
-        # (預留) 未來整合 context_inject 模組
-        # if section == 'introduction':
-        #     final_context += ContextInjector(pid).get_context_for_section('introduction')
+
+        injected_context_items = []
+        context_audit_path = ""
+        if pid and section:
+            try:
+                from app.core_pro.manuscript.context_audit import write_context_audit
+                from app.core_pro.manuscript.context_inject import build_injected_context_block, retrieve_paragraph_context
+
+                injected_context_items = retrieve_paragraph_context(
+                    project_id=pid,
+                    section_title=section,
+                    paragraph_goal=current_context or "",
+                    draft_text=final_context,
+                    max_tokens=1200,
+                    top_k=8,
+                )
+                injected_block = build_injected_context_block(injected_context_items)
+                if injected_block:
+                    final_context = f"{injected_block}\n\n{final_context}".strip()
+                    context_audit_path = write_context_audit(
+                        project_id=pid,
+                        section_id=section,
+                        context_items=injected_context_items,
+                        prompt=final_context,
+                    )
+            except Exception:
+                # Context injection is value-add; generation should degrade, not crash.
+                injected_context_items = []
         
         # --- 規則 3: 回傳放行狀態與準備完畢的數據 ---
         return {
             "ok": True,
             "context_text": final_context,
-            "has_attachment": attachment is not None
+            "has_attachment": attachment is not None,
+            "injected_context_ids": [x.get("source_id") for x in injected_context_items],
+            "injected_context_fingerprints": [x.get("fingerprint") for x in injected_context_items],
+            "context_audit_path": context_audit_path,
         }
 
     @staticmethod

@@ -1,4 +1,11 @@
-#路徑(./app/__init__.py) #版本 v1.2 #更版時間 20260429-0138
+# 檔案路徑: app/__init__.py
+# 產生時間: 2026-07-04 18:55 +08:00
+# 版本: v1.3
+# 模組定位:
+#   Roothinks Flask app factory 與啟動期 DB/runtime 初始化。
+# 維護提醒:
+#   - 本輪只接入 status 常數，避免大規模改動啟動流程。
+# -----------------------------------------------------------------------------
 import json
 import logging
 import os
@@ -20,6 +27,7 @@ from sqlalchemy.pool import NullPool
 from werkzeug.exceptions import HTTPException
 
 from app.security import is_api_request_path, parse_allowed_origins, require_request_auth
+from app.status import ProcessStatus
 from app.system_runtime import apply_cpu_thread_limit_env, setup_system_logging, start_system_monitor
 
 LOGGER = logging.getLogger("roothinks.app")
@@ -217,7 +225,7 @@ def _reset_stale_papers():
         if not is_stale:
             continue
         row.interpretation_status = Paper.STATUS_FAILED
-        row.process_status = "error"
+        row.process_status = ProcessStatus.FAILED.value
         row.process_log = (row.process_log or "") + "\n[startup-recover] stale running task reset."
         changed += 1
 
@@ -291,6 +299,8 @@ def create_app(test_config=None):
 
     if test_config:
         app.config.from_mapping(test_config)
+    if app.config.get("TESTING") and not os.environ.get("SOCKETIO_ASYNC_MODE"):
+        app.config["SOCKETIO_ASYNC_MODE"] = "threading"
 
     # Runtime logging + CPU limits (available to Flow A / translation workers).
     log_info = setup_system_logging(root_dir)

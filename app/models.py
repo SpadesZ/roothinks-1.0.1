@@ -1,8 +1,22 @@
-#路徑(./app/models.py) #版本 v1.4 #更版時間 20260225-1600
+# 檔案路徑: app/models.py
+# 產生時間: 2026-07-04 18:55 +08:00
+# 版本: v1.5
+# 模組定位:
+#   Roothinks Flask-SQLAlchemy domain models。
+# 主要責任:
+#   1. 保存 Project / Paper / ConfigKV 等既有模型。
+#   2. 新增 EvidenceSegment 作為本地 evidence index，不改 Paper 複合主鍵。
+# 維護提醒:
+#   - Paper 複合主鍵是高風險 legacy schema，本輪只新增 migration plan，不重建。
+# -----------------------------------------------------------------------------
 from app import db
 from datetime import datetime, timezone
 import json
 import logging
+
+from app.errors import AppError
+from app.status import ProcessStatus
+from app.utils.json_safe import safe_json_loads
 
 LOGGER = logging.getLogger("models")
 
@@ -82,6 +96,23 @@ class MetadataIndex(db.Model):
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
 
+class EvidenceSegment(db.Model):
+    __tablename__ = 'evidence_segments'
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    project_id = db.Column(db.String(50), index=True, nullable=False)
+    source_type = db.Column(db.String(50), index=True, nullable=False)
+    source_id = db.Column(db.String(255), index=True, nullable=False)
+    paper_id = db.Column(db.String(120), index=True, nullable=True)
+    segment_id = db.Column(db.String(120), index=True, nullable=True)
+    title = db.Column(db.String(500), nullable=True)
+    text = db.Column(db.Text, nullable=False)
+    content_hash = db.Column(db.String(64), index=True, nullable=False)
+    metadata_json = db.Column(db.Text, nullable=True)
+    created_at = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
+    updated_at = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+
+
 class Paper(db.Model):
     __tablename__ = 'papers'
 
@@ -100,7 +131,7 @@ class Paper(db.Model):
     journal = db.Column(db.String(200), nullable=True)
     publish_date = db.Column(db.String(50), nullable=True)
 
-    process_status = db.Column(db.String(20), default='idle')
+    process_status = db.Column(db.String(20), default=ProcessStatus.PENDING.value)
     process_log = db.Column(db.Text, default='')
     result_json = db.Column(db.Text, default='{}')
     interpretation_status = db.Column(db.String(20), default=STATUS_PENDING)
@@ -114,12 +145,22 @@ class Paper(db.Model):
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     updated_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
 
-    def get_results(self):
+    def get_results(self, *, strict: bool = False):
         try:
-            return json.loads(self.result_json) if self.result_json else {}
-        except Exception:
+            return safe_json_loads(
+                self.result_json,
+                default={},
+                context=f"Paper.result_json pid={self.pid} paper_id={self.paper_id}",
+            )
+        except AppError as exc:
             LOGGER.exception("Failed to parse paper.result_json")
-            return {}
+            if strict:
+                raise
+            return {
+                "status": "invalid_json",
+                "error_code": exc.code.value,
+                "message": exc.message,
+            }
 
 
 class ConfigKV(db.Model):

@@ -1,8 +1,12 @@
-#路徑(app/core_pro/literature/literature_processing_ops.py) #版本 v0.2 #更版時間 20260430-1710
+# 檔案路徑: app/core_pro/literature/literature_processing_ops.py
+# 產生時間: 2026-07-04 19:30 +08:00
+# 版本: v0.3
 #功能概要:
 #1. 承載 status/bridge/correction/full_json 等重邏輯實作。
 #2. 供 literature_routes.py 薄 wrapper 呼叫，降低主檔體積。
 #3. 維持既有資料流程與狀態機行為一致。
+# 維護提醒:
+# - 本輪補 artifact legacy fallback 與刪除清理，不改 Flow A/B 狀態機。
 
 import json
 import os
@@ -356,22 +360,23 @@ def delete_paper_impl(deps):
 
     try:
         project_dir = deps._get_project_dir(pid)
-        paper_dir = _paper_dir(deps, pid, paper_id, for_write=True)
-        paper_dir_real = os.path.realpath(paper_dir)
-        literature_root_real = os.path.realpath(deps._get_literature_dir(pid))
+        canonical_paper_dir = deps.safe_join_under(deps._get_literature_dir(pid), "papers", paper_id)
+        legacy_paper_dir = deps.safe_join_under(project_dir, paper_id)
         project_dir_real = os.path.realpath(project_dir)
-        if os.path.commonpath([project_dir_real, paper_dir_real]) != project_dir_real:
-            return jsonify({"status": "error", "message": "Invalid paper path"}), 400
-        if os.path.commonpath([literature_root_real, paper_dir_real]) != literature_root_real:
-            return jsonify({"status": "error", "message": "Paper path not under literature module"}), 400
-        if os.path.islink(paper_dir):
-            return jsonify({"status": "error", "message": "Refusing to delete symlink path"}), 400
 
-        if os.path.exists(paper_dir):
-            import shutil
+        deleted_dirs = []
+        for paper_dir in [canonical_paper_dir, legacy_paper_dir]:
+            paper_dir_real = os.path.realpath(paper_dir)
+            if os.path.commonpath([project_dir_real, paper_dir_real]) != project_dir_real:
+                return jsonify({"status": "error", "message": "Invalid paper path"}), 400
+            if os.path.islink(paper_dir):
+                return jsonify({"status": "error", "message": "Refusing to delete symlink path"}), 400
+            if os.path.exists(paper_dir):
+                import shutil
 
-            shutil.rmtree(paper_dir)
-            deps.logger.info(f"Deleted paper directory: {paper_dir}")
+                shutil.rmtree(paper_dir)
+                deleted_dirs.append(paper_dir)
+                deps.logger.info(f"Deleted paper directory: {paper_dir}")
 
         paper = deps.Paper.query.filter_by(pid=pid, paper_id=paper_id).first()
         if paper:
@@ -379,7 +384,7 @@ def delete_paper_impl(deps):
             deps.db.session.commit()
             deps.logger.info(f"Deleted paper record: {paper_id}")
 
-        return jsonify({"status": "success", "message": "Paper deleted successfully"})
+        return jsonify({"status": "success", "message": "Paper deleted successfully", "deleted_dirs": deleted_dirs})
     except Exception as e:
         return deps._internal_error("delete_paper", e)
 
@@ -440,7 +445,13 @@ def get_status_impl(deps, pid):
             )
 
             interp_dir = os.path.join(paper_path, "05_interprets")
-            summary_path = os.path.join(interp_dir, "summary.json")
+            legacy_paper_path = os.path.join(deps.DATA_ROOT, pid, paper_id)
+            legacy_interp_dir = os.path.join(legacy_paper_path, "05_interprets")
+            summary_candidates = [
+                os.path.join(interp_dir, "summary.json"),
+                os.path.join(legacy_interp_dir, "summary.json"),
+            ]
+            summary_path = next((p for p in summary_candidates if os.path.exists(p)), summary_candidates[0])
             has_summary = False
             summary_error = None
 
@@ -484,12 +495,22 @@ def get_status_impl(deps, pid):
             stk_a_dir = os.path.join(paper_path, "01_intermediate", "stack_a")
             stk_b_dir = os.path.join(paper_path, "01_intermediate", "stack_b")
             fusion_dir = os.path.join(interp_dir, "fusion")
+            legacy_fusion_dir = os.path.join(legacy_interp_dir, "fusion")
             trans_base_dir = os.path.join(paper_path, "06_translates")
             nllb_dir = os.path.join(trans_base_dir, "nllb")
             judge_dir = os.path.join(trans_base_dir, "judge")
             trans_fusion_dir = os.path.join(trans_base_dir, "fusion")
-            full_text_path = os.path.join(fusion_dir, "full_text.json")
-            full_text_trans_path = os.path.join(trans_fusion_dir, "full_text_trans.json")
+            full_text_candidates = [
+                os.path.join(fusion_dir, "full_text.json"),
+                os.path.join(legacy_fusion_dir, "full_text.json"),
+            ]
+            full_text_trans_candidates = [
+                os.path.join(trans_fusion_dir, "full_text_trans.json"),
+                os.path.join(legacy_interp_dir, "full_text_trans.json"),
+                os.path.join(legacy_fusion_dir, "full_text_trans.json"),
+            ]
+            full_text_path = next((p for p in full_text_candidates if os.path.exists(p)), full_text_candidates[0])
+            full_text_trans_path = next((p for p in full_text_trans_candidates if os.path.exists(p)), full_text_trans_candidates[0])
             reflow_semantic_path = os.path.join(trans_base_dir, "reflow", "semantic_sections.json")
             guide_path = os.path.join(rec_dir, "temp", "full_text_context_guide.json")
 
@@ -605,7 +626,7 @@ def get_status_impl(deps, pid):
                         )
                     except Exception as _heal_err:
                         deps.logger.warning("[status] Auto-heal failed for %s/%s: %s", pid, paper_id, _heal_err)
-            elif has_trans_b and not has_trans_b_ready:
+            elif has_trans_b and not has_trans_b_ready and db_flowb_busy:
                 stale_sec = max(60, int(os.environ.get("LITERATURE_FLOWB_STALE_SEC", "900")))
                 updated = db_row.updated_at if db_row else None
                 is_stale = True
@@ -791,6 +812,11 @@ def get_region_image_impl(deps):
 
     paper_root = _paper_dir(deps, pid, paper_id, for_write=False)
     paper_dir = deps.safe_join_under(paper_root, "00_origins")
+    legacy_paper_root = deps.safe_join_under(deps.DATA_ROOT, pid, paper_id)
+    legacy_paper_dir = deps.safe_join_under(legacy_paper_root, "00_origins")
+    search_dirs = [paper_dir]
+    if legacy_paper_dir != paper_dir:
+        search_dirs.append(legacy_paper_dir)
 
     deps.logger.info(f"[get_region_image] Looking for image: pid={pid}, paper_id={paper_id}, page={page}")
     deps.logger.info(f"[get_region_image] Searching in directory: {paper_dir}")
@@ -801,19 +827,21 @@ def get_region_image_impl(deps):
         deps.logger.warning(f"[get_region_image] Asset check failed: {msg}")
 
     try:
-        for ext in ['jpg', 'jpeg', 'png']:
-            img_path = deps.safe_join_under(paper_dir, f"page_{page}.{ext}")
-            deps.logger.info(f"[get_region_image] Trying: {img_path} - Exists: {os.path.exists(img_path)}")
-            if os.path.exists(img_path):
-                mimetype = f'image/{"jpeg" if ext in ["jpg", "jpeg"] else ext}'
-                deps.logger.info(f"[get_region_image] Found! Returning: {img_path}")
-                return send_file(img_path, mimetype=mimetype, as_attachment=False)
+        for candidate_dir in search_dirs:
+            for ext in ['jpg', 'jpeg', 'png']:
+                img_path = deps.safe_join_under(candidate_dir, f"page_{page}.{ext}")
+                deps.logger.info(f"[get_region_image] Trying: {img_path} - Exists: {os.path.exists(img_path)}")
+                if os.path.exists(img_path):
+                    mimetype = f'image/{"jpeg" if ext in ["jpg", "jpeg"] else ext}'
+                    deps.logger.info(f"[get_region_image] Found! Returning: {img_path}")
+                    return send_file(img_path, mimetype=mimetype, as_attachment=False)
 
-        if os.path.exists(paper_dir):
-            files = os.listdir(paper_dir)
-            deps.logger.warning(f"[get_region_image] Image not found. Files in directory: {files}")
-        else:
-            deps.logger.warning(f"[get_region_image] Directory does not exist: {paper_dir}")
+        for candidate_dir in search_dirs:
+            if os.path.exists(candidate_dir):
+                files = os.listdir(candidate_dir)
+                deps.logger.warning(f"[get_region_image] Image not found. Files in directory: {files}")
+            else:
+                deps.logger.warning(f"[get_region_image] Directory does not exist: {candidate_dir}")
 
         return "Image not found", 404
     except Exception as e:
@@ -835,13 +863,18 @@ def get_block_json_impl(deps):
     except deps.BadRequest:
         return jsonify({"status": "error", "message": "Invalid paper_id"}), 400
 
+    paper_root = _paper_dir(deps, pid, paper_id, for_write=False)
+    base_dir = deps.safe_join_under(paper_root, "03_recognizes")
+    legacy_paper_root = deps.safe_join_under(deps.DATA_ROOT, pid, paper_id)
+    legacy_base_dir = deps.safe_join_under(legacy_paper_root, "03_recognizes")
+    if not os.path.exists(base_dir) and os.path.exists(legacy_base_dir):
+        base_dir = legacy_base_dir
+
     ok, msg = deps._ensure_task4_assets(pid, paper_id)
-    if not ok:
+    if not ok and not os.path.exists(base_dir):
         deps.logger.warning("[get_block_json] task4 assets unavailable for %s/%s: %s", pid, paper_id, msg)
         return jsonify({"status": "error", "message": "Task4 assets unavailable"}), 503
 
-    paper_root = _paper_dir(deps, pid, paper_id, for_write=False)
-    base_dir = deps.safe_join_under(paper_root, "03_recognizes")
     safe_block = deps.re.sub(r"[^A-Za-z0-9_-]+", "", str(block or ""))
     fixed_path = deps.safe_join_under(base_dir, f"{safe_block}_fixed.json")
     raw_path = deps.safe_join_under(base_dir, f"{safe_block}_raw.json")
@@ -942,13 +975,18 @@ def get_block_manifest_impl(deps):
     except deps.BadRequest:
         return jsonify({"status": "error", "message": "Invalid paper_id"}), 400
 
+    paper_root = _paper_dir(deps, pid, paper_id, for_write=False)
+    recog_dir = deps.safe_join_under(paper_root, "03_recognizes")
+    legacy_paper_root = deps.safe_join_under(deps.DATA_ROOT, pid, paper_id)
+    legacy_recog_dir = deps.safe_join_under(legacy_paper_root, "03_recognizes")
+    if not os.path.exists(recog_dir) and os.path.exists(legacy_recog_dir):
+        recog_dir = legacy_recog_dir
+
     ok, msg = deps._ensure_task4_assets(pid, paper_id)
-    if not ok:
+    if not ok and not os.path.exists(recog_dir):
         deps.logger.warning("[get_block_manifest] task4 assets unavailable for %s/%s: %s", pid, paper_id, msg)
         return jsonify({"status": "error", "message": "Task4 assets unavailable"}), 503
 
-    paper_root = _paper_dir(deps, pid, paper_id, for_write=False)
-    recog_dir = deps.safe_join_under(paper_root, "03_recognizes")
     if not os.path.exists(recog_dir):
         return jsonify({"status": "success", "pages": []})
 
@@ -1061,10 +1099,15 @@ def get_full_json_impl(deps):
         return jsonify({"error": "Invalid paper_id"}), 400
 
     p_dir = _paper_dir(deps, pid, paper_id, for_write=False)
+    legacy_p_dir = deps.safe_join_under(deps.safe_join_under(deps.DATA_ROOT, pid), paper_id)
 
     try:
         if type_ == 'summary':
-            path = os.path.join(p_dir, "05_interprets", "summary.json")
+            summary_candidates = [
+                os.path.join(p_dir, "05_interprets", "summary.json"),
+                os.path.join(legacy_p_dir, "05_interprets", "summary.json"),
+            ]
+            path = next((p for p in summary_candidates if os.path.exists(p)), summary_candidates[0])
             if os.path.exists(path):
                 with open(path, 'r', encoding='utf-8') as f:
                     data = json.load(f)
@@ -1093,9 +1136,14 @@ def get_full_json_impl(deps):
             return jsonify({"abstract_zh": "Summary not yet generated.", "key_findings": []})
 
         elif type_ == 'fulltext':
-            path = os.path.join(p_dir, "06_translates", "fusion", "full_text_trans.json")
-            if not os.path.exists(path):
-                path = os.path.join(p_dir, "05_interprets", "fusion", "full_text.json")
+            fulltext_candidates = [
+                os.path.join(p_dir, "06_translates", "fusion", "full_text_trans.json"),
+                os.path.join(p_dir, "05_interprets", "fusion", "full_text.json"),
+                os.path.join(legacy_p_dir, "05_interprets", "full_text_trans.json"),
+                os.path.join(legacy_p_dir, "05_interprets", "fusion", "full_text_trans.json"),
+                os.path.join(legacy_p_dir, "05_interprets", "fusion", "full_text.json"),
+            ]
+            path = next((p for p in fulltext_candidates if os.path.exists(p)), fulltext_candidates[0])
 
             if os.path.exists(path):
                 with open(path, 'r', encoding='utf-8') as f:

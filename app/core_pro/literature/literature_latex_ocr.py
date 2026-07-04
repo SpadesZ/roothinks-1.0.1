@@ -1,4 +1,11 @@
-#路徑(./app/core_pro/literature/literature_latex_ocr.py) #版本 v0.1 #更版時間 20260430-1412
+# 檔案路徑: app/core_pro/literature/literature_latex_ocr.py
+# 產生時間: 2026-07-04 19:12 +08:00
+# 版本: v0.2
+# 模組定位:
+#   Equation OCR adapter chain。
+# 維護提醒:
+#   - 本輪只補結構化 OCR failure metadata，不改 OCR 演算法。
+# -----------------------------------------------------------------------------
 import json
 import logging
 import os
@@ -10,6 +17,7 @@ from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeou
 from typing import Any, Dict, List, Optional
 
 import cv2
+from app.errors import ErrorCode
 
 logger = logging.getLogger("LiteratureLatexOCR")
 
@@ -296,7 +304,7 @@ class LatexOCREngine:
                 return res
             return {"ok": False, "msg": "dispatch_invalid_response"}
         except FuturesTimeout:
-            return {"ok": False, "msg": f"dispatch_timeout:{self.dispatch_timeout_sec}s"}
+            return {"ok": False, "msg": f"dispatch_timeout:{self.dispatch_timeout_sec}s", "error_code": ErrorCode.OCR_TIMEOUT.value}
         except Exception as e:
             return {"ok": False, "msg": f"dispatch_exception:{type(e).__name__}:{e}"}
         finally:
@@ -465,6 +473,7 @@ Metadata:
             "failure_reason": r,
             "marker": self.FAILED_EQUATION_TAG,
             "status": "failed",
+            "error_code": ErrorCode.OCR_TIMEOUT.value if "timeout" in r else ErrorCode.OCR_DEPENDENCY_MISSING.value if "not_configured" in r or "import_failed" in r else ErrorCode.UNKNOWN.value,
         }
 
     def _build_prompt(self, *, seq_id: str, page_num: int, bbox: List[int], page_w: int, page_h: int) -> str:

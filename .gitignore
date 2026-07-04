@@ -20,15 +20,21 @@ env/
 data/
 instance/
 tmp_*/
+tmp*/
 tmp_rerun_backup/
+*_backup/
 *.db
 *.sqlite
 *.sqlite3
 *.db-shm
 *.db-wal
 *.log
+debug_*
 *.err.log
 *.out.log
+.cache/
+cache/
+.local/
 
 # Debug prompts may contain copied source text or local context.
 debug_task*_prompt*.txt

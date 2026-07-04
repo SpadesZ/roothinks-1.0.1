@@ -1,3 +1,16 @@
+# 檔案路徑: app/services/context_chain_service.py
+# 產生時間: 2026-07-04 19:00 +08:00
+# 版本: v0.2
+# 模組定位:
+#   Context Chain Orchestrator，負責 L1/L2/L3/KG persistence 與檢索。
+# 主要責任:
+#   1. 保存 context_chain.json 並維持 schema_version。
+#   2. 以 env config 控制 L2 packet 上限。
+#   3. 腐敗 context 檔案回傳明確 failed 狀態，不假裝成功。
+# 維護提醒:
+#   - L1/L2/L3 結構需向後相容；schema upgrade 只能補欄位，不移除舊資料。
+# -----------------------------------------------------------------------------
+
 import hashlib
 import json
 import math
@@ -6,7 +19,50 @@ import time
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 from filelock import FileLock
+from app.errors import AppError, ErrorCode, ErrorSeverity
 from app.security import build_lock_path
+
+
+CURRENT_CONTEXT_CHAIN_SCHEMA_VERSION = 1
+
+
+def _env_int(key: str, default: int, *, minimum: int = 1, maximum: int = 1000) -> int:
+    raw = str(os.environ.get(key, "") or "").strip()
+    if not raw:
+        return default
+    try:
+        value = int(raw)
+    except Exception:
+        return default
+    return max(minimum, min(maximum, value))
+
+
+def upgrade_context_chain_schema(data: Dict[str, Any]) -> Dict[str, Any]:
+    if not isinstance(data, dict):
+        raise AppError(
+            ErrorCode.CONTEXT_CHAIN_INVALID,
+            "context_chain payload must be a JSON object",
+            ErrorSeverity.RECOVERABLE,
+        )
+    upgraded = dict(data)
+    raw_version = upgraded.get("schema_version", 0)
+    try:
+        version = int(raw_version or 0)
+    except Exception:
+        version = 0
+    if version < 1:
+        upgraded["schema_version"] = CURRENT_CONTEXT_CHAIN_SCHEMA_VERSION
+        upgraded.setdefault("layers", {})
+        upgraded.setdefault("provenance_ledger", [])
+    elif version > CURRENT_CONTEXT_CHAIN_SCHEMA_VERSION:
+        raise AppError(
+            ErrorCode.CONTEXT_CHAIN_INVALID,
+            f"Unsupported context_chain schema_version={version}",
+            ErrorSeverity.USER_ACTION_REQUIRED,
+        )
+    else:
+        upgraded["schema_version"] = CURRENT_CONTEXT_CHAIN_SCHEMA_VERSION
+    return upgraded
 
 
 class ContextChainService:
@@ -26,7 +82,7 @@ class ContextChainService:
             base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
             self.data_root = os.path.join(base_dir, "data")
         self._MAX_LEDGER_ENTRIES = 500
-        self._MAX_L2_PACKETS = 8
+        self._MAX_L2_PACKETS = _env_int("CONTEXT_CHAIN_L2_MAX_PACKETS", 8, minimum=1, maximum=100)
         self._ACCESS_LEVELS = {
             "public": 0,
             "internal": 1,
@@ -56,18 +112,25 @@ class ContextChainService:
                 if not os.path.exists(path):
                     return fallback
                 with open(path, "r", encoding="utf-8") as f:
-                    return json.load(f)
-        except Exception:
+                    return upgrade_context_chain_schema(json.load(f))
+        except AppError:
+            raise
+        except Exception as exc:
             # Try one-step backup recovery when the primary file is corrupted.
             backup_path = f"{path}.bak"
             if os.path.exists(backup_path):
                 try:
                     with FileLock(self._lock_path(backup_path), timeout=5):
                         with open(backup_path, "r", encoding="utf-8") as f:
-                            return json.load(f)
+                            return upgrade_context_chain_schema(json.load(f))
                 except Exception:
-                    return fallback
-            return fallback
+                    pass
+            raise AppError(
+                ErrorCode.CONTEXT_CHAIN_INVALID,
+                f"Failed to load context_chain JSON from {os.path.basename(path)}",
+                ErrorSeverity.RECOVERABLE,
+                exc,
+            ) from exc
 
     def _safe_write_json(self, path: str, obj: Dict[str, Any]) -> None:
         tmp_path = f"{path}.tmp"
@@ -195,6 +258,7 @@ class ContextChainService:
 
     def _empty_chain(self, pid: str) -> Dict[str, Any]:
         return {
+            "schema_version": CURRENT_CONTEXT_CHAIN_SCHEMA_VERSION,
             "project_id": pid,
             "version": 0,
             "updated_at": self._now_iso(),
@@ -291,9 +355,18 @@ class ContextChainService:
 
     def load_chain(self, pid: str) -> Dict[str, Any]:
         path = self._chain_path(pid)
-        return self._safe_load_json(path, self._empty_chain(pid))
+        try:
+            chain = self._safe_load_json(path, self._empty_chain(pid))
+            return upgrade_context_chain_schema(chain)
+        except AppError as exc:
+            chain = self._empty_chain(pid)
+            chain["load_status"] = "failed"
+            chain["error_code"] = exc.code.value
+            chain["error_message"] = exc.message
+            return chain
 
     def save_chain(self, pid: str, chain: Dict[str, Any]) -> None:
+        chain = upgrade_context_chain_schema(chain)
         ledger = chain.get("provenance_ledger")
         if isinstance(ledger, list) and len(ledger) > self._MAX_LEDGER_ENTRIES:
             chain["provenance_ledger"] = ledger[-self._MAX_LEDGER_ENTRIES :]

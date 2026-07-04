@@ -198,7 +198,7 @@ def test_roothinks_full_user_journey_e2e(app_bundle, monkeypatch):
 
     class FakePipeline:
         def run_pipeline(self, pid, paper_id, source_pdf):
-            paper_dir = data_root / pid / paper_id
+            paper_dir = data_root / pid / "literature" / "papers" / paper_id
             origin_dir = paper_dir / "00_origins"
             recog_dir = paper_dir / "03_recognizes"
             origin_dir.mkdir(parents=True, exist_ok=True)
@@ -221,7 +221,7 @@ def test_roothinks_full_user_journey_e2e(app_bundle, monkeypatch):
                 json.dump(raw_payload, f, ensure_ascii=False, indent=2)
 
     def fake_trigger_gold_bridge(pid, paper_id):
-        paper_dir = data_root / pid / paper_id
+        paper_dir = data_root / pid / "literature" / "papers" / paper_id
         recog_dir = paper_dir / "03_recognizes"
         interp_dir = paper_dir / "05_interprets"
         fusion_dir = interp_dir / "fusion"
@@ -708,7 +708,7 @@ def test_roothinks_full_user_journey_e2e(app_bundle, monkeypatch):
     assert flow_b["status"] == "success"
     assert paper1 in flow_b["details"]["queued"]
 
-    reflow_path = data_root / formal_pid / paper1 / "06_translates" / "reflow" / "semantic_sections.json"
+    reflow_path = data_root / formal_pid / "literature" / "papers" / paper1 / "06_translates" / "reflow" / "semantic_sections.json"
     assert reflow_path.exists()
     with open(reflow_path, "r", encoding="utf-8") as f:
         reflow_payload = json.load(f)

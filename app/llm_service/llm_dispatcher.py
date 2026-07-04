@@ -1,6 +1,24 @@
-#路徑(./app/llm_service/llm_dispatcher.py) #版本 v0.4 #更版時間 20260419-1530
+# 檔案路徑: app/llm_service/llm_dispatcher.py
+# 產生時間: 2026-07-04 19:10 +08:00
+# 版本: v0.5
+# 模組定位:
+#   LLM task dispatcher：Task ID -> binding -> bus -> provider。
+# 主要責任:
+#   1. 保留既有 tuple/dict 回傳格式。
+#   2. 新增結構化 error_code，避免只靠中文訊息判斷 fatal。
+#   3. 以 opt-in file cache 保守快取成功 response。
+# 維護提醒:
+#   - cache 預設關閉；不可保存 API key 或 connection raw row。
+# -----------------------------------------------------------------------------
 from app.llm_service.llm_model import LLMModel
 from app.llm_service.llm_bus import LlmBus
+from app.errors import AppError, ErrorCode, ErrorSeverity
+from app.services.llm_response_cache import (
+    build_llm_cache_key,
+    is_llm_cache_enabled,
+    load_cached_response,
+    save_cached_response,
+)
 import time
 
 class LlmDispatcher:
@@ -30,7 +48,12 @@ class LlmDispatcher:
             
             # 防呆：檢查是否已綁定
             if not binding or not binding.get('connection_id'):
-                return False, {}, f"Task '{task_id}' 未綁定任何 LLM 線路，請至 LAVA 設定頁進行綁定。"
+                err = AppError(
+                    ErrorCode.LLM_NOT_BOUND,
+                    f"Task '{task_id}' has no LLM binding.",
+                    ErrorSeverity.USER_ACTION_REQUIRED,
+                )
+                return False, {"error_code": err.code.value}, str(err)
             
             conn_id = binding['connection_id']
 
@@ -40,19 +63,40 @@ class LlmDispatcher:
             success, msg = bus.load_from_db(conn_id)
             
             if not success:
-                return False, {}, f"Bus Load Error: {msg}"
+                err = AppError(ErrorCode.LLM_PROVIDER_ERROR, f"Bus Load Error: {msg}")
+                return False, {"error_code": err.code.value}, str(err)
+
+            cache_key = ""
+            if is_llm_cache_enabled() and not images:
+                cache_key = build_llm_cache_key(
+                    task_type=task_id,
+                    prompt=text,
+                    provider=getattr(bus, "_provider_name", "") or "",
+                    model=getattr(bus, "_model_name", "") or "",
+                    params={"max_retries": max_retries},
+                )
+                cached = load_cached_response(cache_key)
+                if cached:
+                    response = dict(cached.get("response") or {})
+                    response["cache_hit"] = True
+                    response["cache_key"] = cache_key
+                    return True, response, "Success"
             
             # 3. 執行生成
             # 調用 Bus 的統一介面發送請求
             ok, res, err = bus.send_message(text, images)
             
             if ok:
+                if cache_key:
+                    save_cached_response(cache_key, {"ok": True, "text": res.get("text", "")})
                 return True, res, "Success"
             else:
-                return False, {}, f"Provider Error: {err}"
+                app_err = AppError(ErrorCode.LLM_PROVIDER_ERROR, f"Provider Error: {err}")
+                return False, {"error_code": app_err.code.value}, str(app_err)
 
         except Exception as e:
-            return False, {}, f"Dispatcher System Error: {str(e)}"
+            app_err = AppError(ErrorCode.LLM_PROVIDER_ERROR, "Dispatcher system error", ErrorSeverity.RECOVERABLE, e)
+            return False, {"error_code": app_err.code.value}, str(app_err)
 
 # [Critical Fix] 實例化全域物件，供 Task 腳本 Import 使用
 dispatcher = LlmDispatcher()
@@ -74,12 +118,17 @@ def dispatch_task(task_id, prompt, priority=5, images=None, max_retries=None):
     for i in range(attempts):
         ok, res, msg = dispatcher.execute(task_id, prompt, images)
         if ok:
-            return {"ok": True, "text": res.get("text", "")}
+            out = {"ok": True, "text": res.get("text", "")}
+            if res.get("cache_hit"):
+                out["cache_hit"] = True
+                out["cache_key"] = res.get("cache_key")
+            return out
 
         last_msg = msg
         # 避免在安全阻擋或設定錯誤時做無效重試
-        fatal_keywords = ["未綁定", "Unknown vendor", "API Key missing", "Blocked by safety filters"]
-        if any(k in (msg or "") for k in fatal_keywords):
+        fatal_error_codes = {ErrorCode.LLM_NOT_BOUND.value, ErrorCode.SECRET_CONFIG_ERROR.value}
+        fatal_keywords = ["Unknown vendor", "API Key missing", "Blocked by safety filters"]
+        if (res or {}).get("error_code") in fatal_error_codes or any(k in (msg or "") for k in fatal_keywords):
             break
 
         if i < attempts - 1:
