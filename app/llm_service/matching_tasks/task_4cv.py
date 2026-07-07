@@ -1,4 +1,21 @@
-#路徑(app/llm_service/matching_tasks/task_4cv.py) #版本 v1.1 #更版時間 20260430-0048
+# 檔案路徑: roothinks/app/llm_service/matching_tasks/task_4cv.py
+# 產生時間: 2026-07-05 01:40 +08:00
+# 版本: v1.2
+# 模組定位:
+#   Task 4: CV Semantic Correction。metadata 抽取、術語 guide 生成、
+#   OCR 文字塊批次修正(純文字 LLM,無 vision)。
+# 主要責任:
+#   1. extract_metadata / generate_context_guide。
+#   2. fix_batch():批次修正 OCR 錯字/斷字/空格。
+# 維護提醒:
+#   - v1.2 起 Equation block 明確排除於純文字修正之外:LLM 看不到圖,
+#     對亂碼公式的「修正」只會是幻覺。低信心公式(equation_failed、
+#     latex_confidence<0.6 或 equation_source 含 fallback)會在 fixed 檔
+#     標記 needs_equation_review=true,由上層決定帶圖重試或人工複核,
+#     原文一律保留不改。
+# 驗證方式:
+#   - .venv/Scripts/python -m pytest test/unit/test_arbiter_equation_chain.py -q
+# ------------------------------------------------------------------------------
 """
 Task 4: CV Semantic Correction
 1. Extract Metadata
@@ -31,12 +48,34 @@ class SemanticCorrector:
         if not isinstance(block, dict):
             return False
         t = str(block.get("type", "") or "").replace("_", "").strip().lower()
+        # v1.2: 公式不進純文字修正——無 vision 的 LLM 只能幻覺式「修」公式。
+        if t == "equation" or bool(block.get("is_equation")):
+            return False
         if t in self.TEXTUAL_TYPES:
             return True
         if "caption" in t:
             return True
         content = str(block.get("content", "") or "").strip()
         return len(content) > 0 and t not in {"figure", "table"}
+
+    @staticmethod
+    def _is_low_confidence_equation(block):
+        """低信心公式:OCR 失敗、信心不足或來自 fallback 引擎。"""
+        if not isinstance(block, dict):
+            return False
+        t = str(block.get("type", "") or "").replace("_", "").strip().lower()
+        if t != "equation" and not bool(block.get("is_equation")):
+            return False
+        if bool(block.get("equation_failed")):
+            return True
+        try:
+            conf = float(block.get("latex_confidence", 0.0) or 0.0)
+        except (TypeError, ValueError):
+            conf = 0.0
+        if conf < 0.6:
+            return True
+        source = str(block.get("equation_source", "") or "").lower()
+        return "fallback" in source or "failed" in source
 
     def extract_metadata(self, pid, paper_id, data_root):
         paper_dir = resolve_literature_paper_dir(
@@ -305,6 +344,9 @@ Text Blocks:
                 if key in fixed_map:
                     b['content'] = fixed_map[key]
                     b['source'] = b.get('source', '') + "_fixed"
+                # v1.2: 低信心公式標記待複核,原文保留,供上層帶圖重試或人工確認。
+                if self._is_low_confidence_equation(b):
+                    b['needs_equation_review'] = True
             os.makedirs(os.path.dirname(dst_path), exist_ok=True)
             with open(dst_path, 'w', encoding='utf-8') as f:
                 json.dump(blocks, f, ensure_ascii=False, indent=2)

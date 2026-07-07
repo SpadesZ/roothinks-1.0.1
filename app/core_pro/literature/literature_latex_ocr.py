@@ -1,11 +1,23 @@
-# 檔案路徑: app/core_pro/literature/literature_latex_ocr.py
-# 產生時間: 2026-07-04 19:12 +08:00
-# 版本: v0.2
+# 檔案路徑: roothinks/app/core_pro/literature/literature_latex_ocr.py
+# 產生時間: 2026-07-05 05:10 +08:00
+# 版本: v0.3
 # 模組定位:
-#   Equation OCR adapter chain。
+#   Equation OCR(LaTeX)引擎。引擎鏈 llm | unimernet | auto,
+#   含 circuit breaker 與 dispatch timeout 保護;不使用 Tesseract。
+# 主要責任:
+#   1. extract_latex():公式 crop -> LaTeX payload(含信心分數)。
+#   2. LLM(task_4cv)與 UniMERNet 後端的調度與失敗分類。
 # 維護提醒:
-#   - 本輪只補結構化 OCR failure metadata，不改 OCR 演算法。
-# -----------------------------------------------------------------------------
+#   - v0.2(1.0.1 線,20260704):補結構化 OCR failure metadata。
+#   - v0.3 合入失敗救援鏈(LITERATURE_LATEX_RETRY=1 預設開):
+#     (a) 首輪後端全失敗時,將 crop 放大 1.6 倍再做一次 LLM 重試
+#         (circuit open 時跳過);
+#     (b) engine_mode=="llm" 且 LLM 失敗時,若 UniMERNet 已配置
+#         (LITERATURE_UNIMERNET_TASK_ID 或 _CMD)則嘗試之。
+#     全部失敗仍回 failed marker,不產生假結果。
+# 驗證方式:
+#   - pytest test/unit/test_arbiter_equation_chain.py -q
+# ------------------------------------------------------------------------------
 import json
 import logging
 import os
@@ -51,6 +63,9 @@ class LatexOCREngine:
         self.dispatch_timeout_sec = self._to_int_env("LITERATURE_LATEX_DISPATCH_TIMEOUT_SEC", 40, low=5, high=300)
         self.circuit_fail_limit = self._to_int_env("LITERATURE_LATEX_CIRCUIT_FAIL_LIMIT", 3, low=1, high=20)
         self.circuit_open_sec = self._to_int_env("LITERATURE_LATEX_CIRCUIT_OPEN_SEC", 120, low=10, high=1800)
+        # v0.2: 失敗救援鏈開關(放大重試 + llm 模式下的 unimernet 備援)
+        self.retry_enabled = self._to_bool_env(os.environ.get("LITERATURE_LATEX_RETRY"), True)
+        self.retry_upscale = self._to_float_env("LITERATURE_LATEX_RETRY_UPSCALE", 1.6, low=1.1, high=3.0)
 
         self._llm_fail_streak = 0
         self._unimernet_fail_streak = 0
@@ -122,6 +137,37 @@ class LatexOCREngine:
                 l_reason = str(lret.get("reason", "llm_failed") or "llm_failed")
                 reasons.append(l_reason)
 
+            # v0.2 救援鏈 (b): llm 模式失敗且 UniMERNet 已配置 -> 嘗試 UniMERNet。
+            if mode == "llm" and (self.unimernet_task_id or self.unimernet_cmd):
+                uret = self._extract_with_unimernet(
+                    image_path=tmp_path,
+                    seq_id=seq_id,
+                    page_num=page_num,
+                    bbox=bbox or [0, 0, 0, 0],
+                    page_w=page_w,
+                    page_h=page_h,
+                )
+                if bool(uret.get("ok")):
+                    return dict(uret.get("payload") or {})
+                reasons.append(str(uret.get("reason", "unimernet_failed") or "unimernet_failed"))
+
+            # v0.2 救援鏈 (a): 首輪全失敗 -> 放大 crop 再做一次 LLM 重試。
+            if self.retry_enabled and not self._is_circuit_open("llm"):
+                retry_ret = self._retry_llm_with_upscale(
+                    region_image=region_image,
+                    seq_id=seq_id,
+                    page_num=page_num,
+                    bbox=bbox or [0, 0, 0, 0],
+                    page_w=page_w,
+                    page_h=page_h,
+                    tmp_dir=tmp_dir,
+                )
+                if bool(retry_ret.get("ok")):
+                    payload = dict(retry_ret.get("payload") or {})
+                    payload["equation_retry"] = "upscale"
+                    return payload
+                reasons.append(str(retry_ret.get("reason", "retry_failed") or "retry_failed"))
+
             reason = ";".join([r for r in reasons if r])[:180] or "all_backends_failed"
             return self._failed_payload(reason)
         except Exception as e:
@@ -131,6 +177,55 @@ class LatexOCREngine:
             if tmp_path and os.path.exists(tmp_path):
                 try:
                     os.remove(tmp_path)
+                except Exception:
+                    pass
+
+    def _retry_llm_with_upscale(
+        self,
+        *,
+        region_image,
+        seq_id: str,
+        page_num: int,
+        bbox: List[int],
+        page_w: int,
+        page_h: int,
+        tmp_dir: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """放大 crop 後重試一次 LLM OCR。放大能顯著提升小字公式的辨識率。"""
+        up_path = None
+        try:
+            scale = float(self.retry_upscale)
+            upscaled = cv2.resize(
+                region_image,
+                None,
+                fx=scale,
+                fy=scale,
+                interpolation=cv2.INTER_CUBIC,
+            )
+            with tempfile.NamedTemporaryFile(
+                mode="wb",
+                suffix=f"_{seq_id}_p{int(page_num)}_up.png",
+                prefix="latex_ocr_",
+                dir=tmp_dir,
+                delete=False,
+            ) as tf:
+                up_path = tf.name
+            cv2.imwrite(up_path, upscaled)
+            logger.info("[LatexOCR] upscale retry (%.1fx) for %s", scale, seq_id)
+            return self._extract_with_llm_task(
+                image_path=up_path,
+                seq_id=seq_id,
+                page_num=page_num,
+                bbox=bbox,
+                page_w=page_w,
+                page_h=page_h,
+            )
+        except Exception as e:
+            return {"ok": False, "reason": f"upscale_retry_exception:{type(e).__name__}"}
+        finally:
+            if up_path and os.path.exists(up_path):
+                try:
+                    os.remove(up_path)
                 except Exception:
                     pass
 

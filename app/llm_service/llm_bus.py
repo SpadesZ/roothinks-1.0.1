@@ -1,4 +1,21 @@
-#路徑(./app/llm_service/llm_bus.py) #版本 v0.2 #更版時間 20260419-1530
+# 檔案路徑: roothinks/app/llm_service/llm_bus.py
+# 產生時間: 2026-07-04 23:35 +08:00
+# 版本: v0.3
+# 模組定位:
+#   LLM 服務匯流排 (Service Bus)。從 DB 讀取連線設定 -> 動態載入 Adapter ->
+#   建立 Client 實例,對上提供統一 send_message 介面。
+# 主要責任:
+#   1. load_from_db():依 connection id 載入 vendor/api_key/model 並初始化 Client。
+#   2. _load_driver():依 vendor 名稱動態匯入 adapter 模組(llm_<vendor>.py)。
+#   3. send_message():統一發送代理。
+# 維護提醒:
+#   - adapter 模組必須恰好有一個以 Client 結尾、且類名含 vendor 前綴的類別,
+#     否則 _load_driver 會載錯或載不到——新增 adapter 時務必遵守命名慣例。
+#   - v0.3 起 load_from_db 會區分「API Key 未設定」與「解密失敗」兩種錯誤,
+#     解密失敗多半是 FERNET_KEY 與加密當時不一致,錯誤訊息已註明。
+# 驗證方式:
+#   - .venv/Scripts/python -m pytest test/unit/test_llm_dispatcher.py -q 應全綠。
+# ------------------------------------------------------------------------------
 import importlib
 import inspect
 import threading
@@ -67,13 +84,19 @@ class LlmBus:
                 return False, f"Connection ID {conn_id} not found in DB"
             
             vendor = conn_data['vendor']
-            api_key = LLMModel.decrypt_api_key_value(
-                conn_data.get('api_key'),
-                bool(conn_data.get('is_encrypted'))
-            )
+            raw_key = conn_data.get('api_key')
+            is_encrypted = bool(conn_data.get('is_encrypted'))
+            # 傳入 conn_id 讓 legacy 明文列可自動升級加密。
+            api_key = LLMModel.decrypt_api_key_value(raw_key, is_encrypted, conn_id=conn_id)
             model = conn_data['model_name']
-            
+
             if not api_key:
+                # 區分「未設定」與「解密失敗」:後者多為 FERNET_KEY 與加密時不一致。
+                if raw_key and is_encrypted:
+                    return False, (
+                        f"API Key decrypt failed for connection {conn_id} "
+                        "(FERNET_KEY 與加密當時不一致,請檢查 .env)"
+                    )
                 return False, f"API Key missing for connection {conn_id}"
 
             # 載入驅動

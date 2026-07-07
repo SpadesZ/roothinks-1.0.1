@@ -21,10 +21,15 @@ services:
       - GUNICORN_THREADS=${GUNICORN_THREADS:-4}
       - GUNICORN_TIMEOUT=${GUNICORN_TIMEOUT:-300}
       - GUNICORN_GRACEFUL_TIMEOUT=${GUNICORN_GRACEFUL_TIMEOUT:-60}
+      # NLLB 離線翻譯:模型 bake 在映像 /opt/models/nllb,執行期強制離線。
+      - NLLB_MODEL_DIR=${NLLB_MODEL_DIR:-/opt/models/nllb}
+      - HF_HUB_OFFLINE=${HF_HUB_OFFLINE:-1}
+      - TRANSFORMERS_OFFLINE=${TRANSFORMERS_OFFLINE:-1}
     restart: on-failure:5
     depends_on:
       - redis
-    mem_limit: 2g
+    # NLLB-200-distilled-600M(fp32)光權重約 2.4GB,2g 會被 OOM-kill;抬到 4g。
+    mem_limit: 4g
     cpus: 1.0
     logging:
       driver: json-file

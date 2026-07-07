@@ -8,3 +8,6 @@ __pycache__
 compose.log
 debugging
 test
+data
+*.log
+scratch_*

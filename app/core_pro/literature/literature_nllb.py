@@ -29,25 +29,43 @@ class NLLBTranslator:
     def _init_engine(self):
         self.ready = False
         self.pipeline = None
-        
-        # 定義模型快取路徑
-        self.model_dir = os.path.join(os.getcwd(), "data", "aimodels", "Literature", "nllb")
-        os.makedirs(self.model_dir, exist_ok=True)
-        
-        logger.info(f">>> [NLLB] Initializing Engine...")
+        self.model_name = "facebook/nllb-200-distilled-600M"
+
+        # 模型快取路徑：優先讀環境變數，fallback 至 /opt/models/nllb。
+        # 生產環境透過 Dockerfile ENV NLLB_MODEL_DIR=/opt/models/nllb 設定，
+        # 確保路徑在 bind-mount (./data:/app/data) 之外，不被覆蓋。
+        self.model_dir = os.environ.get("NLLB_MODEL_DIR", "/opt/models/nllb")
+        try:
+            os.makedirs(self.model_dir, exist_ok=True)
+        except OSError:
+            # /opt 可能對非 root 唯讀；模型已在建置期 bake 進去，不影響載入。
+            pass
+
+        offline_flag = os.environ.get("HF_HUB_OFFLINE", "0")
+        logger.info(
+            f">>> [NLLB] Initializing Engine | model_dir={self.model_dir} | "
+            f"HF_HUB_OFFLINE={offline_flag}"
+        )
 
         try:
             from transformers import pipeline, AutoModelForSeq2SeqLM, AutoTokenizer
-            
-            # 使用官方 Meta NLLB 模型 (自動下載至 HF_HOME 快取)
-            model_name = "facebook/nllb-200-distilled-600M"
-            
-            logger.info(f"    -> Loading model: {model_name}")
-            logger.info("    -> First run will download ~1.2GB model (this may take a few minutes)...")
-            
-            # 載入 tokenizer 和 model
-            tokenizer = AutoTokenizer.from_pretrained(model_name)
-            model = AutoModelForSeq2SeqLM.from_pretrained(model_name)
+
+            model_name = self.model_name
+
+            # bake 產物:model_dir 若是已存的本地 safetensors 模型目錄(含 config.json),
+            # 直接載入(離線、走 safetensors、繞過 torch.load CVE 守衛);
+            # 否則走 model_name + cache_dir(本機開發時線上下載)。
+            if os.path.isfile(os.path.join(self.model_dir, "config.json")):
+                load_target = self.model_dir
+                load_kwargs = {}
+                logger.info(f"    -> Loading local baked model dir: {self.model_dir}")
+            else:
+                load_target = model_name
+                load_kwargs = {"cache_dir": self.model_dir}
+                logger.info(f"    -> Loading model: {model_name} (cache_dir={self.model_dir})")
+
+            tokenizer = AutoTokenizer.from_pretrained(load_target, **load_kwargs)
+            model = AutoModelForSeq2SeqLM.from_pretrained(load_target, **load_kwargs)
             
             # 建立 translation pipeline
             self.pipeline = pipeline(
@@ -61,7 +79,7 @@ class NLLBTranslator:
             )
             
             self.ready = True
-            logger.info(">>> [NLLB] Engine Ready (Offline Mode).")
+            logger.info(f">>> [NLLB] Engine Ready (Offline Mode) | model={model_name} | cache={self.model_dir}")
         except Exception as e:
             logger.error(f"    ! [NLLB] Load Failed: {e}")
             logger.exception("[NLLB] Load Failed")

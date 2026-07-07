@@ -1,4 +1,23 @@
-#路徑(./app/core_pro/literature/literature_arbiterlogic.py) #版本 v1.4 #更版時間 20260430-1416
+# 檔案路徑: roothinks/app/core_pro/literature/literature_arbiterlogic.py
+# 產生時間: 2026-07-05 01:10 +08:00
+# 版本: v1.5
+# 模組定位:
+#   Arbiter 雙軌融合仲裁者。以 Stack A 為骨架對齊 Stack B:先 seq_id 精準
+#   配對,失配時回退 IoU 配對;產出頁級 raw 與專案級 arbiter 重組檔。
+# 主要責任:
+#   1. arbitrate():逐 block 仲裁 A/B 內容,Equation 帶失敗標記傳遞。
+#   2. rescue 迴圈:補入未被骨架覆蓋的 Stack B 區塊。
+#   3. compile_project_arbiter():彙整各頁為專案級結構(含章節狀態機)。
+# 維護提醒:
+#   - v1.5 修復「IoU 縫隙靜默丟塊」:IoU 幾何配對(非 seq_id 配對)的 B 候選,
+#     若仲裁選了 A 且候選文字與最終內容無實質重疊(非子字串且詞 Jaccard<0.6),
+#     會從 used_b_indices 釋放,交由 rescue 迴圈依 bbox 覆蓋規則決定是否補回。
+#     seq_id 配對的候選是同區塊的另一軌讀數,仍一律不釋放(避免內容重複)。
+#   - rescue 的 bbox 覆蓋判定(_covered_by_existing, IoU>0.2)是最後防線,
+#     調整任一閾值前先想清楚兩者的縫隙區間。
+# 驗證方式:
+#   - .venv/Scripts/python -m pytest test/unit/test_arbiter_equation_chain.py -q
+# ------------------------------------------------------------------------------
 import json
 import logging
 import os
@@ -39,7 +58,7 @@ class Arbiter:
             if not self._is_bbox4(bbox_a):
                 continue
 
-            candidates, cand_indices = self._collect_b_candidates(block_a, data_b, b_by_seq)
+            candidates, cand_indices, matched_by_seq = self._collect_b_candidates(block_a, data_b, b_by_seq)
             used_b_indices.update(cand_indices)
 
             content_a = str(block_a.get("content", "") or "").strip()
@@ -99,6 +118,19 @@ class Arbiter:
                     merged["latex"] = ""
                     merged["content"] = eq_marker
             final_blocks.append(merged)
+
+            # v1.5: IoU 縫隙修復——仲裁選 A 時,IoU 幾何配對(非 seq_id)的 B 候選
+            # 若內容與最終文字無實質重疊,釋放回 rescue 池,避免縫隙區塊靜默丟失。
+            if final_source != "stack_b_override" and not matched_by_seq and cand_indices:
+                for bi in list(cand_indices):
+                    cand = data_b[bi] if 0 <= bi < len(data_b) and isinstance(data_b[bi], dict) else None
+                    if not cand:
+                        continue
+                    cand_text = str(cand.get("content", "") or "").strip()
+                    if not cand_text:
+                        continue
+                    if not self._text_overlap_high(cand_text, final_content):
+                        used_b_indices.discard(bi)
 
         # Rescue: 補入未被骨架覆蓋的 Stack B 區塊
         for bi, block_b in enumerate(data_b):
@@ -221,6 +253,8 @@ class Arbiter:
         return out
 
     def _collect_b_candidates(self, block_a: Dict, data_b: List[Dict], b_by_seq: Dict[str, List[Tuple[int, Dict]]]):
+        """回傳 (candidates, cand_indices, matched_by_seq)。
+        matched_by_seq=True 表示走 seq_id 精準配對(同區塊另一軌讀數)。"""
         candidates = []
         cand_indices = set()
 
@@ -231,7 +265,7 @@ class Arbiter:
             for bi, bb in b_by_seq[seq_id]:
                 candidates.append(bb)
                 cand_indices.add(bi)
-            return candidates, cand_indices
+            return candidates, cand_indices, True
 
         for bi, block_b in enumerate(data_b):
             bb = block_b.get("bbox")
@@ -240,7 +274,24 @@ class Arbiter:
             if self._iou(bbox_a, bb) > 0.1 or self._is_center_inside(bb, bbox_a):
                 candidates.append(block_b)
                 cand_indices.add(bi)
-        return candidates, cand_indices
+        return candidates, cand_indices, False
+
+    @staticmethod
+    def _text_overlap_high(text_a: str, text_b: str) -> bool:
+        """判斷兩段文字是否高度重疊(子字串或詞 Jaccard >= 0.6)。"""
+        a = " ".join(str(text_a or "").lower().split())
+        b = " ".join(str(text_b or "").lower().split())
+        if not a or not b:
+            return False
+        if a in b or b in a:
+            return True
+        wa = set(a.split())
+        wb = set(b.split())
+        if not wa or not wb:
+            return False
+        inter = len(wa & wb)
+        union = len(wa | wb)
+        return union > 0 and (inter / union) >= 0.6
 
     def _decide_content(self, node_type: str, content_a: str, score_a: float, content_b: str, score_b: float):
         if node_type == "Equation":
@@ -276,13 +327,27 @@ class Arbiter:
             if content_b:
                 return content_b, "stack_b_override"
 
-        if score_b > (score_a + 0.25) and len(content_b) > max(10, int(len(content_a) * 1.2)):
+        # v1.5: B override 門檻 0.25 -> 0.10(env 可調),長度條件 1.2x -> 0.85x。
+        # 實測(CTC 論文頁1):StackB 0.8416 vs StackA 0.72,B 明顯乾淨
+        # 卻因差距 < 0.25 而輸給 EasyOCR 亂碼;舊門檻讓「雙軌都有輸出」時
+        # 反而比「A 超時、B 全 rescue」的單軌結果更差。
+        b_margin = self._b_override_margin()
+        if score_b > (score_a + b_margin) and len(content_b) >= max(3, int(len(content_a) * 0.85)):
             return content_b, "stack_b_override"
 
         if node_type in {"Figure", "Table"} and content_b and len(content_b) > len(content_a):
             return content_b, "stack_b_override"
 
         return final_content, final_source
+
+    @staticmethod
+    def _b_override_margin() -> float:
+        """非公式 block 的 Stack B override 分數門檻(env 可調)。"""
+        try:
+            v = float(os.environ.get("LITERATURE_ARBITER_B_OVERRIDE_MARGIN", "0.10"))
+            return min(0.5, max(0.0, v))
+        except (TypeError, ValueError):
+            return 0.10
 
     def _looks_like_latex(self, text: str) -> bool:
         s = str(text or "").strip()

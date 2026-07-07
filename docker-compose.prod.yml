@@ -21,9 +21,14 @@ services:
       - DB_POOL_TIMEOUT=${DB_POOL_TIMEOUT:-30}
       - DB_CONNECT_TIMEOUT_SEC=${DB_CONNECT_TIMEOUT_SEC:-30}
       # Web process profile (transitional): gthread reduces single-worker starvation risk.
-      - GUNICORN_WORKERS=${GUNICORN_WORKERS:-2}
+      # NLLB 模型為每個 worker 各載一份 (~2.4GB);保持 1 worker,除非 VM 有 ≥8GB RAM。
+      - GUNICORN_WORKERS=${GUNICORN_WORKERS:-1}
       - GUNICORN_WORKER_CLASS=${GUNICORN_WORKER_CLASS:-gthread}
       - GUNICORN_THREADS=${GUNICORN_THREADS:-4}
       - GUNICORN_TIMEOUT=${GUNICORN_TIMEOUT:-300}
       - GUNICORN_GRACEFUL_TIMEOUT=${GUNICORN_GRACEFUL_TIMEOUT:-60}
       - LITERATURE_MAX_WORKERS=${LITERATURE_MAX_WORKERS:-1}
+      # NLLB 離線翻譯 (模型 bake 在映像 /opt/models/nllb,不放進 ./data 掛載)
+      - NLLB_MODEL_DIR=${NLLB_MODEL_DIR:-/opt/models/nllb}
+      - HF_HUB_OFFLINE=${HF_HUB_OFFLINE:-1}
+      - TRANSFORMERS_OFFLINE=${TRANSFORMERS_OFFLINE:-1}

@@ -1,4 +1,25 @@
-#路徑(./app/core_pro/literature/literature_segmentizer.py) #版本 v2.4 #更版時間 20260430-1423
+# 檔案路徑: roothinks/app/core_pro/literature/literature_segmentizer.py
+# 產生時間: 2026-07-05 02:10 +08:00
+# 版本: v2.5(SEGMENTIZER_VERSION v3.17)
+# 模組定位:
+#   Literature Segmentizer:視覺節點系統(VNS)切割引擎。
+#   CV2 形態學抽框 -> 規則評分 -> LLM 補充分類 -> Major/Equation/Body 三階段切割。
+# 主要責任:
+#   1. process_image():頁圖 -> 區塊 records(type/bbox/score/reading_order)。
+#   2. Figure/Table+Caption 鎖定(MajorSegmenter)、Equation placeholder 鎖定、
+#      Body 與 heading 判定(BodySegmenter)。
+# 維護提醒:
+#   - v2.5 修復三個分類缺陷:
+#     (1) LLM 投出的 title/subtitle 舊版被映射成 Unknown(heading 分支死代碼),
+#         現落地為 MainTitle/Subtitle/SubSubtitle 並經 llm_heading_hint 升格。
+#     (2) displayed equation w_ratio 上限 0.52 -> LITERATURE_EQ_WRATIO_MAX
+#         (預設 0.92),跨欄公式不再被排除。
+#     (3) 頁首 equation 懲罰收窄(0.16->0.10 頁高)減半(0.10->0.05)。
+#   - SEGMENTIZER_VERSION 已遞增至 v3.17:規則變更會自動使頁級 VNS 快取失效,
+#     舊論文重跑時會重新切割。
+# 驗證方式:
+#   - .venv/Scripts/python -m pytest test/unit/test_segmentizer_types.py -q
+# ------------------------------------------------------------------------------
 import json
 import logging
 import os
@@ -44,7 +65,7 @@ class Segmentizer:
     4. 加入 seg_version 快取失效機制，規則更新可自動重切。
     """
 
-    SEGMENTIZER_VERSION = "v3.16"
+    SEGMENTIZER_VERSION = "v3.17"
     LLM_TASK_ID = "task_4cv"
     ALLOWED_LLM_LABELS = {
         "Body",
@@ -53,6 +74,11 @@ class Segmentizer:
         "Equation",
         "Caption",
         "Unknown",
+        # v0.8: heading 類投票開放(_apply_llm_vote 設 llm_heading_hint,
+        # 由 BodySegmenter 消費升格)。
+        "MainTitle",
+        "Subtitle",
+        "SubSubtitle",
     }
 
     def __init__(self):
@@ -64,6 +90,8 @@ class Segmentizer:
         self.llm_accept_threshold = self._to_float_env("VNS_LLM_ACCEPT_THRESHOLD", 0.60, low=0.0, high=1.0)
         self.llm_max_candidates_per_page = self._to_int_env("VNS_LLM_MAX_CANDIDATES_PER_PAGE", 36, low=1, high=300)
         self.llm_max_retries = self._to_int_env("VNS_LLM_MAX_RETRIES", 1, low=0, high=3)
+        # v2.5: displayed equation 寬度上限(w_ratio),放寬以涵蓋跨欄公式。
+        self.eq_wratio_max = self._to_float_env("LITERATURE_EQ_WRATIO_MAX", 0.92, low=0.30, high=1.0)
         self.caption_pair_min_score = self._to_float_env("VNS_CAPTION_PAIR_MIN_SCORE", 0.58, low=0.0, high=1.0)
         self.caption_max_gap_ratio = self._to_float_env("VNS_CAPTION_MAX_GAP_RATIO", 0.10, low=0.02, high=0.25)
         self.caption_max_gap_top_ratio = self._to_float_env("VNS_CAPTION_MAX_GAP_TOP_RATIO", 0.07, low=0.01, high=0.20)
@@ -636,6 +664,7 @@ class Segmentizer:
                 major_reject_idxs=major_reject_idxs,
                 page_w=w_img,
                 page_h=h_img,
+                page_num=page_num,
             )
         )
 
@@ -675,6 +704,7 @@ class Segmentizer:
                         round(y2 / float(max(1, h_img)), 6),
                     ],
                     "vns_iou_bbox": [x1, y1, x2, y2],
+                    "is_page_noise": bool(rec.get("is_page_noise", False)),
                     "has_caption": bool(rec.get("has_caption")),
                     "caption_bbox": rec.get("caption_bbox"),
                     "pair_id": rec.get("pair_id", ""),
@@ -823,8 +853,10 @@ class Segmentizer:
             )
             clean_math = table_grid <= 0.022 and inter_ratio <= 0.00075
             clean_math_soft = table_grid <= 0.035 and inter_ratio <= 0.00180
+            # v0.8: w_ratio 上限放寬(舊值 0.52 會排除跨欄 display equation),
+            # env LITERATURE_EQ_WRATIO_MAX 可覆寫。
             displayed_eq_geom = (
-                0.15 <= w_ratio <= 0.52
+                0.15 <= w_ratio <= self.eq_wratio_max
                 and 0.012 <= h_ratio <= 0.095
                 and center_bias_ok
             )
@@ -1345,8 +1377,11 @@ class Segmentizer:
             equation_score -= 0.20
         if text_density >= 4.2 and small_cc >= 95:
             equation_score -= 0.18
-        if y1 <= int(page_h * 0.16) and h <= int(page_h * 0.11):
-            equation_score -= 0.10
+        # v0.8: 頁首懲罰收窄(0.16→0.10 頁高)且減半(0.10→0.05)。
+        # 舊條件會誤傷首屏附近的 display equation;running header 高度
+        # 通常 < 4% 頁高,收窄後仍能壓制 header 誤判為公式。
+        if y1 <= int(page_h * 0.10) and h <= int(page_h * 0.06):
+            equation_score -= 0.05
 
         if bool(page_profile.get("is_two_column", False)):
             col_id = self._infer_column_id([x1, y1, x2, int(y1 + h)], page_profile, page_w=page_w)
@@ -1726,10 +1761,13 @@ Return JSON schema:
             "caption": "Caption",
             "figurecaption": "Caption",
             "tablecaption": "Caption",
-            "maintitle": "Unknown",
-            "title": "Unknown",
-            "subtitle": "Unknown",
-            "subsubtitle": "Unknown",
+            # v0.8 修復:LLM 的標題投票落地為真實 heading 類型。
+            # 舊版把 title/subtitle 全映射成 Unknown,導致 _apply_llm_vote 的
+            # heading 分支永遠不可達,章節結構建不起來。
+            "maintitle": "MainTitle",
+            "title": "MainTitle",
+            "subtitle": "Subtitle",
+            "subsubtitle": "SubSubtitle",
             "unknown": "Unknown",
         }
         out = mapping.get(low)

@@ -10,11 +10,65 @@
 
 import json
 import os
+import re
 import time
 from datetime import datetime, timezone
 
 from flask import jsonify, request, send_file
 from app.core_pro.storage_layout import list_literature_papers, resolve_literature_paper_dir
+
+# ---------------------------------------------------------------------------
+# Section-title retagger  (v1.0 — deterministic, zero LLM quota)
+# ---------------------------------------------------------------------------
+# Mirrors the frontend rule in app/static/js/study_view.js _looksLikeSectionTitle
+# so backend data and UI rendering stay consistent (belt-and-suspenders).
+#
+# Rules:
+#   - Only retags blocks currently typed "Body" or "Unknown".
+#   - Trimmed content length ≤ 64 AND ≤ 9 words.
+#   - Matches a numbered heading  (e.g. "1. Introduction", "2.1 Experiments")
+#     OR a known section keyword.
+#   - Figure / Table / Equation blocks are NEVER retagged.
+# ---------------------------------------------------------------------------
+_SECTION_TITLE_NUMBERED_RE = re.compile(r'^\d+(?:\.\d+)*\.?\s+[A-Z]')
+_SECTION_TITLE_KEYWORD_RE = re.compile(
+    r'^(?:Abstract|Introduction|Related Work|Background|Motivation|Preliminaries'
+    r'|Methods?|Materials and Methods|Approach|Model|Experiments?|Experimental Setup'
+    r'|Results?|Evaluation|Discussion|Conclusions?|Future Work|References|Bibliography'
+    r'|Acknowledge?ments?|Appendix|Data)\b',
+    re.IGNORECASE,
+)
+_RETAG_ELIGIBLE_TYPES = {'Body', 'Unknown'}
+
+
+def retag_section_titles(blocks):
+    """Mutate block dicts in-place: set type='Title' for section-heading blocks.
+
+    Operates on a flat list of block dicts (as loaded from text_{n}_fixed.json
+    or assembled into a fusion page's 'blocks' list).  Returns the same list
+    for convenience.
+
+    Heuristic matches the frontend _looksLikeSectionTitle rule exactly:
+      - type in {'Body', 'Unknown'} (Figure/Table/Equation are untouched)
+      - trimmed content length ≤ 64 AND ≤ 9 whitespace-separated tokens
+      - numbered heading OR known section-keyword prefix
+    """
+    if not isinstance(blocks, list):
+        return blocks
+    for block in blocks:
+        if not isinstance(block, dict):
+            continue
+        if block.get('type') not in _RETAG_ELIGIBLE_TYPES:
+            continue
+        s = str(block.get('content', '') or '').strip()
+        if not s or len(s) > 64:
+            continue
+        if len(s.split()) > 9:
+            continue
+        if _SECTION_TITLE_NUMBERED_RE.match(s) or _SECTION_TITLE_KEYWORD_RE.match(s):
+            block['type'] = 'Title'
+    return blocks
+# ---------------------------------------------------------------------------
 
 
 def _task4_safe_int(v, default=0):

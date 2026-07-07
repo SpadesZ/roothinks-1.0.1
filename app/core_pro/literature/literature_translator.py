@@ -1,8 +1,37 @@
-#路徑(app/core_proc/literature/Literature_translator.py) #版本 v1.0-Hybrid #更版時間 20260215-1800
-# [MVP+Prototype Handoff Header]
-# 本檔案目前定位為 MVP/Prototype 實作；非最終產品級設計。
-# 對應規劃檔：CHANGE_PLAN_STUDY_FLOWB_2026-04-20.md
-# 與 Flow B 翻譯分流策略相依，後續人類團隊接手時請一併校準成本、配額與 SLA。
+# 檔案路徑: roothinks/app/core_pro/literature/literature_translator.py
+# 產生時間: 2026-07-05 05:50 +08:00
+# 版本: v1.3-NLLB-Primary
+# 模組定位:
+#   智能翻譯調度器 (Hybrid Translation Dispatcher)。依情境在 NLLB(本地)/
+#   Gemini(雲端)/quick-google 間選路,含自動降級。MVP/Prototype 定位。
+# 主要責任:
+#   1. 依文長與 TranslationContext 決定引擎(_decide_engine)。
+#   2. 長文切段 + 小批量翻譯 + 非語言片段保護(URL/公式等)。
+#   3. LLM 派工逾時保護(_dispatch_with_timeout)。
+# 維護提醒:
+#   - _dispatch_with_timeout 逾時後「無法終止」底層 worker 執行緒,
+#     只能放棄等待;worker 會續跑至該次呼叫自然結束並佔用資源。
+#     v1.1 起逾時會記 warning 註明執行緒殘留,若 log 頻繁出現此訊息,
+#     應調高 timeout_sec 或檢查 provider 延遲,而非忽略。
+#   - 分段翻譯無跨段術語一致性保證,關鍵文件請走 Gemini 全文路徑。
+#   - v1.2 修復「中英夾雜靜默殘留」(實測 CTC 論文 p1 有 32% 英文殘留):
+#     (1) 失敗段不再靜默保留原文,前綴 [未翻譯] 標記並記 warning;
+#     (2) quick-google 與 REALTIME 都失敗後,追加 Gemini 逐段重試;
+#     (3) block 寫入 content_zh 前做中文比例品質閘(<40% 或含 [未翻譯]
+#         標記時設 translation_needs_review=true 供 UI/重翻批次識別)。
+#   - v1.3 NLLB 成為 LITERATURE_BATCH 主路徑（零 LLM 配額消耗）:
+#     (1) torch+transformers+sentencepiece 已補入 requirements.txt；
+#         torch CPU wheel 在 Dockerfile 額外安裝，模型 bake 進映像
+#         /opt/models/nllb，離線 GCP VM 直接可用。
+#     (2) _translate_segments_small_batch 段序：NLLB → quick-google
+#         → REALTIME → Gemini per-seg → [未翻譯]；
+#     (3) _translate_pages_batch fast-path（quick-google batch）僅在
+#         NLLB 未就緒時啟用；NLLB 就緒時直接走逐段管道。
+#     (4) quick-google / Gemini 均為降級路徑，不再是 primary。
+#   - 對應規劃檔:CHANGE_PLAN_STUDY_FLOWB_2026-04-20.md
+# 驗證方式:
+#   - pytest test/unit/test_translator_fallback.py -q
+# ------------------------------------------------------------------------------
 """
 智能翻譯調度器 (Hybrid Translation Dispatcher)
 職責:
@@ -230,12 +259,18 @@ class HybridTranslator:
         def _call():
             return bus.dispatch_task(task_id, prompt, priority=priority)
 
-        ex = ThreadPoolExecutor(max_workers=1)
+        ex = ThreadPoolExecutor(max_workers=1, thread_name_prefix=f"translator-{task_id}")
         fut = ex.submit(_call)
         try:
             return fut.result(timeout=timeout_sec)
         except FuturesTimeout:
-            logger.warning(f"[HybridTranslator] task dispatch timeout ({task_id}, {timeout_sec}s)")
+            # 注意:running 中的 future 無法取消,worker 執行緒會殘留至呼叫自然結束。
+            logger.warning(
+                "[HybridTranslator] task dispatch timeout (%s, %ss); "
+                "worker thread will linger until the underlying call returns "
+                "(頻繁出現請調高 timeout 或檢查 provider 延遲)",
+                task_id, timeout_sec,
+            )
             return False, "dispatch timeout"
         except Exception as e:
             logger.warning(f"[HybridTranslator] task dispatch error ({task_id}): {e}")
@@ -297,6 +332,18 @@ class HybridTranslator:
             out.append(cur)
         return out
 
+    UNTRANSLATED_MARK = "[未翻譯]"
+
+    @staticmethod
+    def _is_mostly_chinese(text: str, threshold: float = 0.4) -> bool:
+        """粗估中文比例(僅計 CJK 對非空白字元的占比)。"""
+        s = str(text or "")
+        visible = [c for c in s if not c.isspace()]
+        if not visible:
+            return False
+        cjk = sum(1 for c in visible if '一' <= c <= '鿿')
+        return (cjk / len(visible)) >= threshold
+
     def _translate_segments_small_batch(self, segments, target_lang: str = 'zho_Hant'):
         """Translate split segments in small batches. Return (ok, merged_text)."""
         if not segments:
@@ -318,8 +365,9 @@ class HybridTranslator:
 
             batch_ok = False
 
-            # Fast path: quick translator supports batch call.
-            if self._quick_translator and hasattr(self._quick_translator, 'translate_batch'):
+            # Fast path: quick-translator batch call — only used when NLLB is NOT ready,
+            # to avoid burning network quota when the local model can handle it.
+            if not (self._nllb and self._nllb.ready) and self._quick_translator and hasattr(self._quick_translator, 'translate_batch'):
                 try:
                     protected_batch = []
                     maps = []
@@ -339,15 +387,36 @@ class HybridTranslator:
             if batch_ok:
                 continue
 
-            # Fallback: segment-by-segment to keep progress.
+            # Segment-by-segment pipeline.
+            # v1.3 priority: (1) NLLB → (2) quick-google → (3) REALTIME → (4) Gemini per-seg
             for seg in batch:
-                ok, out = self._translate_quick_google(seg, target_lang)
+                ok, out = False, ""
+                # (1) NLLB — primary, zero quota
+                if self._nllb and self._nllb.ready:
+                    ok, out = self._translate_nllb(seg, 'eng_Latn', target_lang)
+                # (2) quick-google fallback
+                if not ok:
+                    ok, out = self._translate_quick_google(seg, target_lang)
+                # (3) REALTIME (calls translate() which may use Gemini or NLLB again)
                 if not ok:
                     ok, out, _ = self.translate(seg, TranslationContext.REALTIME)
+                # (4) Gemini per-seg retry — v1.2: Gemini has independent quota from quick-google
+                if not ok:
+                    try:
+                        ok, out = self._translate_gemini(seg, target_lang)
+                    except Exception as ge:
+                        logger.warning(f"[HybridTranslator] Gemini per-seg retry failed: {ge}")
+                        ok = False
                 if ok and out:
                     translated.append(out)
                 else:
-                    translated.append(seg)
+                    # v1.2: 失敗段不再靜默保留英文——加顯性標記,
+                    # UI 與下游可識別並觸發重翻,使用者不會誤以為翻譯完成。
+                    logger.warning(
+                        "[HybridTranslator] segment untranslated (len=%d): %s...",
+                        len(seg), seg[:60],
+                    )
+                    translated.append(f"{self.UNTRANSLATED_MARK} {seg}")
 
         return True, "\n".join(translated)
     
@@ -416,8 +485,23 @@ class HybridTranslator:
         translated_count = 0
         pages = data.get('content', [])
 
-        # Fast path: quick translator first, with fallback to local/LLM pipeline.
-        if self._quick_translator:
+        # v1.0.1: 資料層標題 retag(零配額、確定性)——segmentizer 不產 Title 型別,
+        # 在此把章節標題(Body/Unknown)補標成 Title,寫進 full_text_trans.json,
+        # 供前端合併版面與 reflow 使用。function-level import 避免循環相依。
+        try:
+            from app.core_pro.literature.literature_processing_ops import retag_section_titles
+            for page in pages:
+                if isinstance(page, dict) and isinstance(page.get('blocks'), list):
+                    retag_section_titles(page['blocks'])
+        except Exception as e:
+            logger.warning(f"[HybridTranslator] title retag skipped: {e}")
+
+        # v1.3: prefer NLLB (zero quota) whenever it is ready.
+        # Fall back to quick-google batch fast-path only when NLLB is NOT ready.
+        # Both paths converge on _translate_segments_small_batch which has its own
+        # per-segment NLLB→quick-google→REALTIME→Gemini chain.
+        nllb_ready = bool(self._nllb and self._nllb.ready)
+        if nllb_ready or self._quick_translator:
             for page in pages:
                 if not isinstance(page, dict):
                     continue
@@ -435,6 +519,10 @@ class HybridTranslator:
                     if ok and translated:
                         b['content_zh'] = translated
                         translated_count += 1
+                        # v1.2: 品質閘——中文比例過低或含未翻譯標記時顯性標記,
+                        # 供 UI 高亮與後續重翻批次挑選。
+                        if (not self._is_mostly_chinese(translated)) or (self.UNTRANSLATED_MARK in translated):
+                            b['translation_needs_review'] = True
             return translated_count
 
         for page in pages:

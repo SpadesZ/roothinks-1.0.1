@@ -1,4 +1,26 @@
-#路徑(./app/core_pro/literature/literature_cvpipeline.py) #版本 v0.6 #更版時間 20260430-1419
+# 檔案路徑: roothinks/app/core_pro/literature/literature_cvpipeline.py
+# 產生時間: 2026-07-05 00:05 +08:00
+# 版本: v0.7
+# 模組定位:
+#   CV Pipeline 雙軌並行控制器。PDF -> Images -> (Stack A || Stack B) -> Arbiter,
+#   含頁級快取、timeout grace window 與 Stack A 過熱保護。
+# 主要責任:
+#   1. PDF 轉圖(頁級增量,已轉頁不重轉)。
+#   2. 逐頁調度 Stack A/B OCR 與 Arbiter 融合。
+#   3. 單軌失敗時降級為另一軌結果,雙軌皆失敗寫空頁。
+# 維護提醒:
+#   - v0.7 起 per-page timeout 依 VNS 區塊數動態調整:
+#     base(env LITERATURE_STACKA/B_TIMEOUT_SEC)+ 區塊數 * 每塊秒數
+#     (LITERATURE_STACK_TIMEOUT_PER_BLOCK_SEC, 預設 5),
+#     上限 LITERATURE_STACK_TIMEOUT_MAX_SEC(預設 900)。
+#   - __init__ 會做 Poppler preflight:找不到明確安裝路徑且 PATH 也無
+#     pdftoppm 時記 error log,讓部署期就能發現,而非跑到轉檔才爆。
+#   - EasyOCR reader 非 thread-safe:Stack A timeout 後殘留背景執行緒時,
+#     後續頁面會停用 Stack A(stack_a_disabled),此為刻意設計勿移除。
+# 驗證方式:
+#   - python -m py_compile 本檔(重型依賴 easyocr 僅存在於 Docker 環境,
+#     本地 venv 無法 import;完整行為驗證於 Docker 內跑 FlowB 冒煙)。
+# ------------------------------------------------------------------------------
 import os
 import threading
 import glob
@@ -31,7 +53,21 @@ class PaperCVPipeline:
         self.arbiter = Arbiter()
         self.segmentizer = Segmentizer()
         self.poppler_path = self._find_poppler()
-    
+        self._preflight_poppler()
+
+    def _preflight_poppler(self):
+        """部署期即檢查 Poppler 可用性,避免跑到 PDF 轉檔才發現缺件。"""
+        if self.poppler_path:
+            logger.info("[Pipeline] Poppler preflight OK: %s", self.poppler_path)
+            return
+        if shutil.which("pdftoppm"):
+            logger.info("[Pipeline] Poppler preflight OK: found pdftoppm on PATH")
+            return
+        logger.error(
+            "[Pipeline] Poppler preflight FAILED: 常見安裝路徑與 PATH 皆找不到 pdftoppm,"
+            "PDF 轉圖將會失敗。請安裝 Poppler 或將其 bin 目錄加入 PATH。"
+        )
+
     def _find_poppler(self):
         """自動尋找 Poppler 路徑"""
         # 常見 Windows 安裝位置
@@ -56,6 +92,9 @@ class PaperCVPipeline:
         # 現場常見 env 仍設 120，這在 VNS 區塊模式下會穩定超時，設最低保護值 240s。
         stack_a_timeout_sec = max(240, int(os.environ.get("LITERATURE_STACKA_TIMEOUT_SEC", "300")))
         stack_b_timeout_sec = max(60, int(os.environ.get("LITERATURE_STACKB_TIMEOUT_SEC", "300")))
+        # v0.7: per-page timeout 依區塊數動態加成,區塊多的頁面獲得更長預算。
+        timeout_per_block_sec = max(0, int(os.environ.get("LITERATURE_STACK_TIMEOUT_PER_BLOCK_SEC", "5")))
+        timeout_max_sec = max(300, int(os.environ.get("LITERATURE_STACK_TIMEOUT_MAX_SEC", "900")))
         timeout_grace_sec = max(0, int(os.environ.get("LITERATURE_STACK_TIMEOUT_GRACE_SEC", "15")))
         stack_ocr_mode = str(os.environ.get("LITERATURE_STACK_OCR_MODE", "sequential")).strip().lower()
         sequential_ocr = stack_ocr_mode in {"sequential", "serial", "auto", "1", "true", "yes", "on"}
@@ -187,9 +226,14 @@ class PaperCVPipeline:
             else:
                 logger.info("      - [Stack B] Cached")
 
+            # 區塊數愈多的頁面給愈長的 timeout(上限保護)。
+            block_count = len(region_records)
+            page_timeout_a = min(timeout_max_sec, stack_a_timeout_sec + timeout_per_block_sec * block_count)
+            page_timeout_b = min(timeout_max_sec, stack_b_timeout_sec + timeout_per_block_sec * block_count)
+
             def _join_worker(label, worker):
                 nonlocal stack_a_disabled
-                timeout_sec = stack_a_timeout_sec if label == "stack_a" else stack_b_timeout_sec
+                timeout_sec = page_timeout_a if label == "stack_a" else page_timeout_b
                 worker.join(timeout=timeout_sec)
                 if worker.is_alive():
                     logger.warning(

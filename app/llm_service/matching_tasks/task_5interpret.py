@@ -1,4 +1,23 @@
-#路徑(app/llm_service/matching_tasks/task_5interpret.py) #版本 v1.0-Lite #更版時間 20260226
+# 檔案路徑: roothinks/app/llm_service/matching_tasks/task_5interpret.py
+# 產生時間: 2026-07-05 04:20 +08:00
+# 版本: v1.1-Lite
+# 模組定位:
+#   Task 5: Interpretation & Summarization(不含翻譯)。
+#   Merge page JSONs -> full_text.json(Fusion);structured summary。
+# 主要責任:
+#   1. run_fusion():逐頁 03_recognizes -> 05_interprets/fusion/full_text.json。
+#   2. run_summary():全文 -> summary.json。
+# 維護提醒:
+#   - v1.1 修復 _simple_merge 的「無條件 Body-Body 合併」:
+#     實測(CTC 論文)首頁 12 個 block 全是 Body,被壓成單一 3730 字大塊,
+#     是 UI「title+authors+abstract 黏成一塊」與 reflow 首頁丟失的資料源。
+#     現在:heading 樣式的短 Body(<150 字元且非句號結尾)與 is_page_noise
+#     block 不參與合併,只有真正的正文段落才會併頁內接續。
+#   - 徹底修復依賴 VNS v3.17 的 heading type(MainTitle/Subtitle);
+#     舊論文需重跑 VNS(seg_version 快取會自動失效)。
+# 驗證方式:
+#   - .venv/Scripts/python -m pytest test/unit/test_fusion_merge.py -q
+# ------------------------------------------------------------------------------
 """
 Task 5: Interpretation & Summarization (不含翻譯)
 1. Merge page JSONs → full_text.json (Fusion)
@@ -10,6 +29,7 @@ import re
 import logging
 import app.llm_service.llm_bus as llm_bus
 from app.core_pro.storage_layout import resolve_literature_paper_dir
+from app.core_pro.literature.literature_processing_ops import retag_section_titles
 
 logger = logging.getLogger(__name__)
 
@@ -57,6 +77,7 @@ class Interpreter:
                 with open(p_path, 'r', encoding='utf-8') as f:
                     blocks = json.load(f)
                     merged = self._simple_merge(blocks)
+                    retag_section_titles(merged)
                     pages_content.append({"page": page_num, "blocks": merged})
             except Exception:
                 pass
@@ -72,6 +93,20 @@ class Interpreter:
 
         return out_path
 
+    @staticmethod
+    def _is_mergeable_body(b):
+        """只有真正的正文段落可參與合併。
+        heading 樣式短塊(標題/章節名/作者列常 <150 字且非句號結尾)
+        與頁面雜訊塊必須保持獨立,否則首頁 title+abstract 會黏成大塊。"""
+        if not isinstance(b, dict) or b.get('type') != 'Body':
+            return False
+        if bool(b.get('is_page_noise')):
+            return False
+        t = str(b.get('content', '') or '').strip()
+        if len(t) < 150 and not re.search(r'[.!?。!?]$', t):
+            return False
+        return True
+
     def _simple_merge(self, blocks):
         if not blocks:
             return []
@@ -83,7 +118,7 @@ class Interpreter:
                 curr = b
                 continue
 
-            if curr.get('type') == 'Body' and b.get('type') == 'Body':
+            if self._is_mergeable_body(curr) and self._is_mergeable_body(b):
                 curr['content'] += " " + b.get('content', '')
                 curr['bbox'][0] = min(curr['bbox'][0], b['bbox'][0])
                 curr['bbox'][1] = min(curr['bbox'][1], b['bbox'][1])

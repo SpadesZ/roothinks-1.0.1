@@ -1,8 +1,25 @@
-#路徑(app/core_pro/literature/literature_routes.py) #版本 v3.5 #更版時間 20260429
-#功能概要:
-#1. Literature 主藍圖入口與共用依賴註冊（ACL、lazy loader、執行器）。
-#2. 保留相容 wrapper（供測試 monkeypatch）並轉發至拆分模組。
-#3. 統一註冊 context/batch/context-chain/debug 子路由。
+# 檔案路徑: roothinks/app/core_pro/literature/literature_routes.py
+# 產生時間: 2026-07-05 03:30 +08:00
+# 版本: v3.6
+# 模組定位:
+#   Literature 主藍圖入口與共用依賴註冊(ACL、lazy loader、執行器);
+#   統一註冊 context/batch/context-chain/debug 子路由;
+#   Flow B reflow artifact 生成(task_5b -> heuristic fallback)。
+# 主要責任:
+#   1. 保留相容 wrapper(供測試 monkeypatch)並轉發至拆分模組。
+#   2. _generate_flowb_reflow_artifact():semantic_sections.json 生成。
+# 維護提醒:
+#   - v3.6 新增 reflow 內容零損失防線:
+#     (1) _validate_reflow_coverage():assigned_ratio(全 ref 追蹤)與
+#         content_ratio(字數覆蓋)寫入 meta.coverage;
+#         assigned<1.0 或 content<0.90 記 coverage_warning,
+#         任一 <0.75 時 generation_mode 加 _low_coverage 後綴。
+#     (2) _ensure_abstract_section():第一頁有 >=300 字長文但輸出無
+#         Abstract section 時,規則保底注入(inferred, conf=0.5)。
+#     驗證失敗「不會」讓 reflow 整體失敗(可用性優先),但警告必須可見。
+# 驗證方式:
+#   - .venv/Scripts/python -m pytest test/unit/test_reflow_coverage.py test -q
+# ------------------------------------------------------------------------------
 
 # [MVP+Prototype Handoff Header]
 # 本檔案目前定位為 MVP/Prototype 實作；非最終產品級設計。
@@ -85,6 +102,7 @@ from app.core_pro.literature.literature_flowb_helpers import (
     _flowb_collect_lang_from_refs,
     _flowb_collect_reflow_rows,
     _flowb_collect_section_refs,
+    _flowb_is_section_anchor,
     _flowb_compute_fusion_quality_metrics,
     _flowb_extract_first_json_blob,
     _flowb_extract_first_json_object,
@@ -1098,6 +1116,87 @@ def _build_flowb_semantic_sections(trans_payload: dict, summary_payload: dict | 
     return sections
 
 
+def _validate_reflow_coverage(rows: list, sections: list) -> dict:
+    """
+    後驗覆蓋率驗證(v0.2 內容零損失防線):
+    - assigned_ratio:輸入 ref 出現在任一 section 的 source_block_refs
+      或 dropped_refs 的比例(目標 1.0)。
+    - content_ratio:各 section 內容總字數 / 輸入 rows 文字總字數(粗估)。
+    回傳 {"assigned_ratio", "content_ratio", "unassigned_refs"}。
+    """
+    input_refs = []
+    input_chars = 0
+    for r in rows if isinstance(rows, list) else []:
+        if not isinstance(r, dict):
+            continue
+        ref = str(r.get("ref", "") or "").strip()
+        if ref:
+            input_refs.append(ref)
+        input_chars += len(str(r.get("text", "") or ""))
+
+    covered = set()
+    section_chars = 0
+    for s in sections if isinstance(sections, list) else []:
+        if not isinstance(s, dict):
+            continue
+        for key in ("source_block_refs", "dropped_refs"):
+            refs = s.get(key)
+            if isinstance(refs, list):
+                covered.update(str(x or "").strip() for x in refs)
+        section_chars += len(str(s.get("content_en", "") or "")) + len(str(s.get("content_zh", "") or ""))
+
+    unassigned = [ref for ref in input_refs if ref not in covered]
+    assigned_ratio = 1.0 if not input_refs else (len(input_refs) - len(unassigned)) / len(input_refs)
+    # content_zh 與 content_en 合計可能超過輸入(雙語),content_ratio 只做下限警戒。
+    content_ratio = 1.0 if input_chars <= 0 else min(2.0, section_chars / float(input_chars))
+    return {
+        "assigned_ratio": round(assigned_ratio, 4),
+        "content_ratio": round(content_ratio, 4),
+        "unassigned_refs": unassigned[:80],
+    }
+
+
+def _ensure_abstract_section(rows: list, sections: list) -> tuple[list, bool]:
+    """
+    Abstract 保底(v0.2):第一頁若有 >=300 字元的長文字 row,
+    但輸出沒有任何 Abstract section,用規則直接補一個(inferred, conf=0.5)。
+    """
+    has_abstract = any(
+        "abstract" in str(s.get("section_label", "") or "").strip().lower()
+        for s in sections
+        if isinstance(s, dict)
+    )
+    if has_abstract:
+        return sections, False
+
+    page1_rows = [
+        r for r in rows
+        if isinstance(r, dict) and str(r.get("ref", "") or "").startswith("p1-")
+    ]
+    if not page1_rows:
+        return sections, False
+
+    best = max(page1_rows, key=lambda r: len(str(r.get("text_en", "") or r.get("text", "") or "")), default=None)
+    best_en = str(best.get("text_en", "") or best.get("text", "") or "") if best else ""
+    if len(best_en) < 300:
+        return sections, False
+
+    fallback_section = {
+        "section_label": "Abstract",
+        "confidence": 0.5,
+        "inferred_label": True,
+        "source_block_refs": [str(best.get("ref", "") or "")],
+        "dropped_refs": [],
+        "content_en": best_en,
+        "content_zh": str(best.get("text_zh", "") or ""),
+    }
+    logger.warning(
+        "[reflow] Abstract missing from sections; rule-based fallback injected from %s",
+        best.get("ref"),
+    )
+    return [fallback_section] + list(sections), True
+
+
 def _generate_flowb_reflow_artifact(
     pid: str,
     paper_id: str,
@@ -1164,6 +1263,22 @@ def _generate_flowb_reflow_artifact(
     if not sections:
         return False, "no semantic sections generated", "", generation_mode
 
+    # v0.2: 內容零損失防線——覆蓋率驗證 + Abstract 保底。
+    coverage_rows = _flowb_collect_reflow_rows(trans_payload)
+    sections, abstract_injected = _ensure_abstract_section(coverage_rows, sections)
+    coverage = _validate_reflow_coverage(coverage_rows, sections)
+    coverage_warning = None
+    if coverage["assigned_ratio"] < 1.0 or coverage["content_ratio"] < 0.90:
+        coverage_warning = coverage
+        logger.warning(
+            "[reflow] coverage warning for %s/%s: assigned=%.2f content=%.2f unassigned=%s",
+            pid, paper_id,
+            coverage["assigned_ratio"], coverage["content_ratio"],
+            coverage["unassigned_refs"][:10],
+        )
+        if coverage["assigned_ratio"] < 0.75 or coverage["content_ratio"] < 0.75:
+            generation_mode = f"{generation_mode}_low_coverage"
+
     paper_dir = _get_literature_paper_dir(pid, paper_id, for_write=False)
     reflow_dir = safe_join_under(paper_dir, "06_translates", "reflow")
     os.makedirs(reflow_dir, exist_ok=True)
@@ -1185,6 +1300,9 @@ def _generate_flowb_reflow_artifact(
             },
             "section_count": len(sections),
             "appendix_uncovered_refs": int(uncovered_ref_count or 0),
+            "coverage": coverage,
+            "coverage_warning": coverage_warning,
+            "abstract_fallback_injected": bool(abstract_injected),
         },
         "sections": sections,
     }

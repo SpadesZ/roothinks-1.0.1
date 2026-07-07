@@ -1,8 +1,25 @@
-#路徑(app/core_pro/literature/literature_flowb_helpers.py) #版本 v0.1 #更版時間 20260429
-#功能概要:
-#1. 提供 Flow B 章節清洗、重排、JSON 解析與品質判斷工具。
-#2. 集中 reflow prompt 與 section merge 相關純函式。
-#3. 讓 literature_routes.py 保持輕量、便於後續維護。
+# 檔案路徑: roothinks/app/core_pro/literature/literature_flowb_helpers.py
+# 產生時間: 2026-07-05 03:10 +08:00
+# 版本: v0.2
+# 模組定位:
+#   Flow B 章節清洗、重排、JSON 解析與品質判斷工具集。
+#   集中 reflow rows 收集與 section merge 純函式,讓 routes 保持輕量。
+# 主要責任:
+#   1. _flowb_collect_reflow_rows():雙語 blocks -> compact rows(LLM 輸入)。
+#   2. heading / section label 判定與雜訊過濾。
+# 維護提醒:
+#   - v0.2 三個行為變化:
+#     (1) 短 heading 錨點(如 "Abstract"、"1. Introduction")不再被
+#         low-information 過濾丟棄——舊版 <24 字元一律清空,導致 LLM
+#         輸入裡根本沒有章節錨點,章節永遠切不出來。
+#     (2) 新增 _flowb_filter_running_headers():同一短文字在 >=3 頁重複
+#         即判 running header 清空(資料驅動,不寫死論文標題);
+#         VNS 標 type=header / is_page_noise 的 block 一律不進 rows。
+#     (3) _flowb_is_heading_like 支援編號模式(^3.1 之類);
+#         section rules 補 References/Appendix/Experiments 變體。
+# 驗證方式:
+#   - .venv/Scripts/python -m pytest test/unit/test_reflow_coverage.py -q
+# ------------------------------------------------------------------------------
 
 import json
 import os
@@ -17,6 +34,8 @@ _FLOWB_SECTION_RULES = [
     ("Results", [r"\bresult(?:s)?\b", r"\bexperiment(?:s|al)?\b", r"\bevaluation\b", r"結果"]),
     ("Discussion", [r"\bdiscussion\b", r"討論"]),
     ("Conclusion", [r"\bconclusion(?:s)?\b", r"future work", r"結論"]),
+    ("References", [r"\breferences?\b", r"\bbibliography\b", r"參考文獻"]),
+    ("Appendix", [r"\bappendix\b", r"\bappendices\b", r"附錄"]),
 ]
 _FLOWB_SECTION_PATTERNS = [
     (label, [re.compile(p, re.IGNORECASE) for p in patterns])
@@ -49,19 +68,73 @@ def _flowb_normalize_heading(text: str) -> str:
     return t.lower()
 
 
+# 編號章節模式:如 "3.1 Constructing the Classifier"、"2 Methods"
+_FLOWB_NUMBERED_HEADING_RE = re.compile(r"^\d+(?:\.\d+)*[.\s]+\S")
+
+
 def _flowb_is_heading_like(text: str, block_type: str = "") -> bool:
     bt = str(block_type or "").strip().lower()
-    if bt in {"title", "header", "heading", "section_title"}:
+    if bt in {"title", "maintitle", "subtitle", "subsubtitle", "heading", "section_title"}:
         return True
 
     t = str(text or "").strip()
     if not t:
         return False
 
+    # v0.2: 編號模式優先(長度上限 90)
+    if len(t) <= 90 and _FLOWB_NUMBERED_HEADING_RE.match(t):
+        return True
+
     words = [w for w in re.split(r"\s+", t) if w]
     if len(t) <= 90 and len(words) <= 14 and not re.search(r"[。！？!?]\s", t):
         return True
     return False
+
+
+def _flowb_is_section_anchor(text: str) -> bool:
+    """章節錨點:heading 樣式且能匹配 section label 或編號模式。
+    這類 row 即使很短也必須保留,否則 LLM 輸入裡沒有章節邊界依據。"""
+    t = str(text or "").strip()
+    if not t or len(t) > 90:
+        return False
+    if _FLOWB_NUMBERED_HEADING_RE.match(t):
+        return True
+    return bool(_flowb_match_section_label(t))
+
+
+def _flowb_filter_running_headers(rows: list) -> tuple:
+    """跨頁重複的短文字判定為 running header 並清空(資料驅動)。
+    回傳 (rows, removed_refs)。同一 normalize 文字出現在 >= 3 個不同頁面
+    且長度 < 90 字元即判定;不寫死任何論文標題字串。"""
+    if not isinstance(rows, list) or not rows:
+        return rows, []
+
+    page_of_ref = {}
+    norm_pages = {}
+    for r in rows:
+        if not isinstance(r, dict):
+            continue
+        ref = str(r.get("ref", "") or "")
+        m = re.match(r"^p(\d+)-", ref)
+        page = int(m.group(1)) if m else 0
+        page_of_ref[ref] = page
+        t = re.sub(r"\s+", " ", str(r.get("text", "") or "")).strip().lower()
+        if t and len(t) < 90:
+            norm_pages.setdefault(t, set()).add(page)
+
+    header_texts = {t for t, pages in norm_pages.items() if len(pages) >= 3}
+    if not header_texts:
+        return rows, []
+
+    kept = []
+    removed_refs = []
+    for r in rows:
+        t = re.sub(r"\s+", " ", str(r.get("text", "") or "")).strip().lower()
+        if t in header_texts:
+            removed_refs.append(str(r.get("ref", "") or ""))
+            continue
+        kept.append(r)
+    return kept, removed_refs
 
 
 def _flowb_match_section_label(text: str) -> str:
@@ -142,6 +215,11 @@ def _flowb_is_meta_noise_line(text: str) -> bool:
     t = _flowb_squash_text(text)
     if not t:
         return True
+    # v0.2: meta noise 是「行級」概念——長文不可能整段都是雜訊。
+    # 舊版對含 'department'/'doi' 等關鍵字的整個大 block(如 fusion 合併後
+    # 3700 字的首頁大塊)整塊誤殺,導致 Abstract 全文從 reflow 消失。
+    if len(t) > 240:
+        return False
     if any(p.search(t) for p in _FLOWB_META_NOISE_PATTERNS):
         return True
 
@@ -970,6 +1048,9 @@ def _flowb_collect_reflow_rows(trans_payload: dict, max_rows: int = 0) -> list[d
                     continue
 
                 block_type = str(block.get("type") or "").strip().lower() or "body"
+                # v0.2: VNS 已標記的頁面雜訊(running header)不進 rows。
+                if block_type == "header" or bool(block.get("is_page_noise")):
+                    continue
                 raw_content = _flowb_squash_text((block or {}).get("content"))
                 eq_failed = bool(block.get("equation_failed", False))
                 if block_type == "equation":
@@ -996,10 +1077,15 @@ def _flowb_collect_reflow_rows(trans_payload: dict, max_rows: int = 0) -> list[d
                     if text_zh and _flowb_is_meta_noise_line(text_zh):
                         text_zh = ""
 
-                    if text_en and _flowb_is_low_information_text(text_en):
-                        text_en = ""
-                    if text_zh and _flowb_is_low_information_text(text_zh):
-                        text_zh = ""
+                    # v0.2: 章節錨點豁免——"Abstract"、"1. Introduction" 這類
+                    # 短 heading 是 LLM 切章節的唯一邊界依據,不可被
+                    # low-information 過濾清掉(舊版 <24 字元一律丟)。
+                    is_anchor = _flowb_is_section_anchor(text_en) or _flowb_is_section_anchor(text_zh)
+                    if not is_anchor:
+                        if text_en and _flowb_is_low_information_text(text_en):
+                            text_en = ""
+                        if text_zh and _flowb_is_low_information_text(text_zh):
+                            text_zh = ""
 
                 if not text_en and not text_zh:
                     continue
@@ -1047,6 +1133,14 @@ def _flowb_collect_reflow_rows(trans_payload: dict, max_rows: int = 0) -> list[d
                     break
             if max_rows > 0 and len(compact_rows) >= max_rows:
                 break
+
+    # v0.2: 資料驅動的 running header 過濾(同短文字 >=3 頁重複)。
+    compact_rows, removed_header_refs = _flowb_filter_running_headers(compact_rows)
+    if removed_header_refs:
+        import logging
+        logging.getLogger("LiteratureRoutes").info(
+            "[reflow] running header rows removed: %s", removed_header_refs
+        )
     return compact_rows
 
 
@@ -1099,9 +1193,11 @@ def _flowb_build_reflow_prompt_from_rows(
 10) 嚴格輸出 JSON，禁止輸出 Markdown、註解或額外說明文字。
 11) 僅允許「抽取 + 重排」輸入內容，不可改寫成總結文風，不可自行擴寫。
 12) 必須輸出可被 json.loads 解析的合法 JSON。
-13) 每個輸入 block ref 必須被追蹤：要嘛出現在 source_block_refs（被採用），要嘛出現在 dropped_refs（被剔除）；不可兩者同時包含。
+13) 每個輸入 block ref 必須被追蹤：要嘛出現在 source_block_refs（被採用），要嘛出現在 dropped_refs（被剔除）；不可兩者同時包含，也不允許遺漏任何 ref。
 14) {("strict_extract 模式下，除明顯版面雜訊外，不得刪除正文句子。" if is_strict else "readable_clean 模式下，可在不改變事實下做必要清洗與重排。")}
 15) 若相鄰 blocks 共享 chunk_affinity_key，優先維持其語境連續，不要切成互不相關段落。
+18) 第一頁若含論文標題與 Abstract 正文，必須輸出獨立的 Title 與 Abstract sections；嚴禁把第一頁的正文（尤其 Abstract 全文）丟進「未分類段落」或 dropped_refs。
+19) dropped_refs 只允許放：頁首/頁尾 running header、頁碼、DOI/版權行、確認無法修復的亂碼殘片；正文句子一律不得進入 dropped_refs。
 {chunk_instruction}
 
 輸出格式:

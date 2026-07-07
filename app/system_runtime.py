@@ -1,3 +1,23 @@
+# 檔案路徑: roothinks/app/system_runtime.py
+# 產生時間: 2026-07-05 00:20 +08:00
+# 版本: v1.1
+# 模組定位:
+#   系統執行期支撐:CPU thread 上限套用、系統 logging 初始化、
+#   背景 system monitor(定期輸出 SYSTEM_METRICS 快照)。
+# 主要責任:
+#   1. apply_cpu_thread_limit_env / apply_torch_thread_limits。
+#   2. setup_system_logging:RotatingFileHandler 掛載(冪等)。
+#   3. start_system_monitor:daemon thread 定期記錄資源快照。
+# 維護提醒:
+#   - monitor 的防重(_MONITOR_STARTED)是「per-process」的:
+#     gunicorn 多 worker 部署時每個 worker process 各有一份 monitor,
+#     metrics 依 log 格式中的 %(process)d 區分屬於哪個 worker,
+#     若只想要單份 metrics,除一個 worker 外以
+#     LECTURE_SYSTEM_MONITOR_ENABLED=0 關閉其餘(或全域關閉)。
+#   - monitor 為 daemon thread,不阻擋 process 退出,勿在其中做持久化寫入。
+# 驗證方式:
+#   - .venv/Scripts/python -m pytest test -q(create_app 啟動路徑會執行本模組)。
+# ------------------------------------------------------------------------------
 import importlib.metadata
 import json
 import logging

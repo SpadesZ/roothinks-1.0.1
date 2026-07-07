@@ -1,4 +1,22 @@
-#路徑(./app/core_pro/literature/literature_body_segmenter.py) #版本 v0.5 #更版時間 20260430-2310
+# 檔案路徑: roothinks/app/core_pro/literature/literature_body_segmenter.py
+# 產生時間: 2026-07-05 02:20 +08:00
+# 版本: v0.6
+# 模組定位:
+#   第三階段切割(BodySegmenter)。處理未被 Equation/Figure/Table+Caption
+#   佔用的候選:Body / heading(MainTitle/Subtitle/SubSubtitle)/ Header 判定。
+# 主要責任:
+#   1. 幾何規則 heading 判定(HEADER_ZONE / SECTION_HEADING / SMALL_HEADING_ZONE)。
+#   2. v0.6 新增:消費 llm_heading_hint(LLM 信心 >= 0.70 時升格 heading,
+#      幾何規則未命中也能落地,解決章節結構建不起來的問題)。
+#   3. v0.6 新增:running header 判定 -> type="Header" + is_page_noise=true
+#      (非首頁、頁首 6% 區、單行高、寬 < 70% 頁寬;不刪除,交下游過濾)。
+# 維護提醒:
+#   - Header 僅標記不刪除:reflow/前端應依 is_page_noise 過濾;
+#     首頁(page_num==1)永不判 Header,避免誤殺論文標題。
+#   - Body phase 嚴禁升級 Figure/Table(Stage-3 strict rule),維持不變。
+# 驗證方式:
+#   - .venv/Scripts/python -m pytest test/unit/test_segmentizer_types.py -q
+# ------------------------------------------------------------------------------
 from typing import Any, Dict, List, Set
 
 
@@ -7,6 +25,11 @@ class BodySegmenter:
     第三階段切割:
     僅處理未被 Equation/Symbolic 或 Figure/Table+Caption 佔用的區塊。
     """
+
+    # v0.6: running header 判定幾何常數
+    HEADER_ZONE_H_RATIO = 0.06      # 頁首區:頁高前 6%
+    HEADER_MAX_H_RATIO = 0.035      # 單行高上限
+    HEADER_MAX_W_RATIO = 0.70       # 寬度上限(全寬標題不誤殺)
 
     def extract(
         self,
@@ -18,6 +41,7 @@ class BodySegmenter:
         major_reject_idxs: Set[int],
         page_w: int,
         page_h: int,
+        page_num: int = 0,
     ) -> List[Dict[str, Any]]:
         cooked_body: List[Dict[str, Any]] = []
         for i, it in enumerate(candidates):
@@ -65,12 +89,30 @@ class BodySegmenter:
                 equation_score >= max(0.68, body_score - 0.04) and equation_geom_ok
             )
 
+            llm_heading_hint = str(it.get("llm_heading_hint", "") or "")
+            is_running_header = (
+                int(page_num) >= 2
+                and y1 <= int(page_h * self.HEADER_ZONE_H_RATIO)
+                and h <= int(page_h * self.HEADER_MAX_H_RATIO)
+                and w <= int(page_w * self.HEADER_MAX_W_RATIO)
+            )
+
             if equation_like_fallback:
                 node_type = "Equation"
                 type_confidence = max(type_confidence, equation_score, llm_conf * 0.95, 0.70)
                 reason_codes.append("EQUATION_FALLBACK_PROMOTE")
                 if llm_force_equation:
                     reason_codes.append("LLM_FORCE_EQUATION")
+            elif is_running_header:
+                # v0.6: running header 標記為 Header(不刪除,交下游依 is_page_noise 過濾)
+                node_type = "Header"
+                type_confidence = max(type_confidence, 0.70)
+                reason_codes.append("RUNNING_HEADER_ZONE")
+            elif llm_heading_hint in {"MainTitle", "Subtitle", "SubSubtitle"} and llm_conf >= 0.70:
+                # v0.6: LLM heading 投票落地(幾何規則未命中時的升格路徑)
+                node_type = llm_heading_hint
+                type_confidence = max(type_confidence, llm_conf * 0.95, 0.72)
+                reason_codes.append("LLM_HEADING_PROMOTE")
             elif (
                 h >= max(18, int(page_h * 0.009))
                 and h <= int(page_h * 0.032)
@@ -126,6 +168,7 @@ class BodySegmenter:
                 {
                     "bbox": [x1, y1, x2, y2],
                     "type": node_type,
+                    "is_page_noise": bool(node_type == "Header"),
                     "area_ratio": it["area_ratio"],
                     "has_caption": False,
                     "caption_bbox": None,

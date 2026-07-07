@@ -1,9 +1,21 @@
-//路徑(./app/static/js/study_view.js) #版本 v3.2-MediaMode #更版時間 20260430-1835
-/* [MVP+Prototype Handoff Header]
- * 本檔案目前定位為 MVP/Prototype 實作；非最終產品級設計。
- * 對應規劃檔：CHANGE_PLAN_STUDY_FLOWB_2026-04-20.md
- * 2026-04-20~2026-04-21 Study Fulltext/Matrix 切換與 Flow B 顯示邏輯已集中於此，供人類團隊接手。
- */
+// 檔案路徑: roothinks/app/static/js/study_view.js
+// 產生時間: 2026-07-05 02:50 +08:00
+// 版本: v3.3
+// 模組定位:
+//   Study View Controller。Sidebar/Tab 切換、Fulltext(Block/Reflow) 渲染、
+//   Matrix 表格渲染與 Cell 點擊事件。MVP/Prototype 定位。
+// 主要責任:
+//   1. _renderBlockCard():依 block type 渲染卡片(雙語對照/公式/圖表)。
+//   2. Reflow 章節視圖與 coverage 警示顯示。
+// 維護提醒:
+//   - v3.3 起 type=Header 或 is_page_noise=true 的 block 以淡化小字顯示
+//     (running header 雜訊),不再誤渲染為大標題;'header' 已從 isTitle
+//     判斷移除,真標題請用 MainTitle。SubSubtitle 併入 subtitle 樣式。
+//   - 對應規劃檔:CHANGE_PLAN_STUDY_FLOWB_2026-04-20.md
+// 驗證方式:
+//   - node --check app/static/js/study_view.js;UI 行為以 preview 對照
+//     DSPWVD-p CTC 論文頁面驗證。
+// ------------------------------------------------------------------------------
 /**
  * Study View Controller v3.2
  * 職責：
@@ -85,8 +97,16 @@ class StudyView {
         const translationReady = !!opts.translationReady;
         const compact = !!opts.compact;
         const blockType = String(safeBlock.type || 'body').toLowerCase();
-        const isTitle = blockType === 'title' || blockType === 'header' || blockType === 'maintitle';
-        const isSubtitle = blockType === 'subtitle';
+        // v0.6: running header(type=Header / is_page_noise)是頁面雜訊,
+        // 淡化顯示而非渲染成大標題;MainTitle 才是真標題。
+        const isPageNoise = blockType === 'header' || !!safeBlock.is_page_noise;
+        if (isPageNoise) {
+            const noiseText = String(safeBlock.content || '').trim();
+            if (!noiseText) return '';
+            return `<div class="page-noise-block text-muted small mb-2" style="opacity:0.45;text-align:center;" title="頁首/頁尾雜訊(running header)">${this._escapeHtml(noiseText)}</div>`;
+        }
+        const isTitle = blockType === 'title' || blockType === 'maintitle';
+        const isSubtitle = blockType === 'subtitle' || blockType === 'subsubtitle';
         const isEquation = blockType === 'equation';
         const isFigure = blockType === 'figure';
         const isTable = blockType === 'table';
@@ -213,6 +233,230 @@ class StudyView {
             </div>
         `;
         return html;
+    }
+
+    // ---------------------------------------------------------------------------
+    // _renderBlockSections — groups blocks from all pages into merged section
+    // cards (title header + stacked two-column body rows).  Replaces the old
+    // per-block _renderBlockCard loop in loadFulltext.
+    //
+    // Grouping logic:
+    //  1. Walk every page/block in reading order; emit _renderPageMarker when
+    //     the page number changes (same as before).
+    //  2. Title block  → close open section, open a new section whose header
+    //     spans full width; do NOT emit a standalone <h4>.
+    //  3. Body block   → append as one two-column row inside current section.
+    //     Fragment rule: trimmed text < 12 chars → glue onto previous row's
+    //     original column instead of creating its own row.
+    //  4. Figure/table/equation/subtitle/noise block → close open section,
+    //     delegate to _renderBlockCard (existing logic), re-open section.
+    //  5. blockRefMap is populated BEFORE this helper is called (unchanged).
+    // ---------------------------------------------------------------------------
+    _renderBlockSections(pageDataList, opts = {}) {
+        const translationReady = !!opts.translationReady;
+        const compact = !!opts.compact;
+        const cardMaxWidth = compact ? 1000 : 1200;
+        const tipDesc = translationReady
+            ? '此段落暫無可用翻譯'
+            : '尚未產生翻譯，請回 Literature 重新執行 Flow B';
+
+        let html = '';
+        let lastPage = 0;
+
+        // Accumulated state for the current open section card.
+        let sectionOpen = false;
+        let sectionTitleHtml = '';   // full-width heading HTML for this section
+        let sectionRows = [];        // [{origHtml, transHtml}]
+        let lastRowIdx = -1;         // index into sectionRows of the last body row
+
+        // Flush an open section card to html.
+        const flushSection = () => {
+            if (!sectionOpen) return;
+            if (!sectionRows.length && !sectionTitleHtml) {
+                sectionOpen = false;
+                return;
+            }
+            html += `<div class="bilingual-section mb-4" style="background:white;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08);border:1px solid #e2e8f0;max-width:${cardMaxWidth}px;margin:0 auto;">`;
+            if (sectionTitleHtml) {
+                html += `<div class="section-title-header px-4 pt-3 pb-2" style="border-bottom:1px solid #e2e8f0;">` + sectionTitleHtml + `</div>`;
+            }
+            sectionRows.forEach((row, idx) => {
+                const isFirst = idx === 0;
+                const borderTop = idx > 0 ? 'border-top:1px solid #edf2f7;' : '';
+                html += `<div class="row g-0" style="min-height:${compact ? 100 : 120}px;${borderTop}">`;
+                // Left: original
+                html += `<div class="col-md-6" style="border-right:2px solid #e2e8f0;padding:${compact ? '0.75rem 1rem' : '1rem 1.5rem'};background:#fafbfc;">`;
+                if (isFirst) {
+                    html += `<div class="section-header mb-2 small fw-bold text-uppercase text-secondary">Original Text</div>`;
+                }
+                html += `<div class="original-content selectable-text">${row.origHtml}</div>`;
+                html += `</div>`;
+                // Right: translation
+                html += `<div class="col-md-6" style="padding:${compact ? '0.75rem 1rem' : '1rem 1.5rem'};background:#ffffff;">`;
+                if (isFirst) {
+                    html += `<div class="section-header mb-2 small fw-bold text-uppercase" style="color:#667eea;">中文翻譯</div>`;
+                }
+                if (row.transHtml) {
+                    html += `<div class="translation-content selectable-text" style="font-size:${compact ? '0.95rem' : '1.02rem'};line-height:1.8;color:#1a202c;text-align:justify;">${row.transHtml}</div>`;
+                } else {
+                    html += `<div class="text-muted small">${this._escapeHtml(tipDesc)}</div>`;
+                }
+                html += `</div>`;
+                html += `</div>`;
+            });
+            html += `</div>`;
+            sectionOpen = false;
+            sectionTitleHtml = '';
+            sectionRows = [];
+            lastRowIdx = -1;
+        };
+
+        // Ensure a section is open (untitled if none yet).
+        const ensureSectionOpen = () => {
+            if (!sectionOpen) {
+                sectionOpen = true;
+                sectionTitleHtml = '';
+                sectionRows = [];
+                lastRowIdx = -1;
+            }
+        };
+
+        pageDataList.forEach((pageData, pageIdx) => {
+            const rawPage = Number((pageData && pageData.page) || (pageIdx + 1));
+            const pageNum = Number.isFinite(rawPage) && rawPage > 0 ? rawPage : (pageIdx + 1);
+
+            if (pageNum !== lastPage) {
+                // Page break: flush section, emit marker, reopen
+                // We do NOT flush — page breaks happen mid-section in real papers.
+                // Just emit the page marker inline before the first block of the page.
+                html += this._renderPageMarker(pageNum);
+                lastPage = pageNum;
+            }
+
+            const pageBlocks = Array.isArray(pageData.blocks) ? pageData.blocks : [];
+            pageBlocks.forEach((rawBlock) => {
+                const safeBlock = (rawBlock && typeof rawBlock === 'object')
+                    ? rawBlock
+                    : { type: 'body', content: String(rawBlock || '') };
+
+                const blockType = String(safeBlock.type || 'body').toLowerCase();
+                const isPageNoise = blockType === 'header' || !!safeBlock.is_page_noise;
+                const isTitle = blockType === 'title' || blockType === 'maintitle';
+                const isSubtitle = blockType === 'subtitle' || blockType === 'subsubtitle';
+                const isEquation = blockType === 'equation';
+                const isFigure = blockType === 'figure';
+                const isTable = blockType === 'table';
+                const isSpecial = isFigure || isTable || isEquation || isPageNoise;
+                const text = String(safeBlock.content || '').trim();
+                // v1.0.1: segmentizer 未把章節標題標成 Title(CTC 全落 Body/Unknown)。
+                // 前端容錯:短行且符合章節標題樣式者,視為標題抬頭。後端資料層另有
+                // 確定性 retag,此為 belt-and-suspenders。
+                const treatAsTitle = isTitle
+                    || ((blockType === 'body' || blockType === 'unknown')
+                        && this._looksLikeSectionTitle(text));
+
+                if (treatAsTitle) {
+                    // Flush existing section and start a new one with this title.
+                    flushSection();
+                    sectionOpen = true;
+                    sectionTitleHtml = text
+                        ? `<h4 class="mb-0 selectable-text" style="font-weight:600;font-size:1.25rem;color:#2d3748;">${this._escapeHtml(text)}</h4>`
+                        : '';
+                    sectionRows = [];
+                    lastRowIdx = -1;
+                    return;
+                }
+
+                if (isSubtitle) {
+                    // Subtitles: flush, emit via _renderBlockCard, keep section state reset.
+                    flushSection();
+                    const subHtml = this._renderBlockCard(safeBlock, { translationReady, compact });
+                    if (subHtml) html += subHtml;
+                    return;
+                }
+
+                if (isSpecial) {
+                    // Figures/tables/equations/noise: flush section, delegate, continue.
+                    flushSection();
+                    const specialHtml = this._renderBlockCard(safeBlock, { translationReady, compact });
+                    if (specialHtml) html += specialHtml;
+                    return;
+                }
+
+                // Body block.
+                if (!text) return;
+
+                // v1.0.1: 失敗的行內公式碎片常被標成 Unknown、無 latex、符號雜訊比例高
+                // (例:失敗的行內公式 OCR 碎片)。淡化顯示,不佔正文閱讀流。
+                if (blockType === 'unknown' && this._isGarbageFragment(text)) {
+                    ensureSectionOpen();
+                    const dimmed = `<div class="text-muted small mt-2" style="opacity:0.4;font-style:italic;" title="無法辨識的公式/符號碎片">${this._escapeHtml(text)}</div>`;
+                    if (lastRowIdx >= 0 && sectionRows[lastRowIdx]) {
+                        sectionRows[lastRowIdx].origHtml += dimmed;
+                    } else {
+                        sectionRows.push({ origHtml: dimmed, transHtml: '' });
+                        lastRowIdx = sectionRows.length - 1;
+                    }
+                    return;
+                }
+
+                const isFragment = text.length < 12;
+                if (isFragment && lastRowIdx >= 0 && sectionRows[lastRowIdx]) {
+                    // Glue fragment onto previous row's original column.
+                    const fontSize = compact ? '0.9rem' : '0.95rem';
+                    sectionRows[lastRowIdx].origHtml +=
+                        `<p class="mt-2" style="font-size:${fontSize};line-height:1.75;color:#2d3748;text-align:justify;margin-bottom:0;">${this._escapeHtml(text)}</p>`;
+                    return;
+                }
+
+                ensureSectionOpen();
+
+                const translation = String(safeBlock.translation || safeBlock.content_zh || '').trim();
+                const paragraphs = text.split(/(?:\n\n+|\. {2,})/g).map(s => s.trim()).filter(Boolean);
+                const fontSize = compact ? '0.9rem' : '0.95rem';
+                let origHtml = '';
+                paragraphs.forEach((para, idx) => {
+                    origHtml += `<p class="${idx > 0 ? 'mt-3' : ''}" style="font-size:${fontSize};line-height:1.75;color:#2d3748;text-align:justify;margin-bottom:0;">${this._escapeHtml(para)}</p>`;
+                });
+                const transHtml = translation ? this._escapeHtml(translation) : '';
+
+                sectionRows.push({ origHtml, transHtml });
+                lastRowIdx = sectionRows.length - 1;
+            });
+        });
+
+        // Flush any remaining open section.
+        flushSection();
+        return html;
+    }
+
+    // v1.0.1: 章節標題偵測(零配額,確定性正則)。segmentizer 目前不產 Title 型別,
+    // 短行且符合編號標題或已知章節名者視為標題。長度/字數上限擋掉以數字開頭的正常句子。
+    _looksLikeSectionTitle(text) {
+        const s = String(text || '').trim();
+        if (!s || s.length > 64) return false;
+        if (s.split(/\s+/).length > 9) return false;
+        // 編號標題:"1. Introduction"、"2.1. Label Error Rate"、"5.2 Experimental Setup"
+        if (/^\d+(?:\.\d+)*\.?\s+[A-Z]/.test(s)) return true;
+        // 已知章節名(near-whole-line)
+        if (/^(?:Abstract|Introduction|Related Work|Background|Motivation|Preliminaries|Methods?|Materials and Methods|Approach|Model|Experiments?|Experimental Setup|Results?|Evaluation|Discussion|Conclusions?|Future Work|References|Bibliography|Acknowledge?ments?|Appendix|Data)\b/i.test(s)) {
+            return true;
+        }
+        return false;
+    }
+
+    // v1.0.1: 僅對 Unknown 型別呼叫。判斷是否為失敗行內公式/OCR 符號碎片。
+    _isGarbageFragment(text) {
+        const s = String(text || '').trim();
+        if (!s) return true;
+        if (s.length >= 40) return false; // 夠長,可能是正常短句
+        if (/[=\[\]{}\\|^_]|\bdef\b|∫|∑|∏/.test(s)) return true; // 數學/OCR 雜訊訊號
+        const tokens = s.split(/\s+/).filter(Boolean);
+        const shortTokens = tokens.filter(t => t.length <= 2).length;
+        if (tokens.length && shortTokens / tokens.length >= 0.5) return true; // 半數以上是 1-2 字元 token
+        const letters = (s.match(/[A-Za-z一-鿿]/g) || []).length;
+        if (letters < 6) return true;
+        return false;
     }
 
     _renderBlocksFromRefs(refs, blockRefMap, opts = {}) {
@@ -1027,8 +1271,6 @@ class StudyView {
             }
         }
 
-        const hasBlockRefMap = !!(blockRefMap && typeof blockRefMap === 'object' && Object.keys(blockRefMap).length > 0);
-        const sectionRenderOpts = (renderOptions && typeof renderOptions === 'object') ? renderOptions : {};
         let rendered = 0;
         sections.slice(0, 24).forEach((sec) => {
             const label = this._escapeHtml(sec.section_label || '未分類段落');
@@ -1043,9 +1285,6 @@ class StudyView {
             const contentEn = String(sec.content_en || '').trim();
             const zhLines = cleanSectionLines(contentZh, 'zh');
             const enLines = cleanSectionLines(contentEn, 'en');
-            const sourceCards = hasBlockRefMap
-                ? this._renderBlocksFromRefs(refs, blockRefMap, { translationReady: !!sectionRenderOpts.translationReady })
-                : { html: '', missingRefs: [] };
             if (!zhLines.length && !enLines.length && !refs.length) return;
             rendered += 1;
 
@@ -1063,15 +1302,6 @@ class StudyView {
                     </div>
                     <div class="small text-muted">${refs.length ? `來源：${refsText}` : '來源：未提供'}</div>
                     ${droppedRefs.length ? `<div class="small text-muted mt-1">剔除 refs：${droppedText}</div>` : ''}
-                    ${sourceCards.html ? `
-                        <div class="mt-3 pt-2 border-top">
-                            <div class="small fw-bold text-secondary mb-2"><i class="bi bi-link-45deg me-1"></i>來源 Block 卡片 (${refs.length})</div>
-                            ${sourceCards.html}
-                        </div>
-                    ` : ''}
-                    ${sourceCards.missingRefs && sourceCards.missingRefs.length ? `
-                        <div class="small text-danger mt-2">缺失 refs：${this._escapeHtml(sourceCards.missingRefs.join(', '))}</div>
-                    ` : ''}
                 </div>
             `;
         });
@@ -1141,11 +1371,10 @@ class StudyView {
                 let contentHtml = '';
                 const blockRefMap = {};
                 if (Array.isArray(data.blocks) && data.blocks.length > 0) {
+                    // Pass 1: populate blockRefMap (required by _renderReflowSections).
                     data.blocks.forEach((pageData, pageIdx) => {
                         const rawPage = Number((pageData && pageData.page) || (pageIdx + 1));
                         const pageNum = Number.isFinite(rawPage) && rawPage > 0 ? rawPage : (pageIdx + 1);
-                        contentHtml += this._renderPageMarker(pageNum);
-
                         const pageBlocks = Array.isArray(pageData.blocks) ? pageData.blocks : [];
                         pageBlocks.forEach((rawBlock, blockIdx) => {
                             const safeBlock = (rawBlock && typeof rawBlock === 'object')
@@ -1156,13 +1385,12 @@ class StudyView {
                             safeBlock.__block_index = blockIdx + 1;
                             safeBlock.__ref = ref;
                             blockRefMap[ref] = safeBlock;
-
-                            const blockHtml = this._renderBlockCard(safeBlock, {
-                                translationReady: !!data.translation_ready,
-                                compact: false,
-                            });
-                            if (blockHtml) contentHtml += blockHtml;
                         });
+                    });
+                    // Pass 2: render grouped section cards (title+body merged, fragment gluing).
+                    contentHtml = this._renderBlockSections(data.blocks, {
+                        translationReady: !!data.translation_ready,
+                        compact: false,
                     });
                 } else {
                     const fulltext = String(data.fulltext || '');
@@ -1229,29 +1457,17 @@ class StudyView {
                     </div>
                 `;
                 const blockModeHtml = buildReaderFrame('Block 對照版', rawBlocksHtml);
+                // Reflow mode: show section-reorganised content once.
+                // If no reflow sections exist, fall back to the same merged block-section
+                // stream (rawBlocksHtml) so the reader always sees content.
                 const reflowPrimaryHtml = (hasReflowSections || hasReflowMeta)
                     ? `
                         <div class="reading-content selectable-text" style="margin-top: 1.2rem;">
                             ${reflowHtml}
                         </div>
                     `
-                    : `
-                        <div class="alert alert-warning" style="max-width: 980px; margin: 1rem auto 0 auto;">
-                            目前尚無可顯示的 Reflow 章節，請先確認該篇已完成 Flow B 語意重組。
-                        </div>
-                    `;
-                const reflowModeHtml = buildReaderFrame(
-                    'Reflow 章節版',
-                    `
-                        ${reflowPrimaryHtml}
-                        <details class="mt-3" open style="max-width: 1200px; margin: 0 auto;">
-                            <summary class="fw-bold text-secondary" style="cursor:pointer;">原始 Block 對照（Flow A/Flow B，預設展開）</summary>
-                            <div style="margin-top: 0.8rem;">
-                                ${rawBlocksHtml}
-                            </div>
-                        </details>
-                    `,
-                );
+                    : rawBlocksHtml;
+                const reflowModeHtml = buildReaderFrame('Reflow 章節版', reflowPrimaryHtml);
 
                 this.currentFulltextPaperId = targetPaperId;
                 this.currentFulltextPayload = data;
