@@ -495,6 +495,18 @@ class StudyView {
         };
     }
 
+    _renderSpecialBlocksFromRefs(refs, blockRefMap, opts = {}) {
+        const specialRefs = Array.isArray(refs)
+            ? refs.map(r => String(r || '').trim()).filter(Boolean).filter((ref) => {
+                const block = (blockRefMap && typeof blockRefMap === 'object') ? blockRefMap[ref] : null;
+                const blockType = String(block?.type || '').toLowerCase();
+                return blockType === 'equation' || blockType === 'figure' || blockType === 'table';
+            })
+            : [];
+        if (!specialRefs.length) return { html: '', missingRefs: [] };
+        return this._renderBlocksFromRefs(specialRefs, blockRefMap, opts);
+    }
+
     initEventListeners() {
         // [Restored] Global Shortcuts (e.g. Ctrl+B to toggle sidebar)
         document.addEventListener('keydown', (e) => {
@@ -1286,6 +1298,9 @@ class StudyView {
             const zhLines = cleanSectionLines(contentZh, 'zh');
             const enLines = cleanSectionLines(contentEn, 'en');
             if (!zhLines.length && !enLines.length && !refs.length) return;
+            const specialBlocks = this._renderSpecialBlocksFromRefs(refs, blockRefMap, {
+                translationReady: !!renderOptions.translationReady,
+            });
             rendered += 1;
 
             html += `
@@ -1300,6 +1315,12 @@ class StudyView {
                         ${renderColumn('English (Reflow)', enLines, '無可用英文重組內容')}
                         ${renderColumn('中文重組', zhLines, '無可用中文重組內容')}
                     </div>
+                    ${specialBlocks.html ? `
+                        <div class="mt-2 mb-2">
+                            <div class="small fw-bold text-secondary mb-2">公式 / 圖表</div>
+                            ${specialBlocks.html}
+                        </div>
+                    ` : ''}
                     <div class="small text-muted">${refs.length ? `來源：${refsText}` : '來源：未提供'}</div>
                     ${droppedRefs.length ? `<div class="small text-muted mt-1">剔除 refs：${droppedText}</div>` : ''}
                 </div>

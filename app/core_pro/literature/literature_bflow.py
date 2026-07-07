@@ -890,7 +890,7 @@ def flowb_debug_snapshot(deps: FlowBRuntimeDeps, pid: str, paper_id: str, log_li
             ts = ts.astimezone(timezone.utc).replace(tzinfo=None)
         age_sec = max(0.0, (now - ts).total_seconds())
 
-    stale_sec = max(60, int(os.environ.get("LITERATURE_FLOWB_STALE_SEC", "900")))
+    stale_sec = max(60, int(os.environ.get("LITERATURE_FLOWB_STALE_SEC", "7500")))
     is_busy = status in {"processing_b", "translating_local", "judging_llm"}
     is_stale = bool(is_busy and age_sec is not None and age_sec >= stale_sec)
 

@@ -671,7 +671,7 @@ def get_status_impl(deps, pid):
                     except Exception as _heal_err:
                         deps.logger.warning("[status] Auto-heal failed for %s/%s: %s", pid, paper_id, _heal_err)
             elif has_trans_b and not has_trans_b_ready and db_flowb_busy:
-                stale_sec = max(60, int(os.environ.get("LITERATURE_FLOWB_STALE_SEC", "900")))
+                stale_sec = max(60, int(os.environ.get("LITERATURE_FLOWB_STALE_SEC", "7500")))
                 updated = db_row.updated_at if db_row else None
                 is_stale = True
                 if isinstance(updated, datetime):
@@ -691,7 +691,7 @@ def get_status_impl(deps, pid):
                 if not summary_error:
                     summary_error = flowb_reflow_issue or 'flowb_artifact_missing'
             elif db_flowb_busy:
-                stale_sec = max(60, int(os.environ.get("LITERATURE_FLOWB_STALE_SEC", "900")))
+                stale_sec = max(60, int(os.environ.get("LITERATURE_FLOWB_STALE_SEC", "7500")))
                 updated = db_row.updated_at if db_row else None
                 is_stale = True
                 if isinstance(updated, datetime):

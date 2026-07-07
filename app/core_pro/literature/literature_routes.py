@@ -127,6 +127,7 @@ from app.core_pro.literature.literature_flowb_helpers import (
     _flowb_read_ready_generation_modes,
     _flowb_read_reflow_mode_env,
     _flowb_repair_section_bilingual_fields,
+    _flowb_rehome_appendix_special_refs,
     _flowb_squash_text,
     _flowb_strip_markdown_fence,
     _flowb_to_bool,
@@ -155,7 +156,9 @@ _FLOWB_EXECUTOR_MAX_WORKERS = max(1, int(os.environ.get("LITERATURE_MAX_WORKERS"
 _FLOWB_EXECUTOR = ThreadPoolExecutor(max_workers=_FLOWB_EXECUTOR_MAX_WORKERS)
 _ACTIVE_PIDS = set()
 _ACTIVE_PIDS_LOCK = threading.Lock()
-FLOWB_TIMEOUT_SEC = max(60, int(os.environ.get("LITERATURE_FLOWB_TIMEOUT_SEC", "900")))
+# ponytail: CPU NLLB full-paper translation can exceed 15 minutes; keep it bounded,
+# but make the bound match the real local-model path instead of the old quick API path.
+FLOWB_TIMEOUT_SEC = max(60, int(os.environ.get("LITERATURE_FLOWB_TIMEOUT_SEC", "7200")))
 FLOWB_SUBPROCESS_ENABLED = os.environ.get("LITERATURE_FLOWB_USE_SUBPROCESS", "1").strip() != "0"
 
 
@@ -1259,6 +1262,11 @@ def _generate_flowb_reflow_artifact(
     if uncovered_ref_count > 0:
         appendix_note = f"appendix_uncovered_refs={uncovered_ref_count}"
         llm_err = (f"{llm_err}; {appendix_note}" if str(llm_err or "").strip() else appendix_note)
+
+    sections, special_refs_rehomed = _flowb_rehome_appendix_special_refs(sections, trans_payload)
+    if special_refs_rehomed > 0:
+        special_note = f"special_refs_rehomed={special_refs_rehomed}"
+        llm_err = (f"{llm_err}; {special_note}" if str(llm_err or "").strip() else special_note)
 
     if not sections:
         return False, "no semantic sections generated", "", generation_mode

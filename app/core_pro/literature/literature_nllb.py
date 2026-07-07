@@ -97,6 +97,30 @@ class NLLBTranslator:
             logger.error(f"    ! [NLLB] Translate Error: {e}")
             return text # Fallback
 
+    def translate_texts(self, texts, target_lang="zho_Hant"):
+        """翻譯一小批字串；失敗時回傳 None 讓上層走既有逐段 fallback。"""
+        if not self.ready:
+            return None
+        batch = [str(t or "") for t in texts]
+        if not batch:
+            return []
+        try:
+            batch_size = max(1, int(os.environ.get("NLLB_BATCH_SIZE", "2")))
+        except Exception:
+            batch_size = 2
+        try:
+            result = self.pipeline(
+                batch,
+                src_lang="eng_Latn",
+                tgt_lang=target_lang,
+                batch_size=batch_size,
+            )
+            if isinstance(result, list) and len(result) == len(batch):
+                return [str(item.get("translation_text", "")) if isinstance(item, dict) else "" for item in result]
+        except Exception as e:
+            logger.error(f"    ! [NLLB] Batch Translate Error: {e}")
+        return None
+
     def translate_file(self, src_path, dst_path):
         """
         遞迴翻譯 JSON 檔案

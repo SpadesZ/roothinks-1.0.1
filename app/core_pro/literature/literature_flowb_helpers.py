@@ -24,6 +24,10 @@
 import json
 import os
 import re
+from datetime import datetime, timezone
+
+from app.core_pro.storage_layout import resolve_literature_paper_dir
+from app.security import safe_join_under
 
 
 _FLOWB_SECTION_RULES = [
@@ -70,6 +74,32 @@ def _flowb_normalize_heading(text: str) -> str:
 
 # 編號章節模式:如 "3.1 Constructing the Classifier"、"2 Methods"
 _FLOWB_NUMBERED_HEADING_RE = re.compile(r"^\d+(?:\.\d+)*[.\s]+\S")
+_FLOWB_BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+_FLOWB_DATA_ROOT = os.path.join(_FLOWB_BASE_DIR, "data")
+
+
+def _flowb_write_debug_reply(pid: str, paper_id: str, tag: str, content: str):
+    try:
+        p = str(pid or "").strip()
+        paper = str(paper_id or "").strip()
+        if not p or not paper:
+            return
+        paper_dir = resolve_literature_paper_dir(
+            _FLOWB_DATA_ROOT,
+            p,
+            paper,
+            for_write=False,
+            migrate_legacy=True,
+        )
+        debug_dir = safe_join_under(paper_dir, "06_translates", "reflow", "_debug")
+        os.makedirs(debug_dir, exist_ok=True)
+        ts = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+        fname = re.sub(r"[^A-Za-z0-9_.-]+", "_", str(tag or "debug"))[:80]
+        out_path = safe_join_under(debug_dir, f"{ts}_{fname}.txt")
+        with open(out_path, "w", encoding="utf-8") as f:
+            f.write(str(content or ""))
+    except Exception:
+        return
 
 
 def _flowb_is_heading_like(text: str, block_type: str = "") -> bool:
@@ -169,6 +199,35 @@ def _flowb_clip(text: str, max_chars: int = 2600) -> str:
     if len(s) <= max_chars:
         return s
     return s[:max_chars].rstrip() + "..."
+
+
+def _flowb_build_json_repair_prompt(bad_reply: str) -> str:
+    return f"""
+你剛才輸出的內容不是合法 JSON。
+請你只做一件事：把下面這段內容修復為「合法 JSON」。
+
+修復規則:
+1) 僅修復 JSON 格式錯誤（例如缺逗號、引號未跳脫、尾逗號、包住在 markdown fence）。
+2) 不可改寫語意，不可新增任何原本不存在的章節內容。
+3) 最終輸出只能是 JSON 本體，禁止任何解釋文字。
+4) JSON 結構必須是:
+{{
+  "sections": [
+    {{
+      "section_label": "...",
+      "confidence": 0.0,
+      "inferred_label": false,
+      "source_block_refs": ["p1-b1"],
+      "dropped_refs": [],
+      "content_en": "...",
+      "content_zh": "..."
+    }}
+  ]
+}}
+
+待修復內容:
+{_flowb_clip(str(bad_reply or ""), max_chars=26000)}
+""".strip()
 
 
 def _flowb_squash_text(text: str) -> str:
@@ -818,6 +877,91 @@ def _flowb_append_uncovered_appendix(
     sections = [s for s in sections if isinstance(s, dict)]
     sections.append(appendix)
     return sections, len(uncovered_refs)
+
+
+def _flowb_rehome_appendix_special_refs(
+    sections: list[dict],
+    trans_payload: dict,
+) -> tuple[list[dict], int]:
+    if not isinstance(sections, list) or not isinstance(trans_payload, dict):
+        return sections, 0
+
+    ref_type = {}
+    ref_order = {}
+    pages = trans_payload.get("content", [])
+    if not isinstance(pages, list):
+        return sections, 0
+
+    order = 0
+    for page_idx, page in enumerate(pages, start=1):
+        if not isinstance(page, dict):
+            continue
+        page_no = int(page.get("page") or page_idx)
+        blocks = page.get("blocks", [])
+        if not isinstance(blocks, list):
+            continue
+        for block_idx, block in enumerate(blocks, start=1):
+            if not isinstance(block, dict):
+                continue
+            ref = f"p{page_no}-b{block_idx}"
+            ref_type[ref] = str(block.get("type") or "")
+            ref_order[ref] = order
+            order += 1
+
+    special_types = {"Equation", "Figure", "Table"}
+    regular_sections = []
+    appendix_sections = []
+    for sec in sections:
+        if not isinstance(sec, dict):
+            continue
+        label = str(sec.get("section_label") or "").strip().lower()
+        if label.startswith("appendix"):
+            appendix_sections.append(sec)
+        else:
+            regular_sections.append(sec)
+    if not regular_sections or not appendix_sections:
+        return sections, 0
+
+    section_spans = []
+    for sec in regular_sections:
+        refs = sec.get("source_block_refs") if isinstance(sec.get("source_block_refs"), list) else []
+        orders = [ref_order.get(str(r)) for r in refs if ref_order.get(str(r)) is not None]
+        section_spans.append((min(orders), max(orders)) if orders else (-1, -1))
+
+    def nearest_regular_section(ref: str) -> dict:
+        pos = ref_order.get(ref, -1)
+        for idx, (first_order, last_order) in enumerate(section_spans):
+            if first_order <= pos <= last_order:
+                return regular_sections[idx]
+        best_idx = 0
+        best_order = -1
+        for idx, (_, last_order) in enumerate(section_spans):
+            if last_order <= pos and last_order >= best_order:
+                best_idx = idx
+                best_order = last_order
+        return regular_sections[best_idx]
+
+    moved = 0
+    for appendix in appendix_sections:
+        refs = appendix.get("source_block_refs") if isinstance(appendix.get("source_block_refs"), list) else []
+        kept = []
+        for raw_ref in refs:
+            ref = str(raw_ref or "").strip()
+            if ref and ref_type.get(ref) in special_types:
+                target = nearest_regular_section(ref)
+                target_refs = target.get("source_block_refs")
+                if not isinstance(target_refs, list):
+                    target_refs = []
+                    target["source_block_refs"] = target_refs
+                target_norm = [str(r or "").strip() for r in target_refs]
+                if ref not in target_norm:
+                    target_refs.append(ref)
+                    moved += 1
+                continue
+            kept.append(raw_ref)
+        appendix["source_block_refs"] = kept
+
+    return sections, moved
 
 
 def _flowb_collect_lang_from_refs(refs: list[str], ref_index: dict, field: str, relaxed: bool = False) -> str:

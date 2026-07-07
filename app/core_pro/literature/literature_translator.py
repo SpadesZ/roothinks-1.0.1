@@ -387,6 +387,12 @@ class HybridTranslator:
             if batch_ok:
                 continue
 
+            if self._nllb and self._nllb.ready and hasattr(self._nllb, 'translate_texts'):
+                outs = self._nllb.translate_texts(batch, target_lang)
+                if isinstance(outs, list) and len(outs) == len(batch) and all(str(out or "").strip() for out in outs):
+                    translated.extend(outs)
+                    continue
+
             # Segment-by-segment pipeline.
             # v1.3 priority: (1) NLLB → (2) quick-google → (3) REALTIME → (4) Gemini per-seg
             for seg in batch:
@@ -512,6 +518,11 @@ class HybridTranslator:
                     if not isinstance(b, dict):
                         continue
                     txt = str(b.get('content', '')).strip()
+                    block_type = str(b.get('type', '')).strip().lower()
+                    if block_type in {'equation', 'unknown'} or b.get('is_equation') or b.get('latex'):
+                        if block_type == 'equation' and txt:
+                            b.setdefault('content_zh', txt)
+                        continue
                     if len(txt) <= 8:
                         continue
                     segments = self._split_long_text(txt, self.SEGMENT_MAX_CHARS)
