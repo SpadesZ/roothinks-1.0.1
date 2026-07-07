@@ -91,6 +91,7 @@ from app.core_pro.literature.literature_processing_ops import (
 from app.core_pro.literature.literature_flowb_helpers import (
     _flowb_append_uncovered_appendix,
     _flowb_build_ref_text_index,
+    _flowb_build_document_flow,
     _flowb_build_reflow_prompt,
     _flowb_build_reflow_prompt_from_rows,
     _flowb_clean_section_text,
@@ -1291,6 +1292,7 @@ def _generate_flowb_reflow_artifact(
     reflow_dir = safe_join_under(paper_dir, "06_translates", "reflow")
     os.makedirs(reflow_dir, exist_ok=True)
     out_path = safe_join_under(reflow_dir, "semantic_sections.json")
+    document_flow_path = safe_join_under(reflow_dir, "document_flow.json")
 
     payload = {
         "meta": {
@@ -1315,6 +1317,29 @@ def _generate_flowb_reflow_artifact(
         "sections": sections,
     }
     write_json_locked(out_path, payload)
+    try:
+        document_flow_payload = _flowb_build_document_flow(trans_payload, sections)
+        if isinstance(document_flow_payload, dict):
+            document_flow_payload.setdefault("meta", {})
+            if isinstance(document_flow_payload["meta"], dict):
+                document_flow_payload["meta"].update(
+                    {
+                        "pid": pid,
+                        "paper_id": paper_id,
+                        "semantic_sections": out_path,
+                        "full_text_trans": trans_output,
+                    }
+                )
+            write_json_locked(document_flow_path, document_flow_payload)
+            payload["meta"]["document_flow"] = document_flow_path
+            write_json_locked(out_path, payload)
+    except Exception as document_flow_err:
+        logger.warning(
+            "[reflow] document_flow generation failed for %s/%s: %s",
+            pid,
+            paper_id,
+            document_flow_err,
+        )
     return True, str(llm_err or ""), out_path, generation_mode
 
 

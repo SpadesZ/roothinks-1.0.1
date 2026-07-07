@@ -1109,6 +1109,7 @@ def save_correction_impl(deps):
         cleanup_targets = [
             deps.safe_join_under(paper_root, "06_translates", "fusion", "full_text_trans.json"),
             deps.safe_join_under(paper_root, "06_translates", "reflow", "semantic_sections.json"),
+            deps.safe_join_under(paper_root, "06_translates", "reflow", "document_flow.json"),
             deps.safe_join_under(paper_root, "_jobs", "flow_b_result.json"),
         ]
         removed_count = 0

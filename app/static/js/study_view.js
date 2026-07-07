@@ -81,6 +81,20 @@ class StudyView {
         return /failed\s+to\s+ocr\s+equation/i.test(s);
     }
 
+    _isUnreliableEquationLatex(latexValue, block = {}) {
+        const latex = String(latexValue ?? '').trim();
+        if (!latex) return true;
+        const confidence = Number(block?.latex_confidence);
+        if (Number.isFinite(confidence) && confidence > 0 && confidence < 0.6) return true;
+        const text = String(block?.content || '').replace(/\s+/g, ' ').trim();
+        if (/^\\text\{/.test(latex) && confidence < 0.8) return true;
+        if (/^From\s+\(\d+\)\s+we\s+can\s+see\b/i.test(text)) return true;
+        if (/\b(?:therefore|portion of the total probability|paths going through)\b/i.test(text) && text.length > 120) return true;
+        const words = (latex.replace(/\\[A-Za-z]+/g, ' ').match(/[A-Za-z]{3,}/g) || []);
+        const mathSignals = (latex.match(/\\(?:frac|sum|prod|alpha|beta|partial|mathbf|mathcal|arg|max|ln)|[=^_]/g) || []).length;
+        return words.length >= 16 && mathSignals < 8;
+    }
+
     _renderPageMarker(pageNum) {
         const pageLabel = Number.isFinite(Number(pageNum)) && Number(pageNum) > 0 ? Number(pageNum) : '?';
         return `
@@ -125,6 +139,7 @@ class StudyView {
             const equationFailed = !!safeBlock.equation_failed
                 || this._isFailedEquationText(contentRaw)
                 || this._isFailedEquationText(latexRaw)
+                || this._isUnreliableEquationLatex(latexRaw, safeBlock)
                 || !latexRaw;
 
             if (equationFailed) {
@@ -505,6 +520,98 @@ class StudyView {
             : [];
         if (!specialRefs.length) return { html: '', missingRefs: [] };
         return this._renderBlocksFromRefs(specialRefs, blockRefMap, opts);
+    }
+
+    _renderDocumentFlow(documentFlowPayload, blockRefMap = null, renderOptions = {}) {
+        const payload = (documentFlowPayload && typeof documentFlowPayload === 'object') ? documentFlowPayload : {};
+        const items = Array.isArray(payload.items) ? payload.items : [];
+        const meta = (payload.meta && typeof payload.meta === 'object') ? payload.meta : {};
+        const counts = (meta.counts && typeof meta.counts === 'object') ? meta.counts : {};
+        const translationReady = !!renderOptions.translationReady;
+        const countText = ['title', 'body', 'equation', 'figure', 'table']
+            .map(k => [k, Number(counts[k] || 0)])
+            .filter(([, v]) => v > 0)
+            .map(([k, v]) => `${k} ${v}`)
+            .join(' · ');
+
+        let html = `
+            <div class="mb-4" style="max-width: 1200px; margin: 0 auto;">
+                <div class="d-flex align-items-center justify-content-between mb-3">
+                    <h5 class="mb-0 text-primary fw-bold"><i class="bi bi-journal-text me-2"></i>Flow B 文件流</h5>
+                    <small class="text-muted">${this._escapeHtml(countText || 'source order')}</small>
+                </div>
+        `;
+
+        let rendered = 0;
+        let lastPage = 0;
+        items.forEach((rawItem) => {
+            const item = (rawItem && typeof rawItem === 'object') ? rawItem : {};
+            if (item.hidden) return;
+            const ref = String(item.ref || (Array.isArray(item.source_block_refs) ? item.source_block_refs[0] : '') || '').trim();
+            const sourceBlock = (ref && blockRefMap && typeof blockRefMap === 'object') ? blockRefMap[ref] : null;
+            const kind = String(item.kind || sourceBlock?.type || 'body').trim().toLowerCase();
+            const pageNo = Number(item.page || sourceBlock?.__page || 0);
+            if (pageNo > 0 && pageNo !== lastPage) {
+                html += this._renderPageMarker(pageNo);
+                lastPage = pageNo;
+            }
+
+            const contentEn = String(item.content_en || sourceBlock?.content || '').trim();
+            const contentZh = String(item.content_zh || sourceBlock?.content_zh || sourceBlock?.translation || '').trim();
+            const pseudoType = kind === 'equation'
+                ? 'Equation'
+                : (kind === 'figure' ? 'Figure' : (kind === 'table' ? 'Table' : (kind === 'title' ? 'Title' : 'Body')));
+            const renderBlock = sourceBlock ? { ...sourceBlock } : {
+                type: pseudoType,
+                content: contentEn,
+                content_zh: contentZh,
+                translation: contentZh,
+                latex: item.latex || '',
+                latex_confidence: item.latex_confidence || 0,
+                equation_failed: !!item.equation_failed,
+                equation_marker: item.equation_marker || '',
+                equation_failure_reason: item.equation_failure_reason || '',
+                seq_id: item.seq_id || '',
+                pid: item.pid || '',
+                paper_id: item.paper_id || '',
+            };
+            if (kind === 'equation') {
+                renderBlock.equation_failed = !!renderBlock.equation_failed || !!item.equation_failed;
+                renderBlock.equation_failure_reason = renderBlock.equation_failure_reason || item.equation_failure_reason || '';
+                renderBlock.equation_marker = renderBlock.equation_marker || item.equation_marker || contentEn || '<Failed to OCR Equation>';
+            }
+
+            if (kind === 'title') {
+                const titleText = contentEn || String(renderBlock.content || '').trim();
+                if (!titleText) return;
+                html += `
+                    <div class="document-flow-title my-3" data-ref="${this._escapeHtml(ref)}" style="max-width:1200px;margin-left:auto;margin-right:auto;">
+                        <h4 class="mb-0 selectable-text" style="font-weight:650;font-size:1.32rem;color:#2d3748;border-bottom:1px solid #e2e8f0;padding-bottom:0.55rem;">${this._escapeHtml(titleText)}</h4>
+                    </div>
+                `;
+                rendered += 1;
+                return;
+            }
+
+            const card = this._renderBlockCard(renderBlock, {
+                translationReady,
+                compact: false,
+            });
+            if (!card) return;
+            html += `<div class="document-flow-item mb-3" data-ref="${this._escapeHtml(ref)}">${card}</div>`;
+            rendered += 1;
+        });
+
+        if (rendered === 0) {
+            html += `
+                <div class="alert alert-secondary small">
+                    目前沒有可顯示的文件流內容，請回 Literature 重新執行 Flow B。
+                </div>
+            `;
+        }
+
+        html += '</div>';
+        return html;
     }
 
     initEventListeners() {
@@ -1451,11 +1558,19 @@ class StudyView {
 
                 const reflowPayload = (data.reflow && typeof data.reflow === 'object') ? data.reflow : null;
                 const reflowMeta = (data.reflow_meta && typeof data.reflow_meta === 'object') ? data.reflow_meta : null;
+                const documentFlowPayload = (data.reflow_document_flow && typeof data.reflow_document_flow === 'object')
+                    ? data.reflow_document_flow
+                    : ((reflowPayload?.document_flow && typeof reflowPayload.document_flow === 'object') ? reflowPayload.document_flow : null);
+                const hasDocumentFlow = !!(documentFlowPayload && Array.isArray(documentFlowPayload.items) && documentFlowPayload.items.length > 0);
                 const hasReflowSections = !!(reflowPayload && Array.isArray(reflowPayload.sections) && reflowPayload.sections.length > 0);
                 const hasReflowMeta = !!reflowMeta;
-                const reflowHtml = this._renderReflowSections(reflowPayload || null, reflowMeta, blockRefMap, {
-                    translationReady: !!data.translation_ready,
-                });
+                const reflowHtml = hasDocumentFlow
+                    ? this._renderDocumentFlow(documentFlowPayload, blockRefMap, {
+                        translationReady: !!data.translation_ready,
+                    })
+                    : this._renderReflowSections(reflowPayload || null, reflowMeta, blockRefMap, {
+                        translationReady: !!data.translation_ready,
+                    });
                 const rawBlocksHtml = `
                     <div class="reading-content selectable-text" style="margin-top: 1.5rem;">
                         ${contentHtml}
@@ -1478,17 +1593,16 @@ class StudyView {
                     </div>
                 `;
                 const blockModeHtml = buildReaderFrame('Block 對照版', rawBlocksHtml);
-                // Reflow mode: show section-reorganised content once.
-                // If no reflow sections exist, fall back to the same merged block-section
-                // stream (rawBlocksHtml) so the reader always sees content.
-                const reflowPrimaryHtml = (hasReflowSections || hasReflowMeta)
+                // Reflow mode: prefer source-order document_flow; semantic sections are legacy fallback.
+                // If neither exists, fall back to the merged block stream so the reader still sees content.
+                const reflowPrimaryHtml = (hasDocumentFlow || hasReflowSections || hasReflowMeta)
                     ? `
                         <div class="reading-content selectable-text" style="margin-top: 1.2rem;">
                             ${reflowHtml}
                         </div>
                     `
                     : rawBlocksHtml;
-                const reflowModeHtml = buildReaderFrame('Reflow 章節版', reflowPrimaryHtml);
+                const reflowModeHtml = buildReaderFrame(hasDocumentFlow ? 'Reflow 文件流' : 'Reflow 章節版', reflowPrimaryHtml);
 
                 this.currentFulltextPaperId = targetPaperId;
                 this.currentFulltextPayload = data;
@@ -1527,7 +1641,7 @@ class StudyView {
                         }
                     });
                     if (!silent) {
-                        const modeLabel = normalizedMode === 'fulltext_reflow' ? 'Reflow 章節版' : 'Block 對照版';
+                        const modeLabel = normalizedMode === 'fulltext_reflow' ? 'Reflow 文件流' : 'Block 對照版';
                         window.studyCore?.showToast(`全文已載入（${modeLabel}）`, 'success');
                     }
                 } else {

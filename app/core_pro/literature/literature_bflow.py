@@ -115,6 +115,12 @@ def _mirror_reflow_to_legacy_if_needed(deps: Any, pid: str, paper_id: str, reflo
         if os.path.normcase(os.path.abspath(legacy_reflow_path)) == os.path.normcase(os.path.abspath(reflow_path)):
             return ""
         shutil.copyfile(reflow_path, legacy_reflow_path)
+        source_document_flow = deps.safe_join_under(os.path.dirname(reflow_path), "document_flow.json")
+        if os.path.exists(source_document_flow):
+            shutil.copyfile(
+                source_document_flow,
+                deps.safe_join_under(legacy_reflow_dir, "document_flow.json"),
+            )
         return legacy_reflow_path
     except Exception:
         return ""

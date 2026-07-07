@@ -21,6 +21,7 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from app.core_pro.literature.literature_flowb_helpers import (
+    _flowb_build_document_flow,
     _flowb_collect_reflow_rows,
     _flowb_filter_running_headers,
     _flowb_is_heading_like,
@@ -147,3 +148,34 @@ def test_collect_rows_keeps_short_anchor_and_drops_vns_header():
     texts = [r["text"] for r in rows]
     assert "Abstract" in texts, "短章節錨點必須保留"
     assert all("Running Header" not in t for t in texts), "VNS 標記的 Header 不應進 rows"
+
+
+def test_document_flow_preserves_source_order_and_hides_noise():
+    trans_payload = {
+        "content": [
+            {
+                "page": 1,
+                "blocks": [
+                    {"type": "Title", "content": "1. Introduction", "content_zh": "1. 介紹"},
+                    {"type": "Body", "content": "Before equation.", "content_zh": "公式前。"},
+                    {"type": "Equation", "content": "x = y", "latex": "x = y", "content_zh": "x = y"},
+                    {"type": "Body", "content": "After equation.", "content_zh": "公式後。"},
+                    {"type": "Figure", "content": "Figure 1. Pipeline.", "content_zh": "圖 1。流程。", "has_caption": True},
+                    {"type": "Unknown", "content": "t def v a(s)= So J]"},
+                ],
+            }
+        ]
+    }
+
+    flow = _flowb_build_document_flow(trans_payload, [])
+    assert flow["meta"]["counts"]["title"] == 1
+    assert flow["meta"]["counts"]["body"] == 2
+    assert flow["meta"]["counts"]["equation"] == 1
+    assert flow["meta"]["counts"]["figure"] == 1
+    assert flow["meta"]["counts"]["noise"] == 1
+
+    visible_kinds = [item["kind"] for item in flow["items"] if not item["hidden"]]
+    assert visible_kinds == ["title", "body", "equation", "body", "figure"]
+    assert flow["items"][-1]["hidden_reason"] == "ocr_fragment"
+    assert flow["items"][2]["latex"] == "x = y"
+    assert flow["items"][4]["caption_en"] == "Figure 1. Pipeline."

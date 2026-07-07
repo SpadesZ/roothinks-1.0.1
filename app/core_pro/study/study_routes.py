@@ -2458,6 +2458,21 @@ def get_fulltext(pid, paper_id):
 
             reflow_data = None
             reflow_meta = None
+            document_flow_data = None
+            document_flow_path = safe_join_under(
+                paper_dir,
+                "06_translates",
+                "reflow",
+                "document_flow.json",
+            )
+            if os.path.exists(document_flow_path):
+                try:
+                    loaded_document_flow = load_json_locked(document_flow_path, {})
+                    if isinstance(loaded_document_flow, dict) and isinstance(loaded_document_flow.get("items"), list):
+                        document_flow_data = loaded_document_flow
+                except Exception as e:
+                    logger.warning(f"[get_fulltext] Failed to load document flow payload: {e}")
+
             reflow_path = safe_join_under(
                 paper_dir,
                 "06_translates",
@@ -2469,6 +2484,8 @@ def get_fulltext(pid, paper_id):
                     loaded_reflow = load_json_locked(reflow_path, {})
                     if isinstance(loaded_reflow, dict):
                         reflow_data = loaded_reflow
+                        if document_flow_data is not None:
+                            reflow_data["document_flow"] = document_flow_data
                         coverage = _compute_reflow_coverage(blocks_array, loaded_reflow)
                         min_ratio = max(0.0, min(1.0, _read_float_env("STUDY_REFLOW_MIN_COVERAGE_RATIO", 0.55)))
                         min_ref_ratio = max(0.0, min(1.0, _read_float_env("STUDY_REFLOW_MIN_REF_COVERAGE_RATIO", 0.45)))
@@ -2510,6 +2527,8 @@ def get_fulltext(pid, paper_id):
                             reflow_data = None
                 except Exception as e:
                     logger.warning(f"[get_fulltext] Failed to load reflow payload: {e}")
+            elif document_flow_data is not None:
+                reflow_data = {"document_flow": document_flow_data}
             
             return jsonify({
                 "ok": True,
@@ -2518,6 +2537,7 @@ def get_fulltext(pid, paper_id):
                 "title": display_title,
                 "summary": summary_data,
                 "reflow": reflow_data,
+                "reflow_document_flow": document_flow_data,
                 "reflow_meta": reflow_meta,
                 "translation_ready": translation_ready,
                 "fulltext_source": target_source,
@@ -2607,9 +2627,35 @@ def get_media_asset(pid, paper_id, seq_id):
 
         kind_raw = request.args.get("kind", "figure")
         try:
-            kind, _, _ = _normalize_media_kind(kind_raw)
+            kind, _, type_name = _normalize_media_kind(kind_raw)
         except BadRequest:
             return "Invalid kind", 400
+
+        data_root = os.path.abspath(os.path.join(current_app.root_path, "..", "data"))
+        try:
+            vns_path = safe_join_under(data_root, pid, "literature", "segmentation", f"{pid}_vns.json")
+            vns_payload = load_json_locked(vns_path, {})
+            records = (
+                (vns_payload.get("papers", {}) or {}).get(paper_id, {}).get("records", [])
+                if isinstance(vns_payload, dict)
+                else []
+            )
+            if isinstance(records, list):
+                rec = next(
+                    (
+                        r for r in records
+                        if isinstance(r, dict)
+                        and str(r.get("seq_id") or "").strip() == seq_id
+                        and str(r.get("type") or "").strip().lower() == type_name.lower()
+                    ),
+                    None,
+                )
+                if isinstance(rec, dict):
+                    direct_path = _to_local_data_path(data_root, rec.get("png_path"))
+                    if direct_path and os.path.exists(direct_path):
+                        return send_file(direct_path, mimetype="image/png", as_attachment=False)
+        except Exception as direct_err:
+            logger.warning("[get_media_asset] direct VNS lookup failed: %s", direct_err)
 
         rows = _collect_media_records(pid, paper_id, kind)
         target = next((r for r in rows if str(r.get("seq_id") or "") == seq_id), None)

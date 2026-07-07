@@ -787,6 +787,224 @@ def _flowb_collect_all_block_refs(trans_payload: dict) -> list[str]:
     return refs
 
 
+def _flowb_is_document_flow_garbage(text: str) -> bool:
+    """Detect failed inline-equation/OCR fragments for display suppression."""
+    t = _flowb_squash_text(text)
+    if not t:
+        return True
+    if len(t) >= 40:
+        return False
+    if re.search(r"[=\[\]{}\\|^_]|\bdef\b|∫|∑|∏", t):
+        return True
+    tokens = [tok for tok in re.split(r"\s+", t) if tok]
+    if tokens:
+        short_tokens = sum(1 for tok in tokens if len(tok) <= 2)
+        if short_tokens / max(1, len(tokens)) >= 0.5:
+            return True
+    letters = len(re.findall(r"[A-Za-z\u4e00-\u9fff]", t))
+    return letters < 6
+
+
+def _flowb_is_unreliable_equation_latex(block: dict) -> bool:
+    latex = _flowb_squash_text((block or {}).get("latex"))
+    if not latex:
+        return True
+    try:
+        confidence = float((block or {}).get("latex_confidence", 0.0) or 0.0)
+    except Exception:
+        confidence = 0.0
+    if 0.0 < confidence < 0.6:
+        return True
+    text = _flowb_squash_text((block or {}).get("content"))
+    if latex.startswith(r"\text{") and confidence < 0.8:
+        return True
+    if re.match(r"^From\s+\(\d+\)\s+we\s+can\s+see\b", text, re.IGNORECASE):
+        return True
+    if len(text) > 120 and re.search(
+        r"\b(?:therefore|portion of the total probability|paths going through)\b",
+        text,
+        re.IGNORECASE,
+    ):
+        return True
+    stripped = re.sub(r"\\[A-Za-z]+", " ", latex)
+    words = re.findall(r"[A-Za-z]{3,}", stripped)
+    math_signals = re.findall(r"\\(?:frac|sum|prod|alpha|beta|partial|mathbf|mathcal|arg|max|ln)|[=^_]", latex)
+    return len(words) >= 16 and len(math_signals) < 8
+
+
+def _flowb_semantic_label_index(sections: list[dict]) -> dict[str, dict]:
+    index: dict[str, dict] = {}
+    if not isinstance(sections, list):
+        return index
+    for sec in sections:
+        if not isinstance(sec, dict):
+            continue
+        label = _flowb_squash_text(sec.get("section_label"))
+        if not label:
+            continue
+        try:
+            confidence = float(sec.get("confidence", 0.0))
+        except Exception:
+            confidence = 0.0
+        refs = sec.get("source_block_refs") if isinstance(sec.get("source_block_refs"), list) else []
+        for ref in refs:
+            ref_s = str(ref or "").strip()
+            if ref_s and ref_s not in index:
+                index[ref_s] = {
+                    "semantic_section_label": label,
+                    "semantic_confidence": round(max(0.0, min(1.0, confidence)), 3),
+                }
+    return index
+
+
+def _flowb_document_flow_kind(block: dict, hidden_header_refs: set[str], ref: str) -> tuple[str, bool, str]:
+    block_type = str((block or {}).get("type") or "").strip().lower() or "body"
+    text = _flowb_squash_text((block or {}).get("content"))
+
+    if block_type == "header" or bool((block or {}).get("is_page_noise")) or ref in hidden_header_refs:
+        return "noise", True, "page_noise"
+    if block_type in {"title", "maintitle", "subtitle", "subsubtitle"}:
+        return "title", False, ""
+    if block_type == "equation" or bool((block or {}).get("is_equation")):
+        return "equation", False, ""
+    if block_type == "figure":
+        return "figure", False, ""
+    if block_type == "table":
+        return "table", False, ""
+    if block_type == "unknown" and _flowb_is_document_flow_garbage(text):
+        return "noise", True, "ocr_fragment"
+    return "body", False, ""
+
+
+def _flowb_build_document_flow(
+    trans_payload: dict,
+    semantic_sections: list[dict] | None = None,
+) -> dict:
+    """Build a lossless, source-order Reflow stream from translated blocks.
+
+    This is intentionally not the LLM semantic section output. It preserves the
+    original block order so body text, displayed equations, figures, tables, and
+    captions stay where they appeared in the paper.
+    """
+    pages = trans_payload.get("content", []) if isinstance(trans_payload, dict) else []
+    items: list[dict] = []
+    counts: dict[str, int] = {}
+    equation_display_counts = {"latex": 0, "image_fallback": 0}
+    hidden_header_refs: set[str] = set()
+    semantic_index = _flowb_semantic_label_index(semantic_sections or [])
+
+    if isinstance(pages, list):
+        header_candidates = []
+        for page_idx, page in enumerate(pages, start=1):
+            if not isinstance(page, dict):
+                continue
+            page_no = int(page.get("page") or page_idx)
+            blocks = page.get("blocks", [])
+            if not isinstance(blocks, list):
+                continue
+            for block_idx, block in enumerate(blocks, start=1):
+                if not isinstance(block, dict):
+                    continue
+                ref = f"p{page_no}-b{block_idx}"
+                text = _flowb_squash_text(block.get("content"))
+                block_type = str(block.get("type") or "").strip().lower()
+                if text and block_type in {"body", "unknown", ""} and len(text) < 90:
+                    header_candidates.append({"ref": ref, "text": text})
+        _, removed_header_refs = _flowb_filter_running_headers(header_candidates)
+        hidden_header_refs = set(removed_header_refs)
+
+    order = 0
+    current_section_label = ""
+    if isinstance(pages, list):
+        for page_idx, page in enumerate(pages, start=1):
+            if not isinstance(page, dict):
+                continue
+            page_no = int(page.get("page") or page_idx)
+            blocks = page.get("blocks", [])
+            if not isinstance(blocks, list):
+                continue
+
+            for block_idx, block in enumerate(blocks, start=1):
+                if not isinstance(block, dict):
+                    continue
+                ref = f"p{page_no}-b{block_idx}"
+                kind, hidden, hidden_reason = _flowb_document_flow_kind(block, hidden_header_refs, ref)
+                text_en = _flowb_squash_text(block.get("content"))
+                text_zh = _flowb_squash_text(block.get("content_zh"))
+                if kind == "title" and text_en:
+                    current_section_label = text_en
+
+                seq_id = str(block.get("seq_id") or block.get("id") or "").strip()
+                try:
+                    reading_order = int(block.get("reading_order") or order + 1)
+                except Exception:
+                    reading_order = order + 1
+
+                item = {
+                    "ref": ref,
+                    "source_block_refs": [ref],
+                    "kind": kind,
+                    "source_type": str(block.get("type") or ""),
+                    "hidden": bool(hidden),
+                    "hidden_reason": hidden_reason,
+                    "page": page_no,
+                    "block_index": block_idx,
+                    "order": order,
+                    "reading_order": reading_order,
+                    "seq_id": seq_id,
+                    "section_label": current_section_label,
+                    "content_en": text_en,
+                    "content_zh": text_zh,
+                    "bbox": block.get("bbox") if isinstance(block.get("bbox"), list) else [],
+                    "pid": str(block.get("pid") or ""),
+                    "paper_id": str(block.get("paper_id") or ""),
+                }
+                if ref in semantic_index:
+                    item.update(semantic_index[ref])
+                if kind == "equation":
+                    equation_unreliable = _flowb_is_unreliable_equation_latex(block)
+                    equation_display = "image_fallback" if equation_unreliable else "latex"
+                    equation_display_counts[equation_display] = equation_display_counts.get(equation_display, 0) + 1
+                    item.update(
+                        {
+                            "latex": _flowb_squash_text(block.get("latex")),
+                            "latex_confidence": block.get("latex_confidence", 0.0),
+                            "equation_failed": bool(block.get("equation_failed")) or equation_unreliable,
+                            "equation_display": equation_display,
+                            "equation_failure_reason": _flowb_squash_text(block.get("equation_failure_reason")),
+                            "equation_marker": _flowb_squash_text(block.get("equation_marker")),
+                        }
+                    )
+                elif kind in {"figure", "table"}:
+                    item.update(
+                        {
+                            "caption_en": text_en,
+                            "caption_zh": text_zh,
+                            "has_caption": bool(block.get("has_caption")) or bool(text_en),
+                        }
+                    )
+
+                items.append(item)
+                counts[kind] = counts.get(kind, 0) + 1
+                order += 1
+
+    visible_count = sum(1 for item in items if isinstance(item, dict) and not item.get("hidden"))
+    return {
+        "meta": {
+            "version": "flowb_document_flow_v1",
+            "created_at": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC"),
+            "source": "full_text_trans.json",
+            "item_count": len(items),
+            "visible_item_count": visible_count,
+            "counts": counts,
+            "equation_display_counts": equation_display_counts,
+            "hidden_count": len(items) - visible_count,
+            "layout_contract": "source_order_blocks",
+        },
+        "items": items,
+    }
+
+
 def _flowb_collect_section_refs(sections: list[dict], field: str = "source_block_refs") -> list[str]:
     if not isinstance(sections, list):
         return []
