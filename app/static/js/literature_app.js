@@ -103,12 +103,34 @@ window.literatureApp = {
                     throw new Error(data.message || 'Bootstrap failed');
                 }
 
+                // [Security/UX Fix 20260722] bootstrap 現已依 membership 過濾（後端），
+                // 這裡以它的權威回應對帳 localStorage 的 activePid 殘留：切帳號後，上一個
+                // 帳號留下的 activePid 不屬於當前使用者時必須清掉，否則 scholar/origins
+                // 會拿舊 pid 去打後端而吃 403，畫面看起來「沒清乾淨」。
+                const ownedPids = new Set((data.formal_projects || []).map(p => p.pid));
+                try {
+                    if (data.active_project) {
+                        localStorage.setItem('activePid', data.active_project);
+                    } else {
+                        const stored = (localStorage.getItem('activePid') || '').trim();
+                        if (!stored || !ownedPids.has(stored)) {
+                            localStorage.removeItem('activePid');
+                        }
+                    }
+                } catch (e) { /* localStorage 不可用時略過 */ }
+
                 if (data.active_project) {
                     this.currentPid = data.active_project;
+                } else {
+                    // 當前帳號沒有任何有權限的正式專案（例：全新註冊帳號）。
+                    // 清空 currentPid 與殘留 context，避免顯示他人資料。
+                    this.currentPid = '';
+                    const topicClear = document.getElementById('manualTopic');
+                    if (topicClear) topicClear.value = '';
                 }
 
                 const pidEl = document.getElementById('currentPid');
-                if (pidEl) pidEl.innerText = this.currentPid;
+                if (pidEl) pidEl.innerText = this.currentPid || '--';
 
                 const topicInput = document.getElementById('manualTopic');
                 if (topicInput && data.manual_context && !topicInput.value.trim()) {
@@ -118,8 +140,17 @@ window.literatureApp = {
                 this.renderFormalProjectList(data.formal_projects || []);
 
                 const url = new URL(window.location);
-                url.searchParams.set('pid', this.currentPid);
+                if (this.currentPid) {
+                    url.searchParams.set('pid', this.currentPid);
+                } else {
+                    url.searchParams.delete('pid');
+                }
                 window.history.replaceState({}, '', url);
+
+                // 完全沒有有權限的專案 → 顯示友善空狀態，別讓狀態輪詢吐一排紅字/403。
+                if (!this.currentPid && ownedPids.size === 0) {
+                    this.renderNoProjectState();
+                }
             })
             .catch(err => {
                 console.error('[literatureApp] bootstrap error:', err);
@@ -210,7 +241,9 @@ window.literatureApp = {
         this.loadBootstrap().finally(() => {
             this.loadContextHistory();
             this.loadSavedSearchResults();
-            this.loadPipelineTable();
+            // 用 startStatusPolling（會清舊 interval 再重啟），確保若先前因 403
+            // 停掉輪詢，切到有權限的專案後輪詢能恢復。
+            this.startStatusPolling();
             if (window.literatureOrigins) {
                 window.literatureOrigins.loadFileList();
                 window.literatureOrigins.loadContextHistory();
@@ -662,7 +695,8 @@ window.literatureApp = {
     loadPipelineTable: function() {
         const pid = String(this.currentPid || '').trim();
         if (!pid) {
-            this.renderPipelineError('尚未選擇專案 PID');
+            // 尚未選定專案（例：全新帳號無任何有權限專案）→ 友善空狀態，不吐紅字。
+            this.renderNoProjectState();
             return;
         }
 
@@ -675,6 +709,13 @@ window.literatureApp = {
                     throw new Error(`Status API JSON 解析失敗 (HTTP ${res.status})`);
                 }
                 if (!res.ok) {
+                    // [UX Fix 20260722] 403 = 對此專案沒有權限（後端權限隔離正常運作）。
+                    // 不再把技術字串 "Forbidden" 丟到畫面，改成友善提示 + 導回 Dashboard。
+                    if (res.status === 403) {
+                        const forbiddenErr = new Error('forbidden');
+                        forbiddenErr.code = 'forbidden';
+                        throw forbiddenErr;
+                    }
                     const msg = String(data?.message || data?.msg || `HTTP ${res.status}`);
                     throw new Error(`Status API 失敗: ${msg}`);
                 }
@@ -694,9 +735,42 @@ window.literatureApp = {
             })
             .catch(err => {
                 console.error('Status poll error:', err);
+                if (err && err.code === 'forbidden') {
+                    // 越權：停止輪詢並清畫面，避免持續紅字或殘留他人資料。
+                    this.renderForbiddenState();
+                    if (this.refreshInterval) { clearInterval(this.refreshInterval); this.refreshInterval = null; }
+                    return;
+                }
                 this.pipelineLastError = String(err?.message || err || 'status poll failed');
                 this.renderPipelineError(this.pipelineLastError);
             });
+    },
+
+    // 全新帳號 / 尚未選專案：友善空狀態，引導回 Dashboard。
+    renderNoProjectState: function() {
+        const tbody = document.getElementById('pipelineTableBody');
+        if (!tbody) return;
+        this.paperStatusMap = {};
+        this.paperStageMap = {};
+        this.pipelineLastGoodPapers = [];
+        tbody.innerHTML = `<tr><td colspan="5" class="text-center py-4 text-muted">`
+            + `尚未選定研究專案。<a href="/" class="fw-bold text-decoration-none ms-1">回 Dashboard 選擇你的專案 →</a>`
+            + `</td></tr>`;
+        this.updateFlowBButtonState();
+    },
+
+    // 對此專案沒有權限（後端 403）：友善提示，不顯示技術錯誤，引導回 Dashboard。
+    renderForbiddenState: function() {
+        const tbody = document.getElementById('pipelineTableBody');
+        if (!tbody) return;
+        this.paperStatusMap = {};
+        this.paperStageMap = {};
+        this.pipelineLastGoodPapers = [];
+        tbody.innerHTML = `<tr><td colspan="5" class="text-center py-4 text-secondary">`
+            + `<i class="bi bi-lock me-1"></i>你沒有此專案的存取權限。`
+            + `<a href="/" class="fw-bold text-decoration-none ms-1">回 Dashboard 選擇你的專案 →</a>`
+            + `</td></tr>`;
+        this.updateFlowBButtonState();
     },
 
     renderPipelineError: function(message) {

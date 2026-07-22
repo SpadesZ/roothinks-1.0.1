@@ -34,6 +34,29 @@
             localStorage.setItem('globalFontSize', newSize);
         }
     </script>
+
+    <script>
+        // [Security/UX Fix 20260722] 跨頁「換帳號 → 清 per-project 前端快取」守衛。
+        // 登入是伺服器端 POST 表單（整頁導向），登入當下沒有 JS 掛鉤；因此改在每頁
+        // <head> 早期執行：比對伺服器已知的當前使用者與 localStorage 記錄的身分，
+        // 不同（切帳號 / 登出後換人）就清掉上一個帳號殘留的 activePid 等 per-project
+        // 快取，避免全新帳號看到他人專案殘影、或拿舊 pid 去打後端吃 403。
+        // 只在 AUTH_MODE=session 生效；none（單機）模式不動作。
+        (function() {
+            try {
+                var authMode = {{ config.AUTH_MODE | tojson }};
+                if (authMode !== 'session') return;
+                var authUser = {% if current_user.is_authenticated %}{{ current_user.username | tojson }}{% else %}""{% endif %};
+                var prev = localStorage.getItem('rh.authUser');
+                if (prev !== authUser) {
+                    // per-project 快取鍵（切帳號後不得沿用）
+                    localStorage.removeItem('activePid');
+                    localStorage.removeItem('highlights');
+                    localStorage.setItem('rh.authUser', authUser || '');
+                }
+            } catch (e) { /* localStorage 不可用時略過 */ }
+        })();
+    </script>
 </head>
 <body class="bg-light">
 

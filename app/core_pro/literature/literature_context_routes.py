@@ -23,7 +23,35 @@ def register_context_routes(literature_bp, deps):
         req_pid = deps._normalize_literature_pid(request.args.get('pid'))
 
         try:
-            formal_projects = deps.Project.query.filter_by(status='formal').order_by(deps.Project.created_at.desc()).all()
+            # [Security Fix 20260722] session 模式下，bootstrap 僅能回傳「當前登入者
+            # 有 WorkspaceMember membership」的正式專案。原本用 raw Project.query 撈
+            # 全部 formal 專案，導致零權限帳號（例：全新註冊）開 /literature（URL 無
+            # pid，繞過 blueprint 的 pid ACL）時，被回傳他人專案清單與第一個專案的
+            # manual_context = 跨租戶越權讀取。與 ProjectService.get_projects 同一套
+            # 過濾邏輯保持一致。dev/none 模式（無 AUTH_MODE=session）維持全回不變。
+            from flask import current_app as _app
+            _auth_mode = str(_app.config.get("AUTH_MODE", "none")).strip().lower()
+
+            _q = deps.Project.query.filter_by(status='formal')
+            if _auth_mode == "session":
+                from flask_login import current_user
+                if not current_user.is_authenticated:
+                    return jsonify(
+                        {
+                            'status': 'success',
+                            'active_project': None,
+                            'manual_context': '',
+                            'research_title': '',
+                            'formal_projects': [],
+                        }
+                    )
+                from app.models import WorkspaceMember
+                _q = _q.join(
+                    WorkspaceMember,
+                    WorkspaceMember.pid == deps.Project.project_id,
+                ).filter(WorkspaceMember.user_id == current_user.id)
+
+            formal_projects = _q.order_by(deps.Project.created_at.desc()).all()
             for proj in formal_projects:
                 try:
                     deps.ensure_formal_project_records(proj)
