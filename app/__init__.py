@@ -1,10 +1,23 @@
 # 檔案路徑: app/__init__.py
 # 產生時間: 2026-07-04 18:55 +08:00
-# 版本: v1.3
+# 版本: v1.4
 # 模組定位:
 #   Roothinks Flask app factory 與啟動期 DB/runtime 初始化。
+# 主要責任:
+#   1. create_app 工廠；初始化 SQLAlchemy、CSRF、SocketIO、LoginManager 等擴充。
+#   2. [Batch A] 新增 AUTH_MODE config（none / session）；控制 session 登入守衛。
+#   3. [Batch A] _auth_guard 統一處理 CSRF + session 守衛 + Bearer token 守衛。
 # 維護提醒:
-#   - 本輪只接入 status 常數，避免大規模改動啟動流程。
+#   - AUTH_MODE 判定順序：test_config dict > 環境變數 AUTH_MODE > 自動推算
+#     （TESTING 或 _is_development() → "none"，否則 "session"）。
+#   - AUTH_MODE=none：行為與 Batch A 前完全一致（零影響）。
+#   - AUTH_MODE=session：未登入訪問非白名單路由 → API 回 401 JSON，
+#     其餘 redirect /auth/login?next=...。
+#   - 已有 session user 時跳過 Bearer 守衛（session 即身分）；
+#     無 session 時 Bearer 邏輯照舊（機器對機器相容）。
+#   - 白名單 endpoint：auth.*、static、favicon.ico、/api/auth/*。
+# 驗證方式:
+#   python -m pytest test -q
 # -----------------------------------------------------------------------------
 import json
 import logging
@@ -15,9 +28,10 @@ import time
 from datetime import datetime, timedelta, timezone
 
 from cryptography.fernet import Fernet
-from flask import Flask, jsonify, request
+from flask import Flask, flash, jsonify, redirect, request, url_for
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
+from flask_login import LoginManager, current_user
 from flask_socketio import SocketIO
 from flask_sqlalchemy import SQLAlchemy
 from flask_wtf.csrf import CSRFError, CSRFProtect
@@ -39,9 +53,19 @@ except ImportError:
     fix_db_schema = None
 
 db = SQLAlchemy()
-limiter = Limiter(key_func=get_remote_address, default_limits=["60 per minute"])
+# 全域預設 600/min:一次頁面載入會產生多個資源/API 請求,舊值 60/min 在
+# 正常瀏覽下即觸發 429 整站鎖死(UI 走查實測)。login/register 等敏感端點
+# 另以 @limiter.limit 個別收緊防爆破。可用 env RATE_LIMIT_DEFAULT 覆寫。
+limiter = Limiter(
+    key_func=get_remote_address,
+    default_limits=[os.environ.get("RATE_LIMIT_DEFAULT", "600 per minute")],
+)
 socketio = SocketIO(ping_interval=25, ping_timeout=120)
 csrf = CSRFProtect()
+login_manager = LoginManager()
+login_manager.login_view = "auth.login"
+login_manager.login_message = "請先登入。"
+login_manager.login_message_category = "warning"
 
 
 def _to_bool(raw: str, default: bool = False) -> bool:
@@ -262,6 +286,12 @@ def create_app(test_config=None):
     if api_auth_enabled and not tokens:
         raise RuntimeError("API auth enabled but API_BEARER_TOKENS is empty")
 
+    # [Batch A] AUTH_MODE: env 變數預設；test_config 可覆寫。
+    # TESTING 或 dev 環境下預設 "none"（不破壞既有測試相容性）。
+    _testing_flag = (test_config or {}).get("TESTING", False)
+    _auth_mode_default = "none" if (_testing_flag or is_dev) else "session"
+    auth_mode = str(os.environ.get("AUTH_MODE") or _auth_mode_default).strip().lower()
+
     cors_origins = parse_allowed_origins(os.environ.get("CORS_ALLOWED_ORIGINS"))
     if not cors_origins and is_dev:
         cors_origins = ["http://127.0.0.1:10000", "http://localhost:10000"]
@@ -281,7 +311,10 @@ def create_app(test_config=None):
         SQLALCHEMY_TRACK_MODIFICATIONS=False,
         SQLALCHEMY_ENGINE_OPTIONS=engine_options,
         MAX_CONTENT_LENGTH=max_mb * 1024 * 1024,
-        SESSION_COOKIE_SECURE=not is_dev,
+        # session cookie 是否僅限 HTTPS。生產預設 True,但 HTTP 部署(如 GCP VM
+        # 直連 IP 的 demo)必須設 SESSION_COOKIE_SECURE=0,否則 cookie 送不出去,
+        # 會導致「CSRF token missing」且完全無法登入。可用 env 覆寫。
+        SESSION_COOKIE_SECURE=_to_bool(os.environ.get("SESSION_COOKIE_SECURE"), not is_dev),
         SESSION_COOKIE_HTTPONLY=True,
         SESSION_COOKIE_SAMESITE="Lax",
         PERMANENT_SESSION_LIFETIME=timedelta(hours=12),
@@ -295,10 +328,16 @@ def create_app(test_config=None):
         LOCK_ROOT=lock_root,
         WTF_CSRF_ENABLED=True,
         WTF_CSRF_CHECK_DEFAULT=False,
+        AUTH_MODE=auth_mode,
     )
 
     if test_config:
         app.config.from_mapping(test_config)
+    # Re-resolve AUTH_MODE after test_config override so dict override wins.
+    # If test_config explicitly sets AUTH_MODE, it's now in app.config.
+    # If test_config sets TESTING=True but not AUTH_MODE, keep computed value.
+    if test_config and "AUTH_MODE" not in test_config and test_config.get("TESTING"):
+        app.config["AUTH_MODE"] = "none"
     if app.config.get("TESTING") and not os.environ.get("SOCKETIO_ASYNC_MODE"):
         app.config["SOCKETIO_ASYNC_MODE"] = "threading"
 
@@ -327,6 +366,16 @@ def create_app(test_config=None):
     db.init_app(app)
     limiter.init_app(app)
     csrf.init_app(app)
+    login_manager.init_app(app)
+
+    @login_manager.user_loader
+    def _load_user(user_id):
+        from app.models import User
+        try:
+            return db.session.get(User, int(user_id))
+        except Exception:
+            return None
+
     socketio.init_app(
         app,
         cors_allowed_origins=app.config["CORS_ALLOWED_ORIGINS"],
@@ -336,8 +385,38 @@ def create_app(test_config=None):
 
     @app.before_request
     def _auth_guard():
-        if request.method in {"POST", "PUT", "PATCH", "DELETE"} and not is_api_request_path(request.path):
+        # ── 1. CSRF guard（非 API 的寫入請求）─────────────────────────────
+        if (
+            request.method in {"POST", "PUT", "PATCH", "DELETE"}
+            and not is_api_request_path(request.path)
+            and app.config.get("WTF_CSRF_ENABLED", True)
+        ):
             csrf.protect()
+
+        # ── 2. [Batch A] Session 登入守衛 ────────────────────────────────
+        _auth_mode = app.config.get("AUTH_MODE", "none")
+        if _auth_mode == "session":
+            _path = request.path
+            _endpoint = request.endpoint or ""
+
+            # 白名單：auth blueprint、api/auth、static、favicon
+            _is_whitelisted = (
+                _endpoint.startswith("auth.")
+                or _path.startswith("/api/auth/")
+                or _endpoint == "static"
+                or _path == "/favicon.ico"
+            )
+
+            if not _is_whitelisted and not current_user.is_authenticated:
+                if is_api_request_path(_path):
+                    return jsonify({"success": False, "error": "login_required"}), 401
+                return redirect(url_for("auth.login", next=_path))
+
+            # 已有 session user → 跳過 Bearer 守衛（session 即身分）
+            if current_user.is_authenticated:
+                return None
+
+        # ── 3. Bearer token 守衛（機器對機器相容）────────────────────────
         result = require_request_auth()
         if result is not None:
             return result
@@ -353,6 +432,7 @@ def create_app(test_config=None):
             "img-src 'self' data: blob:; "
             "font-src 'self' https://cdn.jsdelivr.net data:; "
             "connect-src 'self' https: wss:; "
+            "frame-src 'self' https://content.googleapis.com https://accounts.google.com; "
             "object-src 'none'; "
             "base-uri 'self'; "
             "frame-ancestors 'none'"
@@ -373,7 +453,13 @@ def create_app(test_config=None):
     def _handle_csrf_error(err: CSRFError):
         if request.path.startswith("/api/") or request.path.startswith("/manuscript/api/"):
             return jsonify({"success": False, "message": "CSRF token missing or invalid"}), 403
-        return "CSRF token missing or invalid", 403
+        # 表單頁 CSRF 失敗(多半是頁面停太久 token 過期):不吐純文字,
+        # 導回登入頁並帶友善提示,讓使用者直接重登。
+        if request.path.startswith("/auth/"):
+            flash("表單已過期,請重新登入。", "warning")
+            return redirect(url_for("auth.login")), 303
+        flash("操作已過期,請重新整理頁面後再試。", "warning")
+        return redirect(request.referrer or url_for("main.index")), 303
 
     @app.errorhandler(Exception)
     def _handle_unexpected_error(err: Exception):
@@ -383,12 +469,14 @@ def create_app(test_config=None):
         return "Internal server error", 500
 
     from app.project_portfolio import project_routes
+    from app.project_portfolio import member_routes  # noqa: F401  # [Batch B] 成員管理路由
     from app.core_pro.paq import paq_routes
     from app.core_pro.literature import literature_routes
     from app.core_pro.study import study_routes
     from app.core_pro.manuscript import manuscript_routes
     from app.llm_service import llm_routes
     from app.routes import main_bp
+    from app.auth import auth_bp, auth_api_bp
 
     app.register_blueprint(project_routes.bp)
     app.register_blueprint(paq_routes.bp)
@@ -397,6 +485,12 @@ def create_app(test_config=None):
     app.register_blueprint(manuscript_routes.bp)
     app.register_blueprint(llm_routes.bp)
     app.register_blueprint(main_bp)
+
+    # [Batch A] auth blueprints
+    # auth_bp  — HTML 表單路由（url_prefix="/auth"）
+    # auth_api_bp — JSON API 路由（url_prefix="/api/auth"）
+    app.register_blueprint(auth_bp)
+    app.register_blueprint(auth_api_bp)
 
     from app import models
     from app.llm_service.llm_model import LLMModel

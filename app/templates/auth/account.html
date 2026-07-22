@@ -1,0 +1,75 @@
+<!--
+  檔案路徑: app/templates/auth/account.html
+  產生時間: 2026-07-19 00:00 +08:00
+  版本: v1.0
+  模組定位:
+    已登入使用者的帳號設定頁面（改密碼）。
+  主要責任:
+    1. 顯示當前帳號資訊。
+    2. 提供改密碼表單（需驗舊密碼，新密碼 >= 8 字元）。
+    3. 表單含 csrf_token()。
+  維護提醒:
+    - 此路由由 @login_required 保護，未登入自動導向 /auth/login。
+    - Bootstrap 5 風格與其他頁面一致。
+  驗證方式:
+    python -m pytest test/unit/test_auth_basic.py -q
+-->
+{% include '_header.html' %}
+
+<div class="container" style="max-width: 480px; margin-top: 60px;">
+    <div class="card shadow-sm">
+        <div class="card-body p-4">
+            <h4 class="card-title fw-bold mb-1">
+                <i class="bi bi-person-gear text-info me-2"></i>帳號設定
+            </h4>
+            <p class="text-muted small mb-4">帳號：<strong>{{ current_user.username }}</strong></p>
+
+            {% if error %}
+            <div class="alert alert-danger py-2">{{ error }}</div>
+            {% endif %}
+            {% if success %}
+            <div class="alert alert-success py-2">{{ success }}</div>
+            {% endif %}
+
+            <form method="POST" action="{{ url_for('auth.account') }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                <div class="mb-3">
+                    <label for="old_password" class="form-label fw-semibold">舊密碼</label>
+                    <input type="password" id="old_password" name="old_password" class="form-control"
+                           autocomplete="current-password" required>
+                </div>
+
+                <div class="mb-3">
+                    <label for="new_password" class="form-label fw-semibold">新密碼</label>
+                    <input type="password" id="new_password" name="new_password" class="form-control"
+                           autocomplete="new-password" required minlength="8">
+                    <div class="form-text">至少 8 個字元。</div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="confirm_password" class="form-label fw-semibold">確認新密碼</label>
+                    <input type="password" id="confirm_password" name="confirm_password" class="form-control"
+                           autocomplete="new-password" required minlength="8">
+                </div>
+
+                <button type="submit" class="btn btn-primary w-100 mt-1">
+                    <i class="bi bi-check-lg me-1"></i>更新密碼
+                </button>
+            </form>
+
+            <hr class="my-3">
+            <p class="text-center mb-0">
+                <a href="{{ url_for('main.index') }}" class="text-muted small">
+                    <i class="bi bi-arrow-left me-1"></i>返回首頁
+                </a>
+            </p>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz"
+        crossorigin="anonymous"></script>
+</body>
+</html>

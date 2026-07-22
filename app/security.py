@@ -1,3 +1,41 @@
+# 檔案路徑: app/security.py
+# 產生時間: 2026-07-04 00:00 +08:00
+# 版本: v1.1
+# 模組定位:
+#   Roothinks 安全核心：請求驗證、專案存取控制、工作區角色授權。
+# 主要責任:
+#   1. validate_id / safe_join_under — 輸入驗證與路徑安全。
+#   2. require_request_auth / require_socket_auth — Bearer token 守衛。
+#   3. [Batch B] get_workspace_role(user_id, pid) — 查詢成員角色。
+#   4. [Batch B] require_workspace_role(pid, min_role) — 角色最低門檻守衛。
+#   5. [Batch B] enforce_project_ownership(pid) — 三模式分派決策：
+#
+#      ┌─────────────────────────────┬───────────────────────────────────────────┐
+#      │ 條件                         │ 動作                                       │
+#      ├─────────────────────────────┼───────────────────────────────────────────┤
+#      │ AUTH_MODE=session 且         │ 依 HTTP method 查 WorkspaceMember 角色：   │
+#      │ current_user.is_authenticated│   GET/HEAD/OPTIONS → viewer               │
+#      │                             │   POST/PUT/PATCH   → editor               │
+#      │                             │   DELETE           → owner                │
+#      │                             │ 角色不足 → raise Forbidden                 │
+#      ├─────────────────────────────┼───────────────────────────────────────────┤
+#      │ API_AUTH_ENABLED=True 且     │ 原 TOKEN_ACL_MAP 邏輯照舊                  │
+#      │ 無 session user              │ 無 token / 不匹配 → raise Unauthorized/   │
+#      │                             │ Forbidden                                  │
+#      ├─────────────────────────────┼───────────────────────────────────────────┤
+#      │ 兩者皆關（dev/TESTING）       │ 直接放行（zero-impact 相容既有測試）       │
+#      └─────────────────────────────┴───────────────────────────────────────────┘
+#
+#   安全原則：
+#   - 403 不洩漏存在性：pid 不在 workspace_members 中一律回 403，
+#     不以 404 透露專案是否存在。
+#   - session 與 Bearer 不共存：有 session user 時跳過 Bearer 邏輯。
+# 維護提醒:
+#   - 個別 route 若需更嚴（成員管理必須 owner）：在 route 內顯式呼叫
+#     require_workspace_role(pid, 'owner')。
+# 驗證方式:
+#   "C:\Users\Franky Kuo\Desktop\ai-system-test\roothinks-R-10005\roothinks\.venv\Scripts\python" -m pytest test -q
+# ------------------------------------------------------------------------------
 import json
 import hmac
 import hashlib
@@ -193,14 +231,106 @@ def check_ownership(token: str, pid: str) -> bool:
     return any(a in allowed_set for a in aliases)
 
 
+# =============================================================================
+# [Batch B] 工作區角色授權函數
+# =============================================================================
+
+def _get_auth_mode() -> str:
+    """取得目前 AUTH_MODE 設定（none / session）。"""
+    return str(current_app.config.get("AUTH_MODE", "none")).strip().lower()
+
+
+def get_workspace_role(user_id: int, pid: str) -> Optional[str]:
+    """
+    查詢指定 user 在 pid 專案中的角色。
+    回傳 'owner' | 'editor' | 'viewer'，若無 membership 回傳 None。
+    使用延遲匯入避免循環依賴。
+    """
+    try:
+        from app.models import WorkspaceMember
+        member = WorkspaceMember.query.filter_by(user_id=user_id, pid=pid).first()
+        return member.role if member else None
+    except Exception:
+        LOGGER.exception("get_workspace_role failed for user_id=%s pid=%s", user_id, pid)
+        return None
+
+
+def require_workspace_role(pid: str, min_role: str) -> Optional[Any]:
+    """
+    AUTH_MODE=session 且已登入時，驗證 current_user 在 pid 專案的角色 >= min_role。
+    角色不足或無 membership → 回傳 403 JSON（不洩漏專案是否存在）。
+    AUTH_MODE != session 或未登入時，回傳 None（放行，讓呼叫者決定後續）。
+
+    :param pid:      專案 ID（project_id 字串）。
+    :param min_role: 最低所需角色 'viewer' | 'editor' | 'owner'。
+    :return:         None（通過）或 (Response, int) 元組（拒絕）。
+    """
+    if _get_auth_mode() != "session":
+        return None
+
+    try:
+        from flask_login import current_user
+    except ImportError:
+        return None
+
+    if not current_user.is_authenticated:
+        return None
+
+    from app.models import ROLE_ORDER
+
+    user_role = get_workspace_role(current_user.id, pid)
+    user_level = ROLE_ORDER.get(user_role or "", 0)
+    min_level = ROLE_ORDER.get(min_role, 0)
+
+    if user_level < min_level:
+        return jsonify({"error": "forbidden", "required": min_role}), 403
+
+    return None
+
+
 def enforce_project_ownership(pid: str) -> None:
-    if not _auth_enabled():
+    """
+    三模式分派的專案存取守衛（見模組標頭決策表）。
+
+    模式 A（session）: current_user.is_authenticated
+        依 HTTP method 決定 min_role，呼叫 require_workspace_role。
+    模式 B（Bearer）: API_AUTH_ENABLED=True 且無 session user
+        原 TOKEN_ACL_MAP 邏輯。
+    模式 C（dev/TESTING）: 兩者皆關
+        直接放行，確保 69 舊測試不破。
+    """
+    # ── 模式 A：session 使用者 ────────────────────────────────────────────
+    try:
+        from flask_login import current_user as _cu
+        _session_active = _cu.is_authenticated
+    except Exception:
+        _session_active = False
+
+    if _get_auth_mode() == "session" and _session_active:
+        method = request.method.upper()
+        if method in {"GET", "HEAD", "OPTIONS"}:
+            min_role = "viewer"
+        elif method in {"POST", "PUT", "PATCH"}:
+            min_role = "editor"
+        else:  # DELETE
+            min_role = "owner"
+        result = require_workspace_role(pid, min_role)
+        if result is not None:
+            # require_workspace_role 回傳 (Response, status)，轉成 Forbidden 讓 route 捕捉
+            raise Forbidden("Forbidden")
         return
-    token = getattr(g, "auth_token", "") or get_request_token()
-    if not token:
-        raise Unauthorized("Unauthorized")
-    if not check_ownership(token, pid):
-        raise Forbidden("Forbidden")
+
+    # ── 模式 B：Bearer token（機器對機器） ────────────────────────────────
+    if _auth_enabled():
+        token = getattr(g, "auth_token", "") or get_request_token()
+        if not token:
+            raise Unauthorized("Unauthorized")
+        if not check_ownership(token, pid):
+            raise Forbidden("Forbidden")
+        return
+
+    # ── 模式 C：dev / TESTING — 放行 ─────────────────────────────────────
+    return
 
 
 def get_acl_context(default_access: str = "internal") -> Tuple[Optional[str], str]:

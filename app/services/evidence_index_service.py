@@ -16,7 +16,6 @@ from __future__ import annotations
 import hashlib
 import json
 import math
-import re
 from datetime import datetime, timezone
 from typing import Any
 
@@ -26,14 +25,11 @@ from app import db
 from app.errors import AppError, ErrorCode, ErrorSeverity
 from app.models import EvidenceSegment
 from app.services.evidence_types import SOURCE_PRIORITY, EvidenceSourceType
+from app.services.text_tokenize import tokenize
 
 
 def _now() -> datetime:
     return datetime.now(timezone.utc)
-
-
-def tokenize(text: str) -> list[str]:
-    return re.findall(r"[\w\u4e00-\u9fff]+", str(text or "").lower())
 
 
 def content_hash(text: str, metadata: dict[str, Any] | None = None) -> str:
@@ -119,6 +115,86 @@ def upsert_evidence_segment(
         raise AppError(ErrorCode.UNKNOWN, "Evidence segment upsert failed", ErrorSeverity.RECOVERABLE, exc) from exc
 
 
+def replace_paper_segments(
+    *,
+    project_id: str,
+    paper_id: str,
+    segments: list[dict],
+    stage: str = "",
+) -> dict:
+    """
+    以「單一 transaction 刪除舊列＋插入新列」原子取代某篇論文的 paper_segment 索引。
+    content_hash 只用於批次內去重；stale segments 一律先刪除，不靠 hash 判斷。
+    """
+    project = str(project_id or "").strip()
+    paper = str(paper_id or "").strip()
+    if not project or not paper:
+        raise AppError(
+            ErrorCode.DB_SCHEMA_MISMATCH,
+            "project_id and paper_id are required for segment replacement",
+            ErrorSeverity.USER_ACTION_REQUIRED,
+        )
+
+    now = _now()
+    rows: list[EvidenceSegment] = []
+    seen_hashes: set[str] = set()
+    for idx, segment in enumerate(segments or [], start=1):
+        text = str(segment.get("text") or segment.get("content") or "").strip()
+        if not text:
+            continue
+        metadata = segment.get("metadata") if isinstance(segment.get("metadata"), dict) else {}
+        if stage:
+            metadata = {**metadata, "stage": stage}
+        chash = content_hash(text, metadata)
+        if chash in seen_hashes:
+            continue
+        seen_hashes.add(chash)
+        rows.append(
+            EvidenceSegment(
+                project_id=project,
+                source_type=EvidenceSourceType.PAPER_SEGMENT.value,
+                source_id=str(segment.get("source_id") or paper),
+                paper_id=paper,
+                segment_id=str(segment.get("segment_id") or segment.get("id") or idx),
+                title=segment.get("title") or segment.get("heading"),
+                text=text,
+                content_hash=chash,
+                metadata_json=_metadata_to_json(metadata),
+                created_at=now,
+                updated_at=now,
+            )
+        )
+
+    try:
+        deleted = (
+            EvidenceSegment.query.filter_by(
+                project_id=project,
+                paper_id=paper,
+                source_type=EvidenceSourceType.PAPER_SEGMENT.value,
+            ).delete(synchronize_session=False)
+        )
+        # 讓 DELETE 先落到 DB，再 expunge 掉仍被追蹤的舊列，避免新列 PK 與剛刪除的
+        # 舊列在 identity map 衝突（同一 session 重跑時的 SAWarning）。仍在單一 transaction 內。
+        db.session.flush()
+        db.session.expunge_all()
+        if rows:
+            db.session.add_all(rows)
+        db.session.commit()
+    except (OperationalError, ProgrammingError) as exc:
+        db.session.rollback()
+        raise AppError(
+            ErrorCode.DB_SCHEMA_MISMATCH,
+            "Evidence index table is unavailable; run migrations before evidence indexing.",
+            ErrorSeverity.USER_ACTION_REQUIRED,
+            exc,
+        ) from exc
+    except Exception as exc:
+        db.session.rollback()
+        raise AppError(ErrorCode.UNKNOWN, "Evidence segment replacement failed", ErrorSeverity.RECOVERABLE, exc) from exc
+
+    return {"deleted": int(deleted or 0), "indexed": len(rows), "stage": stage}
+
+
 def index_paper_segments(project_id: str, paper_id: str, segments: list[dict]) -> list[EvidenceSegment]:
     rows = []
     for idx, segment in enumerate(segments or [], start=1):
@@ -178,7 +254,9 @@ def search_evidence(
         q = EvidenceSegment.query.filter_by(project_id=str(project_id))
         if source_types:
             q = q.filter(EvidenceSegment.source_type.in_([str(x) for x in source_types]))
-        rows = q.order_by(EvidenceSegment.updated_at.desc()).limit(1000).all()
+        # 全專案掃描：180+ 篇 × 段落數在數千列等級，Python 端打分仍在毫秒級；
+        # 舊的 limit(1000) 會讓早期索引的段落永遠檢索不到，已移除。
+        rows = q.order_by(EvidenceSegment.id.asc()).all()
     except (OperationalError, ProgrammingError) as exc:
         raise AppError(
             ErrorCode.DB_SCHEMA_MISMATCH,

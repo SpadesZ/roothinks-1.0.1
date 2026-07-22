@@ -8,6 +8,8 @@ services:
     ports:
       - "127.0.0.1:10005:10005"
     environment:
+      # 多人登入模式:session=帳號制(預設), none=單機免登入。
+      - AUTH_MODE=${AUTH_MODE:-session}
       - RATELIMIT_STORAGE_URI=${RATELIMIT_STORAGE_URI:-redis://redis:6379/0}
       - SOCKETIO_MESSAGE_QUEUE=${SOCKETIO_MESSAGE_QUEUE:-redis://redis:6379/1}
       - LOCK_ROOT=${LOCK_ROOT:-/tmp/roothinks-locks}

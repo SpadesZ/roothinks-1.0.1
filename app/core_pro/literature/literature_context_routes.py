@@ -169,6 +169,24 @@ def register_context_routes(literature_bp, deps):
             searcher = task_3search.ContextSearcher()
             advice = searcher.generate_suggestions(pid, context, include_reasoning=include_reasoning)
 
+            # 持久文獻庫：把本輪全量候選 merge 進 library（只補不覆寫），
+            # 失敗只記 warning，不影響搜尋結果。pool 不回傳給前端。
+            library_pool = advice.pop("library_pool", None)
+            try:
+                library = deps.get_literature_library()
+                merge_stat = library.merge_candidates(
+                    pid,
+                    library_pool if library_pool else (advice.get("papers") or []),
+                    topic=context,
+                    default_source="task3_search",
+                )
+                deps.logger.info(
+                    "[Library] merge for %s: +%s new, %s updated, total=%s",
+                    pid, merge_stat.get("added"), merge_stat.get("updated"), merge_stat.get("total"),
+                )
+            except Exception as lib_err:
+                deps.logger.warning(f"[Library] merge failed: {lib_err}")
+
             try:
                 ccs = deps.get_context_chain_service()
                 ccs.update_from_task3_search(

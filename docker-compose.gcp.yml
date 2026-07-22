@@ -1,0 +1,30 @@
+# 檔案路徑: roothinks/docker-compose.gcp.yml
+# 產生時間: 2026-07-20 13:20 +08:00
+# 版本: v1.0
+# 模組定位:
+#   GCP VM(HTTP 直連 IP)部署用的 compose override。疊在 docker-compose.yml
+#   之上,補齊「HTTP + 多人登入」場景所需的環境變數。
+# 主要責任:
+#   1. 開啟帳號登入(AUTH_MODE=session)。
+#   2. HTTP 部署關鍵:SESSION_COOKIE_SECURE=0(否則 cookie 送不出→CSRF 失敗→登不進)。
+#   3. session 模式不需 Bearer,關閉 API_AUTH_ENABLED 免除 token 需求。
+# 維護提醒:
+#   - 用法:docker compose -f docker-compose.yml -f docker-compose.gcp.yml up -d --build
+#   - SECRET_KEY / FERNET_KEY 必須換成自己的固定值(勿用範例值);
+#     重建容器時保持不變,否則所有既有 session 與加密 API key 失效。
+#     產生 FERNET_KEY:python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+#   - CORS_ALLOWED_ORIGINS 換成實際對外網址(含 port);多個用逗號分隔。
+#   - 一旦掛上 HTTPS(網域+憑證),把 SESSION_COOKIE_SECURE 改回 1 更安全。
+# 驗證方式:
+#   - 部署後開 http://<VM_IP>/ 應導向 /auth/login;登入後可進 Dashboard。
+# ------------------------------------------------------------------------------
+services:
+  roothinks-paq:
+    environment:
+      - AUTH_MODE=session
+      - SESSION_COOKIE_SECURE=0
+      - API_AUTH_ENABLED=0
+      # ↓↓↓ 部署前務必修改為自己的固定值 ↓↓↓
+      - SECRET_KEY=${SECRET_KEY:-CHANGE_ME_fixed_secret_key}
+      - FERNET_KEY=${FERNET_KEY:-CHANGE_ME_run_Fernet_generate_key}
+      - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS:-http://35.221.224.128}

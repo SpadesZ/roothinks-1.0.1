@@ -40,3 +40,15 @@ def paq_workspace_query():
     except BadRequest:
         pid = ""
     return render_template('paq.html', pid=pid)
+
+
+@main_bp.route('/submit')
+@main_bp.route('/submit/')
+def submit_workspace():
+    """渲染投稿版型輸出頁。"""
+    raw_pid = request.args.get('pid', '')
+    try:
+        pid = validate_id(raw_pid, "project_id", required=False)
+    except BadRequest:
+        pid = ""
+    return render_template('submit.html', pid=pid)

@@ -1,0 +1,16 @@
+# Path: Dockerfile.test
+# Purpose: derive an isolated test runner from an already-built runtime image.
+
+ARG BASE_IMAGE=roothinks10005-roothinks-paq:latest
+FROM ${BASE_IMAGE}
+
+USER root
+COPY requirements-dev.txt /tmp/requirements-dev.txt
+RUN pip install --no-cache-dir -r /tmp/requirements-dev.txt
+COPY --chown=appuser:appuser app /app/app
+COPY --chown=appuser:appuser main.py fix_db_schema.py /app/
+COPY --chown=appuser:appuser scripts/prepare_test_runtime.py /app/scripts/prepare_test_runtime.py
+USER appuser
+
+ENTRYPOINT ["python", "/app/scripts/prepare_test_runtime.py"]
+CMD ["python", "-m", "pytest", "test", "-q", "-p", "no:cacheprovider"]

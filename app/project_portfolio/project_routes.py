@@ -17,6 +17,7 @@ from werkzeug.exceptions import BadRequest, Forbidden, Unauthorized
 from app import db
 from app.models import Project, PaqSurvey, MetadataIndex, Paper
 from app.project_portfolio.project_service import ProjectService
+from app.core_pro.workflow_status import build_workflow_status
 from app.services.formal_project_sync import ensure_formal_project_records, resolve_data_root
 from app.security import check_ownership, enforce_project_ownership, safe_join_under, validate_id
 import os
@@ -191,11 +192,26 @@ def update_project(pid):
 
 @bp.route('/list', methods=['GET'])
 def list_projects():
-    status = request.args.get('status', 'temp') 
+    status = request.args.get('status', 'temp')
     try:
-        projects = ProjectService.get_projects(status=status)
+        # [Batch B] session 模式下傳入 user_id 以過濾有 membership 的專案
+        user_id = None
+        try:
+            from flask_login import current_user as _cu
+            from flask import current_app as _app
+            if (
+                str(_app.config.get("AUTH_MODE", "none")).strip().lower() == "session"
+                and _cu.is_authenticated
+            ):
+                user_id = _cu.id
+        except Exception:
+            pass
+
+        projects = ProjectService.get_projects(status=status, user_id=user_id)
+
+        # Bearer 模式過濾（原邏輯保留）
         token = getattr(g, "auth_token", "")
-        if token:
+        if token and user_id is None:
             filtered = []
             for p in projects:
                 pid = (p.get("project_id") or p.get("pid") or "").strip()
@@ -204,6 +220,7 @@ def list_projects():
                 if check_ownership(token, pid):
                     filtered.append(p)
             projects = filtered
+
         return jsonify({
             'success': True,
             'projects': projects,
@@ -211,6 +228,29 @@ def list_projects():
         }), 200
     except Exception as e:
         logger.error("[List Error] %s", e, exc_info=True)
+        return jsonify({'success': False, 'message': "Internal server error"}), 500
+
+
+@bp.route('/workflow/<pid>', methods=['GET'])
+def project_workflow(pid):
+    try:
+        pid = validate_id(pid, "project_id")
+        enforce_project_ownership(pid)
+        project = Project.query.filter_by(project_id=pid).first()
+        if not project:
+            return jsonify({'success': False, 'message': 'Project not found'}), 404
+        survey = PaqSurvey.query.filter_by(project_ref_id=project.id).first()
+        payload = build_workflow_status(resolve_data_root(), pid, project=project, survey=survey)
+        payload['success'] = True
+        return jsonify(payload), 200
+    except BadRequest as e:
+        return jsonify({'success': False, 'message': e.description or "Bad request"}), 400
+    except Unauthorized:
+        return jsonify({'success': False, 'message': "Unauthorized"}), 401
+    except Forbidden:
+        return jsonify({'success': False, 'message': "Forbidden"}), 403
+    except Exception as e:
+        logger.error("[Workflow Error] %s", e, exc_info=True)
         return jsonify({'success': False, 'message': "Internal server error"}), 500
 
 
@@ -273,6 +313,12 @@ def delete_project(pid):
 
         # 1) Main DB cascade
         Paper.query.filter(Paper.pid.in_(delete_ids)).delete(synchronize_session=False)
+        # [Batch B] 清除 workspace_members
+        try:
+            from app.models import WorkspaceMember
+            WorkspaceMember.query.filter(WorkspaceMember.pid.in_(delete_ids)).delete(synchronize_session=False)
+        except Exception:
+            logger.warning("Failed to delete workspace_members for delete_ids=%s", delete_ids, exc_info=True)
         for project in projects:
             PaqSurvey.query.filter_by(project_ref_id=project.id).delete()
             MetadataIndex.query.filter_by(project_ref_id=project.id).delete()

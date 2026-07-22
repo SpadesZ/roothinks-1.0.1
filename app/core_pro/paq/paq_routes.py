@@ -321,7 +321,26 @@ def promote_project():
                 shutil.copytree(old_chat_dir, os.path.join(records_dir, 'chat'))
 
         ensure_formal_project_records(new_project)
-        
+
+        # [Batch B] 複製原 pid 的所有 membership 到 new_pid
+        try:
+            from app.models import WorkspaceMember, ROLE_ORDER
+            old_members = WorkspaceMember.query.filter_by(pid=pid).all()
+            for m in old_members:
+                # 若 new_pid 尚無此 user 的 membership 則複製
+                exists = WorkspaceMember.query.filter_by(
+                    user_id=m.user_id, pid=new_pid
+                ).first()
+                if not exists:
+                    new_m = WorkspaceMember(
+                        user_id=m.user_id,
+                        pid=new_pid,
+                        role=m.role,
+                    )
+                    db.session.add(new_m)
+        except Exception:
+            logger.warning("[Promote] copy memberships failed for pid=%s -> %s", pid, new_pid, exc_info=True)
+
         db.session.commit()
         return jsonify({'success': True})
         

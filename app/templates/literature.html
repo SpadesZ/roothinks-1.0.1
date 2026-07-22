@@ -239,6 +239,8 @@
         </div>
     </div>
 
+    <div class="mb-4" data-workflow-status data-focus="literature" data-pid="{{ pid or '' }}"></div>
+
     <div class="row mb-4">
         <div class="col-12">
             <div class="card shadow-sm border-0">
@@ -321,6 +323,63 @@
                         </div>
                     </div>
 
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-4" id="libraryPanel">
+        <div class="col-12">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white border-bottom fw-bold py-3 d-flex justify-content-between align-items-center">
+                    <span><i class="bi bi-collection-fill text-primary me-2"></i>2.2C 文獻庫 (Library)</span>
+                    <span class="badge bg-secondary" id="libCountBadge">0 entries</span>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+                        <select id="libFilterScreening" class="form-select form-select-sm" style="width:auto;">
+                            <option value="">篩選: 全部</option>
+                            <option value="candidate">candidate</option>
+                            <option value="included">included</option>
+                            <option value="excluded">excluded</option>
+                        </select>
+                        <select id="libFilterReading" class="form-select form-select-sm" style="width:auto;">
+                            <option value="">閱讀: 全部</option>
+                            <option value="unread">unread</option>
+                            <option value="reading">reading</option>
+                            <option value="read">read</option>
+                        </select>
+                        <input id="libFilterQuery" class="form-control form-control-sm" style="width:220px;" placeholder="關鍵字 (Enter 搜尋)">
+                        <button class="btn btn-sm btn-outline-secondary" onclick="window.literatureLibrary.loadLibrary()"><i class="bi bi-arrow-clockwise"></i> Refresh</button>
+                        <div class="ms-auto d-flex align-items-center gap-2">
+                            <select id="libExportScope" class="form-select form-select-sm" style="width:auto;">
+                                <option value="included">匯出: included</option>
+                                <option value="all">匯出: 全部</option>
+                            </select>
+                            <button class="btn btn-sm btn-outline-primary" onclick="window.literatureLibrary.exportRefs('bibtex')">BibTeX</button>
+                            <button class="btn btn-sm btn-outline-primary" onclick="window.literatureLibrary.exportRefs('ris')">RIS</button>
+                            <button class="btn btn-sm btn-outline-primary" onclick="window.literatureLibrary.exportRefs('csl-json')">CSL</button>
+                            <button class="btn btn-sm btn-outline-dark" onclick="window.literatureLibrary.rebuildIndex()" title="Backfill / 重建 evidence index"><i class="bi bi-database-gear"></i> 索引重建</button>
+                        </div>
+                    </div>
+                    <div class="table-responsive" style="max-height: 340px; overflow-y: auto;">
+                        <table class="table table-sm table-hover align-middle mb-2">
+                            <thead class="table-light sticky-top">
+                                <tr><th>Title</th><th>DOI</th><th style="width:120px;">Screening</th><th style="width:110px;">Reading</th><th>PDF</th><th>Sources</th></tr>
+                            </thead>
+                            <tbody id="libraryTableBody">
+                                <tr><td colspan="6" class="text-center text-muted small py-3">Loading...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="row g-2">
+                        <div class="col-md-9">
+                            <textarea id="libImportText" class="form-control form-control-sm" rows="2" placeholder='批次匯入：貼上 CSL JSON 或 normalized JSON 陣列，例如 [{"title":"...","DOI":"..."}]'></textarea>
+                        </div>
+                        <div class="col-md-3 d-grid">
+                            <button class="btn btn-sm btn-outline-success" onclick="window.literatureLibrary.importItems()"><i class="bi bi-box-arrow-in-down"></i> 匯入 (CSL / normalized)</button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -478,8 +537,10 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz" crossorigin="anonymous"></script>
 <script src="{{ url_for('static', filename='js/literature_app.js') }}?v=4.4"></script>
+<script src="{{ url_for('static', filename='js/literature_library.js') }}?v=0.1"></script>
 <script src="{{ url_for('static', filename='js/literature_scholar.js') }}?v=1.4"></script>
 <script src="{{ url_for('static', filename='js/literature_origins.js') }}?v=0.8"></script>
+<script src="{{ url_for('static', filename='js/workflow_status.js') }}?v=0.2"></script>
 </body>
 </html>
 

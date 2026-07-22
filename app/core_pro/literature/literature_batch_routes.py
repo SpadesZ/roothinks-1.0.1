@@ -39,8 +39,30 @@ def register_batch_routes(literature_bp, deps):
                 return jsonify({"status": "error", "message": "Unsupported file type. Please upload PDF or image."}), 400
 
             raw_paper_id = os.path.splitext(filename)[0].replace(" ", "_")
-            raw_paper_id = re.sub(r"[^A-Za-z0-9_.-]+", "_", raw_paper_id)[:120]
+            raw_paper_id = re.sub(r"[^A-Za-z0-9_.-]+", "_", raw_paper_id)[:110]
             paper_id = deps._safe_paper_id(raw_paper_id)
+
+            # 同名檔案處理：既有 paper 存在時預設配發新 id（_2, _3...），
+            # 只有明確傳 overwrite=1 才沿用舊 id 覆蓋 PDF。
+            overwrite = str(request.form.get('overwrite') or '').strip().lower() in {'1', 'true', 'yes'}
+            if not overwrite:
+                base_id = paper_id
+                suffix = 2
+                while True:
+                    existing_row = deps.Paper.query.filter_by(paper_id=paper_id, pid=pid).first()
+                    existing_pdf = os.path.exists(
+                        deps.safe_join_under(
+                            deps._get_literature_paper_dir(pid, paper_id, for_write=False),
+                            "00_origins",
+                            "source.pdf",
+                        )
+                    )
+                    if not existing_row and not existing_pdf:
+                        break
+                    if suffix > 50:
+                        return jsonify({"status": "error", "message": "Too many duplicate filenames"}), 409
+                    paper_id = deps._safe_paper_id(f"{base_id}_{suffix}")
+                    suffix += 1
 
             paper_dir = deps._get_literature_paper_dir(pid, paper_id, for_write=True)
             save_dir = deps.safe_join_under(paper_dir, "00_origins")
@@ -66,15 +88,29 @@ def register_batch_routes(literature_bp, deps):
                 {"original_filename": filename, "upload_time": time.time(), "source_type": source_type},
             )
 
+            # 選配：連結 library entry（metadata 由 library 管，Paper 只管 PDF/pipeline）
+            entry_id = str(request.form.get('entry_id') or '').strip()
+            entry = None
+            if entry_id:
+                try:
+                    library = deps.get_literature_library()
+                    entry = library.update_entry(pid, entry_id, {"paper_id": paper_id})
+                except Exception as link_err:
+                    deps.logger.warning(f"[Library] link entry {entry_id} -> {paper_id} failed: {link_err}")
+                    entry = None
+
             try:
                 existing_paper = deps.Paper.query.filter_by(paper_id=paper_id, pid=pid).first()
                 if not existing_paper:
+                    seed_title = (entry or {}).get("title") or filename
+                    seed_authors = ", ".join((entry or {}).get("authors") or [])[:200]
                     new_paper = deps.Paper(
                         paper_id=paper_id,
                         pid=pid,
-                        title=filename,
-                        authors='',
-                        journal='',
+                        title=str(seed_title)[:500],
+                        authors=seed_authors,
+                        journal=str((entry or {}).get("venue") or '')[:200],
+                        publish_date=str((entry or {}).get("year") or ''),
                         has_source=True,
                         interpretation_status=deps.Paper.STATUS_PENDING,
                     )
@@ -85,7 +121,7 @@ def register_batch_routes(literature_bp, deps):
                 deps.logger.warning(f"Failed to add paper to DB: {e}")
 
             deps.logger.info(f"File uploaded: {save_path}")
-            return jsonify({"status": "success", "paper_id": paper_id})
+            return jsonify({"status": "success", "paper_id": paper_id, "linked_entry_id": entry_id if entry else ""})
 
     @literature_bp.route('/api/literature/run_batch', methods=['POST'])
     def run_batch():

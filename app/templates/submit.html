@@ -1,0 +1,96 @@
+{% include '_header.html' %}
+
+<div class="container-fluid px-4 pb-4" style="max-width: 1600px;">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h5 class="fw-bold mb-1"><i class="bi bi-layout-text-window-reverse text-primary me-2"></i>投稿版型輸出 (Submit)</h5>
+            <div class="text-muted small">Project: <span class="font-monospace fw-bold">{{ pid or '未選擇' }}</span></div>
+        </div>
+        <div class="d-flex gap-2">
+            <a class="btn btn-outline-secondary btn-sm" href="/manuscript{% if pid %}?pid={{ pid }}{% endif %}">
+                <i class="bi bi-arrow-left me-1"></i>回 Manuscript
+            </a>
+            <a class="btn btn-outline-primary btn-sm" href="/{% if pid %}?status=formal{% endif %}">
+                <i class="bi bi-grid-3x3-gap me-1"></i>Dashboard
+            </a>
+        </div>
+    </div>
+
+    {% if not pid %}
+    <div class="alert alert-warning small">
+        <i class="bi bi-exclamation-triangle me-1"></i>尚未帶入正式專案 ID，請從 Dashboard、Manuscript 或上方導覽列選擇專案後再進入。
+    </div>
+    {% endif %}
+
+    <div class="row g-3">
+        <div class="col-xl-4 col-lg-5">
+            <div data-workflow-status data-focus="submit" data-variant="full" data-pid="{{ pid or '' }}"></div>
+        </div>
+        <div class="col-xl-8 col-lg-7">
+            <section class="bg-white border rounded-3 shadow-sm p-3 mb-3">
+                <div class="d-flex justify-content-between align-items-start gap-3 mb-3">
+                    <div>
+                        <h6 class="fw-bold mb-1"><i class="bi bi-columns-gap text-primary me-2"></i>版型輸出工作台</h6>
+                        <div class="text-muted small">Submit 的定位是把 Manuscript 草稿轉成可投稿格式，包含單欄/雙欄排版、引用檢查、圖表與補充檔整理。</div>
+                    </div>
+                    <span class="badge bg-secondary-subtle text-secondary border border-secondary">Exporter 待接線</span>
+                </div>
+
+                <div class="row g-2 small">
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold mb-1">排版模式</label>
+                        <div class="btn-group w-100 btn-group-sm" role="group" aria-label="Layout mode">
+                            <button type="button" class="btn btn-outline-primary active">雙欄</button>
+                            <button type="button" class="btn btn-outline-primary">單欄</button>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold mb-1">輸出格式</label>
+                        <select class="form-select form-select-sm" disabled>
+                            <option>DOCX / PDF / LaTeX</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold mb-1">投稿目標</label>
+                        <select class="form-select form-select-sm" disabled>
+                            <option>期刊 / 會議模板</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="alert alert-light border mt-3 mb-0 small">
+                    <i class="bi bi-info-circle me-1"></i>
+                    下一步應接 Manuscript 全文草稿讀取與 exporter API；在接線前，本頁先保留正確的產品位置與輸出檢查口徑。
+                </div>
+            </section>
+
+            <section class="bg-white border rounded-3 shadow-sm p-3">
+                <h6 class="fw-bold mb-3"><i class="bi bi-list-check text-primary me-2"></i>投稿輸出前檢查</h6>
+                <div class="row g-2 small">
+                    <div class="col-md-6 d-flex gap-2">
+                        <i class="bi bi-circle text-secondary"></i>
+                        <div>Manuscript 已保存章節或全文草稿，可作為版型來源。</div>
+                    </div>
+                    <div class="col-md-6 d-flex gap-2">
+                        <i class="bi bi-circle text-secondary"></i>
+                        <div>圖、表、公式與 caption 已從 Literature 保留可引用來源。</div>
+                    </div>
+                    <div class="col-md-6 d-flex gap-2">
+                        <i class="bi bi-circle text-secondary"></i>
+                        <div>引用、摘要、關鍵詞與作者資訊已可匯入投稿模板。</div>
+                    </div>
+                    <div class="col-md-6 d-flex gap-2">
+                        <i class="bi bi-circle text-secondary"></i>
+                        <div>輸出時可選擇雙欄初稿、單欄審稿稿或 LaTeX/Word 目標格式。</div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz" crossorigin="anonymous"></script>
+<script src="{{ url_for('static', filename='js/workflow_status.js') }}?v=0.2"></script>
+
+</body>
+</html>

@@ -67,6 +67,8 @@
         </div>
     </div>
 
+    <div class="px-3 py-1 bg-light border-bottom flex-shrink-0" data-workflow-status data-focus="manuscript" data-pid="{{ pid or '' }}"></div>
+
     <div class="container-fluid px-2 manuscript-main">
         
         <div class="manu-flex-container" id="workspaceContainer">
@@ -173,6 +175,10 @@
 
                     <button class="btn btn-sm btn-outline-primary shadow-sm fw-bold" onclick="wsApp.openAssetGallery('2B')" title="從圖庫插入圖片或表格">
                         <i class="bi bi-images"></i>
+                    </button>
+
+                    <button class="btn btn-sm btn-outline-success shadow-sm fw-bold" onclick="window.manuscriptCitation.open()" title="依選取段落取得引用建議（來自 Literature 證據，需人工確認）">
+                        <i class="bi bi-quote"></i> 引用
                     </button>
 
                     <div class="vr mx-1"></div>
@@ -396,10 +402,10 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.min.js" integrity="sha384-mZLF4UVrpi/QTWPA7BjNPEnkIfRFn4ZEO3Qt/HFklTJBj/gBOV8G3HcKn4NfQblz" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz" crossorigin="anonymous"></script>
     <script src="{{ url_for('static', filename='js/google_driveapi.js') }}?v=0.2"></script>
-    <script async defer src="https://apis.google.com/js/api.js" integrity="sha384-g64Y2rxnMkygAR8l69comjp8tBeEw0wKGPzjF1Ze8A5GVOpH8f/3DXzKZIvRnhja" crossorigin="anonymous" onload="window.driveAdapter.loadGapi()"></script>
-    <script async defer src="https://accounts.google.com/gsi/client" integrity="sha384-PDFx1gvyInp8EheVgdrq37F4dlvWZaxgQ8amZ9lLhZHXqsCaG86UhVj6DbbqmWfV" crossorigin="anonymous" onload="window.driveAdapter.loadGis()"></script>
+    <script async defer src="https://apis.google.com/js/api.js" onload="window.driveAdapter.loadGapi()"></script>
+    <script async defer src="https://accounts.google.com/gsi/client" onload="window.driveAdapter.loadGis()"></script>
 
-    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js" integrity="sha384-enVdc7lTHDGtpROV85t9+VqPC2EyyB0hsRD0MrvQnHUsHmTHIz2D8SPP4EnBkstH" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
     <script>
         mermaid.initialize({
             startOnLoad: false,
@@ -415,6 +421,8 @@
     <script src="{{ url_for('static', filename='js/manuscript_image.js') }}?v=1.8"></script>
     <script src="{{ url_for('static', filename='js/manuscript_soed.js') }}?v=0.8"></script>
     <script src="{{ url_for('static', filename='js/manuscript_ws.js') }}?v=4.6"></script>
+    <script src="{{ url_for('static', filename='js/manuscript_citation.js') }}?v=0.1"></script>
+    <script src="{{ url_for('static', filename='js/workflow_status.js') }}?v=0.2"></script>
 
 </body>
 </html>

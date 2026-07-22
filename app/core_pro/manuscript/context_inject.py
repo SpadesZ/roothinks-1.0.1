@@ -16,19 +16,15 @@ from __future__ import annotations
 import hashlib
 import json
 import os
-import re
 from typing import Any
 
 from app.errors import AppError
 from app.services.context_chain_service import ContextChainService
+from app.services.text_tokenize import tokenize
 
 
 def estimate_tokens(text: str) -> int:
     return max(1, len(str(text or "")) // 4)
-
-
-def tokenize(text: str) -> list[str]:
-    return re.findall(r"[\w\u4e00-\u9fff]+", str(text or "").lower())
 
 
 def _fingerprint(payload: Any) -> str:

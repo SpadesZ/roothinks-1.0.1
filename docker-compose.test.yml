@@ -1,0 +1,25 @@
+# Path: docker-compose.test.yml
+# Purpose: isolated, one-shot test runner. It does not expose ports or mount product data.
+# Usage: docker compose -p roothinks10005-tests -f docker-compose.test.yml build roothinks-test
+#        docker compose -p roothinks10005-tests -f docker-compose.test.yml run --rm roothinks-test
+
+name: roothinks10005-tests
+
+services:
+  roothinks-test:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+      args:
+        BASE_IMAGE: ${ROOTTHINKS_TEST_BASE_IMAGE:-roothinks10005-roothinks-paq:latest}
+    environment:
+      - FLASK_ENV=development
+      - FLASK_DEBUG=0
+      - API_AUTH_ENABLED=0
+      - SOCKETIO_ASYNC_MODE=threading
+      - HF_HUB_OFFLINE=1
+      - TRANSFORMERS_OFFLINE=1
+      - PYTHONDONTWRITEBYTECODE=1
+    volumes:
+      - ./test:/app/test:ro
+    command: ["python", "-m", "pytest", "test", "-q", "-p", "no:cacheprovider"]

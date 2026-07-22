@@ -16,6 +16,7 @@ def test_literature_and_study_routes_register(monkeypatch):
     assert "/api/literature/run_translation" in routes
     assert "/study" in routes
     assert any(r.startswith("/api/study") for r in routes)
+    assert "/submit" in routes
 
 
 def test_study_media_kind_accepts_equation(monkeypatch):

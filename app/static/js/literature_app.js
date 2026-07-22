@@ -436,9 +436,14 @@ window.literatureApp = {
             if(data.status === 'success' && data.results) {
                 // 保存搜尋結果
                 this._saveSearchResults(data.results);
-                
+
                 // 顯示結果
                 this._displaySearchResults(data.results);
+
+                // 後端已把本輪候選 merge 進持久文獻庫；刷新 Library 面板讓累積可見。
+                if (window.literatureLibrary && window.literatureLibrary.loadLibrary) {
+                    window.literatureLibrary.loadLibrary();
+                }
             } else {
                 document.getElementById('apaList').innerHTML = `<span class="text-danger">Error: ${this._escapeHtml(data.message || '無結果')}</span>`;
             }

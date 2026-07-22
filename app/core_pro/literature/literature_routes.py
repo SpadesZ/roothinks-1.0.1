@@ -76,6 +76,7 @@ from app.core_pro.literature.literature_batch_routes import register_batch_route
 from app.core_pro.literature.literature_context_chain_routes import register_context_chain_routes
 from app.core_pro.literature.literature_context_routes import register_context_routes
 from app.core_pro.literature.literature_debug_routes import register_debug_routes
+from app.core_pro.literature.literature_library_routes import register_library_routes
 from app.core_pro.literature.literature_processing_ops import (
     delete_paper_impl,
     get_block_json_impl,
@@ -335,6 +336,19 @@ def get_nllb_translator():
             logger.warning(f"[System] Hybrid Translator init failed: {e}")
             return None
     return nllb_translator
+
+
+literature_library_service = None
+
+
+def get_literature_library():
+    """Lazy singleton：持久文獻庫服務（library.json per project）。"""
+    global literature_library_service
+    if literature_library_service is None:
+        from app.services.literature_library import LiteratureLibrary
+
+        literature_library_service = LiteratureLibrary(DATA_ROOT)
+    return literature_library_service
 
 
 def get_context_chain_service():
@@ -1340,6 +1354,17 @@ def _generate_flowb_reflow_artifact(
             paper_id,
             document_flow_err,
         )
+
+    # Flow B 精索引：semantic sections 原子取代 Flow A 粗索引（含 stale 清除）。
+    # 索引失敗只記 warning，不影響 reflow 成敗。
+    try:
+        from app.services.paper_evidence_sync import sync_reflow_evidence
+
+        evidence_result = sync_reflow_evidence(pid, paper_id, payload, summary_payload)
+        logger.info("[reflow] evidence fine index for %s/%s: %s", pid, paper_id, evidence_result)
+    except Exception as evidence_err:
+        logger.warning("[reflow] evidence indexing failed for %s/%s: %s", pid, paper_id, evidence_err)
+
     return True, str(llm_err or ""), out_path, generation_mode
 
 
@@ -1601,3 +1626,4 @@ register_context_routes(literature_bp, sys.modules[__name__])
 register_batch_routes(literature_bp, sys.modules[__name__])
 register_context_chain_routes(literature_bp, sys.modules[__name__])
 register_debug_routes(literature_bp, sys.modules[__name__])
+register_library_routes(literature_bp, sys.modules[__name__])

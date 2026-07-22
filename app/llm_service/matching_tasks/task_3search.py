@@ -69,12 +69,31 @@ class ContextSearcher:
         ranked = self._rank_candidates(filtered, keywords)
         verified_ranked = self._apply_hard_validation(ranked, check_limit=20)
         top_papers = verified_ranked[:5]
+        # library_pool: 全量排序候選（完整 metadata），供持久文獻庫累積；
+        # route 端 merge 後會從回應中移除，不影響前端契約。
+        library_pool = [
+            {
+                "title": p.get("title", ""),
+                "authors": p.get("authors") or [],
+                "year": p.get("year"),
+                "venue": p.get("venue", ""),
+                "doi": p.get("doi", ""),
+                "url": p.get("url", ""),
+                "abstract": str(p.get("abstract") or "")[:4000],
+                "citations": int(p.get("citations") or 0),
+                "source": p.get("source", ""),
+                "confidence": round(float(p.get("confidence", 0.0)), 3),
+                "is_verified": bool(p.get("is_verified", False)),
+            }
+            for p in verified_ranked[:50]
+        ]
 
         output = {
             "apa_citations": [],
             "keywords": [],
             "reasoning": "",
             "papers": [],
+            "library_pool": library_pool,
             "meta": {
                 "cache_used": cache_used,
                 "total_candidates": len(candidates),

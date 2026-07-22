@@ -1,0 +1,70 @@
+<!--
+  檔案路徑: app/templates/auth/login.html
+  產生時間: 2026-07-19 00:00 +08:00
+  版本: v1.0
+  模組定位:
+    使用者登入頁面，支援 AUTH_MODE=session。
+  主要責任:
+    1. 顯示 username / password 表單。
+    2. 表單含 csrf_token()，由 _auth_guard csrf.protect() 驗證。
+    3. 傳遞 next 隱藏欄位，讓登入後導回原頁。
+  維護提醒:
+    - 僅在 AUTH_MODE=session 時由 _auth_guard 重導至此。
+    - Bootstrap 5 + Bootstrap Icons 與其他頁面一致。
+  驗證方式:
+    python -m pytest test/unit/test_auth_basic.py -q
+-->
+{% include '_header.html' %}
+
+<div class="container" style="max-width: 420px; margin-top: 80px;">
+    <div class="card shadow-sm">
+        <div class="card-body p-4">
+            <h4 class="card-title fw-bold mb-4 text-center">
+                <i class="bi bi-box-arrow-in-right text-info me-2"></i>登入 roothinks
+            </h4>
+
+            {% if error %}
+            <div class="alert alert-danger py-2">{{ error }}</div>
+            {% endif %}
+
+            {% with msgs = get_flashed_messages(with_categories=true) %}
+              {% for cat, m in msgs %}
+              <div class="alert alert-{{ 'warning' if cat == 'warning' else 'info' }} py-2">{{ m }}</div>
+              {% endfor %}
+            {% endwith %}
+
+            <form method="POST" action="{{ url_for('auth.login') }}{% if next %}?next={{ next }}{% endif %}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="next" value="{{ next }}">
+
+                <div class="mb-3">
+                    <label for="username" class="form-label fw-semibold">帳號</label>
+                    <input type="text" id="username" name="username" class="form-control"
+                           autocomplete="username" required autofocus>
+                </div>
+
+                <div class="mb-3">
+                    <label for="password" class="form-label fw-semibold">密碼</label>
+                    <input type="password" id="password" name="password" class="form-control"
+                           autocomplete="current-password" required>
+                </div>
+
+                <button type="submit" class="btn btn-primary w-100 mt-1">
+                    <i class="bi bi-box-arrow-in-right me-1"></i>登入
+                </button>
+            </form>
+
+            <hr class="my-3">
+            <p class="text-center text-muted small mb-0">
+                尚無帳號？
+                <a href="{{ url_for('auth.register') }}">立即註冊</a>
+            </p>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz"
+        crossorigin="anonymous"></script>
+</body>
+</html>

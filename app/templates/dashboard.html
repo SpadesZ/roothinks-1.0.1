@@ -146,6 +146,8 @@
                 </form>
             </div>
             <div class="modal-footer bg-white">
+                <!-- v1.9: inline 表單錯誤區(取代阻塞式 alert) -->
+                <div id="create-form-error" class="alert alert-danger w-100 py-2 mb-2 d-none" role="alert"></div>
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消 (Cancel)</button>
                 <button type="button" class="btn btn-primary px-4" id="btn-submit-project" onclick="submitCreate()">
                     <i class="bi bi-save"></i> 儲存專案 (Save Project)
@@ -155,5 +157,73 @@
     </div>
 </div>
 
+<!-- #membersModal: 成員管理 Modal (v2.0 新增) -->
+<div class="modal fade" id="membersModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header bg-info text-white">
+                <h5 class="modal-title" id="membersModalLabel">
+                    <i class="bi bi-people-fill"></i> 成員管理 (Members)
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <!-- 單機模式提示 -->
+                <div id="members-offline-notice" class="alert alert-secondary d-none" role="alert">
+                    <i class="bi bi-info-circle me-2"></i>單機模式無成員管理（需啟用登入）。
+                </div>
+                <!-- inline 錯誤區 -->
+                <div id="members-form-error" class="alert alert-danger d-none py-2" role="alert"></div>
+
+                <!-- 新增成員列（owner 才看得到） -->
+                <div id="members-add-row" class="d-none mb-3">
+                    <div class="card border-0 shadow-sm bg-light">
+                        <div class="card-body py-2">
+                            <div class="row g-2 align-items-end">
+                                <div class="col-md-5">
+                                    <label class="form-label small mb-1 fw-bold">帳號 (Username)</label>
+                                    <input type="text" class="form-control form-control-sm" id="members-new-username" placeholder="輸入對方帳號...">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label small mb-1 fw-bold">角色 (Role)</label>
+                                    <select class="form-select form-select-sm" id="members-new-role">
+                                        <option value="viewer">檢視者 (viewer)</option>
+                                        <option value="editor">編輯者 (editor)</option>
+                                        <option value="owner">擁有者 (owner)</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-3">
+                                    <button class="btn btn-sm btn-info w-100 text-white" onclick="membersAddNew()">
+                                        <i class="bi bi-person-plus-fill me-1"></i>新增
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 成員列表 -->
+                <div id="members-list-container">
+                    <div id="members-loading" class="text-center py-4">
+                        <div class="spinner-border spinner-border-sm text-info" role="status"></div>
+                        <span class="ms-2 text-muted small">載入中...</span>
+                    </div>
+                    <ul class="list-group list-group-flush d-none" id="members-list"></ul>
+                </div>
+
+                <!-- 非 owner 退出按鈕 -->
+                <div id="members-self-exit-row" class="d-none mt-3 border-top pt-3">
+                    <button class="btn btn-outline-danger btn-sm" id="members-self-exit-btn" onclick="membersSelfExit()">
+                        <i class="bi bi-box-arrow-left me-1"></i>退出專案 (Leave Project)
+                    </button>
+                </div>
+            </div>
+            <div class="modal-footer bg-white">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">關閉 (Close)</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz" crossorigin="anonymous"></script>
-<script src="/static/js/dashboard.js?v=1.8"></script>
+<script src="/static/js/dashboard.js?v=2.0"></script>

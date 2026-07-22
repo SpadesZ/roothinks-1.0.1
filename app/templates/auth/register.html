@@ -1,0 +1,74 @@
+<!--
+  檔案路徑: app/templates/auth/register.html
+  產生時間: 2026-07-19 00:00 +08:00
+  版本: v1.0
+  模組定位:
+    使用者註冊頁面，AUTH_MODE=session 下可自行建立帳號。
+  主要責任:
+    1. 顯示 username / password / confirm_password 表單。
+    2. 表單含 csrf_token()。
+    3. 顯示後端驗證錯誤訊息。
+  維護提醒:
+    - username 規則 3-32 英數字或 _-（前後端一致）。
+    - 密碼最短 8 字元。
+    - Bootstrap 5 風格與其他頁面一致。
+  驗證方式:
+    python -m pytest test/unit/test_auth_basic.py -q
+-->
+{% include '_header.html' %}
+
+<div class="container" style="max-width: 460px; margin-top: 80px;">
+    <div class="card shadow-sm">
+        <div class="card-body p-4">
+            <h4 class="card-title fw-bold mb-4 text-center">
+                <i class="bi bi-person-plus text-info me-2"></i>建立帳號
+            </h4>
+
+            {% if error %}
+            <div class="alert alert-danger py-2">{{ error }}</div>
+            {% endif %}
+
+            <form method="POST" action="{{ url_for('auth.register') }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                <div class="mb-3">
+                    <label for="username" class="form-label fw-semibold">帳號</label>
+                    <input type="text" id="username" name="username" class="form-control"
+                           autocomplete="username" required autofocus
+                           pattern="[A-Za-z0-9_\-]{3,32}"
+                           title="3–32 個英數字或 _- 字元">
+                    <div class="form-text">3–32 個英數字或 _- 字元。</div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="password" class="form-label fw-semibold">密碼</label>
+                    <input type="password" id="password" name="password" class="form-control"
+                           autocomplete="new-password" required minlength="8">
+                    <div class="form-text">至少 8 個字元。</div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="confirm_password" class="form-label fw-semibold">確認密碼</label>
+                    <input type="password" id="confirm_password" name="confirm_password" class="form-control"
+                           autocomplete="new-password" required minlength="8">
+                </div>
+
+                <button type="submit" class="btn btn-success w-100 mt-1">
+                    <i class="bi bi-person-check me-1"></i>註冊
+                </button>
+            </form>
+
+            <hr class="my-3">
+            <p class="text-center text-muted small mb-0">
+                已有帳號？
+                <a href="{{ url_for('auth.login') }}">返回登入</a>
+            </p>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz"
+        crossorigin="anonymous"></script>
+</body>
+</html>

@@ -1,4 +1,25 @@
-/* 路徑(./app/static/js/dashboard.js) #版本 v1.8 #更版時間 20260312-2230 */
+// 檔案路徑: roothinks/app/static/js/dashboard.js
+// 產生時間: 2026-07-19 11:40 +08:00
+// 版本: v2.0
+// 模組定位:
+//   Dashboard 專案管理中心前端:專案列表、建立/編輯 modal、刪除流程。
+// 主要責任:
+//   1. fetchProjects/switchDashboardView:列表載入與 tab 切換。
+//   2. submitCreate:建立/更新專案(含成員組織表)。
+//   3. [v2.0] openMembersModal:成員管理 modal(GET/POST/PATCH/DELETE members API)。
+// 維護提醒:
+//   - v1.9 UX 修復(UI 走查實測):
+//     (1) 建立驗證改為與後端/UI 標示一致——只有「專案名稱」與「一位主持人
+//         (姓名至少一種)」必填;舊版強制 Table 1 全欄位+PI 單位,
+//         但 UI 只在名稱標 *,使用者必被 alert 擋下。
+//     (2) submitCreate 流程的 alert() 改為 modal 內 inline 錯誤(#create-form-error)
+//         與非阻塞 toast;原生 alert 會凍住頁面且自動化不可測。
+//   - 其餘既有 alert()(約 120 處)尚未替換,屬後續 UX 債。
+//   - v2.0 本次新增成員管理 modal(#membersModal):owner 可新增/改角色/移除成員;
+//     非 owner 唯讀+退出;AUTH_MODE=none(me 401)顯示單機提示。
+// 驗證方式:
+//   - preview UI 走查:註冊→登入→建專案→列表出現;pytest 全套不涉及本檔。
+// ------------------------------------------------------------------------------
 
 document.addEventListener('DOMContentLoaded', () => {
     const params = new URLSearchParams(window.location.search);
@@ -158,8 +179,10 @@ function renderTempCards(projects) {
             : `<span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 rounded-pill px-2">${escapeHtml(projectId)}</span>`;
             
         const actionMenu = isReadonly
-            ? `<li><a class="dropdown-item" href="#" onclick="openCreateModal('${safePidJs}', true)"><i class="bi bi-eye me-2"></i>檢視 (View)</a></li>`
-            : `<li><a class="dropdown-item" href="#" onclick="openCreateModal('${safePidJs}')"><i class="bi bi-pencil me-2"></i>編輯 (Edit)</a></li>`;
+            ? `<li><a class="dropdown-item" href="#" onclick="openCreateModal('${safePidJs}', true)"><i class="bi bi-eye me-2"></i>檢視 (View)</a></li>
+               <li><a class="dropdown-item" href="#" onclick="openMembersModal('${safePidJs}')"><i class="bi bi-people me-2"></i>成員管理 (Members)</a></li>`
+            : `<li><a class="dropdown-item" href="#" onclick="openCreateModal('${safePidJs}')"><i class="bi bi-pencil me-2"></i>編輯 (Edit)</a></li>
+               <li><a class="dropdown-item" href="#" onclick="openMembersModal('${safePidJs}')"><i class="bi bi-people me-2"></i>成員管理 (Members)</a></li>`;
             
         const enterBtn = isReadonly
             ? `<a href="/paq?pid=${projectIdUrl}" class="btn btn-outline-secondary w-100 fw-bold"><i class="bi bi-lock-fill me-1"></i> 唯讀工作檯 (Read-Only)</a>`
@@ -260,6 +283,7 @@ function renderFormalCards(projects) {
                             </button>
                             <ul class="dropdown-menu dropdown-menu-end shadow">
                                 <li><a class="dropdown-item" href="#" onclick="openCreateFormalModal('${safePidJs}')"><i class="bi bi-pencil me-2"></i>編輯 (Edit)</a></li>
+                                <li><a class="dropdown-item" href="#" onclick="openMembersModal('${safePidJs}')"><i class="bi bi-people me-2"></i>成員管理 (Members)</a></li>
                                 <li><hr class="dropdown-divider"></li>
                                 <li><a class="dropdown-item text-danger" href="#" onclick="deleteProject(event, '${safePidJs}')"><i class="bi bi-trash me-2"></i>刪除 (Delete)</a></li>
                             </ul>
@@ -610,19 +634,47 @@ function removeEmailField(btn) {
     }
 }
 
+// v1.9: modal 內 inline 錯誤顯示(取代阻塞式 alert)
+function showCreateFormError(msg) {
+    const box = document.getElementById('create-form-error');
+    if (box) {
+        box.textContent = msg;
+        box.classList.remove('d-none');
+        box.scrollIntoView({ block: 'nearest' });
+    } else {
+        alert(msg); // 後備:error div 不存在時退回 alert
+    }
+}
+
+function clearCreateFormError() {
+    const box = document.getElementById('create-form-error');
+    if (box) box.classList.add('d-none');
+}
+
+// v1.9: 非阻塞成功提示(右下角自動消失)
+function showToast(msg) {
+    const t = document.createElement('div');
+    t.className = 'position-fixed bottom-0 end-0 m-3 alert alert-success shadow';
+    t.style.zIndex = 2000;
+    t.textContent = msg;
+    document.body.appendChild(t);
+    setTimeout(() => t.remove(), 2600);
+}
+
 async function submitCreate() {
+    clearCreateFormError();
     const name = document.getElementById('c_name').value.trim();
-    const abbreviation = document.getElementById('c_abbr').value.trim(); 
+    const abbreviation = document.getElementById('c_abbr').value.trim();
     const classification = document.getElementById('c_class').value.trim();
     const keywords = document.getElementById('c_keywords').value.trim();
     const context = document.getElementById('c_context').value.trim();
-    
+
     // 讀取隱藏欄位，確認是要建立 temp 還是 formal
     const statusVal = document.getElementById('c_target_status') ? document.getElementById('c_target_status').value : 'temp';
-    
-    // [v1.8 Update] 嚴格攔截 Table 1 基本資料缺漏
-    if (!name || !abbreviation || !classification || !keywords || !context) {
-        alert("請完整填寫 Table 1 的所有基本資訊欄位 (包含專案名稱、簡稱、分類、關鍵字與背景)！");
+
+    // v1.9: 必填與後端/UI 星號一致——只有專案名稱必填,其餘欄位選填。
+    if (!name) {
+        showCreateFormError("請填寫「專案名稱 (Project Name)」。");
         return;
     }
 
@@ -660,22 +712,21 @@ async function submitCreate() {
         });
     }
 
-    // [v1.8 Update] 精確攔截主持人缺漏：若無主持人，或主持人姓名與單位空白，嚴格阻擋並給出唯一指定提示
+    // v1.9: 主持人驗證與後端一致——恰一位主持人,且姓名(英文或原文)至少填一種。
+    // 舊版額外硬要求單位 L1,但 UI 未標必填,移除以免使用者被莫名擋下。
     const pis = members.filter(m => m.role.includes('主持人'));
     if (pis.length === 0) {
-        alert("請確實填寫主持人成員資料");
+        showCreateFormError("請在成員中指定一位「主持人 (Principal Investigator)」並填寫姓名。");
         return;
     } else if (pis.length !== 1) {
-        alert("必須且只能有一位「主持人 (Principal Investigator)」 (Exactly one PI is required)");
+        showCreateFormError("必須且只能有一位「主持人 (Principal Investigator)」。");
         return;
     } else {
         const pi = pis[0];
         const hasEnName = pi.name.en.surname || pi.name.en.given;
         const hasOrgName = pi.name.original.surname || pi.name.original.given;
-        const hasOrgL1 = pi.organization.l1;
-        
-        if (!(hasEnName || hasOrgName) || !hasOrgL1) {
-            alert("請確實填寫主持人成員資料");
+        if (!(hasEnName || hasOrgName)) {
+            showCreateFormError("請填寫主持人的姓名(英文或原文至少一種)。");
             return;
         }
     }
@@ -697,15 +748,18 @@ async function submitCreate() {
         const result = await res.json();
         
         if (result.success) {
-            bootstrap.Modal.getInstance(document.getElementById('createModal')).hide();
-            fetchProjects(currentStatus); 
-            alert(isEdit ? '專案更新成功 (Updated)' : '專案建立成功 (Created)');
+            // v1.9 fix: modal 可能非經 bootstrap JS API 開啟,getInstance 會回 null
+            // 導致 TypeError 炸掉後續刷新(既有 bug)。改用 getOrCreateInstance。
+            const modalEl = document.getElementById('createModal');
+            if (modalEl) bootstrap.Modal.getOrCreateInstance(modalEl).hide();
+            fetchProjects(currentStatus);
+            showToast(isEdit ? '專案更新成功 (Updated)' : '專案建立成功 (Created)');
         } else {
-            alert((isEdit ? '更新失敗: ' : '建立失敗: ') + result.message);
+            showCreateFormError((isEdit ? '更新失敗: ' : '建立失敗: ') + (result.message || '未知錯誤'));
         }
     } catch(e) {
         console.error(e);
-        alert('API Error: 無法連接伺服器');
+        showCreateFormError('無法連接伺服器,請稍後再試。');
     }
 }
 
@@ -723,7 +777,7 @@ async function deleteProject(event, pid) {
             method: 'DELETE'
         });
         const result = await res.json();
-        
+
         if (result.success) {
             fetchProjects(currentStatus);
         } else {
@@ -731,5 +785,374 @@ async function deleteProject(event, pid) {
         }
     } catch (e) {
         alert('系統錯誤: ' + e.message);
+    }
+}
+
+// ==========================================
+// 5. 成員管理 Modal (v2.0)
+// ==========================================
+
+/** 目前 members modal 開啟的專案 id */
+let _membersPid = null;
+/** 目前登入者 username（由 /api/auth/me 取得；null=未知/單機） */
+let _meUsername = null;
+/** 目前登入者是否為 owner */
+let _meIsOwner = false;
+/** confirm-remove pending state: {username, timer} */
+let _pendingRemove = {};
+
+const ROLE_LABELS = { owner: '擁有者', editor: '編輯者', viewer: '檢視者' };
+
+function _membersShowError(msg) {
+    const box = document.getElementById('members-form-error');
+    if (!box) return;
+    box.textContent = msg;
+    box.classList.remove('d-none');
+}
+
+function _membersClearError() {
+    const box = document.getElementById('members-form-error');
+    if (box) box.classList.add('d-none');
+}
+
+/**
+ * 開啟成員管理 modal。
+ * 1. 先 GET /api/auth/me 確認身分
+ * 2. GET /api/project/<pid>/members 取成員清單
+ * 3. 依角色決定 UI 狀態
+ */
+async function openMembersModal(pid) {
+    _membersPid = pid;
+    _meUsername = null;
+    _meIsOwner = false;
+    _pendingRemove = {};
+
+    // 重置 UI
+    _membersClearError();
+    const offlineNotice = document.getElementById('members-offline-notice');
+    const addRow = document.getElementById('members-add-row');
+    const selfExitRow = document.getElementById('members-self-exit-row');
+    const listEl = document.getElementById('members-list');
+    const loadingEl = document.getElementById('members-loading');
+
+    if (offlineNotice) offlineNotice.classList.add('d-none');
+    if (addRow) addRow.classList.add('d-none');
+    if (selfExitRow) selfExitRow.classList.add('d-none');
+    if (listEl) { listEl.innerHTML = ''; listEl.classList.add('d-none'); }
+    if (loadingEl) loadingEl.classList.remove('d-none');
+
+    const labelEl = document.getElementById('membersModalLabel');
+    if (labelEl) labelEl.innerHTML = `<i class="bi bi-people-fill"></i> 成員管理 (Members) — #${escapeHtml(pid)}`;
+
+    const modalEl = document.getElementById('membersModal');
+    if (modalEl) bootstrap.Modal.getOrCreateInstance(modalEl).show();
+
+    // --- 1. 取得目前使用者 ---
+    try {
+        const meRes = await fetch('/api/auth/me');
+        if (meRes.status === 401) {
+            // AUTH_MODE=none 或未登入
+            if (loadingEl) loadingEl.classList.add('d-none');
+            if (offlineNotice) offlineNotice.classList.remove('d-none');
+            return;
+        }
+        const meData = await meRes.json();
+        if (meData.success && meData.user) {
+            _meUsername = meData.user.username;
+        }
+    } catch (e) {
+        if (loadingEl) loadingEl.classList.add('d-none');
+        if (offlineNotice) offlineNotice.classList.remove('d-none');
+        return;
+    }
+
+    // --- 2. 取得成員清單 ---
+    await _membersRefresh();
+}
+
+async function _membersRefresh() {
+    const loadingEl = document.getElementById('members-loading');
+    const listEl = document.getElementById('members-list');
+    if (loadingEl) loadingEl.classList.remove('d-none');
+    if (listEl) { listEl.classList.add('d-none'); listEl.innerHTML = ''; }
+    _membersClearError();
+    _pendingRemove = {};
+
+    try {
+        const res = await fetch(`/api/project/${encodeURIComponent(_membersPid)}/members`);
+        const data = await res.json();
+
+        if (loadingEl) loadingEl.classList.add('d-none');
+
+        if (res.status === 403) {
+            _membersShowError('只有 Owner 可以管理成員');
+            return;
+        }
+        if (!data.success) {
+            _membersShowError(data.message || '載入成員失敗');
+            return;
+        }
+
+        const members = data.members || [];
+
+        // 判斷目前使用者是否為 owner
+        _meIsOwner = members.some(m => m.username === _meUsername && m.role === 'owner');
+
+        // 渲染
+        _membersRenderList(members);
+
+        // 顯示/隱藏功能列
+        const addRow = document.getElementById('members-add-row');
+        const selfExitRow = document.getElementById('members-self-exit-row');
+        const isMember = members.some(m => m.username === _meUsername);
+
+        if (_meIsOwner) {
+            if (addRow) addRow.classList.remove('d-none');
+            if (selfExitRow) selfExitRow.classList.add('d-none');
+        } else {
+            if (addRow) addRow.classList.add('d-none');
+            if (selfExitRow && isMember) selfExitRow.classList.remove('d-none');
+        }
+
+    } catch (e) {
+        if (loadingEl) loadingEl.classList.add('d-none');
+        _membersShowError('網路錯誤，請稍後再試');
+    }
+}
+
+function _membersRenderList(members) {
+    const listEl = document.getElementById('members-list');
+    if (!listEl) return;
+    listEl.innerHTML = '';
+
+    if (members.length === 0) {
+        listEl.innerHTML = '<li class="list-group-item text-muted small text-center">尚無成員</li>';
+        listEl.classList.remove('d-none');
+        return;
+    }
+
+    members.forEach(m => {
+        const li = document.createElement('li');
+        li.className = 'list-group-item d-flex align-items-center gap-3 py-2';
+        li.id = `member-row-${CSS.escape(m.username)}`;
+
+        const isSelf = m.username === _meUsername;
+        const nameHtml = `<span class="fw-bold flex-grow-1">${escapeHtml(m.username)}${isSelf ? ' <span class="badge bg-secondary ms-1">我</span>' : ''}</span>`;
+
+        if (_meIsOwner) {
+            // Owner 視角：下拉改角色 + 移除按鈕
+            const opts = ['owner', 'editor', 'viewer'].map(r =>
+                `<option value="${r}" ${m.role === r ? 'selected' : ''}>${escapeHtml(ROLE_LABELS[r] || r)}</option>`
+            ).join('');
+
+            li.innerHTML = `
+                ${nameHtml}
+                <select class="form-select form-select-sm" style="width:auto;" onchange="membersChangeRole('${escapeHtml(m.username)}', this.value)">
+                    ${opts}
+                </select>
+                <button class="btn btn-sm btn-outline-danger border-0" id="remove-btn-${CSS.escape(m.username)}"
+                    onclick="membersRemove('${escapeHtml(m.username)}')">
+                    <i class="bi bi-person-dash"></i>
+                </button>
+            `;
+        } else {
+            // 非 owner：唯讀
+            li.innerHTML = `
+                ${nameHtml}
+                <span class="badge bg-light text-dark border">${escapeHtml(ROLE_LABELS[m.role] || m.role)}</span>
+            `;
+        }
+
+        listEl.appendChild(li);
+    });
+
+    listEl.classList.remove('d-none');
+}
+
+/** owner 新增成員 */
+async function membersAddNew() {
+    _membersClearError();
+    const usernameEl = document.getElementById('members-new-username');
+    const roleEl = document.getElementById('members-new-role');
+    const username = (usernameEl ? usernameEl.value.trim() : '');
+    const role = (roleEl ? roleEl.value : 'viewer');
+
+    if (!username) {
+        _membersShowError('請輸入帳號');
+        return;
+    }
+
+    try {
+        const res = await fetch(`/api/project/${encodeURIComponent(_membersPid)}/members`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, role })
+        });
+        const data = await res.json();
+
+        if (res.status === 404) {
+            _membersShowError('找不到此帳號，請確認對方已註冊');
+            return;
+        }
+        if (res.status === 400 && data.error === 'last_owner') {
+            _membersShowError('專案至少需要一位 Owner');
+            return;
+        }
+        if (res.status === 403) {
+            _membersShowError('只有 Owner 可以管理成員');
+            return;
+        }
+        if (!data.success) {
+            _membersShowError(data.message || '新增失敗');
+            return;
+        }
+
+        if (usernameEl) usernameEl.value = '';
+        showToast(`已新增 ${username} (${ROLE_LABELS[role] || role})`);
+        await _membersRefresh();
+    } catch (e) {
+        _membersShowError('網路錯誤，請稍後再試');
+    }
+}
+
+/** owner 改角色（下拉 change 即觸發） */
+async function membersChangeRole(username, newRole) {
+    _membersClearError();
+    try {
+        const res = await fetch(`/api/project/${encodeURIComponent(_membersPid)}/members/${encodeURIComponent(username)}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ role: newRole })
+        });
+        const data = await res.json();
+
+        if (res.status === 400 && data.error === 'last_owner') {
+            _membersShowError('專案至少需要一位 Owner');
+            await _membersRefresh(); // 還原下拉
+            return;
+        }
+        if (res.status === 403) {
+            _membersShowError('只有 Owner 可以管理成員');
+            await _membersRefresh();
+            return;
+        }
+        if (!data.success) {
+            _membersShowError(data.message || '更新失敗');
+            await _membersRefresh();
+            return;
+        }
+
+        showToast(`${username} 角色已更新為 ${ROLE_LABELS[newRole] || newRole}`);
+        // 若我把自己從 owner 降級，需刷新整體
+        if (username === _meUsername) await _membersRefresh();
+    } catch (e) {
+        _membersShowError('網路錯誤，請稍後再試');
+    }
+}
+
+/**
+ * owner 移除成員（雙擊確認，3 秒還原）。
+ * 按一次 → 按鈕變「確認移除?」；再按才執行；3 秒後不按則還原。
+ */
+function membersRemove(username) {
+    _membersClearError();
+    const btnId = `remove-btn-${CSS.escape(username)}`;
+    const btn = document.getElementById(btnId);
+    if (!btn) return;
+
+    if (_pendingRemove[username]) {
+        // 第二次按：執行 DELETE
+        clearTimeout(_pendingRemove[username].timer);
+        delete _pendingRemove[username];
+        _membersDoRemove(username);
+        return;
+    }
+
+    // 第一次按：進入確認狀態
+    btn.innerHTML = '<i class="bi bi-exclamation-triangle-fill me-1"></i>確認移除?';
+    btn.classList.replace('btn-outline-danger', 'btn-danger');
+
+    const timer = setTimeout(() => {
+        // 3 秒後還原
+        if (btn) {
+            btn.innerHTML = '<i class="bi bi-person-dash"></i>';
+            btn.classList.replace('btn-danger', 'btn-outline-danger');
+        }
+        delete _pendingRemove[username];
+    }, 3000);
+
+    _pendingRemove[username] = { timer };
+}
+
+async function _membersDoRemove(username) {
+    try {
+        const res = await fetch(`/api/project/${encodeURIComponent(_membersPid)}/members/${encodeURIComponent(username)}`, {
+            method: 'DELETE'
+        });
+        const data = await res.json();
+
+        if (res.status === 400 && data.error === 'last_owner') {
+            _membersShowError('專案至少需要一位 Owner');
+            await _membersRefresh();
+            return;
+        }
+        if (res.status === 403) {
+            _membersShowError('只有 Owner 可以管理成員');
+            return;
+        }
+        if (!data.success) {
+            _membersShowError(data.message || '移除失敗');
+            return;
+        }
+
+        showToast(`已移除 ${username}`);
+        await _membersRefresh();
+    } catch (e) {
+        _membersShowError('網路錯誤，請稍後再試');
+    }
+}
+
+/** 非 owner 退出專案（DELETE 自己） */
+async function membersSelfExit() {
+    if (!_meUsername) return;
+    _membersClearError();
+
+    const btn = document.getElementById('members-self-exit-btn');
+    if (!btn) return;
+
+    if (!btn.dataset.confirm) {
+        btn.dataset.confirm = '1';
+        btn.textContent = '確認退出?';
+        btn.classList.replace('btn-outline-danger', 'btn-danger');
+        setTimeout(() => {
+            btn.dataset.confirm = '';
+            btn.textContent = '退出專案 (Leave Project)';
+            btn.classList.replace('btn-danger', 'btn-outline-danger');
+        }, 3000);
+        return;
+    }
+
+    btn.dataset.confirm = '';
+    try {
+        const res = await fetch(`/api/project/${encodeURIComponent(_membersPid)}/members/${encodeURIComponent(_meUsername)}`, {
+            method: 'DELETE'
+        });
+        const data = await res.json();
+
+        if (res.status === 400 && data.error === 'last_owner') {
+            _membersShowError('專案至少需要一位 Owner');
+            return;
+        }
+        if (!data.success) {
+            _membersShowError(data.message || '退出失敗');
+            return;
+        }
+
+        showToast('已退出專案');
+        const modalEl = document.getElementById('membersModal');
+        if (modalEl) bootstrap.Modal.getOrCreateInstance(modalEl).hide();
+        fetchProjects(currentStatus);
+    } catch (e) {
+        _membersShowError('網路錯誤，請稍後再試');
     }
 }

@@ -1,8 +1,40 @@
-#路徑(./app/core_proc/manuscript/manuscript_routes.py)
-#版本 v1.5 (Unified Asset Gallery Route Bridge + Word direct import API)
-#更版時間 20260421-1445
-# inner comment: 嚴格遵守人機協作定律，全量保留 v1.3 邏輯。統一 Socket 命名規範以對接前端 ManuUI (v0.3) 的游標注入與素材庫引擎。
-# CHANGE_PLAN_STUDY_FLOWB_2026-04-20: MVP prototype - add direct Word(.docx) import API for 2B/2C canvases.
+# 檔案路徑: app/core_pro/manuscript/manuscript_routes.py
+# 產生時間: 2026-07-19 09:00 +08:00
+# 版本: v1.7
+# 模組定位:
+#   Manuscript 模組 Flask Blueprint + Socket.IO namespace /manu_ws 控制層。
+# 主要責任:
+#   1. HTTP routes：bootstrap、sections、import_word、citation API、revision_log API。
+#   2. Socket handler：connect（session 模式鑑權）、cmd_save_block、cmd_save_paper、
+#      cmd_save_image、cmd_load_chat/chat_message（section 參數清洗）等。
+#   3. [Batch C] Socket connect handler 增加 AUTH_MODE=session 鑑權邏輯。
+#   4. [Batch C] cmd_save_block / cmd_save_paper 成功後寫入 RevisionLog，
+#      並廣播 peer_update 到 room("ws:{pid}")（協作預留）。
+#   5. [Batch C] GET /manuscript/api/revisions/<pid> 回傳最近版本紀錄。
+#   6. [Batch C] cmd_load_chat 中 section 參數強制清洗，防路徑穿越。
+#   7. [Batch C] 修復所有 os.path.join('data', ...) 相對路徑；
+#      chat 路徑改用 safe_join_under + DATA_ROOT。
+#   8. [v1.7] 稿件編輯衝突防護（rev 機制）：
+#      - cmd_save_block payload 新增選填 base_rev；
+#        衝突時 emit save_conflict {section, current_rev, base_rev, updated_by, updated_at}。
+#      - cmd_load_block 回應帶 _rev。
+#      - save_ack 帶 _rev（新欄位，舊前端忽略即可）。
+# 呼叫來源:
+#   app/__init__.py register_blueprint；前端 Socket.IO /manu_ws namespace。
+# 輸入輸出契約:
+#   - save 類 Socket 事件在 session 模式下需 editor 以上角色。
+#   - RevisionLog 寫入失敗只 log warning，不影響主流程。
+#   - peer_update 廣播：{kind, section, by: username} 給 room("ws:{pid}")。
+# 安全邊界:
+#   - session 模式：connect 未登入 → return False（拒連）。
+#   - section 參數入路徑前必須通過 _safe_component。
+# 維護提醒:
+#   - rev 協議（base_rev 語義）：
+#       base_rev 未提供 → 舊行為，直接存（向下相容，104 基線測試不破）。
+#       base_rev 提供且 == 現有 _rev → 存檔，_rev+1，save_ack 帶 _rev。
+#       base_rev 提供且 != 現有 _rev → 不落盤，emit save_conflict。
+#   - 前端可先不消費 peer_update，後續即時協作時再接。
+# ------------------------------------------------------------------------------
 
 import os
 import json
@@ -11,25 +43,29 @@ import time
 import logging
 import atexit
 from concurrent.futures import ThreadPoolExecutor
+from typing import Optional
 
 from flask import Blueprint, render_template, request, send_from_directory, jsonify, current_app, g
 from app import socketio, db
-from flask_socketio import emit
+from flask_socketio import emit, join_room
 from socketio.exceptions import ConnectionRefusedError
 from app.llm_service.matching_tasks.task_8drafter import Task8Drafter
-from app.core_pro.manuscript.manuscript_io import ManuscriptIO
+from app.core_pro.manuscript.manuscript_io import ManuscriptIO, _get_data_root
 from app.core_pro.manuscript.manuscript_image import ManuscriptImage
 from app.core_pro.manuscript.model_section import ManuSectionConfig
 from app.models import Project
 from app.security import (
     check_ownership,
     get_request_token,
+    get_workspace_role,
     load_json_locked,
     require_socket_auth,
     safe_join_under,
     validate_id,
     write_json_locked,
 )
+
+import re
 
 bp = Blueprint('manuscript', __name__, url_prefix='/manuscript')
 ai_drafter = Task8Drafter()
@@ -39,6 +75,55 @@ _sid_auth_lock = threading.Lock()
 _sid_auth_tokens = {}
 logger = logging.getLogger("ManuscriptRoutes")
 _SOCKET_MISSING_PID_MSG = "Missing project id (pid). Please select a formal project from Manuscript 1.1 list."
+
+
+def _safe_component(value: str, fallback: str = "untitled", max_len: int = 80) -> str:
+    """
+    清洗用戶提供的路徑組件（section / filename 等），移除非法字元。
+    [Batch C] 用於 cmd_load_chat 中 section 參數清洗，防路徑穿越。
+    """
+    safe = re.sub(r"[^A-Za-z0-9._-]+", "_", str(value or "").strip())[:max_len]
+    return safe or fallback
+
+
+def _socket_can_write(user_id, pid: str) -> bool:
+    """
+    [Batch C] 純函數：判斷 user 是否有 editor 以上角色可寫入指定 pid。
+    AUTH_MODE=none 時永遠回傳 True（dev/TESTING 相容）。
+    AUTH_MODE=session 時查 WorkspaceMember，需 editor 或 owner。
+    """
+    try:
+        from app.models import ROLE_ORDER
+        role = get_workspace_role(user_id, pid)
+        return ROLE_ORDER.get(role or "", 0) >= ROLE_ORDER.get("editor", 0)
+    except Exception:
+        return False
+
+
+def _write_revision_log(pid: str, user_id, entity_type: str, entity_ref: str, action: str, summary: str = ""):
+    """
+    [Batch C] 寫入一筆 RevisionLog。
+    寫入失敗只 log warning，不影響主流程。
+    dev 模式 user_id=None 亦可寫入。
+    """
+    try:
+        from app.models import RevisionLog
+        entry = RevisionLog(
+            pid=pid,
+            user_id=user_id,
+            entity_type=entity_type,
+            entity_ref=entity_ref,
+            action=action,
+            summary=summary[:300] if summary else "",
+        )
+        db.session.add(entry)
+        db.session.commit()
+    except Exception as exc:
+        logger.warning("[RevisionLog] write failed pid=%s entity=%s: %s", pid, entity_ref, exc)
+        try:
+            db.session.rollback()
+        except Exception:
+            pass
 
 
 def _read_positive_int_env(key, default_val):
@@ -359,19 +444,22 @@ def save_chat_history(pid, section, role, content, msg_type='text'):
     formal_pid = _formal_pid(pid)
     if not formal_pid:
         return
-    dir_path = os.path.join("data", formal_pid, "manuscript", "chat")
+    # [Batch C] 使用 safe_join_under + DATA_ROOT 防相對路徑繞過
+    safe_section = _safe_component(section, "general")
+    data_root = _get_data_root()
+    dir_path = safe_join_under(data_root, formal_pid, "manuscript", "chat")
     os.makedirs(dir_path, exist_ok=True)
-    file_path = os.path.join(dir_path, f"chat_{section}.json")
-    
+    file_path = safe_join_under(dir_path, f"chat_{safe_section}.json")
+
     history = []
     if os.path.exists(file_path):
         try:
             history = load_json_locked(file_path, [])
         except Exception:
             history = []
-            
+
     history.append({"role": role, "content": content, "type": msg_type})
-    
+
     write_json_locked(file_path, history)
 
 @bp.route('/')
@@ -594,6 +682,38 @@ def serve_image(pid, filename):
 
 @socketio.on('connect', namespace='/manu_ws')
 def handle_connect(auth=None):
+    """
+    [Batch C] Socket connect handler。
+    AUTH_MODE=session：要求 flask_login current_user 已登入；
+        若 auth payload 或 query 帶 pid，驗 workspace role 後 join_room("ws:{pid}")。
+    AUTH_MODE=none：維持既有 require_socket_auth 邏輯（Bearer token）。
+    """
+    auth_mode = str(current_app.config.get("AUTH_MODE", "none")).strip().lower()
+
+    if auth_mode == "session":
+        try:
+            from flask_login import current_user
+        except ImportError:
+            raise ConnectionRefusedError("flask-login not available")
+
+        if not current_user.is_authenticated:
+            return False  # 拒連：未登入
+
+        # 若攜帶 pid，驗 workspace role 並 join room
+        pid_hint = (
+            (auth or {}).get("pid") if isinstance(auth, dict) else None
+        ) or request.args.get("pid", "")
+        if pid_hint:
+            pid_hint = str(pid_hint).strip()
+            role = get_workspace_role(current_user.id, pid_hint)
+            if role is None:
+                return False  # 拒連：無 workspace membership
+            join_room(f"ws:{pid_hint}")
+
+        emit('sys_msg', {'msg': 'Connected to Roothinks-Manuscript Core (Drafter V1.4).'})
+        return True
+
+    # AUTH_MODE=none / token 模式
     try:
         token = require_socket_auth(auth)
         if token:
@@ -606,7 +726,9 @@ def handle_connect(auth=None):
 def handle_load_chat(data):
     data = data or {}
     pid = data.get('pid')
-    section = data.get('section', 'title')
+    # [Batch C] section 參數強制清洗，防路徑穿越（真漏洞修復）
+    section_raw = data.get('section', 'title')
+    section = _safe_component(section_raw, "title")
     formal_pid = _formal_pid(pid)
     if not formal_pid:
         emit('chat_history', {'section': section, 'history': []})
@@ -617,15 +739,18 @@ def handle_load_chat(data):
         forbidden_payload={'section': section, 'history': []},
     ):
         return
-    
-    file_path = os.path.join("data", formal_pid, "manuscript", "chat", f"chat_{section}.json")
+
+    # [Batch C] 使用 safe_join_under + DATA_ROOT 防相對路徑繞過
+    data_root = _get_data_root()
+    dir_path = safe_join_under(data_root, formal_pid, "manuscript", "chat")
+    file_path = safe_join_under(dir_path, f"chat_{section}.json")
     history = []
     if os.path.exists(file_path):
         try:
             history = load_json_locked(file_path, [])
         except Exception:
             history = []
-            
+
     emit('chat_history', {'section': section, 'history': history})
 
 @socketio.on('chat_message', namespace='/manu_ws')
@@ -702,39 +827,158 @@ def handle_cancel_job(data):
 
 @socketio.on('cmd_save_block', namespace='/manu_ws')
 def handle_save_block(data):
+    """
+    [Batch C] 儲存 2B 段落 Block。
+    session 模式下檢查 user 對 pid 的角色 >= editor；
+    成功後寫 RevisionLog 並廣播 peer_update 給 room("ws:{pid}")。
+    """
     data = data or {}
     pid = _resolve_socket_pid_or_emit(data)
     if not pid:
         return
     if not _ensure_socket_project_access(pid):
         return
-    title = data.get('title', 'Untitled_Paper') 
+
+    # [Batch C] session 模式寫入權限檢查
+    auth_mode = str(current_app.config.get("AUTH_MODE", "none")).strip().lower()
+    current_uid = None
+    current_username = None
+    if auth_mode == "session":
+        try:
+            from flask_login import current_user
+            if current_user.is_authenticated:
+                current_uid = current_user.id
+                current_username = current_user.username
+                if not _socket_can_write(current_uid, pid):
+                    emit('sys_msg', {'msg': '權限不足：需要 editor 以上角色才能儲存。'})
+                    return
+        except ImportError:
+            pass
+
+    title = data.get('title', 'Untitled_Paper')
     section = data.get('section', 'general')
     content = data.get('content', '')
     s_ver = data.get('s_ver', '1.0')
-    
+
+    # [v1.7] 選填 base_rev：提供則啟用衝突防護；未提供維持舊行為
+    raw_base_rev = data.get('base_rev', None)
+    base_rev: Optional[int] = None
+    if raw_base_rev is not None:
+        try:
+            base_rev = int(raw_base_rev)
+        except (TypeError, ValueError):
+            base_rev = None
+
     try:
-        saved_filename = ManuscriptIO.save_block(pid, title, section, content, s_ver)
-        emit('save_ack', {'target': 'block', 'msg': f'Block saved as {saved_filename}'})
+        save_result = ManuscriptIO.save_block(
+            pid, title, section, content, s_ver,
+            base_rev=base_rev,
+            updated_by=current_username,
+        )
+
+        # [v1.7] 衝突判斷
+        if isinstance(save_result, dict) and not save_result.get("ok"):
+            # 衝突：不落盤，通知前端
+            emit('save_conflict', {
+                'section': section,
+                'current_rev': save_result.get('current_rev'),
+                'base_rev': save_result.get('base_rev'),
+                'updated_by': save_result.get('updated_by'),
+                'updated_at': save_result.get('updated_at'),
+            })
+            return
+
+        # 存檔成功
+        if isinstance(save_result, dict):
+            saved_filename = save_result.get("filename", "")
+            new_rev = save_result.get("rev")
+        else:
+            saved_filename = save_result  # str（舊行為）
+            new_rev = None
+
+        ack_payload = {'target': 'block', 'msg': f'Block saved as {saved_filename}'}
+        if new_rev is not None:
+            ack_payload['_rev'] = new_rev
+        emit('save_ack', ack_payload)
+
+        # [Batch C] RevisionLog
+        summary = f"block save: section={section} chars={len(str(content))}"
+        _write_revision_log(
+            pid=pid,
+            user_id=current_uid,
+            entity_type='manuscript_block',
+            entity_ref=f"{section}/{saved_filename}",
+            action='save',
+            summary=summary,
+        )
+
+        # [Batch C] 廣播 peer_update（協作預留）
+        socketio.emit(
+            'peer_update',
+            {'kind': 'block', 'section': section, 'by': current_username or 'anonymous'},
+            room=f"ws:{pid}",
+            namespace='/manu_ws',
+        )
     except Exception as e:
         logger.error("[cmd_save_block] %s", e, exc_info=True)
         emit('sys_msg', {'msg': 'Save Error.'})
 
 @socketio.on('cmd_save_paper', namespace='/manu_ws')
 def handle_save_paper(data):
+    """
+    [Batch C] 儲存 2C 全篇 Paper。
+    session 模式下檢查 user 對 pid 的角色 >= editor；
+    成功後寫 RevisionLog 並廣播 peer_update 給 room("ws:{pid}")。
+    """
     data = data or {}
     pid = _resolve_socket_pid_or_emit(data)
     if not pid:
         return
     if not _ensure_socket_project_access(pid):
         return
+
+    # [Batch C] session 模式寫入權限檢查
+    auth_mode = str(current_app.config.get("AUTH_MODE", "none")).strip().lower()
+    current_uid = None
+    current_username = None
+    if auth_mode == "session":
+        try:
+            from flask_login import current_user
+            if current_user.is_authenticated:
+                current_uid = current_user.id
+                current_username = current_user.username
+                if not _socket_can_write(current_uid, pid):
+                    emit('sys_msg', {'msg': '權限不足：需要 editor 以上角色才能儲存。'})
+                    return
+        except ImportError:
+            pass
+
     title = data.get('title', 'Untitled_Paper')
     content = data.get('content', '')
     g_ver = data.get('ver', '1.0')
-    
+
     try:
         saved_filename = ManuscriptIO.save_paper(pid, title, content, g_ver)
         emit('save_ack', {'target': 'paper', 'msg': f'Paper saved as {saved_filename}'})
+
+        # [Batch C] RevisionLog
+        summary = f"paper save: title={title} chars={len(str(content))}"
+        _write_revision_log(
+            pid=pid,
+            user_id=current_uid,
+            entity_type='manuscript_paper',
+            entity_ref=saved_filename,
+            action='save',
+            summary=summary,
+        )
+
+        # [Batch C] 廣播 peer_update（協作預留）
+        socketio.emit(
+            'peer_update',
+            {'kind': 'paper', 'section': 'paper', 'by': current_username or 'anonymous'},
+            room=f"ws:{pid}",
+            namespace='/manu_ws',
+        )
     except Exception as e:
         logger.error("[cmd_save_paper] %s", e, exc_info=True)
         emit('sys_msg', {'msg': 'Save Error.'})
@@ -808,7 +1052,14 @@ def handle_load_block(data):
     filename = data.get('filename')
     content = ManuscriptIO.load_block(pid, section, filename)
     if content:
-        emit('block_loaded', {'ok': True, 'content': content, 'section': section, 'filename': filename})
+        # [v1.7] 帶 _rev 給前端，前端記住作為下次存檔的 base_rev
+        emit('block_loaded', {
+            'ok': True,
+            'content': content,
+            'section': section,
+            'filename': filename,
+            '_rev': content.get('_rev', 0),
+        })
     else:
         emit('sys_msg', {'msg': 'Failed to load block JSON.'})
 
@@ -879,3 +1130,147 @@ def handle_disconnect():
     sid = request.sid
     _mark_jobs_cancelled_by_sid(sid)
     _del_sid_token(sid)
+
+
+# ---------------------------------------------------------------------------
+# Citation suggestion + decision ledger (v0.1)
+# 建議唯讀、決策必須由人明確確認；系統永不自動把 citation 寫入正文。
+# ---------------------------------------------------------------------------
+
+def _citation_data_root():
+    # 與 workflow/paq 一致，由 DB URI 推導 data root；tests 指向隔離資料夾。
+    from app.services.formal_project_sync import resolve_data_root
+
+    return resolve_data_root()
+
+
+def _evidence_pid_candidates(pid):
+    """Literature 以 formal pid（-p）為主索引；查詢時兩個變體都試。"""
+    out = [pid]
+    if str(pid).endswith('-p'):
+        out.append(pid[:-2])
+    else:
+        out.append(f"{pid}-p")
+    return list(dict.fromkeys([p for p in out if p]))
+
+
+@bp.route('/api/citation/suggest', methods=['POST'])
+def citation_suggest_api():
+    data = request.get_json(silent=True) or {}
+    pid = _resolve_formal_project_pid(data.get('pid'))
+    text = str(data.get('text') or '').strip()
+    section = str(data.get('section') or '').strip()
+
+    if not pid:
+        return jsonify({"success": False, "message": "Invalid pid"}), 404
+    if not text:
+        return jsonify({"success": False, "message": "Missing text"}), 400
+
+    try:
+        from app.core_pro.manuscript.citation_suggest import detect_citation_needed, suggest_citations_for_paragraph
+
+        suggestions = []
+        for candidate_pid in _evidence_pid_candidates(pid):
+            suggestions = suggest_citations_for_paragraph(candidate_pid, text, section_title=section or None)
+            if suggestions:
+                break
+        return jsonify(
+            {
+                "success": True,
+                "citation_needed": detect_citation_needed(text),
+                "suggestions": suggestions,
+            }
+        )
+    except Exception as e:
+        logger.error("[citation_suggest_api] %s", e, exc_info=True)
+        return jsonify({"success": False, "message": "Internal server error"}), 500
+
+
+@bp.route('/api/citation/decide', methods=['POST'])
+def citation_decide_api():
+    data = request.get_json(silent=True) or {}
+    pid = _resolve_formal_project_pid(data.get('pid'))
+    if not pid:
+        return jsonify({"success": False, "message": "Invalid pid"}), 404
+
+    try:
+        from app.core_pro.manuscript.citation_ledger import record_decision
+
+        decision = record_decision(
+            _citation_data_root(),
+            pid,
+            section_id=str(data.get('section') or ''),
+            status=str(data.get('status') or ''),
+            paper_id=str(data.get('paper_id') or ''),
+            entry_id=str(data.get('entry_id') or ''),
+            claim_text=str(data.get('claim_text') or ''),
+            snippet=str(data.get('snippet') or ''),
+            segment_ids=data.get('segment_ids') if isinstance(data.get('segment_ids'), list) else [],
+            decided_by=str(data.get('decided_by') or 'user'),
+        )
+        return jsonify({"success": True, "decision": decision})
+    except ValueError as ve:
+        return jsonify({"success": False, "message": str(ve)}), 400
+    except Exception as e:
+        logger.error("[citation_decide_api] %s", e, exc_info=True)
+        return jsonify({"success": False, "message": "Internal server error"}), 500
+
+
+@bp.route('/api/citation/decisions', methods=['GET'])
+def citation_decisions_api():
+    pid = _resolve_formal_project_pid(request.args.get('pid'))
+    if not pid:
+        return jsonify({"success": False, "message": "Invalid pid"}), 404
+    try:
+        from app.core_pro.manuscript.citation_ledger import list_decisions
+
+        decisions = list_decisions(
+            _citation_data_root(),
+            pid,
+            section_id=str(request.args.get('section') or ''),
+            paper_id=str(request.args.get('paper_id') or ''),
+        )
+        return jsonify({"success": True, "count": len(decisions), "decisions": decisions})
+    except Exception as e:
+        logger.error("[citation_decisions_api] %s", e, exc_info=True)
+        return jsonify({"success": False, "message": "Internal server error"}), 500
+
+
+# ---------------------------------------------------------------------------
+# [Batch C] Revision Log API
+# ---------------------------------------------------------------------------
+
+@bp.route('/api/revisions/<pid>', methods=['GET'])
+def get_revisions(pid):
+    """
+    [Batch C] 取得 manuscript 版本紀錄。
+    viewer 以上可存取；dev/TESTING 模式直接放行。
+    回傳最近 limit 筆（預設 50）。
+    """
+    formal_pid = _resolve_formal_project_pid(pid)
+    if not formal_pid:
+        return jsonify({"ok": False, "message": "Invalid pid"}), 404
+
+    try:
+        limit = min(int(request.args.get('limit', 50)), 200)
+    except (ValueError, TypeError):
+        limit = 50
+
+    try:
+        from app.models import RevisionLog
+        rows = (
+            RevisionLog.query
+            .filter_by(pid=formal_pid)
+            .order_by(RevisionLog.created_at.desc())
+            .limit(limit)
+            .all()
+        )
+        return jsonify({
+            "ok": True,
+            "pid": formal_pid,
+            "count": len(rows),
+            "revisions": [r.to_dict() for r in rows],
+        })
+    except Exception as e:
+        logger.error("[get_revisions] %s", e, exc_info=True)
+        return jsonify({"ok": False, "message": "Internal server error"}), 500

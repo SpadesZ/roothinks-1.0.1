@@ -1,7 +1,11 @@
 //路徑(./app/static/js/manuscript_soed.js)
-//版本 v0.8 (Rich-Text Formatting with Focus Guard + Word import event binding)
-//更版時間 20260421-1445
-// inner comment: 嚴格保留 v0.5 全量代碼與防呆邏輯。將 Mermaid 語法攔截並委託給 ManuImage 引擎處理視覺化與實體轉檔。
+//版本 v0.9 (Edit Conflict Protection — rev mechanism)
+//更版時間 20260719-1200
+// inner comment: 嚴格保留 v0.8 全量代碼與防呆邏輯。新增稿件編輯衝突防護：
+//   - 每張 editor-card 透過 data-rev 屬性追蹤目前版本號 (_rev)。
+//   - cmd_save_block payload 帶 base_rev；save_ack 更新本地 rev。
+//   - save_conflict 事件：顯示紅色衝突提示條，提供「重新載入」/「覆蓋儲存」。
+//   - peer_update 事件：若開啟段落被別人存，顯示非阻塞提示條「[by] 剛更新了此段落 [重新載入]」。
 // CHANGE_PLAN_STUDY_FLOWB_2026-04-20: MVP prototype - wire direct .docx importer event to UI handler.
 
 class ManuSoed {
@@ -10,6 +14,153 @@ class ManuSoed {
         this.activeJobId = null;
         this.typingTimeoutHandle = null;
         this.typingWarnMs = 120000;
+        // [v0.9] 衝突防護：記錄目前開啟段落的版本號 { sectionId: rev }
+        this._blockRevMap = {};
+    }
+
+    // =========================================================================
+    // [v0.9] 衝突防護輔助方法
+    // =========================================================================
+
+    /**
+     * 從 card DOM 讀取目前 rev（data-rev 屬性）；未設定回 null（無 base_rev 模式）。
+     */
+    _getCardRev(card) {
+        const v = card.getAttribute('data-rev');
+        if (v === null || v === '') return null;
+        const n = parseInt(v, 10);
+        return isNaN(n) ? null : n;
+    }
+
+    /**
+     * 更新 card DOM 的 data-rev 屬性，並同步更新 _blockRevMap。
+     */
+    _setCardRev(card, rev) {
+        if (rev === null || rev === undefined) return;
+        card.setAttribute('data-rev', String(rev));
+        const section = card.getAttribute('data-section') || 'general';
+        this._blockRevMap[section] = rev;
+    }
+
+    /**
+     * 顯示衝突提示條（紅色，non-blocking）。
+     * 提供「重新載入」與「覆蓋儲存」兩個 CTA。
+     */
+    _showConflictBar(card, conflictData) {
+        // 先清除舊衝突條
+        const old = card.querySelector('.conflict-bar');
+        if (old) old.remove();
+
+        const section = card.getAttribute('data-section') || 'general';
+        const byName = conflictData.updated_by || '其他人';
+        const curRev = conflictData.current_rev;
+
+        const bar = document.createElement('div');
+        bar.className = 'conflict-bar';
+        bar.style.cssText = [
+            'background:#fee2e2',
+            'border:1.5px solid #ef4444',
+            'border-radius:6px',
+            'padding:8px 12px',
+            'margin-bottom:8px',
+            'font-size:0.85em',
+            'display:flex',
+            'align-items:center',
+            'gap:10px',
+            'flex-wrap:wrap',
+        ].join(';');
+
+        const msg = document.createElement('span');
+        msg.style.flex = '1';
+        msg.innerHTML = `&#9888; 此段落已被 <strong>${this._esc(byName)}</strong> 更新 (v${curRev})，你的變更未儲存。`;
+
+        const btnReload = document.createElement('button');
+        btnReload.className = 'btn btn-sm btn-outline-danger fw-bold';
+        btnReload.textContent = '重新載入';
+        btnReload.onclick = () => {
+            bar.remove();
+            // 重新請求伺服器最新版本
+            const files = this.app.socket;
+            this.app.socket.emit('cmd_list_blocks', { pid: this.app.pid, section: section });
+            this.addSystemMessage(`正在重新載入段落 [${section}]...`);
+        };
+
+        const btnForce = document.createElement('button');
+        btnForce.className = 'btn btn-sm btn-danger fw-bold';
+        btnForce.textContent = '覆蓋儲存';
+        btnForce.onclick = () => {
+            bar.remove();
+            // 以 current_rev 為 base_rev 強制重送（明示覆蓋）
+            this._setCardRev(card, curRev);
+            this.cardActionSave(card.querySelector('button[title="Save Block"]'));
+        };
+
+        bar.appendChild(msg);
+        bar.appendChild(btnReload);
+        bar.appendChild(btnForce);
+
+        // 插入到 card 頂部
+        card.insertBefore(bar, card.firstChild);
+    }
+
+    /**
+     * 顯示 peer_update 提示條（輕量，非阻塞，不打斷輸入）。
+     */
+    _showPeerUpdateBar(section, byName) {
+        // 找到該 section 的 card
+        const card = this.app.editorCanvas
+            ? this.app.editorCanvas.querySelector(`.editor-card[data-section="${CSS.escape(section)}"]`)
+            : null;
+
+        const makeBar = () => {
+            const bar = document.createElement('div');
+            bar.className = 'peer-update-bar';
+            bar.style.cssText = [
+                'background:#fef9c3',
+                'border:1px solid #eab308',
+                'border-radius:6px',
+                'padding:6px 12px',
+                'margin-bottom:6px',
+                'font-size:0.82em',
+                'display:flex',
+                'align-items:center',
+                'gap:10px',
+            ].join(';');
+            bar.innerHTML = `<span style="flex:1"><i class="bi bi-people-fill me-1"></i><strong>${this._esc(byName)}</strong> 剛更新了此段落</span>`;
+
+            const btnR = document.createElement('button');
+            btnR.className = 'btn btn-sm btn-outline-warning fw-bold';
+            btnR.textContent = '重新載入';
+            btnR.onclick = () => {
+                bar.remove();
+                this.app.socket.emit('cmd_list_blocks', { pid: this.app.pid, section: section });
+                this.addSystemMessage(`正在重新載入段落 [${section}]...`);
+            };
+            bar.appendChild(btnR);
+            return bar;
+        };
+
+        if (card) {
+            // 清除舊 peer bar
+            const old = card.querySelector('.peer-update-bar');
+            if (old) old.remove();
+            card.insertBefore(makeBar(), card.firstChild);
+        } else {
+            // 段落未開啟，用 system message 代替
+            this.addSystemMessage(`${byName} 剛更新了段落 [${section}]。`);
+        }
+
+        // 自動 8s 後消失
+        setTimeout(() => {
+            const bars = document.querySelectorAll('.peer-update-bar');
+            bars.forEach(b => b.remove());
+        }, 8000);
+    }
+
+    _esc(val) {
+        return String(val || '').replace(/[&<>"']/g, (c) => ({
+            '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+        }[c]));
     }
 
     // =========================================================================
@@ -124,7 +275,7 @@ class ManuSoed {
         const icon = btn.querySelector('i');
         const originalClass = icon.className;
         icon.className = 'spinner-border spinner-border-sm text-primary';
-        
+
         let currentSVer = this.app.sectionVersion ? this.app.sectionVersion.value.trim() : '0.0';
         if (forceAutoIncrement || !this.app.lastSavedSVer[section] || this.app.lastSavedSVer[section] === currentSVer) {
             let parts = currentSVer.split('.');
@@ -137,13 +288,20 @@ class ManuSoed {
 
         const title = this.app.paperTitleInput ? this.app.paperTitleInput.value.trim() : "Untitled_Paper";
 
-        this.app.socket.emit('cmd_save_block', {
+        // [v0.9] 帶 base_rev（若有）；null 表示舊模式（直接存）
+        const baseRev = this._getCardRev(card);
+        const payload = {
             pid: this.app.pid,
-            title: title, 
+            title: title,
             section: section,
             content: content,
-            s_ver: currentSVer
-        });
+            s_ver: currentSVer,
+        };
+        if (baseRev !== null) {
+            payload.base_rev = baseRev;
+        }
+
+        this.app.socket.emit('cmd_save_block', payload);
 
         if(this.app.saveStatus) this.app.saveStatus.innerText = `Sending block to database: [${section}] @ v${currentSVer}`;
 

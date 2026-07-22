@@ -46,8 +46,8 @@
                     <span class="d-none d-lg-inline">Manuscript</span>
                 </a>
 
-                <a href="#" class="btn btn-outline-secondary btn-sm d-flex align-items-center opacity-75"
-                   onclick="alert('模組開發中: 論文格式處理 (Submission)')" title="論文格式處理 (Submission)">
+                <a href="/submit{% if pid %}?pid={{ pid }}{% endif %}" class="btn btn-outline-secondary btn-sm d-flex align-items-center"
+                   title="論文格式處理 (Submission)">
                     <i class="bi bi-file-earmark-check me-1"></i>
                     <span class="d-none d-lg-inline">Submit</span>
                 </a>
@@ -68,6 +68,34 @@
                     </button>
                 </div>
 
+                {# [Batch A] User dropdown: session 模式顯示帳號操作；none 模式保持原樣 #}
+                {% if config.AUTH_MODE == 'session' %}
+                    {% if current_user.is_authenticated %}
+                    <div class="dropdown ms-2">
+                        <button class="btn btn-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                            <i class="bi bi-person-circle"></i> {{ current_user.username }}
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><a class="dropdown-item" href="{{ url_for('auth.account') }}">
+                                <i class="bi bi-gear me-1"></i>帳號設定
+                            </a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <form method="POST" action="{{ url_for('auth.logout') }}" class="d-inline">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <button type="submit" class="dropdown-item text-danger">
+                                        <i class="bi bi-box-arrow-right me-1"></i>登出
+                                    </button>
+                                </form>
+                            </li>
+                        </ul>
+                    </div>
+                    {% else %}
+                    <a href="{{ url_for('auth.login') }}" class="btn btn-outline-light btn-sm ms-2">
+                        <i class="bi bi-box-arrow-in-right me-1"></i>登入
+                    </a>
+                    {% endif %}
+                {% else %}
                 <div class="dropdown ms-2">
                     <button class="btn btn-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
                         <i class="bi bi-person-circle"></i> User
@@ -77,6 +105,7 @@
                         <li><a class="dropdown-item" href="#">Logout</a></li>
                     </ul>
                 </div>
+                {% endif %}
             </div>
         </div>
     </div>

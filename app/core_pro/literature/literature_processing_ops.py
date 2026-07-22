@@ -373,6 +373,16 @@ def trigger_gold_bridge_impl(deps, pid, paper_id):
             except Exception:
                 summary_ok = False
 
+        # Flow A 粗索引：fusion 產出即可索引（頁級 segments），失敗不影響 pipeline。
+        # Flow B reflow 成功後會原子取代為 section 級精索引。
+        try:
+            from app.services.paper_evidence_sync import sync_paper_evidence
+
+            sync_result = sync_paper_evidence(pid, paper_id, paper_dir, prefer="fusion")
+            deps.logger.info(f"[{paper_id}] Evidence coarse index: {sync_result}")
+        except Exception as evidence_err:
+            deps.logger.warning(f"[{paper_id}] Evidence coarse index failed (non-critical): {evidence_err}")
+
         if summary_ok:
             deps.logger.info(f"[{paper_id}] Gold Data Bridge Completed Successfully.")
             deps._update_paper_status(pid, paper_id, deps.Paper.STATUS_GOLD_READY, "Gold data ready for Study")

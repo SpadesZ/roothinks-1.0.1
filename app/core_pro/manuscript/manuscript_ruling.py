@@ -1,13 +1,23 @@
 # 檔案路徑: app/core_pro/manuscript/manuscript_ruling.py
 # 產生時間: 2026-07-04 19:10 +08:00
-# 版本: v0.2
+# 版本: v0.3
 # 模組定位:
 #   Manuscript 規則引擎與上下文管制中樞。
 # 主要責任:
 #   1. 攔截缺 title 的生成請求。
 #   2. 彙整 history / upstream / paragraph-level injected context。
 #   3. 寫入 context audit sidecar 以保留 provenance。
+# 呼叫來源:
+#   manuscript_routes.py Task8Drafter.process_request 前置攔截。
+# 輸入輸出契約:
+#   - 所有路徑讀取均透過 _get_data_root() 取絕對路徑，防相對路徑繞過。
+#   - _read_local_file / _load_upstream_context 失敗只 return None/""（不 crash）。
+# 安全邊界:
+#   - 禁止 os.path.join('data', ...) 相對路徑組合。
+#   - 所有路徑先用 _get_data_root() 取絕對 data 根目錄再組合。
 # 維護提醒:
+#   - v0.3 [Batch C] 改用 _get_data_root() 絕對路徑，
+#     消除原 L101-181 多處 os.path.join('data', ...) 繞過點。
 #   - 本檔只接最小 context injection，不改 Manuscript 生成主流程。
 # -----------------------------------------------------------------------------
 
@@ -15,12 +25,15 @@ import os
 import json
 import glob
 
+from app.core_pro.manuscript.manuscript_io import _get_data_root
+
+
 class ManuscriptRuling:
     """
     Manuscript 規則引擎與上下文管制中樞
     負責攔截不合法生成請求 (如缺乏 Title)，並統整各路徑的上下文數據。
     """
-    
+
     @classmethod
     def validate_and_prepare(cls, pid, title, section, s_ver, current_context, attachment, import_type):
         """
@@ -33,15 +46,15 @@ class ManuscriptRuling:
         invalid_titles = ['', 'untitled', 'untitled paper', 'untitled_paper']
         if not title or title.strip().lower() in invalid_titles:
             return {
-                "ok": False, 
+                "ok": False,
                 "reason": "missing_title",
                 "sys_msg": "【系統強制攔截】\n草稿生成失敗！在進行任何章節 (Section) 的草稿生成前，必須先在 2C (Fusor) 視窗上方確立您的「論文標題 (Title)」。\n請輸入標題後再試一次。"
             }
-        
+
         # --- 規則 2: 上下文數據整合 (Context Preparation) ---
         final_context = current_context if current_context else ""
         original_len = len(final_context.strip())
-        
+
         # 讀取本機 Section 歷史數據 (從 Drafter 移植過來的邏輯)
         if pid and section and original_len < 50:
             history_content = cls._read_local_file(pid, section, s_ver)
@@ -81,7 +94,7 @@ class ManuscriptRuling:
             except Exception:
                 # Context injection is value-add; generation should degrade, not crash.
                 injected_context_items = []
-        
+
         # --- 規則 3: 回傳放行狀態與準備完畢的數據 ---
         return {
             "ok": True,
@@ -95,11 +108,12 @@ class ManuscriptRuling:
     @staticmethod
     def _read_local_file(pid, section, s_ver):
         try:
-            # 優先讀取新結構: data/<pid>-p/manuscript/block/<section>/*_Vx.y.json
+            # 優先讀取新結構: <DATA_ROOT>/<pid>-p/manuscript/block/<section>/*_Vx.y.json
+            data_root = _get_data_root()
             root_pid = pid[:-2] if str(pid).endswith('-p') else str(pid)
             dir_candidates = [
-                os.path.join("data", f"{root_pid}-p", "manuscript", "block", section),
-                os.path.join("data", str(pid), f"man_{str(pid)}", section),
+                os.path.join(data_root, f"{root_pid}-p", "manuscript", "block", section),
+                os.path.join(data_root, str(pid), f"man_{str(pid)}", section),
             ]
 
             def _extract_payload(obj):
@@ -122,13 +136,14 @@ class ManuscriptRuling:
                     with open(candidates[0], 'r', encoding='utf-8') as f:
                         return _extract_payload(json.load(f))
             return None
-        except Exception as e:
+        except Exception:
             return None
 
     @staticmethod
     def _load_upstream_context(pid):
         """彙整前置模組可用摘要，供 Manuscript Drafter 快速冷啟動。"""
         try:
+            data_root = _get_data_root()
             base_pid = pid[:-2] if str(pid).endswith('-p') else str(pid)
             snippets = []
 
@@ -147,8 +162,8 @@ class ManuscriptRuling:
 
             # PAQ Taxonomy
             paq_paths = [
-                os.path.join("data", base_pid, "paq", "taxonomy_manual_update.json"),
-                os.path.join("data", base_pid, "paq", "paq", "taxonomy_manual_update.json"),
+                os.path.join(data_root, base_pid, "paq", "taxonomy_manual_update.json"),
+                os.path.join(data_root, base_pid, "paq", "paq", "taxonomy_manual_update.json"),
             ]
             for p in paq_paths:
                 if os.path.exists(p):
@@ -163,7 +178,7 @@ class ManuscriptRuling:
                         pass
 
             # Literature Search 結果
-            sr_path = os.path.join("data", base_pid, "search_results.json")
+            sr_path = os.path.join(data_root, base_pid, "search_results.json")
             if os.path.exists(sr_path):
                 try:
                     with open(sr_path, 'r', encoding='utf-8') as f:
@@ -176,9 +191,9 @@ class ManuscriptRuling:
                     pass
 
             # Study Notes (project-scoped JSON path + legacy fallback)
-            note_json_path = os.path.join("data", f"{base_pid}-p", "study", f"{base_pid}-p_note.json")
-            note_json_path_legacy = os.path.join("data", "note", f"{base_pid}_note.json")
-            note_txt_path = os.path.join("data", base_pid, "study_notes.txt")
+            note_json_path = os.path.join(data_root, f"{base_pid}-p", "study", f"{base_pid}-p_note.json")
+            note_json_path_legacy = os.path.join(data_root, "note", f"{base_pid}_note.json")
+            note_txt_path = os.path.join(data_root, base_pid, "study_notes.txt")
             notes = ""
             if os.path.exists(note_json_path):
                 try:

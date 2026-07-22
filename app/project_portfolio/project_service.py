@@ -1,4 +1,29 @@
-#路徑(./app/project_portfolio/project_service.py) #版本 v1.7 #更版時間 20260312-1413
+# 檔案路徑: app/project_portfolio/project_service.py
+# 產生時間: 2026-07-04 00:00 +08:00
+# 版本: v1.8
+# 模組定位:
+#   專案管理服務層。負責 Project CRUD、目錄建立、成員 membership 寫入。
+# 主要責任:
+#   1. create_project — 建立 DB 記錄 + 目錄；若有 session user 自動加為 owner。
+#   2. update_project — 更新欄位（需驗成員格式）。
+#   3. get_projects — 回傳專案清單；AUTH_MODE=session 時僅回傳有 membership 的專案。
+#   4. delete_project — 刪除 Project 及關聯，連帶清除 workspace_members 記錄。
+# 呼叫來源:
+#   app/project_portfolio/project_routes.py
+#   app/core_pro/paq/paq_routes.py（promote 時複製 membership）
+# 輸入輸出契約:
+#   - create_project(data: dict) -> (Project | None, str)
+#   - get_projects(status, user_id) -> list[dict]
+#   - delete_project(pid) -> (bool, str)
+# 安全邊界:
+#   - 成員資料 members JSON 欄位僅允許 list of dict，PI 唯一性強制驗證。
+#   - WorkspaceMember 的 role 只能是 'owner'|'editor'|'viewer'。
+# 維護提醒:
+#   - [Batch B] get_projects 新增 user_id 參數；AUTH_MODE=session 時過濾。
+#   - promote 流程（paq_routes.py）需呼叫 copy_memberships(old_pid, new_pid)。
+# 驗證方式:
+#   "C:\Users\Franky Kuo\Desktop\ai-system-test\roothinks-R-10005\roothinks\.venv\Scripts\python" -m pytest test -q
+# ------------------------------------------------------------------------------
 import os
 import random
 import string
@@ -147,6 +172,22 @@ class ProjectService:
                     f"專案初始化背景: {summary}"
                 )
 
+            # [Batch B] 若有 session user，自動寫入 owner membership
+            try:
+                from flask_login import current_user
+                from app.models import WorkspaceMember, ROLE_OWNER
+                if current_user and current_user.is_authenticated:
+                    membership = WorkspaceMember(
+                        user_id=current_user.id,
+                        pid=new_project.project_id,
+                        role=ROLE_OWNER,
+                    )
+                    db.session.add(membership)
+                    db.session.commit()
+            except Exception:
+                # 無 session context（如 CLI / dev 模式）靜默跳過，不中斷建立流程
+                logger.debug("No session user for membership write; skipping.")
+
             return new_project, "Created"
 
         except Exception as e:
@@ -184,12 +225,27 @@ class ProjectService:
             return False, str(e)
 
     @staticmethod
-    def get_projects(status=None):
-        """取得專案列表"""
+    def get_projects(status=None, user_id=None):
+        """
+        取得專案列表。
+        [Batch B] AUTH_MODE=session 時（user_id 有值）只回傳該 user 有 membership 的專案。
+        dev 模式（user_id=None）照舊全回。
+        """
+        from flask import current_app as _app
+        auth_mode = str(_app.config.get("AUTH_MODE", "none")).strip().lower()
+
         query = Project.query
         if status:
             query = query.filter_by(status=status)
-        
+
+        if auth_mode == "session" and user_id is not None:
+            # join WorkspaceMember 過濾有 membership 的專案
+            from app.models import WorkspaceMember
+            query = query.join(
+                WorkspaceMember,
+                WorkspaceMember.pid == Project.project_id,
+            ).filter(WorkspaceMember.user_id == user_id)
+
         # 依建立時間倒序排列
         projects = query.order_by(Project.created_at.desc()).all()
         return [p.to_dict() for p in projects]
@@ -207,15 +263,22 @@ class ProjectService:
             # 刪除關聯資料 (手動 Cascade 以防 DB 層級未設定)
             MetadataIndex.query.filter_by(project_ref_id=project.id).delete()
             PaqSurvey.query.filter_by(project_ref_id=project.id).delete()
-            
+
+            # [Batch B] 連帶刪除 workspace_members 記錄
+            try:
+                from app.models import WorkspaceMember
+                WorkspaceMember.query.filter_by(pid=project.project_id).delete()
+            except Exception:
+                logger.warning("Failed to delete workspace_members for pid=%s", project.project_id, exc_info=True)
+
             # 刪除實體檔案 (Optional: 視需求決定是否保留檔案)
             # import shutil
-            # shutil.rmtree(...) 
-            
+            # shutil.rmtree(...)
+
             # 刪除專案本體
             db.session.delete(project)
             db.session.commit()
-            
+
             return True, "Deleted"
         except Exception as e:
             db.session.rollback()
