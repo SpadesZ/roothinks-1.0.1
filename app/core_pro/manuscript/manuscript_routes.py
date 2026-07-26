@@ -181,6 +181,22 @@ def _enforce_manuscript_acl():
     pid = _resolve_formal_project_pid(raw_pid)
     if not pid:
         return jsonify({"ok": False, "message": "Invalid pid"}), 404
+
+    # [collab] session 模式必須是專案成員。原本這裡只驗 Bearer token，
+    # 在 API_AUTH_ENABLED=0 的部署下 /manuscript/api/bootstrap/<pid> 對
+    # 任何登入者都回 200，等於整份手稿對外開放。
+    auth_mode = str(current_app.config.get("AUTH_MODE", "none")).strip().lower()
+    if auth_mode == "session":
+        try:
+            from flask_login import current_user
+            if not current_user.is_authenticated:
+                return jsonify({"ok": False, "message": "Unauthorized"}), 401
+            if get_workspace_role(current_user.id, pid) is None:
+                # 不區分「無此專案」與「非成員」，避免用 pid 列舉試探。
+                return jsonify({"ok": False, "message": "Forbidden"}), 403
+        except ImportError:
+            pass
+
     token = getattr(g, "auth_token", "")
     if token and not check_ownership(token, pid):
         return jsonify({"ok": False, "message": "Forbidden"}), 403
@@ -207,16 +223,41 @@ def _socket_auth_enabled() -> bool:
 
 
 def _ensure_socket_project_access(pid: str, forbidden_event: str = "", forbidden_payload: dict = None, emit_forbidden_msg: bool = True) -> bool:
+    """
+    Socket 事件的專案存取守衛（讀寫皆適用）。
+
+    [collab] session 模式必須驗 WorkspaceMember。原本這裡只認 Bearer token，
+    在 API_AUTH_ENABLED=0 的部署下等同直接放行 —— 任何登入者只要知道 pid，
+    就能用 cmd_list_blocks / cmd_load_block 讀走別人專案的完整手稿內文。
+    連線階段的 handle_connect 也擋不住：前端連線時 auth payload 不帶 pid，
+    那段成員檢查根本不會執行。因此逐事件檢查才是真正的防線。
+    """
+    def _deny():
+        if emit_forbidden_msg:
+            emit('sys_msg', {'msg': 'Forbidden project access.'})
+        if forbidden_event:
+            emit(forbidden_event, forbidden_payload or {})
+        return False
+
+    auth_mode = str(current_app.config.get("AUTH_MODE", "none")).strip().lower()
+    if auth_mode == "session":
+        try:
+            from flask_login import current_user
+            if not current_user.is_authenticated:
+                return _deny()
+            if get_workspace_role(current_user.id, pid) is None:
+                return _deny()
+            return True
+        except ImportError:
+            pass
+
+    # AUTH_MODE=none（dev/TESTING）維持既有行為，避免破壞未啟用帳號系統的部署。
     if not _socket_auth_enabled():
         return True
     sid_token = _get_sid_token(request.sid)
     if sid_token and check_ownership(sid_token, pid):
         return True
-    if emit_forbidden_msg:
-        emit('sys_msg', {'msg': 'Forbidden project access.'})
-    if forbidden_event:
-        emit(forbidden_event, forbidden_payload or {})
-    return False
+    return _deny()
 
 
 def _resolve_socket_pid_or_emit(data, missing_msg: str = _SOCKET_MISSING_PID_MSG, missing_event: str = "", missing_payload: dict = None):

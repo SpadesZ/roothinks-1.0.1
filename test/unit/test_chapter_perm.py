@@ -592,6 +592,73 @@ class TestSocketChapterGate:
         assert "save_ack" not in names
         assert "sys_msg" in names
 
+    def test_non_member_cannot_read_via_socket(self, app, make_user, tmp_path, monkeypatch):
+        """
+        *** 跨租戶讀取防線 ***
+
+        非專案成員不得用 socket 事件讀走手稿內容。
+        原本 _ensure_socket_project_access 只認 Bearer token，在
+        API_AUTH_ENABLED=0 的部署下形同放行；連線階段的檢查也擋不住，
+        因為前端連線時 auth payload 不帶 pid。
+        """
+        # 先讓 owner 寫一段內容進去
+        make_user("iso_owner", "owner")
+        owner_sio = self._sio(app, "iso_owner", tmp_path, monkeypatch)
+        self._save(owner_sio, "introduction", "機密手稿內容")
+
+        # 局外人：有帳號、有登入，但不是本專案成員
+        make_user("iso_outsider")
+        out_sio = self._sio(app, "iso_outsider", tmp_path, monkeypatch)
+
+        out_sio.emit("cmd_list_blocks",
+                     {"pid": FORMAL_PID, "section": "introduction"},
+                     namespace="/manu_ws")
+        events = out_sio.get_received("/manu_ws")
+        listing = next((e["args"][0] for e in events if e["name"] == "block_list"), None)
+        assert not (listing or {}).get("files"), f"非成員讀到版本清單: {listing}"
+
+        out_sio.emit("cmd_load_block",
+                     {"pid": FORMAL_PID, "section": "introduction",
+                      "filename": "V0.1.json"},
+                     namespace="/manu_ws")
+        events = out_sio.get_received("/manu_ws")
+        loaded = [e for e in events if e["name"] == "block_loaded"]
+        assert not loaded, "非成員讀到手稿內文"
+
+        out_sio.emit("cmd_list_papers", {"pid": FORMAL_PID, "title": "T"},
+                     namespace="/manu_ws")
+        events = out_sio.get_received("/manu_ws")
+        papers = next((e["args"][0] for e in events if e["name"] == "paper_list"), None)
+        assert not (papers or {}).get("files"), f"非成員讀到主論文清單: {papers}"
+
+    def test_member_can_still_read_via_socket(self, app, make_user, tmp_path, monkeypatch):
+        """把關不能誤傷正常成員：viewer 讀得到內容（只是不能寫）。"""
+        make_user("iso_owner2", "owner")
+        owner_sio = self._sio(app, "iso_owner2", tmp_path, monkeypatch)
+        self._save(owner_sio, "introduction", "給成員看的內容")
+
+        make_user("iso_viewer", "viewer")
+        v_sio = self._sio(app, "iso_viewer", tmp_path, monkeypatch)
+        v_sio.emit("cmd_list_blocks",
+                   {"pid": FORMAL_PID, "section": "introduction"},
+                   namespace="/manu_ws")
+        events = v_sio.get_received("/manu_ws")
+        listing = next((e["args"][0] for e in events if e["name"] == "block_list"), None)
+        assert (listing or {}).get("files"), f"viewer 讀不到版本清單: {listing}"
+
+    def test_non_member_http_bootstrap_forbidden(self, app, make_user):
+        """HTTP 端同樣要擋：/manuscript/api/bootstrap/<pid> 原本對任何登入者回 200。"""
+        make_user("http_outsider")
+        client = app.test_client()
+        _login(client, "http_outsider")
+        assert client.get(f"/manuscript/api/bootstrap/{FORMAL_PID}").status_code == 403
+
+    def test_member_http_bootstrap_ok(self, app, make_user):
+        make_user("http_member", "viewer")
+        client = app.test_client()
+        _login(client, "http_member")
+        assert client.get(f"/manuscript/api/bootstrap/{FORMAL_PID}").status_code == 200
+
     def test_coauthor_autosave_blocked_on_unassigned_section(
         self, app, make_user, tmp_path, monkeypatch
     ):
