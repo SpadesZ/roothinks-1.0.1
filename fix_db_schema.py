@@ -1,3 +1,32 @@
+# 檔案路徑: fix_db_schema.py
+# 產生時間: 2026-07-26 06:30 +08:00
+# 版本: v1.1
+# 模組定位:
+#   SQLite schema 升級器。於每次應用啟動時由 create_app 的 _run_schema_fix 呼叫，
+#   負責把既有資料庫補齊到目前 ORM 模型所需的結構。
+# 主要責任:
+#   1. projects 表補上數值主鍵與缺漏欄位（legacy schema 相容）。
+#   2. papers 表升級為 (paper_id, pid) 複合主鍵。
+#   3. [email-auth] users.email 升級為 NOT NULL UNIQUE 並新增 system_role。
+# 呼叫來源:
+#   app/__init__.py 的 _run_schema_fix()；亦可人工執行 python fix_db_schema.py。
+# 輸入輸出契約:
+#   無參數；資料庫路徑由 _resolve_db_path() 於 data/ 或 app/data/ 下尋得。
+#   失敗時拋例外，create_app 會據此中止啟動（寧可開不起來也不要帶著壞 schema 跑）。
+# 安全邊界:
+#   - 破壞性操作（DROP TABLE / 重建表）。以檔案鎖 _schema_lock 序列化，
+#     避免多個 worker 同時啟動時互相踩踏。
+#   - 對既有資料採防禦性補值而非直接失敗：此函式在每次啟動時執行，
+#     一拋例外整個服務就開不起來。
+# 維護提醒:
+#   - SQLite 無法直接修改欄位約束，只能「建新表→搬資料→改名」。
+#     沿用本檔既有的重建樣式，不要試圖 ALTER COLUMN。
+#   - 新增欄位若帶 NOT NULL，必須同時給 DEFAULT，否則 ALTER TABLE 會失敗。
+#   - db.create_all() 只會建「不存在的表」，不會改既有表的欄位，
+#     因此所有欄位變更都必須寫在這裡。
+# 驗證方式:
+#   python -m pytest test/unit/test_email_auth.py -q   （含 schema 升級測試）
+# ------------------------------------------------------------------------------
 import contextlib
 import logging
 import os
@@ -64,6 +93,122 @@ def _schema_lock(lock_path: str, timeout_sec: float = 30.0):
                     fcntl.flock(fh.fileno(), fcntl.LOCK_UN)
         finally:
             fh.close()
+
+
+def _table_exists(cursor, name: str) -> bool:
+    row = cursor.execute(
+        "SELECT 1 FROM sqlite_master WHERE type='table' AND name=?", (name,)
+    ).fetchone()
+    return row is not None
+
+
+def _upgrade_users_table(cursor):
+    """
+    將 users.email 從 nullable 升級為 NOT NULL UNIQUE，並新增 system_role 欄位。
+
+    email 成為唯一登入識別後，nullable 會讓「用 email 登入」失去硬保證，
+    因此必須在 DB 層鎖死。SQLite 無法直接修改欄位約束，只能重建資料表。
+
+    對既有 NULL/空 email 的帳號採防禦性補值而非直接失敗：此函式在每次應用啟動時
+    執行，若拋例外會導致整個服務無法開機。正常流程應先跑
+    scripts/cleanup_legacy_users.py 清掉這些帳號。
+    """
+    if not _table_exists(cursor, "users"):
+        # 全新資料庫；db.create_all() 會直接建出正確 schema。
+        return
+
+    cursor.execute("PRAGMA table_info(users)")
+    cols_info = cursor.fetchall()
+    if not cols_info:
+        return
+    cols = {c[1]: c for c in cols_info}
+
+    if "system_role" not in cols:
+        LOGGER.info("Adding users.system_role column")
+        cursor.execute(
+            "ALTER TABLE users ADD COLUMN system_role VARCHAR(20) NOT NULL DEFAULT 'user'"
+        )
+
+    email_col = cols.get("email")
+    if email_col is None:
+        return
+    # PRAGMA table_info 欄位順序: (cid, name, type, notnull, dflt_value, pk)
+    if email_col[3] == 1:
+        # 已是 NOT NULL，代表先前已升級過；保持冪等。
+        return
+
+    LOGGER.info("Migrating users table: email -> NOT NULL UNIQUE (lowercased)")
+
+    # email 一律正規化為小寫，讓登入比對不區分大小寫。
+    #
+    # 正規化結果只在記憶體中計算，寫入時直接落到新表 —— 不可在舊表上就地 UPDATE：
+    # 舊表本身帶 UNIQUE(email)，把 'A@x.com' 小寫成 'a@x.com' 時會撞到既有的
+    # 'a@x.com' 那一列而拋 IntegrityError。
+    rows = cursor.execute("SELECT id, username, email FROM users").fetchall()
+
+    # 衝突時的取捨順序：原本就有真實 email 的帳號優先保住該 email，
+    # 其次才輪到補值帳號；同組內由 id 小者（較早註冊）勝出。
+    def _sort_key(row):
+        uid, _uname, mail = row
+        is_placeholder = 0 if (mail or "").strip() else 1
+        return (is_placeholder, uid)
+
+    resolved: dict[int, str] = {}
+    seen: dict[str, int] = {}
+    for uid, uname, mail in sorted(rows, key=_sort_key):
+        original = mail or ""
+        norm = original.strip().lower()
+        if not norm:
+            fallback = (str(uname or "").strip().lower() or f"user{uid}")
+            norm = f"{fallback}@invalid.local"
+            LOGGER.warning(
+                "users.id=%s 無 email，補為佔位值 %s；該帳號需重新設定 email 才能登入",
+                uid, norm,
+            )
+        if norm in seen:
+            conflict_id = seen[norm]
+            norm = f"dup{uid}.{norm}"
+            LOGGER.warning(
+                "users.id=%s email 與 id=%s 衝突，改寫為 %s", uid, conflict_id, norm
+            )
+        seen[norm] = uid
+        resolved[uid] = norm
+
+    cursor.execute(
+        """
+        CREATE TABLE users_new (
+            id INTEGER NOT NULL,
+            username VARCHAR(32) NOT NULL,
+            email VARCHAR(254) NOT NULL,
+            password_hash VARCHAR(256) NOT NULL,
+            is_active BOOLEAN NOT NULL,
+            system_role VARCHAR(20) NOT NULL DEFAULT 'user',
+            created_at DATETIME NOT NULL,
+            updated_at DATETIME NOT NULL,
+            PRIMARY KEY (id)
+        )
+        """
+    )
+    # 逐列搬移，email 用上面算好的正規化值覆蓋原值。
+    source = cursor.execute(
+        "SELECT id, username, password_hash, is_active, "
+        "       COALESCE(system_role, 'user'), created_at, updated_at "
+        "FROM users"
+    ).fetchall()
+    cursor.executemany(
+        "INSERT INTO users_new "
+        "(id, username, email, password_hash, is_active, system_role, created_at, updated_at) "
+        "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+        [
+            (uid, uname, resolved[uid], pw, active, srole, created, updated)
+            for (uid, uname, pw, active, srole, created, updated) in source
+        ],
+    )
+    cursor.execute("DROP TABLE users")
+    cursor.execute("ALTER TABLE users_new RENAME TO users")
+    cursor.execute("CREATE UNIQUE INDEX IF NOT EXISTS ix_users_username ON users (username)")
+    cursor.execute("CREATE UNIQUE INDEX IF NOT EXISTS ix_users_email ON users (email)")
+    LOGGER.info("users table migration finished (%s rows)", len(rows))
 
 
 def upgrade_database():
@@ -204,7 +349,10 @@ def upgrade_database():
             cursor.execute("DROP TABLE papers")
             cursor.execute("ALTER TABLE papers_new RENAME TO papers")
             cursor.execute("CREATE INDEX ix_papers_pid ON papers (pid)")
-        
+
+        # [email-auth] users.email 升級為 NOT NULL UNIQUE + 新增 system_role。
+        _upgrade_users_table(cursor)
+
         conn.commit()
 
     LOGGER.info("Schema upgrade finished.")

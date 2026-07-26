@@ -1,19 +1,25 @@
 <!--
   檔案路徑: app/templates/auth/register.html
-  產生時間: 2026-07-19 00:00 +08:00
-  版本: v1.0
+  產生時間: 2026-07-26 00:40 +08:00
+  版本: v2.0
   模組定位:
     使用者註冊頁面，AUTH_MODE=session 下可自行建立帳號。
   主要責任:
-    1. 顯示 username / password / confirm_password 表單。
+    1. 顯示 email / password / confirm_password 表單。
     2. 表單含 csrf_token()。
     3. 顯示後端驗證錯誤訊息。
+  輸入輸出契約:
+    POST /auth/register — email, password, confirm_password, csrf_token
   維護提醒:
-    - username 規則 3-32 英數字或 _-（前後端一致）。
+    - 帳號識別為 email；顯示名由後端從 email 前綴自動產生，使用者不需輸入。
+    - 前端 setCustomValidity 的提示字串必須與後端 EMAIL_FORMAT_ERROR 一致
+      （「請使用mail格式註冊」），否則兩條路徑會給出不同說法。
+    - 刻意不使用 type="email"：瀏覽器原生泡泡無法客製文案，改用 type="text"
+      搭配 pattern + setCustomValidity 才能顯示產品指定字串。
     - 密碼最短 8 字元。
     - Bootstrap 5 風格與其他頁面一致。
   驗證方式:
-    python -m pytest test/unit/test_auth_basic.py -q
+    python -m pytest test/unit/test_email_auth.py -q
 -->
 {% include '_header.html' %}
 
@@ -32,12 +38,13 @@
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
                 <div class="mb-3">
-                    <label for="username" class="form-label fw-semibold">帳號</label>
-                    <input type="text" id="username" name="username" class="form-control"
-                           autocomplete="username" required autofocus
-                           pattern="[A-Za-z0-9_\-]{3,32}"
-                           title="3–32 個英數字或 _- 字元">
-                    <div class="form-text">3–32 個英數字或 _- 字元。</div>
+                    <label for="email" class="form-label fw-semibold">Email</label>
+                    <input type="text" id="email" name="email" class="form-control"
+                           autocomplete="email" required autofocus
+                           maxlength="254"
+                           placeholder="you@example.com"
+                           pattern="[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}">
+                    <div class="form-text">請使用 Email 作為登入帳號。</div>
                 </div>
 
                 <div class="mb-3">
@@ -70,5 +77,19 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"
         integrity="sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz"
         crossorigin="anonymous"></script>
+<script>
+    // 讓瀏覽器端的格式提示與後端 EMAIL_FORMAT_ERROR 同字串。
+    // pattern 不符時瀏覽器預設顯示英文泡泡，必須用 setCustomValidity 覆蓋。
+    (function () {
+        var emailInput = document.getElementById('email');
+        if (!emailInput) return;
+        var MSG = '請使用mail格式註冊';
+        function sync() {
+            emailInput.setCustomValidity(emailInput.validity.patternMismatch ? MSG : '');
+        }
+        emailInput.addEventListener('input', sync);
+        emailInput.addEventListener('invalid', sync);
+    })();
+</script>
 </body>
 </html>

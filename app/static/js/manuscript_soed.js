@@ -1,10 +1,16 @@
 //路徑(./app/static/js/manuscript_soed.js)
-//版本 v0.9 (Edit Conflict Protection — rev mechanism)
-//更版時間 20260719-1200
-// inner comment: 嚴格保留 v0.8 全量代碼與防呆邏輯。新增稿件編輯衝突防護：
-//   - 每張 editor-card 透過 data-rev 屬性追蹤目前版本號 (_rev)。
-//   - cmd_save_block payload 帶 base_rev；save_ack 更新本地 rev。
-//   - save_conflict 事件：顯示紅色衝突提示條，提供「重新載入」/「覆蓋儲存」。
+//版本 v1.0 (Server-assigned versions + autosave draft)
+//更版時間 20260726-0200
+// inner comment: 保留 v0.9 全量代碼與防呆邏輯。本版變更：
+//   [v1.0] 版本號改由伺服器指派（max + 0.1），前端不再自行遞增。
+//     - cardActionSave 只送 from_ver（目前檢視版本），版號由 save_ack 回傳。
+//     - S.Ver / G.Ver 由文字輸入框改為版本選單，選取即載入該版。
+//     - 舊做法讓使用者能手打回既有版號，會產生相同檔名而靜默覆蓋該版內容。
+//   [v1.0] 停筆 1.5 秒自動存檔：走 cmd_autosave_block 寫入單一草稿檔，不產生版本。
+//     - 若自動存檔也跳版，一次編輯就會噴出數十個版本，版本選單失去意義。
+//   [v1.0] 主論文版本為整數 V1/V2 的 manifest，可依 sections 對照表一鍵還原整組章節。
+//   [v0.9] 保留 data-rev / save_conflict 機制：版本快照是 append-only 不會衝突，
+//     但 rev 相關程式碼仍供 peer_update 提示與未來的就地編輯情境使用。
 //   - peer_update 事件：若開啟段落被別人存，顯示非阻塞提示條「[by] 剛更新了此段落 [重新載入]」。
 // CHANGE_PLAN_STUDY_FLOWB_2026-04-20: MVP prototype - wire direct .docx importer event to UI handler.
 
@@ -205,6 +211,9 @@ class ManuSoed {
             this.app.editorCanvas.innerHTML += cardHtml;
         }
         this.updateWordCount();
+        // [collab] 卡片是每次重建的，插入後必須重新套用唯讀鎖定，
+        // 否則沒有撰寫權的章節會以可編輯狀態出現。
+        if (this.app.collab) this.app.collab.refreshLock();
     }
 
     formatText(command, val = null, target = 'editor') {
@@ -257,17 +266,23 @@ class ManuSoed {
     saveAllBlocks() {
         const cards = this.app.editorCanvas.querySelectorAll('.editor-card');
         if(cards.length === 0) return;
-        
+
         cards.forEach(card => {
             const btn = card.querySelector('button[title="Save Block"]');
-            if (btn) this.cardActionSave(btn, true); 
+            if (btn) this.cardActionSave(btn);
         });
-        if (!this.app.pendingOpenBlockModal) {
-            alert(`已觸發該段落的存檔！(版號自動 +1.0)`);
-        }
+        // 版號由伺服器指派，前端事先不知道會是幾號，所以這裡不再預告版號；
+        // 實際版號由 save_ack 回來後顯示在狀態列與版本選單。
     }
 
-    cardActionSave(btn, forceAutoIncrement = false) {
+    /**
+     * [v1.8] 建立章節版本快照。
+     *
+     * 版號完全交給伺服器指派（既有最大 + 0.1）。前端不再自行遞增——舊做法會在
+     * 使用者手動改動版號輸入框時產生重複檔名而靜默覆蓋既有版本。
+     * from_ver 帶上目前檢視中的版本，讓伺服器記錄「這一版改自哪一版」。
+     */
+    cardActionSave(btn) {
         const card = btn.closest('.editor-card');
         // [v0.6 修正] 改為 innerHTML，確保包含 <img> 標籤的內容能完整存檔
         const content = card.querySelector('.card-content').innerHTML;
@@ -276,39 +291,148 @@ class ManuSoed {
         const originalClass = icon.className;
         icon.className = 'spinner-border spinner-border-sm text-primary';
 
-        let currentSVer = this.app.sectionVersion ? this.app.sectionVersion.value.trim() : '0.0';
-        if (forceAutoIncrement || !this.app.lastSavedSVer[section] || this.app.lastSavedSVer[section] === currentSVer) {
-            let parts = currentSVer.split('.');
-            let main = parseInt(parts[0]) || 0;
-            let sub = parts.length > 1 ? parseInt(parts[1]) || 0 : 0;
-            currentSVer = `${main + 1}.${sub}`;
-            if(this.app.sectionVersion) this.app.sectionVersion.value = currentSVer;
-        }
-        this.app.lastSavedSVer[section] = currentSVer;
-
         const title = this.app.paperTitleInput ? this.app.paperTitleInput.value.trim() : "Untitled_Paper";
 
-        // [v0.9] 帶 base_rev（若有）；null 表示舊模式（直接存）
-        const baseRev = this._getCardRev(card);
-        const payload = {
+        this.app.socket.emit('cmd_save_block', {
             pid: this.app.pid,
             title: title,
             section: section,
             content: content,
-            s_ver: currentSVer,
-        };
-        if (baseRev !== null) {
-            payload.base_rev = baseRev;
-        }
+            from_ver: this._currentSectionVer(section),
+        });
 
-        this.app.socket.emit('cmd_save_block', payload);
-
-        if(this.app.saveStatus) this.app.saveStatus.innerText = `Sending block to database: [${section}] @ v${currentSVer}`;
+        if(this.app.saveStatus) this.app.saveStatus.innerText = `Saving [${section}] ...`;
 
         setTimeout(() => {
             icon.className = 'bi bi-check-lg text-success';
             setTimeout(() => icon.className = originalClass, 1500);
         }, 800);
+    }
+
+    // =========================================================================
+    // [v1.8] 版本選單與自動存檔
+    // =========================================================================
+
+    /** 目前章節編輯區正在檢視的版本號（版本選單的值）；沒有則回 null。 */
+    _currentSectionVer(section) {
+        const sel = this.app.sectionVersion;
+        if (!sel || !sel.value) return null;
+        return sel.value;
+    }
+
+    /**
+     * 把伺服器回傳的結構化版本清單畫進選單。
+     * 顯示 from_ver 是刻意的：一整排 V0.1~V0.9 若看不出誰改自誰，回退就無從判斷。
+     */
+    renderSectionVersions(versions, selectedVer) {
+        const sel = this.app.sectionVersion;
+        if (!sel) return;
+        sel.innerHTML = '';
+
+        if (!versions || versions.length === 0) {
+            sel.innerHTML = '<option value="">尚無版本</option>';
+            return;
+        }
+
+        versions.forEach(v => {
+            const opt = document.createElement('option');
+            opt.value = v.ver;
+            const from = v.from_ver ? ` ← ${v.from_ver}` : '';
+            const who = v.updated_by ? ` · ${v.updated_by}` : '';
+            opt.textContent = `V${v.ver}${from}${who}`;
+            if (v.filename) opt.dataset.filename = v.filename;
+            sel.appendChild(opt);
+        });
+
+        if (selectedVer) sel.value = selectedVer;
+    }
+
+    /** 主論文版本選單（整數 V1/V2，代表投稿候選稿）。 */
+    renderPaperVersions(versions, selectedVer) {
+        const sel = this.app.globalVersion;
+        if (!sel) return;
+        sel.innerHTML = '';
+
+        if (!versions || versions.length === 0) {
+            sel.innerHTML = '<option value="">尚無版本</option>';
+            return;
+        }
+
+        versions.forEach(v => {
+            const opt = document.createElement('option');
+            opt.value = v.g_ver;
+            const from = v.from_ver ? ` ← ${v.from_ver}` : '';
+            const who = v.updated_by ? ` · ${v.updated_by}` : '';
+            opt.textContent = `${v.g_ver}${from}${who}`;
+            sel.appendChild(opt);
+        });
+
+        if (selectedVer) sel.value = selectedVer;
+    }
+
+    /**
+     * 停筆 1.5 秒後自動存檔。
+     *
+     * 走 cmd_autosave_block 而非 cmd_save_block：自動存檔只覆寫單一草稿檔、
+     * 不產生版本。若每次自動存檔都跳版，打一段字就會噴出數十個版本。
+     */
+    scheduleAutosave() {
+        if (!this.app.pid) return;
+        clearTimeout(this._autosaveTimer);
+        this._autosaveTimer = setTimeout(() => this._flushAutosave(), 1500);
+
+        const statusEl = document.getElementById('autosaveStatus');
+        if (statusEl) statusEl.textContent = '編輯中…';
+    }
+
+    /**
+     * 詢問是否復原未存檔草稿。
+     *
+     * 只在草稿確實比目前編輯區內容新、且尚未提示過時詢問，
+     * 避免每次切換章節都彈一次。
+     */
+    _offerDraftRestore(section, draft) {
+        // 只處理目前正在檢視的章節，避免切換章節時把畫布換成別章的草稿。
+        if (!this.app.selectedSections.has(section)) return;
+
+        this._draftPrompted = this._draftPrompted || {};
+        if (this._draftPrompted[section]) return;
+        this._draftPrompted[section] = true;
+
+        const when = draft._updated_at
+            ? new Date(draft._updated_at).toLocaleString()
+            : '稍早';
+        if (!confirm(`章節「${section}」有未存檔的自動儲存草稿（${when}）。要復原嗎？\n\n按取消則保留目前內容，草稿會在下次存檔時被覆蓋。`)) {
+            return;
+        }
+
+        this.app.selectedSections = new Set([section]);
+        this.app.ui.updateDropdownLabel();
+        this.app.editorCanvas.innerHTML = '';
+        this.insertEditorCard(draft.content, section);
+        this.addSystemMessage(`已復原「${section}」的自動儲存草稿。按存檔可將它建立為正式版本。`);
+    }
+
+    _flushAutosave() {
+        const cards = this.app.editorCanvas
+            ? this.app.editorCanvas.querySelectorAll('.editor-card')
+            : [];
+        if (!cards.length) return;
+
+        const title = this.app.paperTitleInput
+            ? this.app.paperTitleInput.value.trim()
+            : 'Untitled_Paper';
+
+        cards.forEach(card => {
+            const body = card.querySelector('.card-content');
+            if (!body) return;
+            this.app.socket.emit('cmd_autosave_block', {
+                pid: this.app.pid,
+                title: title,
+                section: card.getAttribute('data-section') || 'general',
+                content: body.innerHTML,
+            });
+        });
     }
 
     cardActionPushToFusion(btn) {
@@ -438,6 +562,8 @@ class ManuSoed {
         this.app.socket.on('save_ack', (data) => {
             if (data.target === 'paper') {
                 this.app.ui.flashButtonSuccess(this.app.btnSaveGlobal);
+                // [v1.8] 伺服器指派的主論文版號回來後才更新選單。
+                this.renderPaperVersions(data.versions, data.g_ver);
                 if (this.app.pendingOpenPaperModal) {
                     this.app.pendingOpenPaperModal = false;
                     const title = this.app.paperTitleInput.value.trim() || "Untitled_Paper";
@@ -447,6 +573,11 @@ class ManuSoed {
                 if(this.app.saveStatus) {
                     this.app.saveStatus.innerText = data.msg + " @ " + new Date().toLocaleTimeString();
                 }
+                // [v1.8] 版號由伺服器決定，存檔完成才知道實際號碼。
+                this.renderSectionVersions(data.versions, data.ver);
+                const statusEl = document.getElementById('autosaveStatus');
+                if (statusEl) statusEl.textContent = `已存為 V${data.ver}`;
+
                 if (this.app.pendingOpenBlockModal) {
                     this.app.pendingOpenBlockModal = false;
                     const sec = Array.from(this.app.selectedSections)[0] || 'abstract';
@@ -454,6 +585,46 @@ class ManuSoed {
                     bootstrap.Modal.getOrCreateInstance(document.getElementById('oldBlockModal')).show();
                 }
             }
+        });
+
+        // [v1.8] 自動存檔回應：只更新狀態文字，不動版本選單（草稿不是版本）。
+        this.app.socket.on('autosave_ack', (data) => {
+            const statusEl = document.getElementById('autosaveStatus');
+            if (!statusEl) return;
+            if (data && data.ok) {
+                const t = data.saved_at ? new Date(data.saved_at) : new Date();
+                statusEl.textContent = `已自動儲存 ${t.toLocaleTimeString()}`;
+                statusEl.className = 'small text-muted ms-1';
+            } else {
+                statusEl.textContent = '自動儲存失敗';
+                statusEl.className = 'small text-danger ms-1';
+            }
+        });
+
+        // [v1.8] 刪除版本後刷新選單。
+        this.app.socket.on('block_version_deleted', (data) => {
+            if (!data) return;
+            if (!data.ok) {
+                this.addSystemMessage('刪除版本失敗：找不到該版本或權限不足。');
+                return;
+            }
+            this.renderSectionVersions(data.versions, null);
+            this.addSystemMessage(`已刪除版本 V${data.ver}。`);
+        });
+
+        // [v1.8] 主論文版本還原：一併把各章節編輯區回到當時的版本。
+        this.app.socket.on('paper_restored', (data) => {
+            if (!data || !data.ok) {
+                this.addSystemMessage((data && data.msg) || '還原失敗。');
+                return;
+            }
+            if (this.app.fusionCanvas) this.app.fusionCanvas.innerHTML = data.content || '';
+            const count = Object.keys(data.sections || {}).length;
+            let msg = `已還原主論文 ${data.g_ver}，含 ${count} 個章節版本。`;
+            if (data.missing && data.missing.length) {
+                msg += ` 有 ${data.missing.length} 個章節版本已被刪除而無法還原：${data.missing.join(', ')}`;
+            }
+            this.addSystemMessage(msg);
         });
 
         this.app.socket.on('chat_history', (data) => {
@@ -474,6 +645,10 @@ class ManuSoed {
         });
 
         this.app.socket.on('paper_list', (data) => {
+            // [v1.8] 同步 G.Ver 版本選單。原本只有存檔成功（save_ack）才會填，
+            // 導致重新進頁面時既有的主論文版本完全看不到，也就無法用選單還原。
+            this.renderPaperVersions(data.versions, null);
+
             const container = document.getElementById('oldPaperListContainer');
             container.innerHTML = '';
             if (data.files && data.files.length > 0) {
@@ -499,13 +674,24 @@ class ManuSoed {
         this.app.socket.on('paper_loaded', (data) => {
             if(data.ok && this.app.fusionCanvas) {
                 this.app.fusionCanvas.innerHTML = data.content.content || '';
-                this.app.globalVersion.value = data.content.g_ver || '1.0';
-                this.app.lastSavedGVer = this.app.globalVersion.value; 
+                // [v1.8] g_ver 現在是 'V2' 這種整數版；選單是 select，直接設值即可。
+                if (this.app.globalVersion && data.content.g_ver) {
+                    this.app.globalVersion.value = data.content.g_ver;
+                }
+                this.app.lastSavedGVer = data.content.g_ver || '';
                 this.addSystemMessage(`已成功還原 2C 全文版本: ${data.filename}`);
             }
         });
 
         this.app.socket.on('block_list', (data) => {
+            // [v1.8] 同步版本選單（結構化清單，含 from_ver / 作者）。
+            this.renderSectionVersions(data.versions, null);
+
+            // [v1.8] 有草稿代表上次離開時有未存檔內容，主動詢問是否復原。
+            if (data.draft && data.draft.content) {
+                this._offerDraftRestore(data.section, data.draft);
+            }
+
             const container = document.getElementById('oldBlockListContainer');
             container.innerHTML = '';
             if (data.files && data.files.length > 0) {
@@ -538,13 +724,15 @@ class ManuSoed {
             if(data.ok && this.app.editorCanvas) {
                 this.app.selectedSections = new Set([data.section]);
                 this.app.ui.updateDropdownLabel();
-                this.app.editorCanvas.innerHTML = ''; 
-                
+                this.app.editorCanvas.innerHTML = '';
+
                 this.insertEditorCard(data.content.content, data.section);
-                let vStr = data.content.version.replace('V', '').replace('v', '');
-                this.app.sectionVersion.value = vStr;
-                this.app.lastSavedSVer[data.section] = vStr; 
-                this.addSystemMessage(`已成功插入 2B 段落版本: ${data.filename}`);
+                // [v1.8] 版號優先讀 ver 欄位；舊檔沒有時退回 version（帶 V 前綴）。
+                const vStr = data.content.ver
+                    || String(data.content.version || '').replace(/^[Vv]/, '');
+                if (this.app.sectionVersion) this.app.sectionVersion.value = vStr;
+                this.app.lastSavedSVer[data.section] = vStr;
+                this.addSystemMessage(`已載入 2B 段落版本 V${vStr}。存檔會建立新版，此版保留不動。`);
             }
         });
     }
@@ -553,8 +741,9 @@ class ManuSoed {
         this.app.selectedSections = new Set([secId]);
         this.app.ui.updateDropdownLabel();
         this.app.editorCanvas.innerHTML = '';
-        this.app.sectionVersion.value = '0.0';
-        this.app.lastSavedSVer[secId] = '0.0';
+        // 新草稿沒有來源版本；存檔時 from_ver 送 null，伺服器指派 max+0.1。
+        if (this.app.sectionVersion) this.app.sectionVersion.value = '';
+        this.app.lastSavedSVer[secId] = '';
         this.loadMultiSectionContent();
         
         const modalEl = document.getElementById('oldBlockModal');
@@ -576,9 +765,10 @@ class ManuSoed {
             return;
         }
 
-        if(confirm("即將開啟舊版檔案！系統會先自動將目前 2C 的內容強制備份 (G.Ver + 1.0)。確定繼續嗎？")) {
+        if(confirm("即將開啟舊版檔案！系統會先自動將目前 2C 的內容備份為新版本。確定繼續嗎？")) {
             this.app.pendingOpenPaperModal = true;
-            this.app.lastSavedGVer = '0.0'; 
+            // [v1.8] 不再需要重設 lastSavedGVer 來逼出版號遞增——
+            // 版號由伺服器指派，每次存檔一定產生新版。
             this.app.btnSaveGlobal.click();
         }
     }
@@ -650,23 +840,52 @@ class ManuSoed {
                 }
 
                 const title = this.app.paperTitleInput.value.trim() || "Untitled_Paper";
-                let currentVer = this.app.globalVersion.value.trim() || '0.0';
-                if (this.app.lastSavedGVer === currentVer) {
-                    let parts = currentVer.split('.');
-                    let x = parseInt(parts[0]) || 0;
-                    let y = parts.length > 1 ? parseInt(parts[1]) || 0 : 0;
-                    x += 1; 
-                    currentVer = `${x}.${y}`;
-                    this.app.globalVersion.value = currentVer;
-                }
-                this.app.lastSavedGVer = currentVer;
                 const fusionContent = this.app.fusionCanvas ? this.app.fusionCanvas.innerHTML : '';
-                this.app.socket.emit('cmd_save_paper', { pid: this.app.pid, title: title, ver: currentVer, content: fusionContent });
+                // [v1.8] 主論文版號改由伺服器指派為整數 V1/V2；前端只回報來源版本。
+                // sections manifest 由伺服器蒐集各章節目前最新版，確保回退時拿得到組成。
+                this.app.socket.emit('cmd_save_paper', {
+                    pid: this.app.pid,
+                    title: title,
+                    content: fusionContent,
+                    from_ver: this.app.globalVersion ? (this.app.globalVersion.value || null) : null,
+                });
                 this.app.btnSaveGlobal.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
             };
         }
+
+        // [v1.8] 章節版本選單：選取即載入該版內容到編輯區。
+        // 之後按存檔會建立 max+0.1 的新版，被選的舊版原檔不受影響。
+        if (this.app.sectionVersion) {
+            this.app.sectionVersion.addEventListener('change', (e) => {
+                const opt = e.target.selectedOptions[0];
+                if (!opt || !opt.value || !opt.dataset.filename) return;
+                const section = Array.from(this.app.selectedSections)[0];
+                if (!section) return;
+                this.app.socket.emit('cmd_load_block', {
+                    pid: this.app.pid,
+                    section: section,
+                    filename: opt.dataset.filename,
+                });
+            });
+        }
+
+        // [v1.8] 主論文版本選單：選取即依 manifest 還原全文與各章節組合。
+        if (this.app.globalVersion) {
+            this.app.globalVersion.addEventListener('change', (e) => {
+                const ver = e.target.value;
+                if (!ver) return;
+                if (!confirm(`要還原主論文 ${ver} 嗎？\n\n目前 2C 畫布的內容會被取代（尚未存檔的變更會遺失）。`)) {
+                    return;
+                }
+                this.app.socket.emit('cmd_restore_paper_version', {
+                    pid: this.app.pid,
+                    ver: ver,
+                });
+            });
+        }
     }
-    
+
+
     // =========================================================================
     // AI 聊天與意圖處理 
     // =========================================================================

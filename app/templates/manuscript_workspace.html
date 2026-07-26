@@ -1,3 +1,31 @@
+<!--
+  檔案路徑: app/templates/manuscript_workspace.html
+  產生時間: 2026-07-26 06:30 +08:00
+  版本: v1.2
+  模組定位:
+    手稿三欄工作區（2A Drafter / 2B Sectionar / 2C Fusor）的頁面骨架。
+  主要責任:
+    1. 三欄版面、章節切換、工具列與各式 modal。
+    2. [v1.1] 版本控制 UI：S.Ver / G.Ver 由文字輸入框改為版本選單，
+       並顯示自動存檔狀態。
+    3. [v1.2] 章節協作 UI：角色徽章、章節指派 modal、章節留言側欄。
+  呼叫來源:
+    app/core_pro/manuscript/manuscript_routes.py 的 manuscript_page()。
+  輸入輸出契約:
+    由 manuscript_ws.js 讀取本檔的元素 id 建立 ManuscriptWorkspace；
+    元素 id 即為前後端之間的契約，改名必須同步改 JS。
+  安全邊界:
+    - 章節指派按鈕、唯讀鎖定皆為體驗優化；真正的權限把關在伺服器端
+      can_write_section 與 cmd_save_block，前端不可視為權限依據。
+  維護提醒:
+    - 留言側欄的 inline style 中 display 只能出現一次。曾因寫成
+      "display:none; …; display:flex" 而讓後者覆蓋前者，側欄一進頁面就展開
+      並蓋住 2A 面板；顯示／隱藏一律由 ManuCollab 切換 flex 與 none。
+    - 本頁 include 的是 _navbar.html（與其他頁面用的 _header.html 內嵌導覽列不同）。
+    - JS 檔的 ?v= 參數是快取破壞用，改 JS 時要一併調整。
+  驗證方式:
+    python -m pytest test/unit/test_chapter_perm.py test/unit/test_manuscript_versioning.py -q
+-->
 <!DOCTYPE html>
 <!-- CHANGE_PLAN_STUDY_FLOWB_2026-04-20: MVP prototype - add Word import (.docx) entry points -->
 <html lang="zh-TW">
@@ -93,9 +121,14 @@
                         <span class="input-group-text bg-white fw-bold">Title</span>
                         <input type="text" class="form-control fw-bold" id="paperTitle" placeholder="Enter Paper Title..." value="{{ initial_title or pid }}">
                     </div>
-                    <div class="input-group input-group-sm" style="width: 120px;">
+                    <!-- [v1.8] 版本改為選單：版本號由伺服器指派，不再讓使用者手打。
+                         舊的自由輸入框可以打回既有版號，會靜默覆蓋該版內容。 -->
+                    <div class="input-group input-group-sm" style="width: 165px;">
                         <span class="input-group-text small">G.Ver</span>
-                        <input type="text" class="form-control text-center" id="globalVersion" value="0.0">
+                        <select class="form-select form-select-sm" id="globalVersion"
+                                title="主論文版本（投稿候選稿）。選取可還原該版全文與當時的章節組合。">
+                            <option value="">尚無版本</option>
+                        </select>
                     </div>
                     
                     <button class="btn btn-sm btn-outline-primary px-2 shadow-sm" id="btnOpenOldPaper" onclick="wsApp.openOldPaperFlow()" title="開啟舊版論文">
@@ -162,13 +195,37 @@
                         <i class="bi bi-file-earmark-word me-1"></i>匯入 Word→2B
                     </button>
 
-                    <div class="input-group input-group-sm" style="width: 100px;">
+                    <!-- [v1.8] 章節版本選單。選取舊版可載入該版內容；
+                         之後按存檔會建立新版（max+0.1），被選的舊版原檔保留不動。 -->
+                    <div class="input-group input-group-sm" style="width: 180px;">
                         <span class="input-group-text small px-1">S.Ver</span>
-                        <input type="text" class="form-control text-center px-1" id="sectionVersion" value="0.0">
+                        <select class="form-select form-select-sm px-1" id="sectionVersion"
+                                title="章節版本。選取舊版即載入該版內容；存檔一律建立新版，舊版永久保留。">
+                            <option value="">尚無版本</option>
+                        </select>
                     </div>
-                    
-                    <button class="btn btn-sm btn-primary px-2 shadow-sm" onclick="wsApp.saveAllBlocks()" title="單一段落強制存檔">
+
+                    <button class="btn btn-sm btn-primary px-2 shadow-sm" onclick="wsApp.saveAllBlocks()" title="建立新版本快照（版號由系統指派）">
                         <i class="bi bi-floppy-fill"></i> Save
+                    </button>
+
+                    <!-- [v1.8] 自動存檔狀態。停筆 1.5 秒觸發，寫入草稿而不產生版本。 -->
+                    <span id="autosaveStatus" class="small text-muted ms-1" style="min-width:104px;"></span>
+
+                    <div class="vr mx-1"></div>
+
+                    <!-- [collab] 章節協作：角色標示、指派、留言 -->
+                    <span id="collabRoleBadge" class="badge bg-secondary" title="你在本專案的角色"></span>
+
+                    <button class="btn btn-sm btn-outline-secondary" id="btnChapterAssign"
+                            onclick="wsApp.collab.openAssignModal()" title="章節撰寫指派（editor 以上）"
+                            style="display:none;">
+                        <i class="bi bi-person-check"></i>
+                    </button>
+
+                    <button class="btn btn-sm btn-outline-secondary" id="btnChapterComments"
+                            onclick="wsApp.collab.openComments()" title="本章節留言">
+                        <i class="bi bi-chat-left-text"></i>
                     </button>
 
                     <div class="vr mx-1"></div>
@@ -358,6 +415,84 @@
         </div>
     </div>
 
+    <!-- [collab] 章節撰寫指派。只有 editor 以上看得到開啟按鈕；
+         伺服器端另有 can_assign_sections 把關，前端隱藏僅為體驗。 -->
+    <div class="modal fade" id="chapterAssignModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title fw-bold">
+                        <i class="bi bi-person-check me-2"></i>章節撰寫指派
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted small">
+                        共同作者（coauthor）只能編輯被指派的章節；其餘章節為唯讀，但仍可留言。
+                        編輯者與擁有者不需指派即可編輯所有章節。
+                    </p>
+
+                    <div class="alert alert-danger py-2 small" id="chapterAssignError" style="display:none;"></div>
+
+                    <div class="row g-2 align-items-end mb-3">
+                        <div class="col-5">
+                            <label class="form-label fw-bold text-muted small">章節</label>
+                            <select class="form-select form-select-sm" id="assignSectionSelect"></select>
+                        </div>
+                        <div class="col-5">
+                            <label class="form-label fw-bold text-muted small">成員 Email</label>
+                            <input type="text" class="form-control form-control-sm" id="assignEmailInput"
+                                   placeholder="member@example.com">
+                        </div>
+                        <div class="col-2">
+                            <button class="btn btn-sm btn-primary w-100"
+                                    onclick="wsApp.collab.createAssignment()">指派</button>
+                        </div>
+                    </div>
+
+                    <div class="list-group" id="chapterAssignList"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- [collab] 章節留言側欄。所有專案成員皆可留言，含未被指派該章節的 coauthor。
+         注意：display 只能出現一次。先前寫成 "display:none; …; display:flex"
+         導致後者覆蓋前者，側欄一進頁面就展開並蓋住 2A Drafter 面板。
+         隱藏／顯示改由 JS 切換 flex 與 none（見 ManuCollab.openComments）。 -->
+    <div id="chapterCommentBackdrop"
+         onclick="wsApp.collab.closeComments()"
+         style="display:none; position:fixed; inset:0; z-index:1044;
+                background:rgba(0,0,0,.25);"></div>
+    <div id="chapterCommentPanel"
+         style="display:none; position:fixed; right:0; top:0; bottom:0; width:360px;
+                background:#fff; border-left:1px solid #adb5bd; z-index:1045;
+                box-shadow:-6px 0 24px rgba(0,0,0,.18); flex-direction:column;">
+        <!-- 標題／說明／輸入區都要 flex-shrink-0，否則會被列表擠壓而讓文字被裁切；
+             只有留言列表該吸收剩餘高度。 -->
+        <div class="d-flex justify-content-between align-items-center px-3 py-2 border-bottom bg-primary text-white flex-shrink-0">
+            <div class="fw-bold small">
+                <i class="bi bi-chat-left-text me-1"></i>章節留言
+                <span class="badge bg-light text-dark ms-1" id="chapterCommentSection"></span>
+            </div>
+            <button class="btn btn-sm btn-close btn-close-white"
+                    onclick="wsApp.collab.closeComments()" title="關閉（或按 Esc）"></button>
+        </div>
+        <div class="px-3 py-2 border-bottom bg-light small text-muted flex-shrink-0"
+             id="chapterCommentHint" style="line-height:1.5;">
+            所有成員都能留言，包含沒有此章節撰寫權的人。
+        </div>
+        <div class="flex-grow-1 overflow-auto px-3 py-2" id="chapterCommentList"
+             style="min-height:0;"></div>
+        <div class="border-top p-2 bg-light flex-shrink-0">
+            <textarea class="form-control form-control-sm mb-2" id="chapterCommentInput"
+                      rows="3" placeholder="對這個章節提供意見…"></textarea>
+            <button class="btn btn-sm btn-primary w-100" onclick="wsApp.collab.postComment()">
+                <i class="bi bi-send me-1"></i>送出留言
+            </button>
+        </div>
+    </div>
+
     <div class="modal fade" id="assetGalleryModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-lg modal-dialog-scrollable">
             <div class="modal-content">
@@ -419,8 +554,9 @@
     
     <script src="{{ url_for('static', filename='js/manuscript_wsui.js') }}?v=1.4"></script>
     <script src="{{ url_for('static', filename='js/manuscript_image.js') }}?v=1.8"></script>
-    <script src="{{ url_for('static', filename='js/manuscript_soed.js') }}?v=0.8"></script>
-    <script src="{{ url_for('static', filename='js/manuscript_ws.js') }}?v=4.6"></script>
+    <script src="{{ url_for('static', filename='js/manuscript_soed.js') }}?v=1.1"></script>
+    <script src="{{ url_for('static', filename='js/manuscript_collab.js') }}?v=1.2"></script>
+    <script src="{{ url_for('static', filename='js/manuscript_ws.js') }}?v=4.8"></script>
     <script src="{{ url_for('static', filename='js/manuscript_citation.js') }}?v=0.1"></script>
     <script src="{{ url_for('static', filename='js/workflow_status.js') }}?v=0.2"></script>
 
