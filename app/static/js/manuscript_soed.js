@@ -313,6 +313,18 @@ class ManuSoed {
     // [v1.8] 版本選單與自動存檔
     // =========================================================================
 
+    /**
+     * 從版本檔名取出版本號，同時支援新舊兩種格式。
+     *
+     * 新格式：V0.4.json / V2.json
+     * 舊格式：<title>_<yymmdd>_V1.0.json
+     * 原本只用 split('_V') 解析，新格式沒有底線前綴，會全部顯示成 vUnknown。
+     */
+    _verFromFilename(filename) {
+        const m = String(filename || '').match(/(?:^|_)[Vv](\d+(?:\.\d+)?)\.json$/);
+        return m ? m[1] : '?';
+    }
+
     /** 目前章節編輯區正在檢視的版本號（版本選單的值）；沒有則回 null。 */
     _currentSectionVer(section) {
         const sel = this.app.sectionVersion;
@@ -567,6 +579,7 @@ class ManuSoed {
                 if (this.app.pendingOpenPaperModal) {
                     this.app.pendingOpenPaperModal = false;
                     const title = this.app.paperTitleInput.value.trim() || "Untitled_Paper";
+                    this._wantPaperModal = true;   // 使用者主動要看舊版，允許彈窗
                     this.app.socket.emit('cmd_list_papers', { pid: this.app.pid, title: title });
                 }
             } else if (data.target === 'block') {
@@ -653,11 +666,11 @@ class ManuSoed {
             container.innerHTML = '';
             if (data.files && data.files.length > 0) {
                 data.files.forEach(file => {
-                    let vTag = file.split('_V')[1]?.split('.json')[0] || file.split('_v')[1]?.split('.json')[0] || 'Unknown';
                     const a = document.createElement('a');
                     a.className = "list-group-item list-group-item-action d-flex justify-content-between align-items-center";
                     a.href = "#";
-                    a.innerHTML = `<span class="fw-bold">${file}</span> <span class="badge bg-primary rounded-pill">v${vTag}</span>`;
+                    a.innerHTML = `<span class="fw-bold">${file}</span> `
+                                + `<span class="badge bg-primary rounded-pill">V${this._verFromFilename(file)}</span>`;
                     a.onclick = (e) => {
                         e.preventDefault();
                         this.app.socket.emit('cmd_load_paper', { pid: this.app.pid, filename: file });
@@ -668,7 +681,14 @@ class ManuSoed {
             } else {
                 container.innerHTML = '<div class="text-center text-muted p-3">查無舊檔案。</div>';
             }
-            bootstrap.Modal.getOrCreateInstance(document.getElementById('oldPaperModal')).show();
+
+            // [v1.8] 只有使用者主動按「開啟舊版」時才彈 modal。
+            // 頁面載入時也會發一次 cmd_list_papers 來填 G.Ver 選單，
+            // 若無條件 show()，每次進手稿頁都會被這個彈窗攔住。
+            if (this._wantPaperModal) {
+                this._wantPaperModal = false;
+                bootstrap.Modal.getOrCreateInstance(document.getElementById('oldPaperModal')).show();
+            }
         });
 
         this.app.socket.on('paper_loaded', (data) => {
@@ -696,7 +716,7 @@ class ManuSoed {
             container.innerHTML = '';
             if (data.files && data.files.length > 0) {
                 data.files.forEach(file => {
-                    let vTag = file.split('_V')[1]?.split('.json')[0] || file.split('_v')[1]?.split('.json')[0] || 'Unknown';
+                    const vTag = this._verFromFilename(file);
                     const a = document.createElement('a');
                     a.className = "list-group-item list-group-item-action d-flex justify-content-between align-items-center";
                     a.href = "#";
@@ -761,6 +781,7 @@ class ManuSoed {
         
         if (cleanText.length < 10) {
             const title = this.app.paperTitleInput.value.trim() || "Untitled_Paper";
+            this._wantPaperModal = true;   // 使用者按了「開啟舊版論文」
             this.app.socket.emit('cmd_list_papers', { pid: this.app.pid, title: title });
             return;
         }
