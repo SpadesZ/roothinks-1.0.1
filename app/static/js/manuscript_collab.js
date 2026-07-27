@@ -87,6 +87,53 @@ class ManuCollab {
         }
     }
 
+    // -- 在線協作者 ----------------------------------------------------------
+
+    /**
+     * 顯示目前還有誰在線上。
+     *
+     * 為什麼需要：同一章節可以有多人同時寫入——總編輯與 owner 依定義可寫所有
+     * 章節，同一章節也能指派給多位限定編輯（實測同章可同時有 5 人有寫入權）。
+     * 撞在一起不會壞（草稿每人一份、版本各自保留），但雙方互不知情，最後會
+     * 各自存出不同版本再人工合併。看到「還有人在」就會先去問一聲。
+     *
+     * 刻意只顯示在線，不顯示誰在改哪一章：章節層級的狀態會把「誰被指派了哪章」
+     * 洩漏給看不到該章的限定編輯，產品上也不需要那麼細。
+     */
+    renderPresence(data) {
+        const chip = document.getElementById('presenceChip');
+        if (!chip) return;
+
+        const others = ((data && data.users) || [])
+            .filter(u => String(u.user_id) !== String(this.myUserId()));
+
+        if (!others.length) {
+            chip.style.display = 'none';
+            chip.textContent = '';
+            chip.title = '';   // 一併清掉，否則會殘留上一次的名單
+            return;
+        }
+        const names = others.map(u => this._esc(u.name)).join('、');
+        chip.style.display = '';
+        chip.innerHTML = `<i class="bi bi-people-fill me-1"></i>${others.length} 人在線`;
+        chip.title = `目前也在這個專案裡：${names}`;
+    }
+
+    /** 目前登入者 id。優先讀模板寫入的隱藏欄位——presence_update 可能早於
+     *  my-permissions 回來，那時 this.permissions 還是 null，會把自己也算進在線名單。 */
+    myUserId() {
+        const el = document.getElementById('currentUserId');
+        const fromDom = el ? (el.value || '').trim() : '';
+        if (fromDom) return fromDom;
+        return (this.permissions && this.permissions.user_id) || null;
+    }
+
+    _esc(v) {
+        return String(v ?? '').replace(/[&<>"']/g, c => ({
+            '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+        }[c]));
+    }
+
     /**
      * 依權限把編輯區鎖成唯讀。
      * 無權章節仍看得到內容，只是不能改——這正是「其他章節唯讀但可留言」的呈現。

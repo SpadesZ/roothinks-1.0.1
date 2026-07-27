@@ -416,6 +416,8 @@ def my_permissions(pid):
         return jsonify({
             "success": True,
             "role": role,
+            # [presence] 前端過濾在線名單時要認得自己。
+            "user_id": user.id,
             "can_assign": can_assign_sections(user.id, pid),
             "can_comment": can_comment(user.id, pid),
             # sections    = 可「寫」的章節

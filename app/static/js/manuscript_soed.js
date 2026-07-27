@@ -534,6 +534,11 @@ class ManuSoed {
             this.addSystemMessage("Drafter Server disconnected. Reconnecting...");
         });
 
+        // [presence] 在線協作者。伺服器只送「誰在線上」，不含誰在改哪一章。
+        this.app.socket.on('presence_update', (data) => {
+            if (this.app.collab) this.app.collab.renderPresence(data);
+        });
+
         this.app.socket.on('sys_msg', (data) => {
             this.addSystemMessage(data.msg);
             // [collab] 權限是別人（owner）可以隨時改的，前端的 permissions 是快取。

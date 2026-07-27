@@ -59,6 +59,10 @@
 
     {% include '_navbar.html' %}
     <input type="hidden" id="initialPid" value="{{ pid or '' }}">
+    <!-- [presence] 自己的 user id。在線名單要濾掉自己，而 presence_update 可能
+         早於 my-permissions 回來，所以這個值必須同步可得而不是等 API。 -->
+    <input type="hidden" id="currentUserId"
+           value="{{ current_user.id if current_user.is_authenticated else '' }}">
 
     <div class="manuscript-root">
     <div class="research-toolbar px-3 py-2 bg-white border-bottom d-flex align-items-center justify-content-between shadow-sm">
@@ -216,6 +220,12 @@
 
                     <!-- [collab] 章節協作：角色標示、指派、留言 -->
                     <span id="collabRoleBadge" class="badge bg-secondary" title="你在本專案的角色"></span>
+
+                    <!-- [presence] 在線協作者。同一章節可以有多人同時寫入（總編輯與
+                         owner 可寫所有章節），撞在一起不會壞但雙方互不知情，
+                         這裡讓大家至少知道還有誰在。刻意不顯示誰在改哪一章。 -->
+                    <span id="presenceChip" class="badge bg-light text-dark border"
+                          style="display:none; cursor:default;"></span>
 
                     <button class="btn btn-sm btn-outline-secondary" id="btnChapterAssign"
                             onclick="wsApp.collab.openAssignModal()" title="章節撰寫指派（editor 以上）"
@@ -573,9 +583,9 @@
     
     <script src="{{ url_for('static', filename='js/manuscript_wsui.js') }}?v=1.4"></script>
     <script src="{{ url_for('static', filename='js/manuscript_image.js') }}?v=1.8"></script>
-    <script src="{{ url_for('static', filename='js/manuscript_soed.js') }}?v=1.3"></script>
-    <script src="{{ url_for('static', filename='js/manuscript_collab.js') }}?v=1.3"></script>
-    <script src="{{ url_for('static', filename='js/manuscript_ws.js') }}?v=4.8"></script>
+    <script src="{{ url_for('static', filename='js/manuscript_soed.js') }}?v=1.5"></script>
+    <script src="{{ url_for('static', filename='js/manuscript_collab.js') }}?v=1.6"></script>
+    <script src="{{ url_for('static', filename='js/manuscript_ws.js') }}?v=4.9"></script>
     <script src="{{ url_for('static', filename='js/manuscript_citation.js') }}?v=0.1"></script>
     <script src="{{ url_for('static', filename='js/workflow_status.js') }}?v=0.2"></script>
 

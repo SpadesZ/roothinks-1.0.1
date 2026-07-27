@@ -52,6 +52,7 @@ from socketio.exceptions import ConnectionRefusedError
 from app.llm_service.matching_tasks.task_8drafter import Task8Drafter
 from app.core_pro.manuscript.manuscript_io import ManuscriptIO, _get_data_root
 from app.core_pro.manuscript.manuscript_image import ManuscriptImage
+from app.core_pro.manuscript import presence
 from app.core_pro.manuscript.model_section import ManuSectionConfig
 from app.models import Project
 from app.security import (
@@ -118,6 +119,25 @@ def _session_uid():
         return current_user.id if current_user.is_authenticated else None
     except ImportError:
         return None
+
+
+def _broadcast_presence(pid: str) -> None:
+    """把在線名單推給同專案的所有連線。
+
+    送到 ws:{pid} room 是安全的：connect 時已驗過 workspace role 才 join，
+    room 內必為專案成員，而專案成員本來就在成員清單上看得到彼此。
+    刻意不帶章節資訊——見 presence.py 的安全邊界說明。
+    """
+    try:
+        socketio.emit(
+            'presence_update',
+            {'pid': pid, 'users': presence.online(pid)},
+            room=f"ws:{pid}",
+            namespace='/manu_ws',
+        )
+    except Exception:
+        # 在線提示是輔助資訊，推送失敗不該影響連線或編輯流程。
+        logger.warning("[presence] 廣播失敗 pid=%s", pid, exc_info=True)
 
 
 def _session_username():
@@ -920,6 +940,11 @@ def handle_connect(auth=None):
             if role is None:
                 return False  # 拒連：無 workspace membership
             join_room(f"ws:{pid_hint}")
+            # 在線提示：登記後廣播給同專案成員，讓大家知道還有誰在。
+            # 只記專案層級，不記誰在哪一章——見 presence.py 的安全邊界說明。
+            presence.enter(request.sid, pid_hint, current_user.id,
+                           getattr(current_user, 'username', None))
+            _broadcast_presence(pid_hint)
 
         emit('sys_msg', {'msg': 'Connected to Roothinks-Manuscript Core (Drafter V1.4).'})
         return True
@@ -1593,6 +1618,10 @@ def handle_disconnect():
     sid = request.sid
     _mark_jobs_cancelled_by_sid(sid)
     _del_sid_token(sid)
+    # 先移除再廣播，否則剛離線的人還會出現在清單上。
+    left_pid = presence.drop(sid)
+    if left_pid:
+        _broadcast_presence(left_pid)
 
 
 # ---------------------------------------------------------------------------

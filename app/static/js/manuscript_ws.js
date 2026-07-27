@@ -28,6 +28,15 @@ document.addEventListener('DOMContentLoaded', () => {
         // Local dev + gthread 時優先使用 polling，避免 websocket 握手不穩造成草稿任務卡住。
         const socketTransports = isLocalDevHost ? ['polling'] : ['websocket', 'polling'];
 
+        // [presence] pid 必須在建立連線時就送出：伺服器的 connect handler 依此
+        // 驗 workspace role 並 join_room("ws:{pid}")，沒帶的話收不到在線廣播。
+        // 這裡重複一次 ManuscriptWorkspace 建構子裡的 pid 解析，因為 socket
+        // 比 workspace 實例更早建立。
+        const _params = new URLSearchParams(window.location.search);
+        const _hidden = document.getElementById('initialPid');
+        const connectPid = (_params.get('pid') || '').trim()
+            || (_hidden ? (_hidden.value || '').trim() : '');
+
         const socket = io('/manu_ws', {
             forceNew: true,
             transports: socketTransports,
@@ -36,7 +45,10 @@ document.addEventListener('DOMContentLoaded', () => {
             reconnectionDelay: 1200,
             reconnectionDelayMax: 8000,
             timeout: 30000,
-            auth: bearerToken ? { token: bearerToken } : {},
+            auth: Object.assign(
+                bearerToken ? { token: bearerToken } : {},
+                connectPid ? { pid: connectPid } : {}
+            ),
         });
         window.wsApp = new ManuscriptWorkspace(socket);
         console.log("[ManuscriptWS] Core Engine v4.3 Online. Modular Architecture (WS + UI + SOED + IMG) Active.");
