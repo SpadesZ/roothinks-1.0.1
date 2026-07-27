@@ -489,6 +489,8 @@ function addMemberRow(data = null) {
     };
 
     const role = data ? data.role : '主持人 (Principal Investigator)';
+    // 系統權限與論文署名角色是兩回事，分開儲存於 access_role。
+    const accessRole = (data && data.access_role) ? data.access_role : '';
     const title = data ? data.title : '';
     const enSurname = data ? safeGet(data, 'name.en.surname') : '';
     const enGiven = data ? safeGet(data, 'name.en.given') : '';
@@ -541,6 +543,30 @@ function addMemberRow(data = null) {
                 <div class="col-md-6">
                     <label class="small text-muted">職銜 (Title)</label>
                     <input type="text" class="form-control form-control-sm title-input" placeholder="e.g. Professor" value="${title}">
+                </div>
+            </div>
+
+            <!-- [collab] 人員組織的 email 可直接授予系統權限。
+                 上面的「角色」是論文署名身分，這裡的才是實際的系統存取權；
+                 兩者刻意分開，因為掛名者未必需要進系統。 -->
+            <div class="row g-2 mb-2 border rounded p-2" style="background:#f1f8ff;">
+                <div class="col-md-6">
+                    <label class="small fw-bold text-primary">
+                        <i class="bi bi-shield-lock me-1"></i>系統權限 (System Access)
+                    </label>
+                    <select class="form-select form-select-sm access-select">
+                        <option value="" ${!accessRole ? 'selected' : ''}>不授予（僅列名）</option>
+                        <option value="viewer" ${accessRole === 'viewer' ? 'selected' : ''}>檢視者 — 唯讀，看得到所有章節</option>
+                        <option value="coauthor" ${accessRole === 'coauthor' ? 'selected' : ''}>限定編輯 — 只讀寫被指派的章節</option>
+                        <option value="editor" ${accessRole === 'editor' ? 'selected' : ''}>總編輯 — 讀寫所有章節</option>
+                        <option value="owner" ${accessRole === 'owner' ? 'selected' : ''}>擁有者 — 全部權限，可管理成員</option>
+                    </select>
+                </div>
+                <div class="col-md-6 d-flex align-items-end">
+                    <div class="text-muted" style="font-size:.72rem;">
+                        依下方第一個 Email 對應已註冊帳號授權。<br>
+                        該 Email 尚未註冊時會略過，可改用「成員管理」邀請。
+                    </div>
                 </div>
             </div>
 
@@ -687,8 +713,10 @@ async function submitCreate() {
             if(input.value.trim()) emails.push(input.value.trim());
         });
 
+        const accessSel = card.querySelector('.access-select');
         members.push({
             role: card.querySelector('.role-select').value,
+            access_role: accessSel ? accessSel.value : '',
             title: card.querySelector('.title-input').value.trim(),
             name: {
                 en: {
@@ -801,7 +829,21 @@ let _meIsOwner = false;
 /** confirm-remove pending state: {username, timer} */
 let _pendingRemove = {};
 
-const ROLE_LABELS = { owner: '擁有者', editor: '編輯者', viewer: '檢視者' };
+// [collab] coauthor（限定編輯）只讀得到也只寫得到被指派的章節，
+// 讀取範圍比 viewer 還窄——所以它不是「viewer 加上一點權限」，選單文案要講清楚。
+const ROLE_LABELS = {
+    owner: '擁有者',
+    editor: '總編輯',
+    coauthor: '限定編輯',
+    viewer: '檢視者',
+};
+const ROLE_HINTS = {
+    owner: '全部權限，可管理成員',
+    editor: '讀寫所有章節',
+    coauthor: '只讀寫被指派的章節',
+    viewer: '唯讀，看得到所有章節',
+};
+const ALL_ROLES = ['owner', 'editor', 'coauthor', 'viewer'];
 
 function _membersShowError(msg) {
     const box = document.getElementById('members-form-error');
@@ -941,7 +983,7 @@ function _membersRenderList(members) {
 
         if (_meIsOwner) {
             // Owner 視角：下拉改角色 + 移除按鈕
-            const opts = ['owner', 'editor', 'viewer'].map(r =>
+            const opts = ALL_ROLES.map(r =>
                 `<option value="${r}" ${m.role === r ? 'selected' : ''}>${escapeHtml(ROLE_LABELS[r] || r)}</option>`
             ).join('');
 

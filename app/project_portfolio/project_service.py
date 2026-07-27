@@ -95,6 +95,70 @@ class ProjectService:
         except Exception as e:
             return False, str(e)
 
+
+    @staticmethod
+    def _sync_members_access(pid, members):
+        """
+        [collab] 依人員組織的 email 同步系統權限（WorkspaceMember）。
+
+        為什麼需要這個：人員組織（Table 2）與成員管理是兩套並存的介面，
+        前者原本純粹是論文署名資料、完全不給權限，使用者很容易誤以為
+        填了 email 就等於把人加進專案。現在讓 access_role 有欄位可填，
+        並在此把它落實到真正的權限表。
+
+        規則：
+        - access_role 空白 → 僅列名，不動該使用者的既有權限（也不移除）。
+        - email 找不到已註冊帳號 → 略過並記錄，不中斷存檔
+          （對方可能還沒註冊，之後可用「成員管理」邀請）。
+        - 已存在的 membership 只更新角色，不重複建立。
+        - **絕不在此移除 membership**：避免有人改了人員組織就無聲踢掉協作者；
+          移除一律走「成員管理」明確操作。
+
+        回傳 (授權筆數, 略過的 email 清單) 供呼叫端提示使用者。
+        """
+        from app.models import User, WorkspaceMember, ROLE_ORDER
+
+        granted, skipped = 0, []
+        if not isinstance(members, list):
+            return granted, skipped
+
+        for m in members:
+            if not isinstance(m, dict):
+                continue
+            access_role = str(m.get('access_role') or '').strip().lower()
+            if not access_role:
+                continue
+            if access_role not in ROLE_ORDER:
+                logger.warning("[members-access] 未知角色 %s，略過", access_role)
+                continue
+
+            emails = m.get('emails') or []
+            if isinstance(emails, str):
+                emails = [emails]
+            email = next((str(e).strip() for e in emails if str(e).strip()), '')
+            if not email:
+                continue
+
+            user = User.find_by_email(email)
+            if user is None:
+                skipped.append(email)
+                continue
+
+            existing = WorkspaceMember.query.filter_by(user_id=user.id, pid=pid).first()
+            if existing:
+                if existing.role != access_role:
+                    existing.role = access_role
+                    granted += 1
+            else:
+                db.session.add(
+                    WorkspaceMember(user_id=user.id, pid=pid, role=access_role)
+                )
+                granted += 1
+
+        if granted or skipped:
+            db.session.commit()
+        return granted, skipped
+
     @staticmethod
     def _validate_members(members):
         """
@@ -188,6 +252,25 @@ class ProjectService:
                 # 無 session context（如 CLI / dev 模式）靜默跳過，不中斷建立流程
                 logger.debug("No session user for membership write; skipping.")
 
+            # [collab] 建立時就把人員組織的 access_role 落實成權限。
+            # 放在 owner membership 之後：建立者若同時列在人員組織中，
+            # 其 access_role 會覆蓋自動給的 owner —— 這是刻意的，
+            # 使用者明確填寫的值優先於系統預設。
+            try:
+                granted, skipped = ProjectService._sync_members_access(
+                    new_project.project_id, members
+                )
+                if skipped:
+                    logger.info(
+                        "[members-access] 建立 %s：授權 %d 人，%d 個 Email 尚未註冊",
+                        new_project.project_id, granted, len(skipped),
+                    )
+            except Exception:
+                logger.warning(
+                    "[members-access] 建立時同步權限失敗 pid=%s",
+                    new_project.project_id, exc_info=True,
+                )
+
             return new_project, "Created"
 
         except Exception as e:
@@ -216,6 +299,15 @@ class ProjectService:
                 project.members = data['members']
 
             db.session.commit()
+
+            # [collab] 存檔後把人員組織的 access_role 落實成真正的權限。
+            if 'members' in data:
+                granted, skipped = ProjectService._sync_members_access(
+                    project.project_id, data['members']
+                )
+                if skipped:
+                    return True, ("Updated（已授權 %d 人；下列 Email 尚未註冊而略過：%s）"
+                                  % (granted, ", ".join(skipped)))
             return True, "Updated"
         except Exception as e:
             db.session.rollback()

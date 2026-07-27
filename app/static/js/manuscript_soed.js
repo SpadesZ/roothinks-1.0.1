@@ -534,7 +534,20 @@ class ManuSoed {
             this.addSystemMessage("Drafter Server disconnected. Reconnecting...");
         });
 
-        this.app.socket.on('sys_msg', (data) => this.addSystemMessage(data.msg));
+        // [presence] 在線協作者。伺服器只送「誰在線上」，不含誰在改哪一章。
+        this.app.socket.on('presence_update', (data) => {
+            if (this.app.collab) this.app.collab.renderPresence(data);
+        });
+
+        this.app.socket.on('sys_msg', (data) => {
+            this.addSystemMessage(data.msg);
+            // [collab] 權限是別人（owner）可以隨時改的，前端的 permissions 是快取。
+            // 一旦伺服器以權限為由拒絕，立刻重抓權限並重新上鎖 ——
+            // 否則畫布仍是可編輯狀態，使用者會一直打字到下次存檔才發現白打。
+            if (data && typeof data.msg === 'string' && data.msg.includes('權限不足')) {
+                if (this.app.collab) this.app.collab.loadPermissions();
+            }
+        });
         this.app.socket.on('ai_response', (data) => this.handleAIResponse(data));
         this.app.socket.on('job_queued', (data) => {
             this.activeJobId = data.job_id;
@@ -704,6 +717,11 @@ class ManuSoed {
         });
 
         this.app.socket.on('block_list', (data) => {
+            // [collab] 伺服器判定這一章不可讀時會帶 forbidden；
+            // 代表權限在本次工作階段中被改動過，重抓權限讓 UI 跟上。
+            if (data && data.forbidden && this.app.collab) {
+                this.app.collab.loadPermissions();
+            }
             // [v1.8] 同步版本選單（結構化清單，含 from_ver / 作者）。
             this.renderSectionVersions(data.versions, null);
 

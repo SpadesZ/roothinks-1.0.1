@@ -176,14 +176,18 @@ ROLE_EDITOR = "editor"
 ROLE_COAUTHOR = "coauthor"
 ROLE_VIEWER = "viewer"
 
-# 角色排序：數值越大權限越高。用於 require_workspace_role 的 min_role 比較。
+# 角色排序：數值越大「管理權限」越高。用於 require_workspace_role 與
+# enforce_project_ownership 的 min_role 比較（專案層級操作）。
 #
-# coauthor 插在 viewer 與 editor 之間：
-#   viewer   只能看
-#   coauthor 能看全部、能對所有章節留言，但只能「寫被指派的章節」
-#   editor   能寫所有章節
-#   owner    再加上成員管理與刪除
-# 章節層的細分不在這張表裡，由 security.can_write_section 綜合判斷。
+#   viewer   檢視者      讀全部章節，不能寫
+#   coauthor 限定編輯    **只讀得到也只寫得到被指派的章節**
+#   editor   總編輯      讀全部、寫全部（涵蓋 viewer 的能力）
+#   owner    擁有者      再加上成員管理與刪除
+#
+# ⚠ 這張表只在「專案層級」成立，不能拿來判斷章節讀取權。
+#   coauthor 的讀取範圍比 viewer **還窄**，線性比較會得到相反結果。
+#   章節層的讀 / 寫一律走 security.can_read_section / can_write_section，
+#   列章節走 security.visible_sections。
 ROLE_ORDER = {
     ROLE_VIEWER: 1,
     ROLE_COAUTHOR: 2,
@@ -493,6 +497,49 @@ class ChapterAssignment(db.Model):
             "email": self.user.email if self.user else None,
             "assigned_by": self.assigner.username if self.assigner else None,
             "created_at": self.created_at.isoformat() if self.created_at else None,
+        }
+
+
+class ProjectCollabSetting(db.Model):
+    """
+    專案層級的協作開關，由 owner 控制。
+
+    coauthor_open_access：
+        False（預設）— 限定編輯只讀得到、也只寫得到被指派的章節，
+                        看不到 2C 全篇，也只能對自己的章節留言。
+        True           — 開放限定編輯檢視「所有章節與 2C 全篇」並對任何章節留言，
+                        但**寫入權不變**，仍只能改被指派的章節。
+
+    為什麼是一個開關而不是兩個：對看不到的章節留言沒有意義，
+    拆成「可看」與「可留言」兩個旗標會產生不可能的狀態組合。
+    典型用法是階段性放行 —— 各自寫完後開放互評。
+    """
+
+    __tablename__ = "project_collab_settings"
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    pid = db.Column(db.String(20), nullable=False, unique=True, index=True)
+    coauthor_open_access = db.Column(
+        db.Boolean, nullable=False, default=False, server_default="0"
+    )
+    updated_by = db.Column(
+        db.Integer, db.ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+    updated_at = db.Column(
+        db.DateTime,
+        nullable=False,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+    )
+
+    editor = db.relationship("User", foreign_keys=[updated_by])
+
+    def to_dict(self) -> dict:
+        return {
+            "pid": self.pid,
+            "coauthor_open_access": bool(self.coauthor_open_access),
+            "updated_by": self.editor.username if self.editor else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
         }
 
 

@@ -1,6 +1,13 @@
 # 檔案路徑: app/core_pro/manuscript/manuscript_io.py
-# 產生時間: 2026-07-26 01:10 +08:00
-# 版本: v1.0
+# 產生時間: 2026-07-27 +08:00
+# 版本: v1.1
+# 本版變更:
+#   [v1.1] 自動存檔草稿改為「每人一份」（_draft__<user_id>.json）。
+#     舊版整章共用單一 _draft.json，兩人同時編輯同一章節時，後寫的自動存檔會
+#     整份蓋掉前一人尚未正式存檔的內容（每 1.5 秒觸發一次），且對方重新進入
+#     頁面時會被提示復原「你的草稿」——內容其實是別人打的字。
+#     save/load/clear_draft 均加上 owner_key；clear 只清自己那份。
+#     相容處理：升級前留下的 _draft.json 僅回傳給 _updated_by 相符的原作者。
 # 模組定位:
 #   Manuscript 段落 (Block) 與全篇 (Paper) JSON 檔案的純文字讀寫引擎，
 #   以及版本編號與自動存檔草稿的落盤規則。
@@ -142,7 +149,13 @@ def check_and_save_block(
 # ---------------------------------------------------------------------------
 
 # 自動存檔草稿檔名。刻意不以 V 開頭，才不會被版本掃描撈進版本清單。
-DRAFT_FILENAME = "_draft.json"
+#
+# [v1.1] 草稿改為「每人一份」。舊版整個章節共用單一 _draft.json，兩個人同時編輯
+# 同一章節時，後寫的自動存檔會整份蓋掉前一個人的未存檔內容（每 1.5 秒觸發一次），
+# 而且對方重新進入頁面時會被提示復原「你的草稿」——其實是別人打的字。
+# 正式版本快照本來就各自獨立，破口只在草稿層。
+DRAFT_FILENAME = "_draft.json"          # 舊格式，僅供相容既有檔案
+DRAFT_PREFIX = "_draft__"               # 新格式 _draft__<owner>.json
 
 # 版本檔名格式。新格式 V0.1.json；同時容忍舊格式 <title>_<yymmdd>_V1.0.json。
 _VERSION_FILE_RE = re.compile(r"^(?:.*_)?[Vv](\d+)(?:\.(\d+))?\.json$")
@@ -445,22 +458,39 @@ class ManuscriptIO:
             return False
 
     @staticmethod
+    def _draft_filename(owner_key: Optional[Union[str, int]] = None) -> str:
+        """草稿檔名。owner_key 為 None 時退回舊格式（單元測試與無登入模式用）。
+
+        owner_key 會進檔名，必須先清洗：只留 [A-Za-z0-9_-]，清洗後為空則改用
+        雜湊，避免中文帳號或含路徑字元的值造成檔名碰撞或跳出目錄。
+        """
+        if owner_key in (None, ""):
+            return DRAFT_FILENAME
+        raw = str(owner_key)
+        key = re.sub(r"[^A-Za-z0-9_-]", "", raw)
+        if not key:
+            key = hashlib.sha1(raw.encode("utf-8")).hexdigest()[:12]
+        return f"{DRAFT_PREFIX}{key[:64]}.json"
+
+    @staticmethod
     def save_draft(
         pid: str,
         section: str,
         title: str,
         content: str,
         updated_by: Optional[str] = None,
+        owner_key: Optional[Union[str, int]] = None,
     ) -> Dict[str, Any]:
         """
-        自動存檔：就地覆寫單一 _draft.json，**不產生版本**。
+        自動存檔：就地覆寫該使用者自己的草稿檔，**不產生版本**。
 
         刻意不做 _rev 衝突檢查——自動存檔每 1.5 秒可能觸發一次，套用樂觀鎖會在
-        多人情境噴出大量 save_conflict。草稿採 last-writer-wins，正式版本快照
-        才需要衝突保護。
+        多人情境噴出大量 save_conflict。草稿仍是 last-writer-wins，但因為改成
+        每人一份，「後寫的蓋掉別人的字」不會再發生；同一人開兩個分頁才會互蓋，
+        那是使用者對自己內容的預期行為。
         """
         dir_path = ManuscriptIO._block_dir(pid, section, create=True)
-        save_path = safe_join_under(dir_path, DRAFT_FILENAME)
+        save_path = safe_join_under(dir_path, ManuscriptIO._draft_filename(owner_key))
         now_iso = datetime.now(timezone.utc).isoformat()
 
         payload = {
@@ -477,10 +507,7 @@ class ManuscriptIO:
         return {"ok": True, "saved_at": now_iso, "section": payload['section']}
 
     @staticmethod
-    def load_draft(pid: str, section: str) -> Optional[Dict[str, Any]]:
-        """讀取自動存檔草稿；不存在回 None。"""
-        dir_path = ManuscriptIO._block_dir(pid, section)
-        path = safe_join_under(dir_path, DRAFT_FILENAME)
+    def _read_draft_file(path: str) -> Optional[Dict[str, Any]]:
         if not os.path.exists(path):
             return None
         try:
@@ -491,18 +518,65 @@ class ManuscriptIO:
             return None
 
     @staticmethod
-    def clear_draft(pid: str, section: str) -> bool:
-        """清掉草稿（通常在使用者按下正式存檔之後）。不存在也視為成功。"""
+    def load_draft(
+        pid: str,
+        section: str,
+        owner_key: Optional[Union[str, int]] = None,
+        owner_name: Optional[str] = None,
+    ) -> Optional[Dict[str, Any]]:
+        """讀取「自己的」自動存檔草稿；不存在回 None。
+
+        舊格式相容：升級前寫下的 _draft.json 沒有使用者維度。只有在該檔的
+        _updated_by 就是本人時才回傳，否則視為別人的未存檔內容而不外流——
+        既避免把別人的字當成「你的草稿」提示復原，也順手擋掉內容外洩。
+        """
         dir_path = ManuscriptIO._block_dir(pid, section)
-        path = safe_join_under(dir_path, DRAFT_FILENAME)
-        if not os.path.exists(path):
-            return True
-        try:
-            os.remove(path)
-            return True
-        except OSError as e:
-            logger.error(f"[ManuscriptIO] Draft clear failed for {path}: {e}")
-            return False
+        own = ManuscriptIO._read_draft_file(
+            safe_join_under(dir_path, ManuscriptIO._draft_filename(owner_key))
+        )
+        if own is not None:
+            return own
+        if owner_key in (None, ""):
+            return None
+        legacy = ManuscriptIO._read_draft_file(safe_join_under(dir_path, DRAFT_FILENAME))
+        if legacy is None:
+            return None
+        legacy_by = legacy.get("_updated_by")
+        if legacy_by is not None and owner_name is not None and legacy_by == owner_name:
+            return legacy
+        return None
+
+    @staticmethod
+    def clear_draft(
+        pid: str,
+        section: str,
+        owner_key: Optional[Union[str, int]] = None,
+        owner_name: Optional[str] = None,
+    ) -> bool:
+        """清掉「自己的」草稿（通常在使用者按下正式存檔之後）。不存在也視為成功。
+
+        不會動到別人的草稿檔：他們的未存檔內容不該因為我按了存檔而消失。
+        舊格式的共用草稿只在確認是本人寫的時候才清。
+        """
+        dir_path = ManuscriptIO._block_dir(pid, section)
+        targets = [safe_join_under(dir_path, ManuscriptIO._draft_filename(owner_key))]
+        if owner_key not in (None, ""):
+            legacy_path = safe_join_under(dir_path, DRAFT_FILENAME)
+            legacy = ManuscriptIO._read_draft_file(legacy_path)
+            if legacy is not None and owner_name is not None \
+                    and legacy.get("_updated_by") == owner_name:
+                targets.append(legacy_path)
+
+        ok = True
+        for path in targets:
+            if not os.path.exists(path):
+                continue
+            try:
+                os.remove(path)
+            except OSError as e:
+                logger.error(f"[ManuscriptIO] Draft clear failed for {path}: {e}")
+                ok = False
+        return ok
 
     # -- [v1.0] 主論文版本（manifest） ---------------------------------------
 

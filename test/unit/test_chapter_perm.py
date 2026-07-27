@@ -333,16 +333,45 @@ class TestCommentAPI:
 
         assert self._post_comment(client).status_code == 201
 
-    def test_coauthor_can_comment_on_unassigned_section(self, app, make_user):
-        """需求重點：未被指派的章節仍可留言。"""
+    def test_coauthor_cannot_comment_on_unassigned_section_by_default(self, app, make_user):
+        """
+        限定編輯預設看不到未指派的章節，自然也不能留言。
+
+        （這與最初版本相反：早期 coauthor 讀得到全部章節並可跨章留言，
+        後來依產品決策收緊為「只讀寫被指派章節」，跨章留言改由 owner
+        開啟 coauthor_open_access 後才開放。）
+        """
         uid = make_user("cc", "coauthor")
         _assign(app, uid, "introduction")
         client = app.test_client()
         _login(client, "cc")
 
-        resp = self._post_comment(client, section="method", body="建議補上統計方法")
+        assert self._post_comment(client, section="method").status_code == 403
+
+    def test_coauthor_can_comment_on_own_section(self, app, make_user):
+        uid = make_user("cc_own", "coauthor")
+        _assign(app, uid, "introduction")
+        client = app.test_client()
+        _login(client, "cc_own")
+
+        resp = self._post_comment(client, section="introduction", body="我的章節可留言")
         assert resp.status_code == 201
-        assert resp.get_json()["comment"]["section_key"] == "method"
+
+    def test_coauthor_can_comment_on_any_section_when_open_access(self, app, make_user):
+        """owner 開啟開關後，限定編輯才能對其他章節留言。"""
+        from app import db
+        from app.models import ProjectCollabSetting
+
+        uid = make_user("cc_open", "coauthor")
+        _assign(app, uid, "introduction")
+        with app.app_context():
+            db.session.add(ProjectCollabSetting(pid=FORMAL_PID, coauthor_open_access=True))
+            db.session.commit()
+
+        client = app.test_client()
+        _login(client, "cc_open")
+        resp = self._post_comment(client, section="method", body="開放後可跨章留言")
+        assert resp.status_code == 201
 
     def test_non_member_cannot_comment(self, app, make_user):
         make_user("nm2")
@@ -678,3 +707,157 @@ class TestSocketChapterGate:
         from app.core_pro.manuscript.manuscript_io import ManuscriptIO
         with app.app_context():
             assert ManuscriptIO.load_draft(FORMAL_PID, "method") is None
+
+
+# ---------------------------------------------------------------------------
+# 讀取範圍（限定編輯只看得到被指派章節）與 owner 開放開關
+# ---------------------------------------------------------------------------
+
+
+def _set_open_access(app, enabled: bool):
+    from app import db
+    from app.models import ProjectCollabSetting
+
+    with app.app_context():
+        row = ProjectCollabSetting.query.filter_by(pid=FORMAL_PID).first()
+        if row is None:
+            row = ProjectCollabSetting(pid=FORMAL_PID)
+            db.session.add(row)
+        row.coauthor_open_access = enabled
+        db.session.commit()
+
+
+class TestReadScope:
+    """限定編輯的讀取範圍比 viewer 還窄——這條軸不能用角色階梯線性推導。"""
+
+    def test_coauthor_reads_only_assigned(self, app, make_user):
+        from app.security import can_read_section
+
+        uid = make_user("rs1", "coauthor")
+        _assign(app, uid, "introduction")
+        with app.app_context():
+            assert can_read_section(uid, FORMAL_PID, "introduction") is True
+            assert can_read_section(uid, FORMAL_PID, "method") is False
+
+    def test_viewer_reads_all(self, app, make_user):
+        from app.security import can_read_section
+
+        uid = make_user("rs2", "viewer")
+        with app.app_context():
+            assert can_read_section(uid, FORMAL_PID, "introduction") is True
+            assert can_read_section(uid, FORMAL_PID, "method") is True
+
+    def test_editor_reads_all(self, app, make_user):
+        from app.security import can_read_section
+
+        uid = make_user("rs3", "editor")
+        with app.app_context():
+            assert all(
+                can_read_section(uid, FORMAL_PID, s)
+                for s in ("introduction", "method", "results")
+            )
+
+    def test_visible_sections_filters_for_coauthor(self, app, make_user):
+        from app.security import visible_sections
+
+        uid = make_user("rs4", "coauthor")
+        _assign(app, uid, "introduction")
+        keys = ["introduction", "method", "results"]
+        with app.app_context():
+            assert visible_sections(uid, FORMAL_PID, keys) == ["introduction"]
+
+    def test_visible_sections_full_for_viewer(self, app, make_user):
+        from app.security import visible_sections
+
+        uid = make_user("rs5", "viewer")
+        keys = ["introduction", "method", "results"]
+        with app.app_context():
+            assert visible_sections(uid, FORMAL_PID, keys) == keys
+
+
+class TestOpenAccessToggle:
+    def test_open_access_widens_read_only(self, app, make_user):
+        """開關只放寬讀取；寫入權必須維持只限被指派章節。"""
+        from app.security import can_read_section, can_write_section
+
+        uid = make_user("oa1", "coauthor")
+        _assign(app, uid, "introduction")
+
+        _set_open_access(app, True)
+        with app.app_context():
+            assert can_read_section(uid, FORMAL_PID, "method") is True
+            assert can_write_section(uid, FORMAL_PID, "method") is False, \
+                "開放開關不得放寬寫入權"
+            assert can_write_section(uid, FORMAL_PID, "introduction") is True
+
+    def test_open_access_off_restores_scope(self, app, make_user):
+        from app.security import can_read_section
+
+        uid = make_user("oa2", "coauthor")
+        _assign(app, uid, "introduction")
+        _set_open_access(app, True)
+        _set_open_access(app, False)
+        with app.app_context():
+            assert can_read_section(uid, FORMAL_PID, "method") is False
+
+    def test_default_is_closed(self, app, make_user):
+        """新專案預設不開放——不能讓只負責單章的人意外看到全文。"""
+        from app.security import coauthor_open_access
+
+        make_user("oa3", "coauthor")
+        with app.app_context():
+            assert coauthor_open_access(FORMAL_PID) is False
+
+    def test_only_owner_can_toggle(self, app, make_user):
+        make_user("oa_owner", "owner")
+        make_user("oa_editor", "editor")
+        make_user("oa_coauthor", "coauthor")
+
+        for name, expected in [("oa_owner", 200), ("oa_editor", 403), ("oa_coauthor", 403)]:
+            client = app.test_client()
+            _login(client, name)
+            resp = client.put(
+                f"/manuscript/api/chapter/{FORMAL_PID}/settings",
+                json={"coauthor_open_access": True},
+            )
+            assert resp.status_code == expected, f"{name} -> {resp.status_code}"
+
+    def test_all_members_can_read_setting(self, app, make_user):
+        make_user("oa_v", "viewer")
+        client = app.test_client()
+        _login(client, "oa_v")
+        resp = client.get(f"/manuscript/api/chapter/{FORMAL_PID}/settings")
+        assert resp.status_code == 200
+        assert resp.get_json()["can_toggle"] is False
+
+    def test_non_member_cannot_read_setting(self, app, make_user):
+        make_user("oa_out")
+        client = app.test_client()
+        _login(client, "oa_out")
+        assert client.get(
+            f"/manuscript/api/chapter/{FORMAL_PID}/settings"
+        ).status_code == 403
+
+    def test_my_permissions_reports_scope(self, app, make_user):
+        uid = make_user("oa_perm", "coauthor")
+        _assign(app, uid, "introduction")
+        client = app.test_client()
+        _login(client, "oa_perm")
+
+        data = client.get(
+            f"/manuscript/api/chapter/{FORMAL_PID}/my-permissions"
+        ).get_json()
+        assert data["scoped"] is True
+        assert data["open_access"] is False
+        assert data["readable"]["introduction"] is True
+        assert data["readable"]["method"] is False
+        assert data["sections"]["method"] is False
+
+        _set_open_access(app, True)
+        data = client.get(
+            f"/manuscript/api/chapter/{FORMAL_PID}/my-permissions"
+        ).get_json()
+        assert data["scoped"] is False
+        assert data["open_access"] is True
+        assert data["readable"]["method"] is True
+        assert data["sections"]["method"] is False, "開放後仍不得取得寫入權"
