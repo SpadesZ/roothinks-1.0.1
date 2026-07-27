@@ -104,6 +104,58 @@ def _socket_can_write(user_id, pid: str) -> bool:
         return False
 
 
+def _session_uid():
+    """
+    session 模式下的登入者 id。
+
+    回傳 None 代表「不套用章節層過濾」——AUTH_MODE=none 的 dev/TESTING 模式，
+    或 flask_login 不可用。專案層的把關另由 _ensure_socket_project_access 負責。
+    """
+    if str(current_app.config.get("AUTH_MODE", "none")).strip().lower() != "session":
+        return None
+    try:
+        from flask_login import current_user
+        return current_user.id if current_user.is_authenticated else None
+    except ImportError:
+        return None
+
+
+def _socket_can_read_section(user_id, pid: str, section: str) -> bool:
+    """
+    [collab] 章節層讀取判定。限定編輯（coauthor）只讀得到被指派的章節。
+
+    這與寫入是各自獨立的判斷：coauthor 的讀取範圍比 viewer 還窄，
+    不能用角色階梯的線性比較推導。
+    """
+    try:
+        from app.security import can_read_section
+        return can_read_section(user_id, pid, section)
+    except Exception:
+        logger.warning(
+            "[perm] can_read_section 失敗 user=%s pid=%s section=%s",
+            user_id, pid, section, exc_info=True,
+        )
+        return False
+
+
+def _socket_can_read_paper(user_id, pid: str) -> bool:
+    """
+    [collab] 是否可讀「2C 全篇主論文」。
+
+    主論文是所有章節組裝出來的成品，內含限定編輯看不到的章節，
+    因此限定編輯一律不得讀取整篇——否則章節層的讀取限制會被整篇繞過。
+    """
+    try:
+        from app.security import get_workspace_role, is_section_scoped_role
+        role = get_workspace_role(user_id, pid)
+        if role is None:
+            return False
+        return not is_section_scoped_role(role, pid)
+    except Exception:
+        logger.warning("[perm] can_read_paper 失敗 user=%s pid=%s", user_id, pid, exc_info=True)
+        return False
+
+
 def _socket_can_write_section(user_id, pid: str, section: str) -> bool:
     """
     [collab] 章節層寫入判定：editor 以上寫全部；coauthor 只能寫被指派的章節。
@@ -535,6 +587,25 @@ def _normalize_section_key(raw: str, used: set, idx: int) -> str:
         n += 1
 
 
+def _filter_visible_sections(pid, rows):
+    """
+    [collab] 依讀取範圍過濾 ManuSectionConfig 列表。
+
+    限定編輯（coauthor）只留下被指派的章節；其餘角色與 dev 模式原樣回傳。
+    所有「列出章節」的端點都要經過這裡，否則 UI 會顯示點不進去的章節。
+    """
+    uid = _session_uid()
+    if uid is None:
+        return rows
+    try:
+        from app.security import visible_sections
+        allowed = set(visible_sections(uid, pid, [r.section_key for r in rows]))
+        return [r for r in rows if r.section_key in allowed]
+    except Exception:
+        logger.warning("[perm] 章節清單過濾失敗 pid=%s", pid, exc_info=True)
+        return rows
+
+
 def _current_section_versions(pid):
     """
     [v1.8] 取得每個章節「目前最新版本號」的對照表，供主論文 manifest 使用。
@@ -626,6 +697,9 @@ def manuscript_bootstrap(pid):
         pass
 
     sections = _get_or_init_sections(bootstrap_pid)
+    # [collab] 章節清單本身也要過濾：限定編輯連未被指派的章節「標題」都不該看到，
+    # 否則 UI 上仍會列出他點不進去的章節。
+    sections = _filter_visible_sections(bootstrap_pid, sections)
     section_payload = [
         {
             'id': s.section_key,
@@ -661,7 +735,8 @@ def get_sections(pid):
     pid = _resolve_formal_project_pid(pid)
     if not pid:
         return jsonify({'ok': False, 'message': 'Invalid pid'}), 404
-    rows = _get_or_init_sections(pid)
+    # [collab] 與 bootstrap 同規：限定編輯只拿得到被指派的章節。
+    rows = _filter_visible_sections(pid, _get_or_init_sections(pid))
     payload = [
         {
             'id': s.section_key,
@@ -1106,6 +1181,13 @@ def handle_load_draft(data):
         return
 
     section = data.get('section', 'general')
+
+    # [collab] 草稿內容等同章節內容，同樣受讀取範圍限制。
+    uid = _session_uid()
+    if uid is not None and not _socket_can_read_section(uid, pid, section):
+        emit('draft_loaded', {'ok': False, 'section': section, 'draft': None})
+        return
+
     draft = ManuscriptIO.load_draft(pid, section)
     emit('draft_loaded', {'ok': draft is not None, 'section': section, 'draft': draft})
 
@@ -1262,6 +1344,12 @@ def handle_list_papers(data):
         forbidden_payload={'files': []},
     ):
         return
+    # [collab] 主論文是全章節組裝的成品，限定編輯不得讀取整篇。
+    uid = _session_uid()
+    if uid is not None and not _socket_can_read_paper(uid, pid):
+        emit('paper_list', {'files': [], 'versions': [], 'forbidden': True})
+        return
+
     title = data.get('title', 'Untitled_Paper')
     # files 保留舊契約；versions 帶 manifest 摘要供新版本選單使用。
     emit('paper_list', {
@@ -1283,6 +1371,11 @@ def handle_restore_paper_version(data):
     if not pid:
         return
     if not _ensure_socket_project_access(pid):
+        return
+
+    uid = _session_uid()
+    if uid is not None and not _socket_can_read_paper(uid, pid):
+        emit('paper_restored', {'ok': False, 'msg': '權限不足：限定編輯無法還原全篇主論文。'})
         return
 
     manifest = ManuscriptIO.load_paper_version(pid, data.get('ver'))
@@ -1330,6 +1423,11 @@ def handle_load_paper(data):
         return
     if not _ensure_socket_project_access(pid):
         return
+    uid = _session_uid()
+    if uid is not None and not _socket_can_read_paper(uid, pid):
+        emit('sys_msg', {'msg': '權限不足：限定編輯無法檢視全篇主論文。'})
+        return
+
     filename = data.get('filename')
     content = ManuscriptIO.load_paper(pid, filename)
     if content:
@@ -1355,6 +1453,14 @@ def handle_list_blocks(data):
         forbidden_payload={'files': [], 'section': section},
     ):
         return
+
+    # [collab] 章節層讀取過濾：限定編輯看不到未被指派的章節，連版本清單都不給。
+    uid = _session_uid()
+    if uid is not None and not _socket_can_read_section(uid, pid, section):
+        emit('block_list', {'files': [], 'section': section, 'versions': [],
+                            'draft': None, 'next_ver': None, 'forbidden': True})
+        return
+
     # files 保留舊契約（前端與 e2e 測試以檔名載入舊版）；
     # versions 是 v1.8 新增的結構化清單，供版本選單顯示 from_ver / 時間 / 作者。
     emit('block_list', {
@@ -1375,6 +1481,13 @@ def handle_load_block(data):
         return
     section = data.get('section')
     filename = data.get('filename')
+
+    # [collab] 讀取過濾：限定編輯不得載入未被指派章節的任何版本內容。
+    uid = _session_uid()
+    if uid is not None and not _socket_can_read_section(uid, pid, section):
+        emit('sys_msg', {'msg': f'權限不足：你沒有「{section}」章節的存取權限。'})
+        return
+
     content = ManuscriptIO.load_block(pid, section, filename)
     if content:
         # [v1.7] 帶 _rev 給前端，前端記住作為下次存檔的 base_rev

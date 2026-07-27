@@ -1,6 +1,11 @@
 //路徑(./app/static/js/manuscript_collab.js)
-//版本 v1.2
-//更版時間 20260726-0730
+//版本 v1.3
+//更版時間 20260727-1400
+// v1.3 角色語意變更（依產品決策）：
+//   - 限定編輯（coauthor）改為「只讀得到也只寫得到被指派的章節」，
+//     讀取範圍比 viewer 還窄，因此不能用角色階梯線性推導讀取權。
+//   - 新增 owner 專屬開關 coauthor_open_access：開啟後限定編輯可檢視
+//     全部章節與 2C 全篇並對任何章節留言，但**寫入權不變**。
 // v1.1 修正（皆由實機操作截圖發現）：
 //   - openComments 原本用 display='' 還原，元素會退回 stylesheet 預設的 block，
 //     side panel 的 flex 直向佈局失效，輸入框被擠到面板頂端。改為明確設 flex。
@@ -69,7 +74,7 @@ class ManuCollab {
         const el = document.getElementById('collabRoleBadge');
         if (!el || !this.permissions) return;
         const labels = {
-            owner: '擁有者', editor: '編輯者', coauthor: '共同作者', viewer: '檢視者',
+            owner: '擁有者', editor: '總編輯', coauthor: '限定編輯', viewer: '檢視者',
         };
         const role = this.permissions.role;
         if (!role) { el.textContent = ''; return; }
@@ -149,9 +154,16 @@ class ManuCollab {
             canvas.parentNode.insertBefore(banner, canvas);
         }
         const role = (this.permissions && this.permissions.role) || '';
-        const why = role === 'viewer'
-            ? '你在本專案是檢視者，所有章節皆為唯讀。'
-            : `「${section}」這個章節沒有指派給你，因此無法編輯。`;
+        const openAccess = !!(this.permissions && this.permissions.open_access);
+        let why;
+        if (role === 'viewer') {
+            why = '你在本專案是檢視者，可檢視所有章節並留言，但不能編輯。';
+        } else if (role === 'coauthor' && openAccess) {
+            // 開放後限定編輯看得到別章但仍不能改——要講清楚，否則會以為壞掉。
+            why = `「${section}」不是指派給你的章節，可檢視與留言但無法編輯。`;
+        } else {
+            why = `「${section}」這個章節沒有指派給你，因此無法編輯。`;
+        }
         banner.innerHTML =
             `<span><i class="bi bi-lock-fill me-1"></i>唯讀模式 · ${why}</span>`;
 
@@ -169,7 +181,66 @@ class ManuCollab {
         if (!modalEl) return;
         await this.refreshAssignments();
         this._fillAssignSectionOptions();
+        await this.refreshOpenAccess();
         bootstrap.Modal.getOrCreateInstance(modalEl).show();
+    }
+
+    /** 讀取並顯示 owner 的「開放限定編輯檢視全文」開關。非 owner 不顯示。 */
+    async refreshOpenAccess() {
+        const box = document.getElementById('collabOpenAccessBox');
+        const toggle = document.getElementById('collabOpenAccessToggle');
+        const meta = document.getElementById('collabOpenAccessMeta');
+        if (!box || !toggle) return;
+        try {
+            const res = await fetch(
+                `/manuscript/api/chapter/${encodeURIComponent(this.app.pid)}/settings`
+            );
+            if (!res.ok) { box.style.display = 'none'; return; }
+            const data = await res.json();
+            box.style.display = data.can_toggle ? '' : 'none';
+            toggle.checked = !!data.coauthor_open_access;
+            if (meta) {
+                meta.textContent = data.updated_by
+                    ? `最後變更：${data.updated_by} · ${new Date(data.updated_at).toLocaleString()}`
+                    : '';
+            }
+        } catch (err) {
+            box.style.display = 'none';
+        }
+    }
+
+    /**
+     * 切換開放開關（owner 專屬）。
+     * 切換後必須重載權限與章節清單 —— 限定編輯看得到的章節數量會即時改變。
+     */
+    async toggleOpenAccess(enabled) {
+        try {
+            const res = await fetch(
+                `/manuscript/api/chapter/${encodeURIComponent(this.app.pid)}/settings`,
+                {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ coauthor_open_access: !!enabled }),
+                }
+            );
+            const data = await res.json();
+            if (!data.success) {
+                alert(data.message || '沒有權限變更此設定（僅擁有者可調整）。');
+                await this.refreshOpenAccess();
+                return;
+            }
+            await this.refreshOpenAccess();
+            // 章節清單由伺服器依讀取範圍過濾，開關一改可見章節數就變，
+            // 必須重抓 bootstrap 並重畫下拉，否則畫面停在舊的章節集合。
+            if (this.app.ui && this.app.ui.bootstrapWorkspace) {
+                await this.app.ui.bootstrapWorkspace();
+                this.app.ui.renderSectionDropdown();
+            }
+            await this.loadPermissions();
+        } catch (err) {
+            alert('設定變更失敗。');
+            await this.refreshOpenAccess();
+        }
     }
 
     _fillAssignSectionOptions() {

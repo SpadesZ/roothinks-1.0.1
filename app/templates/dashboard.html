@@ -187,8 +187,10 @@
                                 <div class="col-md-4">
                                     <label class="form-label small mb-1 fw-bold">角色 (Role)</label>
                                     <select class="form-select form-select-sm" id="members-new-role">
-                                        <option value="viewer">檢視者 (viewer)</option>
-                                        <option value="editor">編輯者 (editor)</option>
+                                        <option value="viewer">檢視者 — 唯讀，看得到所有章節</option>
+                                        <option value="coauthor">限定編輯 — 只讀寫被指派的章節</option>
+                                        <option value="editor">總編輯 — 讀寫所有章節</option>
+                                        <option value="owner">擁有者 — 全部權限，可管理成員</option>
                                         <option value="owner">擁有者 (owner)</option>
                                     </select>
                                 </div>

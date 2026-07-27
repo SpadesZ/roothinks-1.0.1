@@ -356,32 +356,117 @@ def has_section_assignment(user_id: int, pid: str, section_key: str) -> bool:
         return False
 
 
+def coauthor_open_access(pid: str) -> bool:
+    """
+    該專案是否已由 owner 開放「限定編輯檢視全文與留言」。
+
+    預設 False（未開放）。查無設定列時視為未開放，這是刻意的保守預設 ——
+    新專案不會意外把全文攤開給只負責單章的人。
+    """
+    try:
+        from app.models import ProjectCollabSetting
+
+        aliases = _normalize_pid_aliases(pid)
+        if not aliases:
+            return False
+        row = ProjectCollabSetting.query.filter(
+            ProjectCollabSetting.pid.in_(aliases)
+        ).first()
+        return bool(row and row.coauthor_open_access)
+    except Exception:
+        LOGGER.exception("coauthor_open_access failed for pid=%s", pid)
+        return False
+
+
+def is_section_scoped_role(role: Optional[str], pid: Optional[str] = None) -> bool:
+    """
+    該角色是否為「章節限定」——只看得到也只寫得到被指派的章節。
+
+    目前只有 coauthor（限定編輯）屬於此類。把判斷收斂成一個函式，
+    是為了避免各處散落 `role == 'coauthor'` 的字串比較。
+
+    傳入 pid 時會一併檢查 owner 的開放開關：一旦開放，限定編輯在**讀取**上
+    就不再受限（寫入仍只限被指派章節，那條規則不受開關影響）。
+    """
+    from app.models import ROLE_COAUTHOR
+
+    if role != ROLE_COAUTHOR:
+        return False
+    if pid is not None and coauthor_open_access(pid):
+        return False
+    return True
+
+
+def can_read_section(user_id: int, pid: str, section_key: str) -> bool:
+    """
+    章節層「讀取」判定。
+
+    這條軸刻意與 ROLE_ORDER 的階梯分開：限定編輯（coauthor）的讀取範圍
+    比 viewer **還窄** —— viewer 看得到全部章節，coauthor 只看得到被指派的。
+    因此不能用 `level >= X` 這種線性比較來判斷讀取權，會得到相反的結果。
+
+    owner 開啟 coauthor_open_access 後，限定編輯的讀取範圍才擴大到全部章節。
+    非成員一律 False；viewer / editor / owner 可讀全部。
+    """
+    role = get_workspace_role(user_id, pid)
+    if role is None:
+        return False
+    if is_section_scoped_role(role, pid):
+        return has_section_assignment(user_id, pid, section_key)
+    return True
+
+
 def can_write_section(user_id: int, pid: str, section_key: str) -> bool:
     """
-    章節層寫入判定：專案角色 >= coauthor，**且**
-    （專案角色 >= editor  或  該章節有指派給我）。
+    章節層「寫入」判定。
 
-    也就是說 coauthor 只能動被分配到的章節，其他章節唯讀（但仍可留言，
-    留言的門檻見 can_comment）。editor 以上不需要指派即可寫任何章節。
+    viewer   不能寫任何章節
+    coauthor 只能寫被指派的章節（讀取範圍亦同，見 can_read_section）
+    editor   以上可寫任何章節（總編輯，涵蓋 viewer 的全部讀取能力）
     """
     from app.models import ROLE_ORDER, ROLE_COAUTHOR, ROLE_EDITOR
 
     role = get_workspace_role(user_id, pid)
-    level = ROLE_ORDER.get(role or "", 0)
-
-    if level < ROLE_ORDER[ROLE_COAUTHOR]:
+    if role is None:
         return False
-    if level >= ROLE_ORDER[ROLE_EDITOR]:
-        return True
-    return has_section_assignment(user_id, pid, section_key)
+    # 刻意不傳 pid：開放開關只放寬「讀取」，寫入權永遠只限被指派的章節。
+    if is_section_scoped_role(role):
+        return has_section_assignment(user_id, pid, section_key)
+
+    level = ROLE_ORDER.get(role, 0)
+    if level < ROLE_ORDER[ROLE_COAUTHOR]:
+        return False          # viewer
+    return level >= ROLE_ORDER[ROLE_EDITOR]
+
+
+def visible_sections(user_id: int, pid: str, all_section_keys: list) -> list:
+    """
+    過濾出該使用者看得到的章節清單。
+
+    限定編輯只會拿到自己被指派的那幾章；其餘角色拿到全部。
+    章節下拉、bootstrap、manifest 等所有「列出章節」的地方都應該經過這裡，
+    否則限定編輯仍會在 UI 上看到不該看到的章節標題。
+    """
+    role = get_workspace_role(user_id, pid)
+    if role is None:
+        return []
+    if not is_section_scoped_role(role, pid):
+        return list(all_section_keys)
+    return [k for k in all_section_keys if has_section_assignment(user_id, pid, k)]
+
+
+def can_comment_on_section(user_id: int, pid: str, section_key: str) -> bool:
+    """
+    章節留言門檻：看得到該章節就能留言。
+
+    語意跟著讀取範圍走 —— 限定編輯看不到別章，自然也不能對別章留言。
+    """
+    return can_read_section(user_id, pid, section_key)
 
 
 def can_comment(user_id: int, pid: str) -> bool:
-    """留言門檻：專案角色 >= viewer（也就是只要是成員就能留言）。"""
-    from app.models import ROLE_ORDER, ROLE_VIEWER
-
-    role = get_workspace_role(user_id, pid)
-    return ROLE_ORDER.get(role or "", 0) >= ROLE_ORDER[ROLE_VIEWER]
+    """是否為專案成員（可留言的最低門檻，不分章節）。"""
+    return get_workspace_role(user_id, pid) is not None
 
 
 def can_assign_sections(user_id: int, pid: str) -> bool:

@@ -428,9 +428,28 @@
                 </div>
                 <div class="modal-body">
                     <p class="text-muted small">
-                        共同作者（coauthor）只能編輯被指派的章節；其餘章節為唯讀，但仍可留言。
-                        編輯者與擁有者不需指派即可編輯所有章節。
+                        <strong>限定編輯</strong>只讀得到、也只寫得到被指派的章節，看不到 2C 全篇。
+                        <strong>總編輯</strong>與<strong>擁有者</strong>讀寫所有章節。
+                        <strong>檢視者</strong>看得到所有章節並可留言，但不能編輯。
                     </p>
+
+                    <!-- [collab] owner 專屬開關：階段性放行限定編輯檢視全文與互評。
+                         只放寬「讀取」，寫入權永遠只限被指派章節。 -->
+                    <div class="border rounded p-2 mb-3 bg-light" id="collabOpenAccessBox" style="display:none;">
+                        <div class="form-check form-switch mb-1">
+                            <input class="form-check-input" type="checkbox" id="collabOpenAccessToggle"
+                                   onchange="wsApp.collab.toggleOpenAccess(this.checked)">
+                            <label class="form-check-label fw-bold small" for="collabOpenAccessToggle">
+                                開放限定編輯檢視全文與留言
+                            </label>
+                        </div>
+                        <div class="text-muted" style="font-size:.75rem;">
+                            開啟後，限定編輯可檢視所有章節與 2C 全篇，並能對任何章節留言。
+                            <strong>寫入權不變</strong>，仍只能編輯被指派的章節。
+                            適合各自寫完後開放互評的階段。
+                        </div>
+                        <div class="text-muted mt-1" style="font-size:.72rem;" id="collabOpenAccessMeta"></div>
+                    </div>
 
                     <div class="alert alert-danger py-2 small" id="chapterAssignError" style="display:none;"></div>
 
@@ -555,7 +574,7 @@
     <script src="{{ url_for('static', filename='js/manuscript_wsui.js') }}?v=1.4"></script>
     <script src="{{ url_for('static', filename='js/manuscript_image.js') }}?v=1.8"></script>
     <script src="{{ url_for('static', filename='js/manuscript_soed.js') }}?v=1.2"></script>
-    <script src="{{ url_for('static', filename='js/manuscript_collab.js') }}?v=1.2"></script>
+    <script src="{{ url_for('static', filename='js/manuscript_collab.js') }}?v=1.3"></script>
     <script src="{{ url_for('static', filename='js/manuscript_ws.js') }}?v=4.8"></script>
     <script src="{{ url_for('static', filename='js/manuscript_citation.js') }}?v=0.1"></script>
     <script src="{{ url_for('static', filename='js/workflow_status.js') }}?v=0.2"></script>

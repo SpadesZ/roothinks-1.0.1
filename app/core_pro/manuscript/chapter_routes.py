@@ -1,6 +1,6 @@
 # 檔案路徑: app/core_pro/manuscript/chapter_routes.py
-# 產生時間: 2026-07-26 03:10 +08:00
-# 版本: v1.0
+# 產生時間: 2026-07-27 15:30 +08:00
+# 版本: v2.0
 # 模組定位:
 #   章節層協作 API：撰寫指派與章節留言。掛在 manuscript Blueprint
 #   （url_prefix=/manuscript），實際路徑為 /manuscript/api/chapter/...
@@ -13,6 +13,8 @@
 #   PATCH  /manuscript/api/chapter/<pid>/comments/<cid>       — 改內容或標記已解決
 #   DELETE /manuscript/api/chapter/<pid>/comments/<cid>       — 刪除留言
 #   GET    /manuscript/api/chapter/<pid>/my-permissions       — 前端據此鎖定唯讀章節
+#   GET    /manuscript/api/chapter/<pid>/settings              — 讀協作開關（全成員）
+#   PUT    /manuscript/api/chapter/<pid>/settings              — 切換開關（**owner only**）
 # 呼叫來源:
 #   manuscript_workspace.html 的章節指派 UI 與留言側欄；
 #   test/unit/test_chapter_perm.py
@@ -22,9 +24,17 @@
 #   PATCH comments    body: {"body": str} 和／或 {"resolved": bool}
 #   回應一律 {"success": bool, ...}
 # 安全邊界:
-#   - 寫章節：security.can_write_section（coauthor 只能寫被指派的章節）。
+#   [v2.0 角色語意] 讀取與寫入是**兩個獨立維度**，不可用 ROLE_ORDER 線性推導：
+#     viewer    讀全部章節，不能寫，可留言
+#     coauthor  只讀得到也只寫得到被指派章節（讀取範圍比 viewer **還窄**）
+#     editor    讀寫全部章節
+#     owner     再加上成員管理與協作開關
+#   - 讀章節：security.can_read_section；列章節：security.visible_sections。
+#   - 寫章節：security.can_write_section。
+#   - 留言：can_comment_on_section（跟著讀取範圍走——看不到就不能留言）。
 #   - 指派章節：owner 與 editor 皆可（can_assign_sections）。
-#   - 留言：只要是專案成員即可（can_comment）；改／刪限作者本人或 editor 以上。
+#   - 協作開關：**僅 owner** 可切換；開啟後放寬 coauthor 的讀取與留言範圍，
+#     但**寫入權永遠只限被指派章節**，不受開關影響。
 #   - 非本專案成員一律 403，且不透露專案是否存在。
 #   - AUTH_MODE != session（dev/TESTING）時放行，維持既有測試相容性。
 # 維護提醒:
@@ -45,16 +55,22 @@ from app.core_pro.manuscript.manuscript_routes import bp, _resolve_formal_projec
 from app.models import (
     ChapterAssignment,
     ChapterComment,
+    ProjectCollabSetting,
     ROLE_ORDER,
     ROLE_EDITOR,
+    ROLE_OWNER,
     User,
 )
 from app.security import (
     can_assign_sections,
     can_comment,
+    can_comment_on_section,
+    can_read_section,
     can_write_section,
+    coauthor_open_access,
     get_workspace_role,
     validate_id,
+    visible_sections,
 )
 
 logger = logging.getLogger("chapter_routes")
@@ -224,9 +240,15 @@ def list_comments(pid):
         query = ChapterComment.query.filter_by(pid=pid)
         section = request.args.get("section")
         if section:
-            query = query.filter_by(section_key=_safe_section(section))
+            section = _safe_section(section)
+            if user is not None and not can_read_section(user.id, pid, section):
+                return _forbidden()
+            query = query.filter_by(section_key=section)
 
         rows = query.order_by(ChapterComment.created_at.asc()).all()
+        # [collab] 未指定章節時逐筆過濾，避免限定編輯讀到別章的留言內容。
+        if user is not None:
+            rows = [r for r in rows if can_read_section(user.id, pid, r.section_key)]
         return jsonify({"success": True, "comments": [r.to_dict() for r in rows]}), 200
     except BadRequest as e:
         return jsonify({"success": False, "message": e.description or "Bad request"}), 400
@@ -249,6 +271,9 @@ def create_comment(pid):
 
         data = request.get_json(silent=True) or {}
         section_key = _safe_section(data.get("section_key"))
+        # [collab] 留言權限跟著讀取範圍走：看不到的章節不能留言。
+        if user is not None and not can_comment_on_section(user.id, pid, section_key):
+            return _forbidden()
         body = str(data.get("body") or "").strip()
         if not body:
             return jsonify({"success": False, "message": "留言內容不可為空"}), 400
@@ -377,23 +402,110 @@ def my_permissions(pid):
                 "can_assign": True,
                 "can_comment": True,
                 "sections": {key: True for key in section_keys},
+                "readable": {key: True for key in section_keys},
+                "scoped": False,
+                "open_access": True,
+                "is_owner": True,
             }), 200
 
         role = get_workspace_role(user.id, pid)
         if role is None:
             return _forbidden()
 
+        readable = set(visible_sections(user.id, pid, section_keys))
         return jsonify({
             "success": True,
             "role": role,
             "can_assign": can_assign_sections(user.id, pid),
             "can_comment": can_comment(user.id, pid),
+            # sections    = 可「寫」的章節
+            # readable    = 可「讀」的章節（限定編輯比 viewer 還窄，兩者不可互推）
+            # scoped      = 是否為章節限定角色，前端據此隱藏其餘章節與 2C 全篇
             "sections": {
                 key: can_write_section(user.id, pid, key) for key in section_keys
             },
+            "readable": {key: (key in readable) for key in section_keys},
+            "scoped": len(readable) < len(section_keys),
+            # owner 的開放開關狀態；限定編輯需要知道自己被放行了沒。
+            "open_access": coauthor_open_access(pid),
+            "is_owner": role == ROLE_OWNER,
         }), 200
     except BadRequest as e:
         return jsonify({"success": False, "message": e.description or "Bad request"}), 400
     except Exception as e:
         logger.error("[my-permissions GET] %s", e, exc_info=True)
+        return jsonify({"success": False, "message": "Internal server error"}), 500
+
+
+# ---------------------------------------------------------------------------
+# 協作開關（owner 專屬）
+# ---------------------------------------------------------------------------
+
+
+def _is_owner(user_id: int, pid: str) -> bool:
+    return get_workspace_role(user_id, pid) == ROLE_OWNER
+
+
+@bp.route("/api/chapter/<pid>/settings", methods=["GET"])
+def get_collab_settings(pid):
+    """
+    讀取專案協作開關。所有成員都看得到目前狀態（限定編輯需要知道自己被放行了沒）。
+    """
+    try:
+        pid = _resolve_pid(pid)
+        user = _session_user()
+        if user is not None and not can_comment(user.id, pid):
+            return _forbidden()
+
+        row = ProjectCollabSetting.query.filter_by(pid=pid).first()
+        return jsonify({
+            "success": True,
+            "coauthor_open_access": bool(row and row.coauthor_open_access),
+            "can_toggle": True if user is None else _is_owner(user.id, pid),
+            "updated_by": row.editor.username if (row and row.editor) else None,
+            "updated_at": row.updated_at.isoformat() if row else None,
+        }), 200
+    except BadRequest as e:
+        return jsonify({"success": False, "message": e.description or "Bad request"}), 400
+    except Exception as e:
+        logger.error("[settings GET] %s", e, exc_info=True)
+        return jsonify({"success": False, "message": "Internal server error"}), 500
+
+
+@bp.route("/api/chapter/<pid>/settings", methods=["PUT"])
+def update_collab_settings(pid):
+    """
+    切換「開放限定編輯檢視全文與留言」。**僅 owner 可操作**。
+
+    開啟後限定編輯的讀取範圍擴大到所有章節與 2C 全篇，並可對任何章節留言；
+    寫入權不受影響，仍只能改被指派的章節（見 security.can_write_section）。
+    """
+    try:
+        pid = _resolve_pid(pid)
+        user = _session_user()
+        if user is not None and not _is_owner(user.id, pid):
+            return _forbidden()
+
+        data = request.get_json(silent=True) or {}
+        if "coauthor_open_access" not in data:
+            return jsonify({
+                "success": False,
+                "message": "coauthor_open_access is required",
+            }), 400
+        enabled = bool(data.get("coauthor_open_access"))
+
+        row = ProjectCollabSetting.query.filter_by(pid=pid).first()
+        if row is None:
+            row = ProjectCollabSetting(pid=pid)
+            db.session.add(row)
+        row.coauthor_open_access = enabled
+        row.updated_by = user.id if user is not None else None
+        db.session.commit()
+
+        return jsonify({"success": True, "settings": row.to_dict()}), 200
+    except BadRequest as e:
+        return jsonify({"success": False, "message": e.description or "Bad request"}), 400
+    except Exception as e:
+        db.session.rollback()
+        logger.error("[settings PUT] %s", e, exc_info=True)
         return jsonify({"success": False, "message": "Internal server error"}), 500
