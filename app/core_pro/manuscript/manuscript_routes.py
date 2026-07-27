@@ -120,6 +120,21 @@ def _session_uid():
         return None
 
 
+def _session_username():
+    """session 模式下的登入者顯示名稱；僅供舊格式草稿的歸屬判定使用。
+
+    升級前寫下的 _draft.json 只記了 _updated_by（使用者名稱），沒有 id，
+    要判斷那份共用草稿是不是本人的就只能比名稱。新格式一律以 id 為準。
+    """
+    if str(current_app.config.get("AUTH_MODE", "none")).strip().lower() != "session":
+        return None
+    try:
+        from flask_login import current_user
+        return current_user.username if current_user.is_authenticated else None
+    except ImportError:
+        return None
+
+
 def _socket_can_read_section(user_id, pid: str, section: str) -> bool:
     """
     [collab] 章節層讀取判定。限定編輯（coauthor）只讀得到被指派的章節。
@@ -1075,8 +1090,11 @@ def handle_save_block(data):
         new_ver = save_result.get("ver")
 
         # 正式版本已建立，草稿完成任務。留著會讓下次開啟時誤判「有未存檔內容」。
+        # 只清自己那份：同章節可能有別人正在打字，不能連他的未存檔內容一起刪。
         try:
-            ManuscriptIO.clear_draft(pid, section)
+            ManuscriptIO.clear_draft(pid, section,
+                                     owner_key=_session_uid(),
+                                     owner_name=current_username)
         except Exception:
             logger.warning("[cmd_save_block] 清除草稿失敗 pid=%s section=%s", pid, section)
 
@@ -1154,11 +1172,14 @@ def handle_autosave_block(data):
             pass
 
     try:
+        # owner_key 用使用者 id 而非顯示名稱：改名不該把自己的草稿弄丟，
+        # 也不會因為兩人同名而互相覆蓋。
         result = ManuscriptIO.save_draft(
             pid, section,
             data.get('title', 'Untitled_Paper'),
             data.get('content', ''),
             updated_by=current_username,
+            owner_key=_session_uid(),
         )
         emit('autosave_ack', {
             'ok': True,
@@ -1188,7 +1209,9 @@ def handle_load_draft(data):
         emit('draft_loaded', {'ok': False, 'section': section, 'draft': None})
         return
 
-    draft = ManuscriptIO.load_draft(pid, section)
+    draft = ManuscriptIO.load_draft(pid, section,
+                                    owner_key=uid,
+                                    owner_name=_session_username())
     emit('draft_loaded', {'ok': draft is not None, 'section': section, 'draft': draft})
 
 
@@ -1467,7 +1490,9 @@ def handle_list_blocks(data):
         'files': ManuscriptIO.list_blocks(pid, section),
         'section': section,
         'versions': ManuscriptIO.list_block_versions(pid, section),
-        'draft': ManuscriptIO.load_draft(pid, section),
+        'draft': ManuscriptIO.load_draft(pid, section,
+                                         owner_key=uid,
+                                         owner_name=_session_username()),
         'next_ver': ManuscriptIO.next_block_version(pid, section),
     })
 
