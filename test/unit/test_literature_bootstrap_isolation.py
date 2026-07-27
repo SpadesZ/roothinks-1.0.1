@@ -68,11 +68,16 @@ def client(session_app):
     return session_app.test_client()
 
 
+def _test_email(username: str) -> str:
+    """由測試用 username 推出登入 email。email 已是唯一登入識別。"""
+    return f"{username.lower()}@test.local"
+
+
 def _make_user(app, username: str, password: str = "password123") -> int:
     from app import db
     from app.models import User
     with app.app_context():
-        user = User(username=username)
+        user = User(username=username, email=_test_email(username))
         user.set_password(password)
         db.session.add(user)
         db.session.commit()
@@ -80,7 +85,9 @@ def _make_user(app, username: str, password: str = "password123") -> int:
 
 
 def _login(client, username: str, password: str = "password123"):
-    resp = client.post("/api/auth/login", json={"username": username, "password": password})
+    resp = client.post(
+        "/api/auth/login", json={"email": _test_email(username), "password": password}
+    )
     assert resp.status_code == 200, resp.get_data(as_text=True)
 
 

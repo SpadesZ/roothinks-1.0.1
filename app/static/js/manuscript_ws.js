@@ -140,6 +140,8 @@ class ManuscriptWorkspace {
         this.ui = new ManuUI(this);
         this.soed = new ManuSoed(this);
         this.imgEngine = new ManuImage(this);
+        // [collab] 章節指派／留言／唯讀鎖定
+        this.collab = new ManuCollab(this);
 
         this.init();
     }
@@ -150,7 +152,11 @@ class ManuscriptWorkspace {
             this.ui.setupToolbarActions();
             this.soed.updateWordCount();
             if (this.editorCanvas) {
-                this.editorCanvas.addEventListener('input', () => this.soed.updateWordCount());
+                this.editorCanvas.addEventListener('input', () => {
+                    this.soed.updateWordCount();
+                    // [v1.8] 停筆 1.5 秒後自動存檔（寫草稿，不產生版本）。
+                    this.soed.scheduleAutosave();
+                });
             }
 
             this.soed.setupSocketEvents();
@@ -159,6 +165,19 @@ class ManuscriptWorkspace {
 
             if (this.chatContainer) this.chatContainer.innerHTML = '';
             this.soed.addSystemMessage(`Fusor-Drafter Connected. Workspace ID: ${this.manuId}`);
+
+            // [collab] 取得逐章可寫狀態，把沒有撰寫權的章節鎖成唯讀。
+            this.collab.loadPermissions();
+
+            // [v1.8] 主動要一次主論文版本清單來填 G.Ver 選單。
+            // 不做的話，選單要等到「這次工作階段有存過檔」才會有內容，
+            // 使用者重新進頁面就看不到既有版本、也無從還原。
+            if (this.pid && this.socket) {
+                const title = this.paperTitleInput
+                    ? (this.paperTitleInput.value.trim() || 'Untitled_Paper')
+                    : 'Untitled_Paper';
+                this.socket.emit('cmd_list_papers', { pid: this.pid, title: title });
+            }
 
             setTimeout(() => {
                 if (this.drafterTargetSection) this.soed.switchChatSection(this.drafterTargetSection.value);

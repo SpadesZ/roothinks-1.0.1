@@ -32,13 +32,22 @@ from flask import jsonify, request
 from werkzeug.exceptions import BadRequest, Forbidden, Unauthorized
 
 from app import db
-from app.models import User, WorkspaceMember, ROLE_OWNER, ROLE_EDITOR, ROLE_VIEWER, ROLE_ORDER
+from app.models import (
+    User,
+    WorkspaceMember,
+    ROLE_OWNER,
+    ROLE_EDITOR,
+    ROLE_COAUTHOR,
+    ROLE_VIEWER,
+    ROLE_ORDER,
+)
 from app.project_portfolio.project_routes import bp
 from app.security import enforce_project_ownership, require_workspace_role, validate_id
 
 logger = logging.getLogger("member_routes")
 
-_VALID_ROLES = {ROLE_OWNER, ROLE_EDITOR, ROLE_VIEWER}
+# [collab] coauthor 加入可指派角色；階層見 app/models.py 的 ROLE_ORDER。
+_VALID_ROLES = {ROLE_OWNER, ROLE_EDITOR, ROLE_COAUTHOR, ROLE_VIEWER}
 
 
 def _last_owner_check(pid: str, exclude_user_id: int = None) -> bool:
@@ -102,17 +111,22 @@ def add_member(pid):
             return resp
 
         data = request.get_json(silent=True) or {}
-        username = str(data.get("username") or "").strip()
+        # [email-auth] email 已是登入識別，加人時以它為主；username 僅為顯示名，
+        # 使用者通常不知道自己的顯示名是什麼，因此保留為次要查詢鍵。
+        identifier = str(data.get("email") or data.get("username") or "").strip()
         role = str(data.get("role") or "").strip().lower()
 
-        if not username:
-            return jsonify({"success": False, "message": "username is required"}), 400
+        if not identifier:
+            return jsonify({"success": False, "message": "email is required"}), 400
         if role not in _VALID_ROLES:
             return jsonify({"success": False, "message": f"role must be one of {list(_VALID_ROLES)}"}), 400
 
-        target_user = User.query.filter_by(username=username).first()
+        target_user = User.find_by_email(identifier) or User.query.filter_by(
+            username=identifier
+        ).first()
         if not target_user:
-            return jsonify({"success": False, "message": f"User '{username}' not found"}), 404
+            return jsonify({"success": False, "message": f"User '{identifier}' not found"}), 404
+        username = target_user.username
 
         existing = WorkspaceMember.query.filter_by(user_id=target_user.id, pid=pid).first()
         if existing:

@@ -1,0 +1,465 @@
+//路徑(./app/static/js/manuscript_collab.js)
+//版本 v1.2
+//更版時間 20260726-0730
+// v1.1 修正（皆由實機操作截圖發現）：
+//   - openComments 原本用 display='' 還原，元素會退回 stylesheet 預設的 block，
+//     side panel 的 flex 直向佈局失效，輸入框被擠到面板頂端。改為明確設 flex。
+//   - 新增遮罩層與 Esc 關閉：側欄是覆蓋在三欄工作區之上的，沒有遮罩時
+//     使用者分不出它是浮層還是版面的一部分。
+//   - 新增工具列留言數徽章：先前必須逐章開側欄才知道哪裡有人留言。
+// v1.2 修正：
+//   - refreshLock 原本只鎖 .editor-card，但 #editorCanvas 本身即為 contenteditable，
+//     且空章節載入的是 .section-block —— 沒有寫入權的人仍可直接在畫布打字，
+//     要到存檔被拒才知道（自動存檔更是靜默略過）。改為連畫布一起鎖並顯示唯讀橫幅。
+// 模組定位:
+//   Manuscript 章節協作前端：章節指派、章節留言、無權章節唯讀鎖定。
+// 主要責任:
+//   1. 載入 /manuscript/api/chapter/<pid>/my-permissions，把無權章節鎖成唯讀。
+//   2. 章節指派介面（editor 以上可見）。
+//   3. 章節留言側欄：所有專案成員皆可留言，含未被指派該章節的 coauthor。
+// 呼叫來源:
+//   manuscript_workspace.html；由 ManuscriptWorkspace 於啟動時建立實例。
+// 輸入輸出契約:
+//   全部走 /manuscript/api/chapter/* JSON API，帶 session cookie。
+// 安全邊界:
+//   - 這裡的唯讀鎖定純為體驗優化，真正把關在伺服器端 can_write_section。
+//     絕不可把前端判斷當成權限依據。
+// 維護提醒:
+//   - permissions.sections 是 { section_key: bool }；未列出的章節視為不可寫。
+//   - 切換章節後必須重新套用鎖定（refreshLock），否則會沿用上一章的狀態。
+// ---------------------------------------------------------------------------
+
+class ManuCollab {
+    constructor(app) {
+        this.app = app;
+        this.permissions = null;   // { role, can_assign, can_comment, sections: {} }
+        this.comments = [];
+    }
+
+    // -- 權限 ---------------------------------------------------------------
+
+    async loadPermissions() {
+        if (!this.app.pid) return;
+        try {
+            const res = await fetch(
+                `/manuscript/api/chapter/${encodeURIComponent(this.app.pid)}/my-permissions`
+            );
+            if (!res.ok) {
+                // 403 代表不是專案成員；此時不鎖定畫面，交由既有守衛處理導向。
+                this.permissions = null;
+                return;
+            }
+            this.permissions = await res.json();
+            this._renderRoleBadge();
+            this.refreshLock();
+            this.refreshCommentBadge();
+        } catch (err) {
+            console.warn('[collab] 權限載入失敗', err);
+            this.permissions = null;
+        }
+    }
+
+    canWrite(sectionId) {
+        // 權限尚未載入（或單機模式）時不阻擋，避免誤鎖住正常使用者。
+        if (!this.permissions || !this.permissions.sections) return true;
+        return this.permissions.sections[sectionId] === true;
+    }
+
+    _renderRoleBadge() {
+        const el = document.getElementById('collabRoleBadge');
+        if (!el || !this.permissions) return;
+        const labels = {
+            owner: '擁有者', editor: '編輯者', coauthor: '共同作者', viewer: '檢視者',
+        };
+        const role = this.permissions.role;
+        if (!role) { el.textContent = ''; return; }
+        el.textContent = labels[role] || role;
+        el.className = 'badge ' + (role === 'coauthor' ? 'bg-info text-dark' : 'bg-secondary');
+
+        const assignBtn = document.getElementById('btnChapterAssign');
+        if (assignBtn) {
+            assignBtn.style.display = this.permissions.can_assign ? '' : 'none';
+        }
+    }
+
+    /**
+     * 依權限把編輯區鎖成唯讀。
+     * 無權章節仍看得到內容，只是不能改——這正是「其他章節唯讀但可留言」的呈現。
+     *
+     * 必須同時鎖「畫布本體」與「卡片」兩層：
+     * #editorCanvas 自己就是 contenteditable=true，而空章節載入的是 .section-block
+     * 而非 .editor-card。只鎖卡片的話，沒有寫入權的人仍能直接在畫布上打字，
+     * 一直要到存檔被伺服器拒絕才知道——自動存檔更是連錯誤都不會跳。
+     */
+    refreshLock() {
+        if (!this.app.editorCanvas) return;
+
+        this._lockCanvas();
+
+        this.app.editorCanvas.querySelectorAll('.editor-card').forEach(card => {
+            const sectionId = card.getAttribute('data-section') || 'general';
+            const writable = this.canWrite(sectionId);
+            const body = card.querySelector('.card-content');
+            if (body) body.setAttribute('contenteditable', writable ? 'true' : 'false');
+
+            const saveBtn = card.querySelector('button[title="Save Block"]');
+            if (saveBtn) {
+                saveBtn.disabled = !writable;
+                saveBtn.title = writable ? 'Save Block' : '你沒有此章節的撰寫權限';
+            }
+
+            let hint = card.querySelector('.collab-readonly-hint');
+            if (!writable && !hint) {
+                hint = document.createElement('div');
+                hint.className = 'collab-readonly-hint badge bg-warning text-dark mb-2 ms-1';
+                hint.textContent = '唯讀 · 可留言';
+                card.prepend(hint);
+            } else if (writable && hint) {
+                hint.remove();
+            }
+        });
+    }
+
+    /**
+     * 依「目前檢視的章節」鎖定整個編輯畫布，並在上方顯示醒目的唯讀橫幅。
+     *
+     * 橫幅是必要的：單純把 contenteditable 關掉，使用者只會覺得「打字沒反應」，
+     * 不會知道原因，也不知道還能用留言表達意見。
+     */
+    _lockCanvas() {
+        const canvas = this.app.editorCanvas;
+        const section = this.currentSection();
+        const writable = this.canWrite(section);
+
+        canvas.setAttribute('contenteditable', writable ? 'true' : 'false');
+        canvas.style.background = writable ? '' : '#f8f9fa';
+
+        const bannerId = 'collabCanvasReadonlyBanner';
+        let banner = document.getElementById(bannerId);
+
+        if (writable) {
+            if (banner) banner.remove();
+            return;
+        }
+        if (!banner) {
+            banner = document.createElement('div');
+            banner.id = bannerId;
+            banner.className = 'alert alert-warning py-2 px-3 mb-0 small d-flex '
+                             + 'justify-content-between align-items-center';
+            canvas.parentNode.insertBefore(banner, canvas);
+        }
+        const role = (this.permissions && this.permissions.role) || '';
+        const why = role === 'viewer'
+            ? '你在本專案是檢視者，所有章節皆為唯讀。'
+            : `「${section}」這個章節沒有指派給你，因此無法編輯。`;
+        banner.innerHTML =
+            `<span><i class="bi bi-lock-fill me-1"></i>唯讀模式 · ${why}</span>`;
+
+        const btn = document.createElement('button');
+        btn.className = 'btn btn-sm btn-outline-dark ms-2';
+        btn.innerHTML = '<i class="bi bi-chat-left-text me-1"></i>改用留言提意見';
+        btn.onclick = () => this.openComments();
+        banner.appendChild(btn);
+    }
+
+    // -- 章節指派 ------------------------------------------------------------
+
+    async openAssignModal() {
+        const modalEl = document.getElementById('chapterAssignModal');
+        if (!modalEl) return;
+        await this.refreshAssignments();
+        this._fillAssignSectionOptions();
+        bootstrap.Modal.getOrCreateInstance(modalEl).show();
+    }
+
+    _fillAssignSectionOptions() {
+        const sel = document.getElementById('assignSectionSelect');
+        if (!sel) return;
+        sel.innerHTML = '';
+        (this.app.sections || []).forEach(s => {
+            const opt = document.createElement('option');
+            opt.value = s.id;
+            opt.textContent = s.label || s.id;
+            sel.appendChild(opt);
+        });
+    }
+
+    async refreshAssignments() {
+        const list = document.getElementById('chapterAssignList');
+        if (!list) return;
+        list.innerHTML = '<div class="text-muted small p-2">載入中…</div>';
+        try {
+            const res = await fetch(
+                `/manuscript/api/chapter/${encodeURIComponent(this.app.pid)}/assignments`
+            );
+            const data = await res.json();
+            if (!data.success) {
+                list.innerHTML = `<div class="text-danger small p-2">${data.message || '載入失敗'}</div>`;
+                return;
+            }
+            if (!data.assignments.length) {
+                list.innerHTML = '<div class="text-muted small p-2">尚無章節指派。</div>';
+                return;
+            }
+            const canAssign = this.permissions && this.permissions.can_assign;
+            list.innerHTML = '';
+            data.assignments.forEach(a => {
+                const row = document.createElement('div');
+                row.className = 'list-group-item d-flex justify-content-between align-items-center py-2';
+                row.innerHTML = `
+                    <span><span class="badge bg-primary me-2">${a.section_key}</span>
+                    ${a.username || ''} <span class="text-muted small">${a.email || ''}</span></span>`;
+                if (canAssign) {
+                    const btn = document.createElement('button');
+                    btn.className = 'btn btn-sm btn-outline-danger';
+                    btn.innerHTML = '<i class="bi bi-x-lg"></i>';
+                    btn.onclick = () => this.removeAssignment(a.id);
+                    row.appendChild(btn);
+                }
+                list.appendChild(row);
+            });
+        } catch (err) {
+            list.innerHTML = '<div class="text-danger small p-2">載入失敗</div>';
+        }
+    }
+
+    async createAssignment() {
+        const emailEl = document.getElementById('assignEmailInput');
+        const sectionEl = document.getElementById('assignSectionSelect');
+        const errEl = document.getElementById('chapterAssignError');
+        if (!emailEl || !sectionEl) return;
+
+        if (errEl) errEl.style.display = 'none';
+        try {
+            const res = await fetch(
+                `/manuscript/api/chapter/${encodeURIComponent(this.app.pid)}/assignments`,
+                {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        section_key: sectionEl.value,
+                        email: emailEl.value.trim(),
+                    }),
+                }
+            );
+            const data = await res.json();
+            if (!data.success) {
+                if (errEl) {
+                    errEl.textContent = data.message || '指派失敗';
+                    errEl.style.display = '';
+                }
+                return;
+            }
+            emailEl.value = '';
+            await this.refreshAssignments();
+            await this.loadPermissions();
+        } catch (err) {
+            if (errEl) { errEl.textContent = '指派失敗'; errEl.style.display = ''; }
+        }
+    }
+
+    async removeAssignment(assignmentId) {
+        if (!confirm('確定要取消這筆章節指派嗎？')) return;
+        await fetch(
+            `/manuscript/api/chapter/${encodeURIComponent(this.app.pid)}/assignments/${assignmentId}`,
+            { method: 'DELETE' }
+        );
+        await this.refreshAssignments();
+        await this.loadPermissions();
+    }
+
+    // -- 章節留言 ------------------------------------------------------------
+
+    currentSection() {
+        return Array.from(this.app.selectedSections || [])[0] || 'general';
+    }
+
+    async openComments() {
+        const panel = document.getElementById('chapterCommentPanel');
+        if (!panel) return;
+        // 必須明確設成 flex。先前用 display='' 只是清掉 inline 樣式，
+        // 元素會退回 stylesheet 預設的 block，側欄的 flex 直向佈局隨即失效
+        // ——列表不再撐開，輸入框被擠到面板頂端。
+        panel.style.display = 'flex';
+        const backdrop = document.getElementById('chapterCommentBackdrop');
+        if (backdrop) backdrop.style.display = 'block';
+        this._bindEscToClose();
+        await this.refreshComments();
+        const input = document.getElementById('chapterCommentInput');
+        if (input) input.focus();
+    }
+
+    closeComments() {
+        const panel = document.getElementById('chapterCommentPanel');
+        if (panel) panel.style.display = 'none';
+        const backdrop = document.getElementById('chapterCommentBackdrop');
+        if (backdrop) backdrop.style.display = 'none';
+    }
+
+    /** 側欄是覆蓋在工作區之上的，給 Esc 一條退路才不會逼使用者去找關閉鈕。 */
+    _bindEscToClose() {
+        if (this._escBound) return;
+        this._escBound = true;
+        document.addEventListener('keydown', (e) => {
+            if (e.key !== 'Escape') return;
+            const panel = document.getElementById('chapterCommentPanel');
+            if (panel && panel.style.display === 'flex') this.closeComments();
+        });
+    }
+
+    /**
+     * 在工具列的留言按鈕上顯示該章節的留言數。
+     *
+     * 沒有這個提示的話，使用者必須逐章打開側欄才知道哪裡有人留了話 ——
+     * 這是協作情境最常被忽略的一環。
+     */
+    async refreshCommentBadge() {
+        const btn = document.getElementById('btnChapterComments');
+        if (!btn || !this.app.pid) return;
+        let badge = btn.querySelector('.collab-comment-count');
+        try {
+            const res = await fetch(
+                `/manuscript/api/chapter/${encodeURIComponent(this.app.pid)}/comments`
+                + `?section=${encodeURIComponent(this.currentSection())}`
+            );
+            if (!res.ok) return;
+            const data = await res.json();
+            const open = (data.comments || []).filter(c => !c.resolved).length;
+
+            if (!open) {
+                if (badge) badge.remove();
+                btn.classList.remove('btn-outline-primary');
+                btn.classList.add('btn-outline-secondary');
+                return;
+            }
+            if (!badge) {
+                badge = document.createElement('span');
+                badge.className = 'collab-comment-count badge bg-danger ms-1';
+                btn.appendChild(badge);
+            }
+            badge.textContent = open;
+            btn.classList.remove('btn-outline-secondary');
+            btn.classList.add('btn-outline-primary');
+        } catch (err) {
+            /* 留言數只是提示，取不到就維持原樣 */
+        }
+    }
+
+    async refreshComments() {
+        const list = document.getElementById('chapterCommentList');
+        const title = document.getElementById('chapterCommentSection');
+        if (!list) return;
+        const section = this.currentSection();
+        if (title) title.textContent = section;
+
+        list.innerHTML = '<div class="text-muted small">載入中…</div>';
+        try {
+            const res = await fetch(
+                `/manuscript/api/chapter/${encodeURIComponent(this.app.pid)}/comments`
+                + `?section=${encodeURIComponent(section)}`
+            );
+            const data = await res.json();
+            if (!data.success) {
+                list.innerHTML = `<div class="text-danger small">${data.message || '載入失敗'}</div>`;
+                return;
+            }
+            this.comments = data.comments || [];
+            if (!this.comments.length) {
+                list.innerHTML = '<div class="text-muted small">這個章節還沒有留言。</div>';
+                return;
+            }
+            list.innerHTML = '';
+            this.comments.forEach(c => list.appendChild(this._commentNode(c)));
+        } catch (err) {
+            list.innerHTML = '<div class="text-danger small">載入失敗</div>';
+        }
+    }
+
+    _commentNode(c) {
+        const wrap = document.createElement('div');
+        wrap.className = 'border rounded p-2 mb-2' + (c.resolved ? ' bg-light opacity-75' : '');
+        const when = c.created_at ? new Date(c.created_at).toLocaleString() : '';
+        wrap.innerHTML = `
+            <div class="d-flex justify-content-between align-items-start">
+                <div class="small fw-bold">${c.author || '（已移除的帳號）'}</div>
+                <div class="text-muted" style="font-size:0.72rem;">${when}</div>
+            </div>
+            <div class="small mt-1" style="white-space:pre-wrap;">${this._escape(c.body)}</div>`;
+
+        const actions = document.createElement('div');
+        actions.className = 'mt-1 d-flex gap-2';
+
+        const toggle = document.createElement('button');
+        toggle.className = 'btn btn-sm btn-link p-0 small';
+        toggle.textContent = c.resolved ? '重新開啟' : '標記已解決';
+        toggle.onclick = () => this.setResolved(c.id, !c.resolved);
+        actions.appendChild(toggle);
+
+        const del = document.createElement('button');
+        del.className = 'btn btn-sm btn-link p-0 small text-danger';
+        del.textContent = '刪除';
+        del.onclick = () => this.deleteComment(c.id);
+        actions.appendChild(del);
+
+        wrap.appendChild(actions);
+        return wrap;
+    }
+
+    /** 留言內容以純文字呈現，避免他人留言中的 HTML 被當標籤執行。 */
+    _escape(text) {
+        const div = document.createElement('div');
+        div.textContent = String(text == null ? '' : text);
+        return div.innerHTML;
+    }
+
+    async postComment() {
+        const input = document.getElementById('chapterCommentInput');
+        if (!input) return;
+        const body = input.value.trim();
+        if (!body) return;
+
+        const res = await fetch(
+            `/manuscript/api/chapter/${encodeURIComponent(this.app.pid)}/comments`,
+            {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ section_key: this.currentSection(), body: body }),
+            }
+        );
+        const data = await res.json();
+        if (!data.success) {
+            alert(data.message || '留言失敗');
+            return;
+        }
+        input.value = '';
+        await this.refreshComments();
+        this.refreshCommentBadge();
+    }
+
+    async setResolved(commentId, resolved) {
+        const res = await fetch(
+            `/manuscript/api/chapter/${encodeURIComponent(this.app.pid)}/comments/${commentId}`,
+            {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ resolved: resolved }),
+            }
+        );
+        if (!res.ok) { alert('沒有權限變更這則留言。'); return; }
+        await this.refreshComments();
+        this.refreshCommentBadge();
+    }
+
+    async deleteComment(commentId) {
+        if (!confirm('確定要刪除這則留言嗎？')) return;
+        const res = await fetch(
+            `/manuscript/api/chapter/${encodeURIComponent(this.app.pid)}/comments/${commentId}`,
+            { method: 'DELETE' }
+        );
+        if (!res.ok) { alert('沒有權限刪除這則留言。'); return; }
+        await this.refreshComments();
+        this.refreshCommentBadge();
+    }
+}
+
+window.ManuCollab = ManuCollab;

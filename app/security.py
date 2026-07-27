@@ -75,6 +75,26 @@ def validate_id(value: Any, id_type: str, required: bool = True) -> str:
     return raw
 
 
+def _strip_extended_prefix(path: str) -> str:
+    r"""
+    去掉 Windows 的 \\?\ 擴充長度前綴，讓兩個路徑能放在同一個形式下比較。
+
+    os.path.realpath 在目標路徑正被另一個執行緒建立時，偶爾會回傳
+    \\?\C:\... 形式；與另一次呼叫回傳的 C:\... 混用時，os.path.commonpath
+    會判定「不同磁碟」而誤報成路徑穿越 —— 多人同時存檔會隨機噴 400
+    「Path traversal detected」。
+
+    \\?\C:\foo 與 C:\foo 指的是同一個檔案，因此把前綴正規化掉不會放寬檢查，
+    只是讓包含判斷得以正確進行。
+    """
+    text = str(path or "")
+    if text.startswith("\\\\?\\UNC\\"):
+        return "\\\\" + text[len("\\\\?\\UNC\\"):]
+    if text.startswith("\\\\?\\"):
+        return text[len("\\\\?\\"):]
+    return text
+
+
 def safe_join_under(base_dir: str, *parts: str) -> str:
     base_text = str(base_dir or "")
     if "\x00" in base_text:
@@ -85,11 +105,16 @@ def safe_join_under(base_dir: str, *parts: str) -> str:
 
     base_real = os.path.realpath(base_text)
     target = os.path.realpath(os.path.join(base_real, *parts))
+
+    # 兩側都先正規化掉 \\?\ 前綴再比較，否則併發下會出現一側有前綴、
+    # 一側沒有的情況而誤判。
+    base_cmp = _strip_extended_prefix(base_real)
+    target_cmp = _strip_extended_prefix(target)
     try:
-        if os.path.commonpath([base_real, target]) != base_real:
+        if os.path.commonpath([base_cmp, target_cmp]) != base_cmp:
             raise BadRequest("Path traversal detected")
     except ValueError:
-        # Windows cross-drive path (e.g., C:\ vs D:\) also indicates out-of-bound path usage.
+        # 真正的跨磁碟路徑（C:\ vs D:\）也代表越界使用。
         raise BadRequest("Path traversal detected")
     return target
 
@@ -243,13 +268,29 @@ def _get_auth_mode() -> str:
 def get_workspace_role(user_id: int, pid: str) -> Optional[str]:
     """
     查詢指定 user 在 pid 專案中的角色。
-    回傳 'owner' | 'editor' | 'viewer'，若無 membership 回傳 None。
-    使用延遲匯入避免循環依賴。
+    回傳 'owner' | 'editor' | 'coauthor' | 'viewer'，若無 membership 回傳 None。
+
+    會同時比對 base 與 formal 兩種 pid 形式（ABC123 與 ABC123-p）：
+    同一個專案在草稿期與正式期用不同 project_id，成員可能只被加在其中一種
+    形式上。若只精確比對，「用 base pid 加進來的成員」在任何以 formal pid
+    為索引的判定（章節權限、socket 存檔）都會被判成沒有權限。
+    兩者視為同一專案與 check_ownership 的 token ACL 行為一致。
+
+    有多筆時取權限最高的那一筆。使用延遲匯入避免循環依賴。
     """
     try:
-        from app.models import WorkspaceMember
-        member = WorkspaceMember.query.filter_by(user_id=user_id, pid=pid).first()
-        return member.role if member else None
+        from app.models import ROLE_ORDER, WorkspaceMember
+
+        aliases = _normalize_pid_aliases(pid)
+        if not aliases:
+            return None
+        members = WorkspaceMember.query.filter(
+            WorkspaceMember.user_id == user_id,
+            WorkspaceMember.pid.in_(aliases),
+        ).all()
+        if not members:
+            return None
+        return max(members, key=lambda m: ROLE_ORDER.get(m.role or "", 0)).role
     except Exception:
         LOGGER.exception("get_workspace_role failed for user_id=%s pid=%s", user_id, pid)
         return None
@@ -286,6 +327,69 @@ def require_workspace_role(pid: str, min_role: str) -> Optional[Any]:
         return jsonify({"error": "forbidden", "required": min_role}), 403
 
     return None
+
+
+def has_section_assignment(user_id: int, pid: str, section_key: str) -> bool:
+    """
+    該 user 是否被指派撰寫 pid 專案的 section_key 章節。
+
+    與 get_workspace_role 同規：base 與 formal 兩種 pid 形式都要比對，
+    否則以 base pid 建立的指派會在 formal pid 的判定下失效。
+    """
+    try:
+        from app.models import ChapterAssignment
+
+        aliases = _normalize_pid_aliases(pid)
+        if not aliases:
+            return False
+        row = ChapterAssignment.query.filter(
+            ChapterAssignment.user_id == user_id,
+            ChapterAssignment.pid.in_(aliases),
+            ChapterAssignment.section_key == section_key,
+        ).first()
+        return row is not None
+    except Exception:
+        LOGGER.exception(
+            "has_section_assignment failed user_id=%s pid=%s section=%s",
+            user_id, pid, section_key,
+        )
+        return False
+
+
+def can_write_section(user_id: int, pid: str, section_key: str) -> bool:
+    """
+    章節層寫入判定：專案角色 >= coauthor，**且**
+    （專案角色 >= editor  或  該章節有指派給我）。
+
+    也就是說 coauthor 只能動被分配到的章節，其他章節唯讀（但仍可留言，
+    留言的門檻見 can_comment）。editor 以上不需要指派即可寫任何章節。
+    """
+    from app.models import ROLE_ORDER, ROLE_COAUTHOR, ROLE_EDITOR
+
+    role = get_workspace_role(user_id, pid)
+    level = ROLE_ORDER.get(role or "", 0)
+
+    if level < ROLE_ORDER[ROLE_COAUTHOR]:
+        return False
+    if level >= ROLE_ORDER[ROLE_EDITOR]:
+        return True
+    return has_section_assignment(user_id, pid, section_key)
+
+
+def can_comment(user_id: int, pid: str) -> bool:
+    """留言門檻：專案角色 >= viewer（也就是只要是成員就能留言）。"""
+    from app.models import ROLE_ORDER, ROLE_VIEWER
+
+    role = get_workspace_role(user_id, pid)
+    return ROLE_ORDER.get(role or "", 0) >= ROLE_ORDER[ROLE_VIEWER]
+
+
+def can_assign_sections(user_id: int, pid: str) -> bool:
+    """指派章節的門檻：owner 與 editor 皆可。"""
+    from app.models import ROLE_ORDER, ROLE_EDITOR
+
+    role = get_workspace_role(user_id, pid)
+    return ROLE_ORDER.get(role or "", 0) >= ROLE_ORDER[ROLE_EDITOR]
 
 
 def enforce_project_ownership(pid: str) -> None:

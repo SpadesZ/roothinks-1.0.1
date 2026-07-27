@@ -91,12 +91,34 @@ def _socket_can_write(user_id, pid: str) -> bool:
     [Batch C] 純函數：判斷 user 是否有 editor 以上角色可寫入指定 pid。
     AUTH_MODE=none 時永遠回傳 True（dev/TESTING 相容）。
     AUTH_MODE=session 時查 WorkspaceMember，需 editor 或 owner。
+
+    [collab] 這是「專案層」門檻，用於 2C 全篇總裝這類跨章節動作。
+    單一章節的寫入請改用 _socket_can_write_section —— coauthor 不到 editor，
+    但對被指派的章節有寫入權。
     """
     try:
         from app.models import ROLE_ORDER
         role = get_workspace_role(user_id, pid)
         return ROLE_ORDER.get(role or "", 0) >= ROLE_ORDER.get("editor", 0)
     except Exception:
+        return False
+
+
+def _socket_can_write_section(user_id, pid: str, section: str) -> bool:
+    """
+    [collab] 章節層寫入判定：editor 以上寫全部；coauthor 只能寫被指派的章節。
+
+    這是章節權限的伺服器端唯一把關點。前端的唯讀鎖定只是體驗優化，
+    不能取代這裡。
+    """
+    try:
+        from app.security import can_write_section
+        return can_write_section(user_id, pid, section)
+    except Exception:
+        logger.warning(
+            "[perm] can_write_section 失敗 user=%s pid=%s section=%s",
+            user_id, pid, section, exc_info=True,
+        )
         return False
 
 
@@ -159,6 +181,22 @@ def _enforce_manuscript_acl():
     pid = _resolve_formal_project_pid(raw_pid)
     if not pid:
         return jsonify({"ok": False, "message": "Invalid pid"}), 404
+
+    # [collab] session 模式必須是專案成員。原本這裡只驗 Bearer token，
+    # 在 API_AUTH_ENABLED=0 的部署下 /manuscript/api/bootstrap/<pid> 對
+    # 任何登入者都回 200，等於整份手稿對外開放。
+    auth_mode = str(current_app.config.get("AUTH_MODE", "none")).strip().lower()
+    if auth_mode == "session":
+        try:
+            from flask_login import current_user
+            if not current_user.is_authenticated:
+                return jsonify({"ok": False, "message": "Unauthorized"}), 401
+            if get_workspace_role(current_user.id, pid) is None:
+                # 不區分「無此專案」與「非成員」，避免用 pid 列舉試探。
+                return jsonify({"ok": False, "message": "Forbidden"}), 403
+        except ImportError:
+            pass
+
     token = getattr(g, "auth_token", "")
     if token and not check_ownership(token, pid):
         return jsonify({"ok": False, "message": "Forbidden"}), 403
@@ -185,16 +223,41 @@ def _socket_auth_enabled() -> bool:
 
 
 def _ensure_socket_project_access(pid: str, forbidden_event: str = "", forbidden_payload: dict = None, emit_forbidden_msg: bool = True) -> bool:
+    """
+    Socket 事件的專案存取守衛（讀寫皆適用）。
+
+    [collab] session 模式必須驗 WorkspaceMember。原本這裡只認 Bearer token，
+    在 API_AUTH_ENABLED=0 的部署下等同直接放行 —— 任何登入者只要知道 pid，
+    就能用 cmd_list_blocks / cmd_load_block 讀走別人專案的完整手稿內文。
+    連線階段的 handle_connect 也擋不住：前端連線時 auth payload 不帶 pid，
+    那段成員檢查根本不會執行。因此逐事件檢查才是真正的防線。
+    """
+    def _deny():
+        if emit_forbidden_msg:
+            emit('sys_msg', {'msg': 'Forbidden project access.'})
+        if forbidden_event:
+            emit(forbidden_event, forbidden_payload or {})
+        return False
+
+    auth_mode = str(current_app.config.get("AUTH_MODE", "none")).strip().lower()
+    if auth_mode == "session":
+        try:
+            from flask_login import current_user
+            if not current_user.is_authenticated:
+                return _deny()
+            if get_workspace_role(current_user.id, pid) is None:
+                return _deny()
+            return True
+        except ImportError:
+            pass
+
+    # AUTH_MODE=none（dev/TESTING）維持既有行為，避免破壞未啟用帳號系統的部署。
     if not _socket_auth_enabled():
         return True
     sid_token = _get_sid_token(request.sid)
     if sid_token and check_ownership(sid_token, pid):
         return True
-    if emit_forbidden_msg:
-        emit('sys_msg', {'msg': 'Forbidden project access.'})
-    if forbidden_event:
-        emit(forbidden_event, forbidden_payload or {})
-    return False
+    return _deny()
 
 
 def _resolve_socket_pid_or_emit(data, missing_msg: str = _SOCKET_MISSING_PID_MSG, missing_event: str = "", missing_payload: dict = None):
@@ -440,6 +503,56 @@ def _get_or_init_sections(pid):
         rows = ManuSectionConfig.query.filter_by(pid=pid).order_by(ManuSectionConfig.order_index.asc()).all()
     return rows
 
+# 合法的 section_key：只允許 ASCII 英數與 _ - ，長度 1~50，且至少要有一個英數字。
+# 這個字集是刻意保守的——section_key 同時是儲存目錄名、章節指派索引、
+# 留言索引，三處都以它為鍵，放寬會製造跨層對不齊的破口。
+#
+# 「至少一個英數字」這條前瞻是必要的：舊前端把中文逐字換成底線，
+# 「緒論」會變成 '__'。純分隔符的 key 不帶任何語意，而且正是那個缺陷的產物，
+# 直接拒收才不會把它寫進資料庫。
+_SECTION_KEY_RE = re.compile(r"^(?=.*[A-Za-z0-9])[A-Za-z0-9_-]{1,50}$")
+
+
+def _normalize_section_key(raw: str, used: set, idx: int) -> str:
+    """
+    產生保證合法且在同一專案內唯一的 section_key。
+
+    合法且未被占用 → 原樣沿用（預設英文 key 走這條，既有資料不受影響）。
+    否則改發 sec_<序號>，並在仍衝突時往後遞增。
+
+    為什麼不能直接沿用前端送的值：前端的 id 產生規則會把每個非 ASCII 字元
+    換成一個底線，任兩個等長的中文章節名因此得到完全相同的 key。
+    """
+    candidate = str(raw or "").strip()
+    if _SECTION_KEY_RE.fullmatch(candidate) and candidate not in used:
+        return candidate
+
+    n = idx + 1
+    while True:
+        generated = f"sec_{n}"
+        if generated not in used:
+            return generated
+        n += 1
+
+
+def _current_section_versions(pid):
+    """
+    [v1.8] 取得每個章節「目前最新版本號」的對照表，供主論文 manifest 使用。
+
+    只收錄真的有版本快照的章節；沒存過檔的章節不放進 manifest，
+    以免還原時試圖回復一個不存在的版本。
+    """
+    manifest = {}
+    try:
+        for row in _get_or_init_sections(pid):
+            versions = ManuscriptIO.list_block_versions(pid, row.section_key)
+            if versions:
+                manifest[row.section_key] = versions[0]['ver']
+    except Exception:
+        logger.warning("[manifest] 蒐集章節版本失敗 pid=%s", pid, exc_info=True)
+    return manifest
+
+
 def save_chat_history(pid, section, role, content, msg_type='text'):
     formal_pid = _formal_pid(pid)
     if not formal_pid:
@@ -585,11 +698,19 @@ def save_sections(pid):
         # 全量覆蓋，避免排序殘留
         ManuSectionConfig.query.filter_by(pid=pid).delete()
 
+        used_keys = set()
         for idx, sec in enumerate(sections):
             sid = str(sec.get('id', '')).strip()
             label = str(sec.get('label', '')).strip()
-            if not sid or not label:
+            if not label:
                 continue
+            # section_key 由前端送來但不能信任：中文章節名在舊前端會被逐字換成
+            # 底線，導致「緒論」與「討論」都變成 '__' 而互撞——版本目錄共用、
+            # 章節指派也等同失效（指派其一等於指派另一個）。
+            # 這裡是權威把關點：格式不合或重複一律改發序號式 key。
+            sid = _normalize_section_key(sid, used_keys, idx)
+            used_keys.add(sid)
+
             is_fixed = bool(sec.get('is_fixed', False))
             if sid in existing_fixed:
                 is_fixed = True
@@ -829,8 +950,8 @@ def handle_cancel_job(data):
 def handle_save_block(data):
     """
     [Batch C] 儲存 2B 段落 Block。
-    session 模式下檢查 user 對 pid 的角色 >= editor；
-    成功後寫 RevisionLog 並廣播 peer_update 給 room("ws:{pid}")。
+    [collab] session 模式下改採章節層判定：editor 以上可寫全部章節，
+    coauthor 只能寫被指派的章節。成功後寫 RevisionLog 並廣播 peer_update。
     """
     data = data or {}
     pid = _resolve_socket_pid_or_emit(data)
@@ -839,7 +960,11 @@ def handle_save_block(data):
     if not _ensure_socket_project_access(pid):
         return
 
-    # [Batch C] session 模式寫入權限檢查
+    title = data.get('title', 'Untitled_Paper')
+    section = data.get('section', 'general')
+    content = data.get('content', '')
+
+    # [Batch C] session 模式寫入權限檢查（section 必須先取出才能做章節層判定）
     auth_mode = str(current_app.config.get("AUTH_MODE", "none")).strip().lower()
     current_uid = None
     current_username = None
@@ -849,60 +974,51 @@ def handle_save_block(data):
             if current_user.is_authenticated:
                 current_uid = current_user.id
                 current_username = current_user.username
-                if not _socket_can_write(current_uid, pid):
-                    emit('sys_msg', {'msg': '權限不足：需要 editor 以上角色才能儲存。'})
+                if not _socket_can_write_section(current_uid, pid, section):
+                    emit('sys_msg', {
+                        'msg': f'權限不足：你沒有「{section}」章節的撰寫權限，'
+                               '可改用留言功能提供意見。',
+                    })
                     return
         except ImportError:
             pass
 
-    title = data.get('title', 'Untitled_Paper')
-    section = data.get('section', 'general')
-    content = data.get('content', '')
-    s_ver = data.get('s_ver', '1.0')
-
-    # [v1.7] 選填 base_rev：提供則啟用衝突防護；未提供維持舊行為
-    raw_base_rev = data.get('base_rev', None)
-    base_rev: Optional[int] = None
-    if raw_base_rev is not None:
-        try:
-            base_rev = int(raw_base_rev)
-        except (TypeError, ValueError):
-            base_rev = None
+    # [v1.8] from_ver 記錄「這一版是從哪一版改出來的」；前端傳入目前檢視中的版本。
+    # 前端送來的 s_ver 一律忽略——版本號改由伺服器指派（見下方註解）。
+    from_ver = data.get('from_ver') or None
 
     try:
-        save_result = ManuscriptIO.save_block(
-            pid, title, section, content, s_ver,
-            base_rev=base_rev,
+        # [v1.8] 版本由伺服器指派為 max+0.1，並以 O_EXCL 原子占用檔名。
+        # 不再有 save_conflict：每次存檔都是新檔案，兩人同時存只會得到兩個相鄰
+        # 版本（各自的 from_ver 記錄分支來源），不會互相覆蓋，也不需要使用者處理衝突。
+        save_result = ManuscriptIO.save_block_version(
+            pid, section, title, content,
+            from_ver=from_ver,
             updated_by=current_username,
         )
+        saved_filename = save_result.get("filename", "")
+        new_ver = save_result.get("ver")
 
-        # [v1.7] 衝突判斷
-        if isinstance(save_result, dict) and not save_result.get("ok"):
-            # 衝突：不落盤，通知前端
-            emit('save_conflict', {
-                'section': section,
-                'current_rev': save_result.get('current_rev'),
-                'base_rev': save_result.get('base_rev'),
-                'updated_by': save_result.get('updated_by'),
-                'updated_at': save_result.get('updated_at'),
-            })
-            return
+        # 正式版本已建立，草稿完成任務。留著會讓下次開啟時誤判「有未存檔內容」。
+        try:
+            ManuscriptIO.clear_draft(pid, section)
+        except Exception:
+            logger.warning("[cmd_save_block] 清除草稿失敗 pid=%s section=%s", pid, section)
 
-        # 存檔成功
-        if isinstance(save_result, dict):
-            saved_filename = save_result.get("filename", "")
-            new_rev = save_result.get("rev")
-        else:
-            saved_filename = save_result  # str（舊行為）
-            new_rev = None
-
-        ack_payload = {'target': 'block', 'msg': f'Block saved as {saved_filename}'}
-        if new_rev is not None:
-            ack_payload['_rev'] = new_rev
-        emit('save_ack', ack_payload)
+        emit('save_ack', {
+            'target': 'block',
+            'msg': f'Block saved as V{new_ver}',
+            'section': save_result.get('section', section),
+            'ver': new_ver,
+            'from_ver': save_result.get('from_ver'),
+            'filename': saved_filename,
+            'updated_at': save_result.get('updated_at'),
+            '_rev': 1,
+            'versions': ManuscriptIO.list_block_versions(pid, section),
+        })
 
         # [Batch C] RevisionLog
-        summary = f"block save: section={section} chars={len(str(content))}"
+        summary = f"block save: section={section} ver={new_ver} chars={len(str(content))}"
         _write_revision_log(
             pid=pid,
             user_id=current_uid,
@@ -915,13 +1031,132 @@ def handle_save_block(data):
         # [Batch C] 廣播 peer_update（協作預留）
         socketio.emit(
             'peer_update',
-            {'kind': 'block', 'section': section, 'by': current_username or 'anonymous'},
+            {
+                'kind': 'block',
+                'section': section,
+                'ver': new_ver,
+                'by': current_username or 'anonymous',
+            },
             room=f"ws:{pid}",
             namespace='/manu_ws',
         )
     except Exception as e:
         logger.error("[cmd_save_block] %s", e, exc_info=True)
         emit('sys_msg', {'msg': 'Save Error.'})
+
+
+@socketio.on('cmd_autosave_block', namespace='/manu_ws')
+def handle_autosave_block(data):
+    """
+    [v1.8] 自動存檔：前端停止編輯 1.5 秒後觸發。
+
+    與 cmd_save_block 的差異是刻意的：
+      - 寫入單一 _draft.json 就地覆寫，**不產生版本**。
+        若每次自動存檔都跳版，一次編輯就會噴出幾十個版本，版本選單失去意義。
+      - 不寫 RevisionLog（每 1.5 秒一筆會把審計表灌爆）。
+      - 不做 _rev 樂觀鎖（高頻觸發會在多人情境噴 save_conflict 風暴），
+        草稿採 last-writer-wins。
+    """
+    data = data or {}
+    pid = _resolve_socket_pid_or_emit(data, missing_msg='')
+    if not pid:
+        return
+    if not _ensure_socket_project_access(pid, emit_forbidden_msg=False):
+        return
+
+    section = data.get('section', 'general')
+    auth_mode = str(current_app.config.get("AUTH_MODE", "none")).strip().lower()
+    current_username = None
+    if auth_mode == "session":
+        try:
+            from flask_login import current_user
+            if current_user.is_authenticated:
+                current_username = current_user.username
+                if not _socket_can_write_section(current_user.id, pid, section):
+                    # 無權章節的自動存檔安靜略過，不要每 1.5 秒彈一次權限警告。
+                    return
+        except ImportError:
+            pass
+
+    try:
+        result = ManuscriptIO.save_draft(
+            pid, section,
+            data.get('title', 'Untitled_Paper'),
+            data.get('content', ''),
+            updated_by=current_username,
+        )
+        emit('autosave_ack', {
+            'ok': True,
+            'section': result.get('section', section),
+            'saved_at': result.get('saved_at'),
+        })
+    except Exception as e:
+        logger.error("[cmd_autosave_block] %s", e, exc_info=True)
+        emit('autosave_ack', {'ok': False, 'section': section})
+
+
+@socketio.on('cmd_load_draft', namespace='/manu_ws')
+def handle_load_draft(data):
+    """[v1.8] 讀取自動存檔草稿，供重新進入頁面時提示是否復原。"""
+    data = data or {}
+    pid = _resolve_socket_pid_or_emit(data, missing_msg='')
+    if not pid:
+        return
+    if not _ensure_socket_project_access(pid, emit_forbidden_msg=False):
+        return
+
+    section = data.get('section', 'general')
+    draft = ManuscriptIO.load_draft(pid, section)
+    emit('draft_loaded', {'ok': draft is not None, 'section': section, 'draft': draft})
+
+
+@socketio.on('cmd_delete_block_version', namespace='/manu_ws')
+def handle_delete_block_version(data):
+    """
+    [v1.8] 刪除單一章節版本快照。
+
+    版本預設全部保留不自動淘汰；只有使用者明確要求才刪。刪除需 editor 以上權限。
+    """
+    data = data or {}
+    pid = _resolve_socket_pid_or_emit(data, missing_msg='')
+    if not pid:
+        return
+    if not _ensure_socket_project_access(pid):
+        return
+
+    section = data.get('section', 'general')
+    ver = data.get('ver')
+
+    auth_mode = str(current_app.config.get("AUTH_MODE", "none")).strip().lower()
+    current_uid = None
+    if auth_mode == "session":
+        try:
+            from flask_login import current_user
+            if current_user.is_authenticated:
+                current_uid = current_user.id
+                # 刪版本沿用章節層判定：能寫該章節的人才能刪該章節的版本。
+                if not _socket_can_write_section(current_uid, pid, section):
+                    emit('sys_msg', {'msg': f'權限不足：你沒有「{section}」章節的編輯權限。'})
+                    return
+        except ImportError:
+            pass
+
+    ok = ManuscriptIO.delete_block_version(pid, section, ver)
+    if ok:
+        _write_revision_log(
+            pid=pid,
+            user_id=current_uid,
+            entity_type='manuscript_block',
+            entity_ref=f"{section}/V{ver}.json",
+            action='delete',
+            summary=f"block version delete: section={section} ver={ver}",
+        )
+    emit('block_version_deleted', {
+        'ok': ok,
+        'section': section,
+        'ver': ver,
+        'versions': ManuscriptIO.list_block_versions(pid, section),
+    })
 
 @socketio.on('cmd_save_paper', namespace='/manu_ws')
 def handle_save_paper(data):
@@ -947,22 +1182,49 @@ def handle_save_paper(data):
             if current_user.is_authenticated:
                 current_uid = current_user.id
                 current_username = current_user.username
+                # 2C 全篇總裝跨所有章節，維持專案層 editor 門檻，
+                # 不因為 coauthor 被指派了某一章就能總裝整篇。
                 if not _socket_can_write(current_uid, pid):
-                    emit('sys_msg', {'msg': '權限不足：需要 editor 以上角色才能儲存。'})
+                    emit('sys_msg', {'msg': '權限不足：全篇總裝需要 editor 以上角色。'})
                     return
         except ImportError:
             pass
 
     title = data.get('title', 'Untitled_Paper')
     content = data.get('content', '')
-    g_ver = data.get('ver', '1.0')
+    from_ver = data.get('from_ver') or None
+
+    # [v1.8] sections manifest：記錄這一版由哪些章節的哪一版組成。
+    # 前端若沒給，就以每個章節「目前的最新版本」推算，確保 manifest 不會是空的
+    # ——沒有它就無法一鍵回退整組章節，也回答不出「投出去那版 Method 是第幾版」。
+    sections = data.get('sections')
+    if not isinstance(sections, dict) or not sections:
+        sections = _current_section_versions(pid)
 
     try:
-        saved_filename = ManuscriptIO.save_paper(pid, title, content, g_ver)
-        emit('save_ack', {'target': 'paper', 'msg': f'Paper saved as {saved_filename}'})
+        save_result = ManuscriptIO.save_paper_version(
+            pid, title, content,
+            sections=sections,
+            from_ver=from_ver,
+            updated_by=current_username,
+        )
+        saved_filename = save_result.get('filename', '')
+        emit('save_ack', {
+            'target': 'paper',
+            'msg': f"Paper saved as {save_result.get('g_ver')}",
+            'g_ver': save_result.get('g_ver'),
+            'from_ver': save_result.get('from_ver'),
+            'sections': save_result.get('sections'),
+            'filename': saved_filename,
+            'updated_at': save_result.get('updated_at'),
+            'versions': ManuscriptIO.list_paper_versions(pid),
+        })
 
         # [Batch C] RevisionLog
-        summary = f"paper save: title={title} chars={len(str(content))}"
+        summary = (
+            f"paper save: title={title} ver={save_result.get('g_ver')} "
+            f"chars={len(str(content))}"
+        )
         _write_revision_log(
             pid=pid,
             user_id=current_uid,
@@ -1001,8 +1263,64 @@ def handle_list_papers(data):
     ):
         return
     title = data.get('title', 'Untitled_Paper')
-    files = ManuscriptIO.list_papers(pid, title)
-    emit('paper_list', {'files': files})
+    # files 保留舊契約；versions 帶 manifest 摘要供新版本選單使用。
+    emit('paper_list', {
+        'files': ManuscriptIO.list_papers(pid, title),
+        'versions': ManuscriptIO.list_paper_versions(pid),
+    })
+
+
+@socketio.on('cmd_restore_paper_version', namespace='/manu_ws')
+def handle_restore_paper_version(data):
+    """
+    [v1.8] 還原主論文版本：依 manifest 一次取回該版全文與各章節當時的內容。
+
+    這是 manifest 設計的主要價值——沒有 sections 對照表，就只能還原 2C 的合併
+    全文，無法把各章節編輯區也回到當時的狀態。
+    """
+    data = data or {}
+    pid = _resolve_socket_pid_or_emit(data, missing_msg='')
+    if not pid:
+        return
+    if not _ensure_socket_project_access(pid):
+        return
+
+    manifest = ManuscriptIO.load_paper_version(pid, data.get('ver'))
+    if not manifest:
+        emit('paper_restored', {'ok': False, 'msg': '找不到該版本。'})
+        return
+
+    # 逐章節取回當時版本的內容；某章節的該版已被刪除時只略過該章，不整批失敗。
+    restored_sections = {}
+    missing = []
+    for section_key, ver in (manifest.get('sections') or {}).items():
+        target = next(
+            (
+                entry for entry in ManuscriptIO.list_block_versions(pid, section_key)
+                if entry['ver'] == ver
+            ),
+            None,
+        )
+        if not target:
+            missing.append(f"{section_key}@V{ver}")
+            continue
+        block = ManuscriptIO.load_block(pid, section_key, target['filename'])
+        if block:
+            restored_sections[section_key] = {
+                'ver': ver,
+                'content': block.get('content', ''),
+            }
+        else:
+            missing.append(f"{section_key}@V{ver}")
+
+    emit('paper_restored', {
+        'ok': True,
+        'g_ver': manifest.get('g_ver'),
+        'content': manifest.get('content', ''),
+        'title': manifest.get('title'),
+        'sections': restored_sections,
+        'missing': missing,
+    })
 
 @socketio.on('cmd_load_paper', namespace='/manu_ws')
 def handle_load_paper(data):
@@ -1037,8 +1355,15 @@ def handle_list_blocks(data):
         forbidden_payload={'files': [], 'section': section},
     ):
         return
-    files = ManuscriptIO.list_blocks(pid, section)
-    emit('block_list', {'files': files, 'section': section})
+    # files 保留舊契約（前端與 e2e 測試以檔名載入舊版）；
+    # versions 是 v1.8 新增的結構化清單，供版本選單顯示 from_ver / 時間 / 作者。
+    emit('block_list', {
+        'files': ManuscriptIO.list_blocks(pid, section),
+        'section': section,
+        'versions': ManuscriptIO.list_block_versions(pid, section),
+        'draft': ManuscriptIO.load_draft(pid, section),
+        'next_ver': ManuscriptIO.next_block_version(pid, section),
+    })
 
 @socketio.on('cmd_load_block', namespace='/manu_ws')
 def handle_load_block(data):

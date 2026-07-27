@@ -104,18 +104,18 @@ def client_none(app_none):
 # ---------------------------------------------------------------------------
 
 
-def _register(client, username="testuser", password="password123"):
+def _register(client, email="testuser@example.com", password="password123"):
     return client.post(
         "/auth/register",
-        data={"username": username, "password": password, "confirm_password": password},
+        data={"email": email, "password": password, "confirm_password": password},
         follow_redirects=True,
     )
 
 
-def _login_api(client, username="testuser", password="password123"):
+def _login_api(client, email="testuser@example.com", password="password123"):
     return client.post(
         "/api/auth/login",
-        json={"username": username, "password": password},
+        json={"email": email, "password": password},
         content_type="application/json",
     )
 
@@ -139,16 +139,16 @@ class TestUserModel:
         resp = _register(client_session)
         assert resp.status_code == 200
 
-    def test_duplicate_username_fails(self, client_session, app_session):
-        """重複 username 返回錯誤訊息，不建立第二個帳號。"""
-        _register(client_session, username="alice", password="password123")
+    def test_duplicate_email_fails(self, client_session, app_session):
+        """重複 email 返回錯誤訊息，不建立第二個帳號。"""
+        _register(client_session, email="alice@example.com", password="password123")
         # 先登出
         _logout_api(client_session)
 
         resp = client_session.post(
             "/auth/register",
             data={
-                "username": "alice",
+                "email": "alice@example.com",
                 "password": "password456",
                 "confirm_password": "password456",
             },
@@ -158,10 +158,10 @@ class TestUserModel:
         body = resp.data.decode("utf-8")
         assert "已被使用" in body
 
-        # DB 中只有一個 alice
+        # DB 中只有一個 alice@example.com
         with app_session.app_context():
             from app.models import User
-            count = User.query.filter_by(username="alice").count()
+            count = User.query.filter_by(email="alice@example.com").count()
             assert count == 1
 
 
@@ -216,13 +216,13 @@ class TestAuthAPI:
 
 class TestChangePassword:
     def _setup_user(self, client):
-        _register(client, username="bob", password="oldpass1")
+        _register(client, email="bob@example.com", password="oldpass1")
         _logout_api(client)
 
     def test_change_password_wrong_old_fails(self, client_session):
         """舊密碼錯 → 頁面顯示錯誤訊息。"""
         self._setup_user(client_session)
-        _login_api(client_session, username="bob", password="oldpass1")
+        _login_api(client_session, email="bob@example.com", password="oldpass1")
 
         resp = client_session.post(
             "/auth/account",
@@ -239,7 +239,7 @@ class TestChangePassword:
     def test_change_password_success(self, client_session):
         """成功改密碼：舊密碼登不進，新密碼可以。"""
         self._setup_user(client_session)
-        _login_api(client_session, username="bob", password="oldpass1")
+        _login_api(client_session, email="bob@example.com", password="oldpass1")
 
         resp = client_session.post(
             "/auth/account",
@@ -255,11 +255,11 @@ class TestChangePassword:
 
         # 登出後用舊密碼登不進
         _logout_api(client_session)
-        resp_old = _login_api(client_session, username="bob", password="oldpass1")
+        resp_old = _login_api(client_session, email="bob@example.com", password="oldpass1")
         assert resp_old.status_code == 401
 
         # 新密碼可以
-        resp_new = _login_api(client_session, username="bob", password="newpass99")
+        resp_new = _login_api(client_session, email="bob@example.com", password="newpass99")
         assert resp_new.status_code == 200
 
 
@@ -291,7 +291,8 @@ class TestSessionModeGuard:
 
     def test_api_auth_login_accessible_unauthenticated(self, client_session):
         """/api/auth/login 不被 session 守衛擋住。"""
-        resp = _login_api(client_session, username="nobody", password="x")
+        # email 格式必須合法，否則會先被格式驗證擋成 400，測不到守衛行為。
+        resp = _login_api(client_session, email="nobody@example.com", password="x")
         # 401 是帳號錯誤，不是 session 守衛
         assert resp.status_code == 401
         data = resp.get_json()

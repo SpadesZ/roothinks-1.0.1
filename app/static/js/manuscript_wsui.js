@@ -284,8 +284,17 @@ class ManuUI {
                 if (!sectionId) return;
 
                 this.app.selectedSections = new Set([sectionId]);
+                // [v1.8] sectionVersion 現在是版本選單，選項屬於「上一個章節」。
+                // 直接塞舊值會落空（select 找不到對應 option 就變成空字串），
+                // 所以改為向伺服器要這個章節的版本清單，由 block_list 事件重畫選單。
                 if (this.app.sectionVersion) {
-                    this.app.sectionVersion.value = this.app.lastSavedSVer[sectionId] || '0.0';
+                    this.app.sectionVersion.innerHTML = '<option value="">載入中…</option>';
+                }
+                if (this.app.socket && this.app.pid) {
+                    this.app.socket.emit('cmd_list_blocks', {
+                        pid: this.app.pid,
+                        section: sectionId,
+                    });
                 }
                 if (this.app.drafterTargetSection) {
                     this.app.drafterTargetSection.value = sectionId;
@@ -293,6 +302,15 @@ class ManuUI {
 
                 this.updateDropdownLabel();
                 this.renderSectionDropdown();
+                // [collab] 換章節後刷新唯讀鎖定、留言數徽章，以及開著的留言側欄。
+                if (this.app.collab) {
+                    this.app.collab.refreshLock();
+                    this.app.collab.refreshCommentBadge();
+                    const panel = document.getElementById('chapterCommentPanel');
+                    if (panel && panel.style.display === 'flex') {
+                        this.app.collab.refreshComments();
+                    }
+                }
                 if (this.app.soed && this.app.soed.loadMultiSectionContent) {
                     this.app.soed.loadMultiSectionContent();
                 }
@@ -422,11 +440,44 @@ class ManuUI {
         this.renderManagerList();
     }
 
+    /**
+     * 由章節顯示名產生 section_key。
+     *
+     * 舊做法 name.toLowerCase().replace(/[^a-z0-9]/g, '_') 是逐字元替換，
+     * 中文章節名的每個字都變成一個底線 —— 「緒論」與「討論」都會得到 '__'，
+     * 任兩個等長的中文名稱都會撞成同一個 key。section_key 同時是儲存目錄名、
+     * 章節指派索引與留言索引，撞了就會版本互相污染、指派其一等於指派另一個。
+     *
+     * 改為：先收斂連續非法字元，兩端去底線；結果為空（純非 ASCII 名稱）時
+     * 改用序號式 key，最後再確保在目前清單中唯一。
+     * 後端 _normalize_section_key 會再驗一次，這裡只是讓 key 好讀。
+     */
+    _makeSectionKey(label) {
+        const slug = String(label || '')
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, '_')
+            .replace(/^_+|_+$/g, '')
+            .slice(0, 50);
+        const existing = new Set((this.app.sections || []).map(s => s.id));
+        const base = slug || 'sec';
+        let candidate = base;
+        let n = 1;
+        while (existing.has(candidate)) {
+            n += 1;
+            candidate = `${base}_${n}`.slice(0, 50);
+        }
+        return candidate;
+    }
+
     addSectionItem() {
         const name = this.app.newSectionName.value.trim();
         if(!name) return;
-        this.app.sections.push({id: name.toLowerCase().replace(/[^a-z0-9]/g, '_'), label: name, is_fixed: false});
-        this.app.newSectionName.value = ''; 
+        this.app.sections.push({
+            id: this._makeSectionKey(name),
+            label: name,
+            is_fixed: false,
+        });
+        this.app.newSectionName.value = '';
         this.renderManagerList();
     }
 

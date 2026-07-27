@@ -1,14 +1,17 @@
 <!--
   檔案路徑: app/templates/auth/account.html
-  產生時間: 2026-07-19 00:00 +08:00
-  版本: v1.0
+  產生時間: 2026-07-26 00:42 +08:00
+  版本: v2.0
   模組定位:
     已登入使用者的帳號設定頁面（改密碼）。
   主要責任:
-    1. 顯示當前帳號資訊。
+    1. 顯示當前帳號的登入 Email 與顯示名。
     2. 提供改密碼表單（需驗舊密碼，新密碼 >= 8 字元）。
     3. 表單含 csrf_token()。
   維護提醒:
+    - 登入識別是 Email；username 只是顯示名，兩者都在此頁唯讀呈現。
+    - 目前不提供改 Email 功能（改動登入識別牽涉既有 session 與成員授權，
+      需另行設計驗證流程）。
     - 此路由由 @login_required 保護，未登入自動導向 /auth/login。
     - Bootstrap 5 風格與其他頁面一致。
   驗證方式:
@@ -22,7 +25,15 @@
             <h4 class="card-title fw-bold mb-1">
                 <i class="bi bi-person-gear text-info me-2"></i>帳號設定
             </h4>
-            <p class="text-muted small mb-4">帳號：<strong>{{ current_user.username }}</strong></p>
+            <p class="text-muted small mb-1">
+                登入 Email：<strong>{{ current_user.email }}</strong>
+            </p>
+            <p class="text-muted small mb-4">
+                顯示名：<strong>{{ current_user.username }}</strong>
+                {% if current_user.system_role and current_user.system_role != 'user' %}
+                <span class="badge bg-info text-dark ms-1">{{ current_user.system_role }}</span>
+                {% endif %}
+            </p>
 
             {% if error %}
             <div class="alert alert-danger py-2">{{ error }}</div>

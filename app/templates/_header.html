@@ -1,3 +1,29 @@
+<!--
+  檔案路徑: app/templates/_header.html
+  產生時間: 2026-07-26 06:30 +08:00
+  版本: v1.1
+  模組定位:
+    全站共用的 <head> 與導覽列。多數頁面 include 本檔即取得整個頁首。
+  主要責任:
+    1. 載入共用 CSS/字型與全域樣式。
+    2. 渲染導覽列（模組切換、字級調整、帳號下拉、Mentor 入口）。
+    3. [mentor] 已登入時掛上 60 秒一次的 /api/heartbeat 計時器，累計停留時間。
+  呼叫來源:
+    dashboard.html、literature.html、study.html、paq.html、submit.html、
+    auth/*.html、mentor/dashboard.html 等。
+  輸入輸出契約:
+    依賴 config.AUTH_MODE 與 current_user；none 模式下不渲染帳號相關區塊。
+  安全邊界:
+    - Mentor 入口僅在 current_user.is_mentor 時渲染；真正的把關在後端
+      _require_mentor，前端隱藏只是體驗。
+  維護提醒:
+    - 導覽列在本專案有「兩份」：本檔內嵌這份是絕大多數頁面實際使用的，
+      app/templates/_navbar.html 目前只有 manuscript_workspace.html 會 include。
+      改導覽列必須兩邊都改，否則會出現只有手稿頁有、其他頁沒有的狀況。
+    - heartbeat 失敗刻意不處理：下一次心跳會補上，統計以最後一次為準。
+  驗證方式:
+    python -m pytest test/unit/test_mentor_scope.py -q
+-->
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
@@ -57,6 +83,23 @@
             } catch (e) { /* localStorage 不可用時略過 */ }
         })();
     </script>
+    {% if config.AUTH_MODE == 'session' and current_user.is_authenticated %}
+    <script>
+        // [mentor] 每 60 秒回報一次在線狀態，累計「停留時間」統計。
+        // 逾 5 分鐘沒有回報的 session 會在讀取統計時被結算，
+        // 因此關掉分頁最多只會多算一個間隔，不會把掛機時間算進去。
+        (function () {
+            var HEARTBEAT_MS = 60000;
+            function beat() {
+                fetch('/api/heartbeat', { method: 'POST' }).catch(function () {
+                    // 網路暫斷不需處理：下一次心跳會補上，統計以最後一次為準。
+                });
+            }
+            beat();
+            setInterval(beat, HEARTBEAT_MS);
+        })();
+    </script>
+    {% endif %}
 </head>
 <body class="bg-light">
 
@@ -127,6 +170,18 @@
 
                 {# [Batch A] User dropdown: session 模式顯示帳號操作；none 模式保持原樣 #}
                 {% if config.AUTH_MODE == 'session' %}
+                    {# [mentor] 只有 mentor / admin 看得到入口；伺服器端另有 _require_mentor 把關。
+                       注意：本檔的導覽列是「大多數頁面」實際使用的那一份，
+                       _navbar.html 目前只有 manuscript_workspace.html 會 include，
+                       兩處都要改才會全站一致。 #}
+                    {% if current_user.is_authenticated and current_user.is_mentor %}
+                    <a href="{{ url_for('mentor.dashboard') }}"
+                       class="btn btn-outline-info btn-sm d-flex align-items-center ms-1"
+                       title="指導者儀表板">
+                        <i class="bi bi-mortarboard me-1"></i>
+                        <span class="d-none d-lg-inline">Mentor</span>
+                    </a>
+                    {% endif %}
                     {% if current_user.is_authenticated %}
                     <div class="dropdown ms-2">
                         <button class="btn btn-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">

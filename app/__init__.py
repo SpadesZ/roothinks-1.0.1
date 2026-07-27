@@ -376,12 +376,7 @@ def create_app(test_config=None):
         except Exception:
             return None
 
-    socketio.init_app(
-        app,
-        cors_allowed_origins=app.config["CORS_ALLOWED_ORIGINS"],
-        async_mode=app.config["SOCKETIO_ASYNC_MODE"],
-        message_queue=app.config["SOCKETIO_MESSAGE_QUEUE"],
-    )
+    # socketio.init_app 刻意延後到路由模組匯入之後才呼叫，見下方 [socketio 註冊順序]。
 
     @app.before_request
     def _auth_guard():
@@ -474,9 +469,28 @@ def create_app(test_config=None):
     from app.core_pro.literature import literature_routes
     from app.core_pro.study import study_routes
     from app.core_pro.manuscript import manuscript_routes
+    from app.core_pro.manuscript import chapter_routes  # noqa: F401  # [collab] 章節指派與留言
     from app.llm_service import llm_routes
     from app.routes import main_bp
     from app.auth import auth_bp, auth_api_bp
+    from app.mentor import mentor_bp, mentor_api_bp
+
+    # ── [socketio 註冊順序] 必須在上面的路由模組匯入之後才 init_app ──────────
+    # flask_socketio 的 @socketio.on 裝飾器行為是：
+    #   if self.server:  直接註冊到當前 server
+    #   else:            存進 self.handlers，留待 init_app 時註冊
+    # 而 init_app 每次都會重建 self.server，並只從 self.handlers 還原 handler。
+    #
+    # 若在匯入 manuscript_routes 之前就 init_app，第一次建立 app 時 server 已存在，
+    # 所有 @socketio.on 只會掛在「那一個」server 上、完全不進 self.handlers；
+    # 之後任何再次 create_app（測試、部分 WSGI 部署方式）重建 server 後，
+    # /manu_ws 命名空間會沒有任何 handler，連線一律被拒，手稿即時協作整組失效。
+    socketio.init_app(
+        app,
+        cors_allowed_origins=app.config["CORS_ALLOWED_ORIGINS"],
+        async_mode=app.config["SOCKETIO_ASYNC_MODE"],
+        message_queue=app.config["SOCKETIO_MESSAGE_QUEUE"],
+    )
 
     app.register_blueprint(project_routes.bp)
     app.register_blueprint(paq_routes.bp)
@@ -491,6 +505,11 @@ def create_app(test_config=None):
     # auth_api_bp — JSON API 路由（url_prefix="/api/auth"）
     app.register_blueprint(auth_bp)
     app.register_blueprint(auth_api_bp)
+
+    # [mentor] mentor_bp  — 儀表板頁面（url_prefix="/mentor"）
+    #          mentor_api_bp — JSON API（url_prefix="/api/mentor"）
+    app.register_blueprint(mentor_bp)
+    app.register_blueprint(mentor_api_bp)
 
     from app import models
     from app.llm_service.llm_model import LLMModel

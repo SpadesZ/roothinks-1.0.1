@@ -1,14 +1,23 @@
 # 檔案路徑: app/core_pro/manuscript/manuscript_io.py
-# 產生時間: 2026-07-19 09:00 +08:00
-# 版本: v0.8
+# 產生時間: 2026-07-26 01:10 +08:00
+# 版本: v1.0
 # 模組定位:
-#   Manuscript 段落 (Block) 與全篇 (Paper) JSON 檔案的純文字讀寫引擎。
+#   Manuscript 段落 (Block) 與全篇 (Paper) JSON 檔案的純文字讀寫引擎，
+#   以及版本編號與自動存檔草稿的落盤規則。
 # 主要責任:
 #   1. save_block / save_paper — 儲存 2B/2C 草稿至本地端 JSON 檔案。
 #   2. load_block / load_paper — 讀取已儲存草稿。
 #   3. list_blocks / list_papers — 列舉版本歷史。
 #   4. [v0.8] check_and_save_block — 帶 rev 衝突防護的可測純函數。
 #      block JSON 落盤結構新增 _rev / _updated_at / _updated_by 三個欄位。
+#   5. [v1.0] 版本編號改由伺服器指派（max + 0.1），並記錄 from_ver 來源版本。
+#   6. [v1.0] 自動存檔草稿：save_draft / load_draft / clear_draft，
+#      單一 _draft.json 就地覆寫，不產生版本。
+#   7. [v1.0] 主論文版本改為 manifest：整數 V1/V2，內含各章節當時版本對照表。
+#
+#   兩條互相獨立的版本軸，不可混用：
+#     _rev      — 單一檔案的樂觀鎖，防兩人同時覆蓋彼此（v0.8 既有機制）。
+#     ver       — 使用者可見的版本快照編號，append-only 永不覆寫（v1.0 新增）。
 # 呼叫來源:
 #   manuscript_routes.py 的 Socket handler（cmd_save_block、cmd_save_paper 等）。
 # 輸入輸出契約:
@@ -19,6 +28,14 @@
 #   - 禁止 os.path.join('data', ...) 相對路徑組合。
 #   - 所有路徑組件必須先通過 _safe_component 或 os.path.basename 清洗。
 # 維護提醒:
+#   - v1.0 [版本協議] 版本號一律由伺服器指派，前端傳來的 s_ver / g_ver 不再採信。
+#     舊機制讓前端自行遞增，導致同日同標題同版號會產生相同檔名而靜默覆蓋舊版；
+#     使用者「改 V0.1 後存檔」會把 V0.1 原檔蓋掉。現在改為掃描既有版本取 max+0.1，
+#     並在落盤前檢查檔名是否已存在（存在就繼續往上加），從結構上杜絕覆寫。
+#   - v1.0 版本檔名去掉日期：舊格式 <title>_<yymmdd>_V<ver>.json 會讓跨日版號重號。
+#     新格式為 V<ver>.json，title 與日期改記在 JSON 內容裡。讀取端相容兩種格式。
+#   - v1.0 _draft.json 是自動存檔專用，不計入版本清單；命名刻意不以 V 開頭，
+#     以免被版本掃描的正規表達式撈到。
 #   - v0.7 [Batch C] 全面改用 safe_join_under + DATA_ROOT 絕對路徑，
 #     消除原 os.path.join('data', ...) 相對路徑繞過點（L57/111/157/168/180/192）。
 #   - v0.8 [rev 協議] block JSON 新增 _rev(int)、_updated_at(iso)、_updated_by(str|None)。
@@ -33,6 +50,7 @@
 import os
 import json
 import glob
+import hashlib
 import re
 from datetime import datetime, timezone
 from typing import Optional, List, Dict, Any, Union
@@ -117,6 +135,91 @@ def check_and_save_block(
     return {"ok": True, "rev": new_rev}
 
 
+# ---------------------------------------------------------------------------
+# [v1.0] 版本編號引擎 —— 伺服器指派、單調遞增、append-only
+#
+# 以下皆為不依賴 Flask context 的純函數，可直接單元測試。
+# ---------------------------------------------------------------------------
+
+# 自動存檔草稿檔名。刻意不以 V 開頭，才不會被版本掃描撈進版本清單。
+DRAFT_FILENAME = "_draft.json"
+
+# 版本檔名格式。新格式 V0.1.json；同時容忍舊格式 <title>_<yymmdd>_V1.0.json。
+_VERSION_FILE_RE = re.compile(r"^(?:.*_)?[Vv](\d+)(?:\.(\d+))?\.json$")
+
+# 版本字串格式（可帶或不帶 V 前綴）。
+_VERSION_TEXT_RE = re.compile(r"^[Vv]?(\d+)(?:\.(\d+))?$")
+
+
+def parse_version(text: Any) -> Optional[int]:
+    """
+    將版本字串解析為「十分位整數」：'0.1' -> 1、'1.0' -> 10、'2.3' -> 23。
+
+    用整數而非浮點運算是刻意的：浮點累加 0.1 會產生 0.30000000000000004
+    這類值，做成檔名後版本清單會爛掉。
+    解析失敗回傳 None（呼叫端負責忽略該檔）。
+    """
+    match = _VERSION_TEXT_RE.fullmatch(str(text or "").strip())
+    if not match:
+        return None
+    major = int(match.group(1))
+    minor = int(match.group(2)) if match.group(2) is not None else 0
+    return major * 10 + minor
+
+
+def format_version(tenths: int) -> str:
+    """十分位整數轉回版本字串：1 -> '0.1'、10 -> '1.0'、23 -> '2.3'。"""
+    value = max(int(tenths), 0)
+    return f"{value // 10}.{value % 10}"
+
+
+def parse_version_from_filename(filename: str) -> Optional[int]:
+    """從版本檔名取出十分位整數；非版本檔（如 _draft.json）回傳 None。"""
+    match = _VERSION_FILE_RE.fullmatch(os.path.basename(str(filename or "")))
+    if not match:
+        return None
+    major = int(match.group(1))
+    minor = int(match.group(2)) if match.group(2) is not None else 0
+    return major * 10 + minor
+
+
+def next_version_tenths(existing: List[int]) -> int:
+    """
+    下一個版本 = 既有最大版本 + 0.1。沒有任何既有版本時從 0.1 起算。
+
+    注意語意：版本號是「單調遞增的序號」而不是分支代號。使用者從 V0.1 改出來的
+    新版在已有 V0.1~V0.3 時會是 V0.4，V0.1 原檔保留不動；來源關係記在 from_ver。
+    """
+    valid = [int(v) for v in existing if v is not None]
+    return (max(valid) + 1) if valid else 1
+
+
+def claim_version_path(dir_path: str, start: int, filename_for) -> tuple:
+    """
+    原子地占用一個尚未被使用的版本檔名，回傳 (序號, 檔名, 絕對路徑)。
+
+    用 O_CREAT|O_EXCL 搶檔名，而不是先 os.path.exists() 再寫入：兩人同時存檔時，
+    check 與 write 之間存在空窗，後者會覆蓋前者的版本。O_EXCL 的互斥由作業系統
+    保證，是這裡唯一可靠的做法——而「版本永不被覆寫」正是這套機制的核心承諾。
+
+    filename_for(n) 由呼叫端提供，決定第 n 號用什麼檔名
+    （章節為 V0.4.json，主論文為 V2.json）。
+
+    副作用：成功時磁碟上會留下一個 0 byte 的佔位檔，呼叫端必須接著寫入內容，
+    失敗時負責刪除它。
+    """
+    number = int(start)
+    while True:
+        name = filename_for(number)
+        path = os.path.join(dir_path, name)
+        try:
+            fd = os.open(path, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+            os.close(fd)
+            return number, name, path
+        except FileExistsError:
+            number += 1
+
+
 def _get_data_root() -> str:
     """
     取得絕對 data 根目錄。
@@ -161,155 +264,413 @@ class ManuscriptIO:
         safe = re.sub(r"[^A-Za-z0-9._-]+", "_", str(value or "").strip())[:max_len]
         return safe or fallback
 
+    # -- [v1.0] 章節版本與草稿 ------------------------------------------------
+
     @staticmethod
-    def save_block(
+    def _section_dir_name(section: str) -> str:
+        """
+        章節的儲存目錄名。
+
+        _safe_component 會把每個非 ASCII 字元換成 '_'，所以「緒論」「討論」這類
+        純中文章節名全都被清成同一個 '_' —— 不同章節會共用同一個版本目錄，
+        版號互相污染、版本清單互相看得到，章節指派也等同失效。
+        因此只要清洗有損（結果與原字串不同），就附上原字串的短雜湊，
+        保證章節與目錄一對一。
+
+        預設的英文 key（introduction / method …）清洗後不變，目錄名維持原樣，
+        既有資料不受影響。
+        """
+        raw = str(section or "").strip()
+        safe = ManuscriptIO._safe_component(raw, "general")
+        if safe == raw:
+            return safe
+        digest = hashlib.sha1(raw.encode("utf-8")).hexdigest()[:8]
+        return f"{safe}-{digest}"
+
+    @staticmethod
+    def _block_dir(pid: str, section: str, create: bool = False) -> str:
+        """
+        取得 <DATA_ROOT>/<formal_pid>/manuscript/block/<section> 絕對路徑。
+        section 先過 _section_dir_name，再由 safe_join_under 二次把關路徑穿越。
+        """
+        formal_pid = ManuscriptIO._formal_pid(pid)
+        section = ManuscriptIO._section_dir_name(section)
+        dir_path = safe_join_under(
+            _get_data_root(), formal_pid, 'manuscript', 'block', section
+        )
+        if create:
+            try:
+                os.makedirs(dir_path, exist_ok=True)
+            except OSError as e:
+                logger.error(f"[ManuscriptIO] Directory creation failed: {e}")
+                raise
+        return dir_path
+
+    @staticmethod
+    def _existing_block_tenths(dir_path: str) -> List[int]:
+        """掃出目錄下所有版本檔的十分位版本值（忽略草稿與非版本檔）。"""
+        if not os.path.isdir(dir_path):
+            return []
+        found = []
+        for name in os.listdir(dir_path):
+            tenths = parse_version_from_filename(name)
+            if tenths is not None:
+                found.append(tenths)
+        return found
+
+    @staticmethod
+    def next_block_version(pid: str, section: str) -> str:
+        """回傳該章節的下一個版本號字串（既有最大 + 0.1）。"""
+        dir_path = ManuscriptIO._block_dir(pid, section)
+        return format_version(next_version_tenths(ManuscriptIO._existing_block_tenths(dir_path)))
+
+    @staticmethod
+    def list_block_versions(pid: str, section: str) -> List[Dict[str, Any]]:
+        """
+        列出章節的所有版本快照，新版在前。
+
+        回傳結構化清單而非檔名字串，讓前端版本選單能顯示
+        「V0.4 ← 改自 V0.1 / 2026-07-26 / by alice」這種可判讀的資訊。
+        """
+        dir_path = ManuscriptIO._block_dir(pid, section)
+        if not os.path.isdir(dir_path):
+            return []
+
+        entries = []
+        for name in sorted(os.listdir(dir_path)):
+            tenths = parse_version_from_filename(name)
+            if tenths is None:
+                continue
+            data = {}
+            try:
+                loaded = load_json_locked(safe_join_under(dir_path, name), {})
+                if isinstance(loaded, dict):
+                    data = loaded
+            except Exception:
+                logger.warning("[ManuscriptIO] 版本檔讀取失敗，仍列入清單: %s", name, exc_info=True)
+            entries.append({
+                "ver": format_version(tenths),
+                "from_ver": data.get("from_ver"),
+                "title": data.get("title"),
+                "updated_at": data.get("_updated_at") or data.get("timestamp"),
+                "updated_by": data.get("_updated_by"),
+                "filename": name,
+                "_tenths": tenths,
+            })
+
+        entries.sort(key=lambda item: item["_tenths"], reverse=True)
+        for item in entries:
+            item.pop("_tenths", None)
+        return entries
+
+    @staticmethod
+    def save_block_version(
+        pid: str,
+        section: str,
+        title: str,
+        content: str,
+        from_ver: Optional[str] = None,
+        updated_by: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """
+        建立一個新的章節版本快照。版本號由伺服器指派，永不覆寫既有版本。
+
+        from_ver 記錄「這一版是從哪一版改出來的」。少了它，版本清單只剩一串
+        看不出關係的號碼，回退功能就失去意義。
+
+        回傳 {"ok": True, "ver": "0.4", "from_ver": "0.1", "filename": "V0.4.json", ...}
+        """
+        title = ManuscriptIO._safe_component(title or 'Untitled', "Untitled")
+        dir_path = ManuscriptIO._block_dir(pid, section, create=True)
+
+        start = next_version_tenths(ManuscriptIO._existing_block_tenths(dir_path))
+        tenths, filename, save_path = claim_version_path(
+            dir_path, start, lambda n: f"V{format_version(n)}.json"
+        )
+
+        ver = format_version(tenths)
+        now_iso = datetime.now(timezone.utc).isoformat()
+
+        payload = {
+            'title': title,
+            # 保留原始 section_key：權限層（can_write_section）與 ChapterAssignment
+            # 都以原始值為索引，這裡若寫清洗後的值會對不上。
+            'section': str(section or 'general').strip(),
+            'content': content,
+            'ver': ver,
+            'from_ver': from_ver,
+            'version': f"V{ver}",          # 舊前端讀 version 欄位，保留
+            'timestamp': datetime.now().isoformat(),
+            '_rev': 1,                      # 版本檔一經建立就不再變動
+            '_updated_at': now_iso,
+            '_updated_by': updated_by,
+        }
+
+        try:
+            write_json_locked(save_path, payload)
+        except Exception as e:
+            # 清掉 claim 階段留下的 0 byte 佔位檔，否則版本清單會出現空版本。
+            try:
+                os.remove(save_path)
+            except OSError:
+                pass
+            logger.error(f"[ManuscriptIO] Block version save failed for {save_path}: {e}")
+            raise
+
+        return {
+            "ok": True,
+            "ver": ver,
+            "from_ver": from_ver,
+            "filename": filename,
+            "section": payload['section'],
+            "updated_at": now_iso,
+            "updated_by": updated_by,
+        }
+
+    @staticmethod
+    def delete_block_version(pid: str, section: str, ver: str) -> bool:
+        """刪除指定版本快照。找不到回 False（呼叫端據此回 404）。"""
+        tenths = parse_version(ver)
+        if tenths is None:
+            return False
+        dir_path = ManuscriptIO._block_dir(pid, section)
+        target = safe_join_under(dir_path, f"V{format_version(tenths)}.json")
+        if not os.path.exists(target):
+            return False
+        try:
+            os.remove(target)
+            return True
+        except OSError as e:
+            logger.error(f"[ManuscriptIO] Block version delete failed for {target}: {e}")
+            return False
+
+    @staticmethod
+    def save_draft(
+        pid: str,
+        section: str,
+        title: str,
+        content: str,
+        updated_by: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """
+        自動存檔：就地覆寫單一 _draft.json，**不產生版本**。
+
+        刻意不做 _rev 衝突檢查——自動存檔每 1.5 秒可能觸發一次，套用樂觀鎖會在
+        多人情境噴出大量 save_conflict。草稿採 last-writer-wins，正式版本快照
+        才需要衝突保護。
+        """
+        dir_path = ManuscriptIO._block_dir(pid, section, create=True)
+        save_path = safe_join_under(dir_path, DRAFT_FILENAME)
+        now_iso = datetime.now(timezone.utc).isoformat()
+
+        payload = {
+            'title': ManuscriptIO._safe_component(title or 'Untitled', "Untitled"),
+            # 保留原始 section_key：權限層（can_write_section）與 ChapterAssignment
+            # 都以原始值為索引，這裡若寫清洗後的值會對不上。
+            'section': str(section or 'general').strip(),
+            'content': content,
+            'is_draft': True,
+            '_updated_at': now_iso,
+            '_updated_by': updated_by,
+        }
+        write_json_locked(save_path, payload)
+        return {"ok": True, "saved_at": now_iso, "section": payload['section']}
+
+    @staticmethod
+    def load_draft(pid: str, section: str) -> Optional[Dict[str, Any]]:
+        """讀取自動存檔草稿；不存在回 None。"""
+        dir_path = ManuscriptIO._block_dir(pid, section)
+        path = safe_join_under(dir_path, DRAFT_FILENAME)
+        if not os.path.exists(path):
+            return None
+        try:
+            data = load_json_locked(path, None)
+            return data if isinstance(data, dict) else None
+        except Exception as e:
+            logger.error(f"[ManuscriptIO] Draft load failed for {path}: {e}")
+            return None
+
+    @staticmethod
+    def clear_draft(pid: str, section: str) -> bool:
+        """清掉草稿（通常在使用者按下正式存檔之後）。不存在也視為成功。"""
+        dir_path = ManuscriptIO._block_dir(pid, section)
+        path = safe_join_under(dir_path, DRAFT_FILENAME)
+        if not os.path.exists(path):
+            return True
+        try:
+            os.remove(path)
+            return True
+        except OSError as e:
+            logger.error(f"[ManuscriptIO] Draft clear failed for {path}: {e}")
+            return False
+
+    # -- [v1.0] 主論文版本（manifest） ---------------------------------------
+
+    @staticmethod
+    def _paper_dir(pid: str, create: bool = False) -> str:
+        """取得 <DATA_ROOT>/<formal_pid>/manuscript/paper 絕對路徑。"""
+        formal_pid = ManuscriptIO._formal_pid(pid)
+        dir_path = safe_join_under(_get_data_root(), formal_pid, 'manuscript', 'paper')
+        if create:
+            os.makedirs(dir_path, exist_ok=True)
+        return dir_path
+
+    @staticmethod
+    def _existing_paper_numbers(dir_path: str) -> List[int]:
+        """
+        掃出主論文版本號（整數）。
+
+        沿用章節的檔名正規表達式再除以 10：新格式 V2.json -> 20 -> 2；
+        舊格式 <title>_<yymmdd>_V1.0.json -> 10 -> 1。
+        """
+        if not os.path.isdir(dir_path):
+            return []
+        found = []
+        for name in os.listdir(dir_path):
+            tenths = parse_version_from_filename(name)
+            if tenths is not None:
+                found.append(max(tenths // 10, 0))
+        return found
+
+    @staticmethod
+    def next_paper_version(pid: str) -> int:
+        """回傳下一個主論文版本整數（既有最大 + 1，從 1 起算）。"""
+        numbers = ManuscriptIO._existing_paper_numbers(ManuscriptIO._paper_dir(pid))
+        return (max(numbers) + 1) if numbers else 1
+
+    @staticmethod
+    def list_paper_versions(pid: str) -> List[Dict[str, Any]]:
+        """列出主論文版本（manifest 摘要），新版在前。"""
+        dir_path = ManuscriptIO._paper_dir(pid)
+        if not os.path.isdir(dir_path):
+            return []
+
+        entries = []
+        for name in sorted(os.listdir(dir_path)):
+            tenths = parse_version_from_filename(name)
+            if tenths is None:
+                continue
+            data = {}
+            try:
+                loaded = load_json_locked(safe_join_under(dir_path, name), {})
+                if isinstance(loaded, dict):
+                    data = loaded
+            except Exception:
+                logger.warning("[ManuscriptIO] 主論文版本讀取失敗: %s", name, exc_info=True)
+            number = max(tenths // 10, 0)
+            entries.append({
+                "g_ver": f"V{number}",
+                "number": number,
+                "from_ver": data.get("from_ver"),
+                "title": data.get("title"),
+                "sections": data.get("sections") or {},
+                "updated_at": data.get("_updated_at") or data.get("timestamp"),
+                "updated_by": data.get("_updated_by"),
+                "filename": name,
+            })
+
+        entries.sort(key=lambda item: item["number"], reverse=True)
+        return entries
+
+    @staticmethod
+    def save_paper_version(
         pid: str,
         title: str,
-        section: str,
         content: str,
-        s_ver: str = "1.0",
-        base_rev: Optional[int] = None,
+        sections: Optional[Dict[str, str]] = None,
+        from_ver: Optional[str] = None,
         updated_by: Optional[str] = None,
-    ) -> Union[str, Dict[str, Any]]:
+    ) -> Dict[str, Any]:
         """
-        儲存 2B 視窗的段落草稿 (Block)
-        路徑規則: <DATA_ROOT>/<formal_pid>/manuscript/block/<section>/<title>_<yymmdd>_V<x>.json
+        建立主論文版本快照（manifest）。版本為整數 V1 / V2 / V3。
 
-        [v0.8] 新增 base_rev / updated_by 參數支援 rev 衝突防護：
-          - base_rev=None      → 舊前端相容，直接存，回傳 filename (str)。
-          - base_rev 相符      → 存檔 rev+1，回傳 {"ok": True, "filename": ..., "rev": ...}。
-          - base_rev 不符      → 不落盤，回傳 {"ok": False, "conflict": True, ...}。
+        sections 是「這一版由哪些章節的哪一版組成」的對照表，例如
+        {"introduction": "0.3", "method": "0.7"}。沒有它就無法回答
+        「投出去那一版的 Method 是第幾版」，也無法一鍵還原整組章節。
+
+        章節用小數（草稿迭代）、主論文用整數（投稿候選稿），刻意分層。
         """
-        if not title: title = 'Untitled'
-        if not section: section = 'general'
-        title = ManuscriptIO._safe_component(title, "Untitled")
-        section = ManuscriptIO._safe_component(section, "general")
-        formal_pid = ManuscriptIO._formal_pid(pid)
+        title = ManuscriptIO._safe_component(title or 'Untitled', "Untitled")
+        dir_path = ManuscriptIO._paper_dir(pid, create=True)
 
-        data_root = _get_data_root()
-        # 1. 確保 /block/<section> 目錄存在（safe_join_under 防路徑穿越）
-        dir_path = safe_join_under(data_root, formal_pid, 'manuscript', 'block', section)
-        try:
-            os.makedirs(dir_path, exist_ok=True)
-        except OSError as e:
-            logger.error(f"[ManuscriptIO] Directory creation failed: {e}")
-            raise
-
-        yymmdd = datetime.now().strftime("%y%m%d")
-
-        # 2. 版本號防呆處理：尋找並解析現有檔案版號
-        search_pattern = os.path.join(dir_path, f"*_V*.json")
-        existing_files = glob.glob(search_pattern)
-
-        max_v = 0.0
-        for file_path in existing_files:
-            try:
-                filename = os.path.basename(file_path)
-                v_str = filename.split('_V')[-1].split('.json')[0]
-                max_v = max(max_v, float(v_str))
-            except Exception as parse_error:
-                logger.error(f"[ManuscriptIO] Version parse skip for {file_path}: {parse_error}")
-                continue
-
-        # 3. 構造落盤路徑
-        new_filename = f"{title}_{yymmdd}_V{s_ver}.json"
-        save_path = safe_join_under(dir_path, new_filename)
+        # 與章節同規：以 O_EXCL 原子占用檔名，杜絕覆寫既有版本。
+        number, filename, save_path = claim_version_path(
+            dir_path, ManuscriptIO.next_paper_version(pid), lambda n: f"V{n}.json"
+        )
+        now_iso = datetime.now(timezone.utc).isoformat()
 
         payload = {
             'title': title,
-            'section': section,
             'content': content,
-            'version': f"V{s_ver}",
+            'g_ver': f"V{number}",
+            'from_ver': from_ver,
+            'sections': dict(sections or {}),
+            'version': f"V{number}",       # 舊前端讀 version 欄位，保留
             'timestamp': datetime.now().isoformat(),
+            '_updated_at': now_iso,
+            '_updated_by': updated_by,
         }
 
-        # [v0.8] 衝突防護路徑
-        if base_rev is not None:
-            result = check_and_save_block(save_path, payload, base_rev, updated_by)
-            if not result.get("ok"):
-                return result  # 衝突：dict with ok=False
-            return {"ok": True, "filename": new_filename, "rev": result["rev"]}
-
-        # 舊行為（base_rev=None）：直接存，附加 rev 欄位（不破壞相容性）
         try:
-            current_rev = _read_block_rev(save_path)
-            new_rev = current_rev + 1
-            now_iso = datetime.now(timezone.utc).isoformat()
-            payload["_rev"] = new_rev
-            payload["_updated_at"] = now_iso
-            payload["_updated_by"] = updated_by
             write_json_locked(save_path, payload)
         except Exception as e:
-            logger.error(f"[ManuscriptIO] Block save failed for {save_path}: {e}")
-            raise
-
-        return new_filename
-
-    @staticmethod
-    def save_paper(pid: str, title: str, content: str, g_ver: str = "1.0") -> str:
-        """
-        儲存 2C 視窗的總裝草稿 (Paper)
-        路徑規則: <DATA_ROOT>/<formal_pid>/manuscript/paper/<title>_yymmdd_V<g_ver>.json
-        """
-        if not title:
-            title = 'Untitled'
-        title = ManuscriptIO._safe_component(title, "Untitled")
-        formal_pid = ManuscriptIO._formal_pid(pid)
-
-        data_root = _get_data_root()
-        dir_path = safe_join_under(data_root, formal_pid, 'manuscript', 'paper')
-        os.makedirs(dir_path, exist_ok=True)
-
-        yymmdd = datetime.now().strftime("%y%m%d")
-
-        # 搜尋當日該標題的版本歷史，相容大小寫 V
-        search_pattern = os.path.join(dir_path, f"{title}_{yymmdd}_[Vv]*.json")
-        existing_files = glob.glob(search_pattern)
-
-        max_v = 0.0
-        for file_path in existing_files:
+            # 清掉 claim 階段留下的 0 byte 佔位檔。
             try:
-                filename = os.path.basename(file_path)
-                if '_V' in filename:
-                    v_str = filename.split('_V')[-1].split('.json')[0]
-                else:
-                    v_str = filename.split('_v')[-1].split('.json')[0]
-                max_v = max(max_v, float(v_str))
-            except Exception as parse_error:
-                logger.error(f"[ManuscriptIO] Paper Version parse skip: {parse_error}")
-                continue
-
-        # 2C 的檔名也強制使用大寫 _V 統一格式
-        new_filename = f"{title}_{yymmdd}_V{g_ver}.json"
-        save_path = safe_join_under(dir_path, new_filename)
-
-        payload = {
-            'title': title,
-            'content': content,
-            'g_ver': g_ver,
-            'version': f"V{g_ver}",
-            'timestamp': datetime.now().isoformat()
-        }
-
-        try:
-            write_json_locked(save_path, payload)
-        except Exception as e:
-            logger.error(f"[ManuscriptIO] Paper save failed for {save_path}: {e}")
+                os.remove(save_path)
+            except OSError:
+                pass
+            logger.error(f"[ManuscriptIO] Paper version save failed for {save_path}: {e}")
             raise
 
-        return new_filename
+        return {
+            "ok": True,
+            "g_ver": f"V{number}",
+            "number": number,
+            "from_ver": from_ver,
+            "sections": payload['sections'],
+            "filename": filename,
+            "updated_at": now_iso,
+            "updated_by": updated_by,
+        }
 
     @staticmethod
-    def list_papers(pid: str, title: str) -> List[str]:
-        formal_pid = ManuscriptIO._formal_pid(pid)
-        title = ManuscriptIO._safe_component(title, "Untitled")
-        data_root = _get_data_root()
-        dir_path = safe_join_under(data_root, formal_pid, 'manuscript', 'paper')
-        if not os.path.exists(dir_path):
+    def load_paper_version(pid: str, ver: Any) -> Optional[Dict[str, Any]]:
+        """依版本號（'V2' 或 2）讀取主論文 manifest；找不到回 None。"""
+        # parse_version 回傳十分位值（'2' -> 20），主論文版本是整數故除以 10。
+        tenths = parse_version(str(ver or "").lstrip("Vv"))
+        if tenths is None:
+            return None
+        number = tenths // 10
+        dir_path = ManuscriptIO._paper_dir(pid)
+        path = safe_join_under(dir_path, f"V{number}.json")
+        if not os.path.exists(path):
+            return None
+        try:
+            data = load_json_locked(path, None)
+            return data if isinstance(data, dict) else None
+        except Exception as e:
+            logger.error(f"[ManuscriptIO] Paper version load failed for {path}: {e}")
+            return None
+
+    @staticmethod
+    def list_papers(pid: str, title: str = "") -> List[str]:
+        """
+        列出主論文版本檔名（新版在前）。
+
+        [v1.0] 不再以 title 過濾檔名：新格式 V2.json 沒有把標題寫進檔名，
+        沿用舊的 "{title}_*_V*.json" 樣式會讓新版本完全查不到。title 參數保留
+        僅為維持既有呼叫端簽章相容。
+        """
+        dir_path = ManuscriptIO._paper_dir(pid)
+        if not os.path.isdir(dir_path):
             return []
-        search_pattern = os.path.join(dir_path, f"{title}_*_[Vv]*.json")
-        files = glob.glob(search_pattern)
-        return sorted([os.path.basename(f) for f in files], reverse=True)
+        named = []
+        for name in os.listdir(dir_path):
+            tenths = parse_version_from_filename(name)
+            if tenths is not None:
+                named.append((tenths, name))
+        named.sort(reverse=True)
+        return [name for _, name in named]
 
     @staticmethod
     def load_paper(pid: str, filename: str) -> Optional[Dict[str, Any]]:
@@ -327,15 +688,22 @@ class ManuscriptIO:
 
     @staticmethod
     def list_blocks(pid: str, section: str) -> List[str]:
-        formal_pid = ManuscriptIO._formal_pid(pid)
-        section = ManuscriptIO._safe_component(section, "general")
-        data_root = _get_data_root()
-        dir_path = safe_join_under(data_root, formal_pid, 'manuscript', 'block', section)
-        if not os.path.exists(dir_path):
+        """
+        列出章節版本檔名（新版在前）。
+
+        [v1.0] 只回傳真正的版本檔：原本 glob "*.json" 會把 _draft.json 一併撈出，
+        讓自動存檔草稿以「一個版本」的樣子出現在舊版本清單裡。
+        """
+        dir_path = ManuscriptIO._block_dir(pid, section)
+        if not os.path.isdir(dir_path):
             return []
-        search_pattern = os.path.join(dir_path, "*.json")
-        files = glob.glob(search_pattern)
-        return sorted([os.path.basename(f) for f in files], reverse=True)
+        named = []
+        for name in os.listdir(dir_path):
+            tenths = parse_version_from_filename(name)
+            if tenths is not None:
+                named.append((tenths, name))
+        named.sort(reverse=True)
+        return [name for _, name in named]
 
     @staticmethod
     def load_block(pid: str, section: str, filename: str) -> Optional[Dict[str, Any]]:
@@ -343,11 +711,10 @@ class ManuscriptIO:
         讀取 block JSON。
         [v0.8] 回傳資料含 _rev / _updated_at / _updated_by（舊檔無這些欄位時為 0/None/None）。
         """
-        formal_pid = ManuscriptIO._formal_pid(pid)
-        section = ManuscriptIO._safe_component(section, "general")
+        # 必須走 _block_dir，才會套用 _section_dir_name 的非 ASCII 章節去撞邏輯；
+        # 這裡若自行組路徑，中文章節會找到錯的目錄。
+        dir_path = ManuscriptIO._block_dir(pid, section)
         safe_filename = os.path.basename(str(filename or ""))
-        data_root = _get_data_root()
-        dir_path = safe_join_under(data_root, formal_pid, 'manuscript', 'block', section)
         path = safe_join_under(dir_path, safe_filename)
         if os.path.exists(path):
             try:

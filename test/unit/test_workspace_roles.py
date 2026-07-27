@@ -70,20 +70,31 @@ def client(session_app):
     return session_app.test_client()
 
 
+def _test_email(username: str) -> str:
+    """由測試用 username 推出登入 email。email 已是唯一登入識別。"""
+    return f"{username.lower()}@test.local"
+
+
 def _register_and_login(client, username: str, password: str = "password123"):
-    """在 test client 中建立 user 並登入；回傳 user dict。"""
+    """在 test client 中建立 user 並登入；回傳 user dict。
+
+    成員管理 API 仍以 username 為識別鍵，故測試沿用 username 參數；
+    但建立帳號與登入都必須帶 email。
+    """
     from app import db
     from app.models import User
 
     with client.application.app_context():
         user = User.query.filter_by(username=username).first()
         if not user:
-            user = User(username=username)
+            user = User(username=username, email=_test_email(username))
             user.set_password(password)
             db.session.add(user)
             db.session.commit()
 
-    resp = client.post("/api/auth/login", json={"username": username, "password": password})
+    resp = client.post(
+        "/api/auth/login", json={"email": _test_email(username), "password": password}
+    )
     assert resp.status_code == 200, f"Login failed for {username}: {resp.get_data(as_text=True)}"
     return resp.get_json()["user"]
 
