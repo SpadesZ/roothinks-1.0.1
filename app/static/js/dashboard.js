@@ -498,9 +498,24 @@ function addMemberRow(data = null) {
     const orgSurname = data ? safeGet(data, 'name.original.surname') : '';
     const orgGiven = data ? safeGet(data, 'name.original.given') : '';
     const orgMiddle = data ? safeGet(data, 'name.original.middle') : '';
-    const orgL1 = data ? safeGet(data, 'organization.l1') : '';
-    const orgL2 = data ? safeGet(data, 'organization.l2') : '';
-    const orgL3 = data ? safeGet(data, 'organization.l3') : '';
+    // [org-v2] 所屬單位改為五層，順序由小到大：
+    //   L1 Lab/Unit → L2 Dept./Div. → L3 Institution/Branch → L4 Univ./Co. → L5 Nationality/Region
+    //
+    // 舊版只有三層而且方向相反（L1=Institution 最大、L3=Lab 最小）。
+    // 既有資料由 scripts/migrate_organization_v2.py 一次搬完（舊 l1→新 l4、
+    // 舊 l3→新 l1），這裡只針對「漏網的舊格式」再擋一次：沒有 l4/l5 鍵
+    // 就代表這筆還是舊三層，讀取時就地翻轉，免得把大學顯示成實驗室。
+    const orgRaw = (data && data.organization) ? data.organization : {};
+    const orgIsLegacy = !('l4' in orgRaw) && !('l5' in orgRaw)
+        && ('l1' in orgRaw || 'l2' in orgRaw || 'l3' in orgRaw);
+    const org = orgIsLegacy
+        ? { l1: orgRaw.l3 || '', l2: orgRaw.l2 || '', l3: '', l4: orgRaw.l1 || '', l5: '' }
+        : orgRaw;
+    const orgL1 = org.l1 || '';
+    const orgL2 = org.l2 || '';
+    const orgL3 = org.l3 || '';
+    const orgL4 = org.l4 || '';
+    const orgL5 = org.l5 || '';
     const address = data ? data.address : '';
     
     let emailHtml = '';
@@ -597,15 +612,24 @@ function addMemberRow(data = null) {
             </div>
 
             <div class="row g-2 mb-2 border-top pt-2">
-                <div class="col-12"><small class="fw-bold text-secondary">所屬單位 (Organization Hierarchy)</small></div>
-                <div class="col-md-4">
-                    <input type="text" class="form-control form-control-sm org-l1" placeholder="L1: Institution" value="${orgL1}">
+                <div class="col-12">
+                    <small class="fw-bold text-secondary">所屬單位 (Organization Hierarchy)</small>
+                    <small class="text-muted ms-2">由小到大，可只填知道的層級</small>
                 </div>
                 <div class="col-md-4">
-                    <input type="text" class="form-control form-control-sm org-l2" placeholder="L2: Dept/Div" value="${orgL2}">
+                    <input type="text" class="form-control form-control-sm org-l1" placeholder="L1: Lab/Unit" value="${orgL1}">
                 </div>
                 <div class="col-md-4">
-                    <input type="text" class="form-control form-control-sm org-l3" placeholder="L3: Lab/Unit" value="${orgL3}">
+                    <input type="text" class="form-control form-control-sm org-l2" placeholder="L2: Dept./Div." value="${orgL2}">
+                </div>
+                <div class="col-md-4">
+                    <input type="text" class="form-control form-control-sm org-l3" placeholder="L3: Institution/Branch" value="${orgL3}">
+                </div>
+                <div class="col-md-6">
+                    <input type="text" class="form-control form-control-sm org-l4" placeholder="L4: Univ./Co." value="${orgL4}">
+                </div>
+                <div class="col-md-6">
+                    <input type="text" class="form-control form-control-sm org-l5" placeholder="L5: Nationality/Region" value="${orgL5}">
                 </div>
             </div>
 
@@ -730,10 +754,14 @@ async function submitCreate() {
                     middle: card.querySelector('.org-middle').value.trim()
                 },
             },
+            // [org-v2] 五層一律寫入（含空字串）：l4/l5 鍵的存在本身就是
+            // 「這筆已是新格式」的判準，讀取端據此決定要不要翻轉舊資料。
             organization: {
                 l1: card.querySelector('.org-l1').value.trim(),
                 l2: card.querySelector('.org-l2').value.trim(),
-                l3: card.querySelector('.org-l3').value.trim()
+                l3: card.querySelector('.org-l3').value.trim(),
+                l4: card.querySelector('.org-l4').value.trim(),
+                l5: card.querySelector('.org-l5').value.trim()
             },
             emails: emails,
             address: card.querySelector('.address-input').value.trim()
