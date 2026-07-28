@@ -20,6 +20,9 @@ from app.services.llm_response_cache import (
     save_cached_response,
 )
 import time
+import logging
+
+_LOGGER = logging.getLogger("LLMDispatcher")
 
 class LlmDispatcher:
     """
@@ -85,8 +88,22 @@ class LlmDispatcher:
             # 3. 執行生成
             # 調用 Bus 的統一介面發送請求
             ok, res, err = bus.send_message(text, images)
-            
+
             if ok:
+                # [usage] 記在這裡而不是各個 task 類別裡：這是唯一同時知道
+                # task_id、vendor、model 與 usage 的地方，改一處就全流程涵蓋。
+                # 記錄失敗只寫 log，絕不影響回傳——使用者要的是結果不是記帳。
+                try:
+                    from app.llm_service.llm_usage import record as _record_usage
+                    _record_usage(
+                        task_id=task_id,
+                        vendor=getattr(bus, "_provider_name", "") or "",
+                        model_name=getattr(bus, "_model_name", "") or "",
+                        usage=(res or {}).get("usage"),
+                    )
+                except Exception:
+                    _LOGGER.warning("[dispatcher] usage 記錄失敗（已忽略）", exc_info=True)
+
                 if cache_key:
                     save_cached_response(cache_key, {"ok": True, "text": res.get("text", "")})
                 return True, res, "Success"

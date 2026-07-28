@@ -634,8 +634,14 @@ def test_roothinks_full_user_journey_e2e(app_bundle, monkeypatch):
 
     lit_status = _json(client.get(f"/api/literature/status/{formal_pid}"))
     papers_by_id = {p["paper_id"]: p for p in lit_status["papers"]}
-    assert papers_by_id[paper1]["db_status"] == "gold_ready"
-    assert papers_by_id[paper2]["db_status"] == "gold_ready"
+    # [progress] status API 不再對外吐 db_status / flow_status / stages
+    # —— 那些欄位會洩漏內部流程結構。外部契約改為中性的 progress_state。
+    assert papers_by_id[paper1]["progress_state"] == "analyzed"
+    assert papers_by_id[paper2]["progress_state"] == "analyzed"
+    # 同時確認內部欄位真的沒外流（這是這次改動的重點，不是附帶效果）
+    for row in papers_by_id.values():
+        for leaked in ("db_status", "flow_status", "stages", "status_cv"):
+            assert leaked not in row, f"內部欄位 {leaked} 不該出現在對外回應"
 
     region_img = client.get(
         "/api/literature/get_region_image",

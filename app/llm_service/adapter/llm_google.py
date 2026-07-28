@@ -420,7 +420,17 @@ return {1, 0}
                     # 解析回應
                     try:
                         ans_text = response.text
-                        return True, {"text": ans_text}, ""
+                        # [usage] 同 OpenAI：只取 token 數，不落地內容。
+                        # Gemini 的欄位名與 OpenAI 不同，交由 llm_usage.normalize_usage 統一。
+                        um = getattr(response, "usage_metadata", None)
+                        usage_dict = {}
+                        if um is not None:
+                            usage_dict = {
+                                "input_tokens": getattr(um, "prompt_token_count", 0) or 0,
+                                "output_tokens": getattr(um, "candidates_token_count", 0) or 0,
+                                "total_tokens": getattr(um, "total_token_count", 0) or 0,
+                            }
+                        return True, {"text": ans_text, "usage": usage_dict}, ""
                     except ValueError:
                         # 處理 Safety Filter 攔截
                         feedback = str(getattr(response, "prompt_feedback", "Unknown Block"))

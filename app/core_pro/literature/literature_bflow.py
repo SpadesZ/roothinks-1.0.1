@@ -262,6 +262,24 @@ def run_translation_impl(deps: FlowBRouteDeps):
     app = deps.current_app._get_current_object()
 
     def _translation_worker(target_pid, target_paper_id, target_run_id, app_obj):
+        """薄殼：只負責掛上／清除 LLM 用量歸屬，實際工作在 _translation_worker_body。
+
+        [usage] 翻譯若落到 Gemini（超長文本會走雲端而非本機 NLLB）也要記到
+        這一篇帳上，否則使用者看到的成本會少算。
+        清除**必須**在 finally：這些 worker 跑在 ThreadPoolExecutor 的池化
+        執行緒上，執行緒會被重複使用，不清的話下一個工作會被算到上一篇頭上。
+        """
+        try:
+            from app.llm_service.llm_usage import set_context, clear_context
+        except Exception:
+            return _translation_worker_body(target_pid, target_paper_id, target_run_id, app_obj)
+        try:
+            set_context(target_pid, target_paper_id)
+            return _translation_worker_body(target_pid, target_paper_id, target_run_id, app_obj)
+        finally:
+            clear_context()
+
+    def _translation_worker_body(target_pid, target_paper_id, target_run_id, app_obj):
         with app_obj.app_context():
             run_id = str(target_run_id or "")
             pid_paper = str(target_paper_id or "")

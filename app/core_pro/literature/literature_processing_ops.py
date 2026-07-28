@@ -443,6 +443,92 @@ def delete_paper_impl(deps):
         return deps._internal_error("delete_paper", e)
 
 
+# ---------------------------------------------------------------------------
+# [progress] 對外的中性進度表示
+#
+# 為什麼要這一層：畫面上把「OCR-A / 規則仲裁 / 校對」換成百分比之後，
+# /api/literature/status/<pid> 的 JSON 回應仍然原封不動吐出 stages.s2、
+# flow_status="gold_ready" 這些值。任何人開開發者工具或直接打這個 API
+# 就能還原整條流程結構——等於前面的遮蔽只擋住不看原始碼的人。
+#
+# 里程碑對應（與前端顯示的百分比一致，改動時兩邊要一起改）：
+#   PDF(s1) → 15%(s2) → 30%(s3) → 40%(s4) → 60%(flow_a)
+#   → 70%(s10) → 80%(s11) → 100%(flow_b)
+# ---------------------------------------------------------------------------
+
+_MILESTONE_SPEC = [
+    ("s1", 0, "PDF"),
+    ("s2", 15, "15%"),
+    ("s3", 30, "30%"),
+    ("s4", 40, "40%"),
+    (None, 60, "60%"),        # flow_a_ready
+    ("s10", 70, "70%"),
+    ("s11", 80, "80%"),
+    (None, 100, "100% 完成"),  # flow_b_ready
+]
+
+# 內部欄位：預設不外流。設 LITERATURE_EXPOSE_INTERNALS=1 可保留，
+# 供既有測試與本機除錯使用——正式部署不該開。
+_INTERNAL_FIELDS = (
+    "status_cv", "status_fix", "status_trans", "db_status", "flow_status",
+    "stages", "flowb_generation_mode", "flowb_llm_ready",
+)
+
+
+def _expose_internals() -> bool:
+    return str(os.environ.get("LITERATURE_EXPOSE_INTERNALS", "")).strip().lower() \
+        in {"1", "true", "yes", "on"}
+
+
+def build_milestones(stages, flow_a_ready, flow_b_ready):
+    """把內部階段旗標轉成只有百分比與狀態的里程碑清單。"""
+    stages = stages or {}
+    out = []
+    for idx, (key, pct, label) in enumerate(_MILESTONE_SPEC):
+        if key is None:
+            done = bool(flow_a_ready) if pct == 60 else bool(flow_b_ready)
+            state = "done" if done else "pending"
+        else:
+            state = str(stages.get(key) or "pending")
+            if state not in {"done", "processing", "pending"}:
+                state = "pending"
+        out.append({"pct": pct, "label": label, "state": state})
+    return out
+
+
+def progress_pct_of(milestones):
+    """已達成的最高百分比。"""
+    done = [m["pct"] for m in (milestones or []) if m.get("state") == "done"]
+    return max(done) if done else 0
+
+
+def progress_state_of(flow_status):
+    """內部流程代號 → 對外的產品層狀態。
+
+    只保留「使用者需要知道的事」：在等、在跑、跑完了、失敗了。
+    gold_ready / rules_ready / bilingual_ready 這些名稱本身就洩漏做法。
+    """
+    st = str(flow_status or "pending")
+    if st in {"gold_ready", "rules_ready", "ready_A"}:
+        return "analyzed"
+    if st in {"analyzing", "processing_A"}:
+        return "analyzing"
+    if st in {"bilingual_ready", "ready_B"}:
+        return "completed"
+    if st == "processing_B":
+        return "translating"
+    if st in {"need_retry", "failed"}:
+        return "failed"
+    return "uploaded"
+
+
+def strip_internal_fields(row):
+    """移除會洩漏內部流程的欄位（除非明確以環境變數開啟）。"""
+    if _expose_internals():
+        return row
+    return {k: v for k, v in row.items() if k not in _INTERNAL_FIELDS}
+
+
 def get_status_impl(deps, pid):
     """
     掃描檔案結構回傳詳細狀態 (Traffic Lights)
@@ -823,25 +909,41 @@ def get_status_impl(deps, pid):
                 ),
             }
 
-            papers.append(
-                {
-                    "paper_id": paper_id,
-                    "filename": filename,
-                    "status_cv": status_cv,
-                    "status_fix": status_fix,
-                    "status_trans": status_trans,
-                    "db_status": db_status,
-                    "flow_status": flow_status,
-                    "flow_a_ready": flow_a_ready,
-                    "flow_b_ready": flow_b_ready,
-                    "stages": stages,
-                    "has_fixed": has_fixed,
-                    "has_trans": has_summary,
-                    "flowb_generation_mode": reflow_generation_mode or None,
-                    "flowb_llm_ready": bool(has_trans_b_ready),
-                    "error_type": summary_error if db_status in {'need_retry', 'failed'} else None,
-                }
-            )
+            row = {
+                "paper_id": paper_id,
+                "filename": filename,
+                "status_cv": status_cv,
+                "status_fix": status_fix,
+                "status_trans": status_trans,
+                "db_status": db_status,
+                "flow_status": flow_status,
+                "flow_a_ready": flow_a_ready,
+                "flow_b_ready": flow_b_ready,
+                "stages": stages,
+                "has_fixed": has_fixed,
+                "has_trans": has_summary,
+                "flowb_generation_mode": reflow_generation_mode or None,
+                "flowb_llm_ready": bool(has_trans_b_ready),
+                "error_type": summary_error if db_status in {'need_retry', 'failed'} else None,
+            }
+
+            # [progress] 對外的中性進度表示。前端顯示一律吃這組欄位，
+            # 不再讀 stages / flow_status —— 那些欄位會把內部流程
+            # （雙軌 OCR、規則仲裁、語意重組…）攤給任何看得到這個回應的人。
+            row["milestones"] = build_milestones(stages, flow_a_ready, flow_b_ready)
+            row["progress_pct"] = progress_pct_of(row["milestones"])
+            row["progress_state"] = progress_state_of(flow_status)
+
+            # [usage] 該篇累計的 LLM token 與費用，供解析後決定是否續跑翻譯。
+            try:
+                from app.llm_service.llm_usage import summarize_paper
+                row["llm_usage"] = summarize_paper(pid, paper_id)
+            except Exception:
+                deps.logger.warning("[status] 用量彙總失敗 pid=%s paper=%s",
+                                    pid, paper_id, exc_info=True)
+                row["llm_usage"] = None
+
+            papers.append(strip_internal_fields(row))
 
     return jsonify({"papers": papers})
 

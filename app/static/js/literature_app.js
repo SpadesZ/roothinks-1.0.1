@@ -856,12 +856,24 @@ window.literatureApp = {
 
         let html = '';
         papers.forEach(p => {
-            const rawStatus = p.flow_status || p.db_status || 'pending';
-            let status = rawStatus;
-            if (status === 'gold_ready' || status === 'rules_ready') status = 'ready_A';
-            if (status === 'analyzing') status = 'processing_A';
-            if (status === 'need_retry') status = 'failed';
-            if (status === 'bilingual_ready') status = 'ready_B';
+            // [progress] 後端已不再對外吐 flow_status / db_status / stages
+            // ——那些欄位會洩漏內部流程。改吃中性的 progress_state / milestones。
+            // 舊欄位仍作為 fallback，讓尚未更新的部署不會整頁壞掉。
+            const stateMap = {
+                uploaded: 'pending', analyzing: 'processing_A', analyzed: 'ready_A',
+                translating: 'processing_B', completed: 'ready_B', failed: 'failed',
+            };
+            let status;
+            if (p.progress_state) {
+                status = stateMap[p.progress_state] || 'pending';
+            } else {
+                const rawStatus = p.flow_status || p.db_status || 'pending';
+                status = rawStatus;
+                if (status === 'gold_ready' || status === 'rules_ready') status = 'ready_A';
+                if (status === 'analyzing') status = 'processing_A';
+                if (status === 'need_retry') status = 'failed';
+                if (status === 'bilingual_ready') status = 'ready_B';
+            }
             this.paperStatusMap[p.paper_id] = status;
             this.paperStageMap[p.paper_id] = p.stages || {};
 
@@ -889,6 +901,53 @@ window.literatureApp = {
                 </div>`;
             };
             const arrowIcon = () => '<i class="bi bi-arrow-right text-muted small"></i>';
+
+            // [ui] 圖示一律中性：原本用眼睛(OCR)、交集(仲裁)、翻譯符號，
+            // 就算文字改成百分比，圖示本身仍暗示了每一步在做什麼。
+            // 未完成用空心圓、進行中用半滿、已完成用實心勾。
+            const milestoneIcon = (state) =>
+                state === 'done' ? 'bi-check-circle-fill'
+              : state === 'processing' ? 'bi-circle-half'
+              : 'bi-circle';
+
+            // [usage] 解析用掉的 LLM token 與費用。目的：跑完解析後，
+            // 使用者能先看到這一篇花了多少，再決定要不要按翻譯。
+            //
+            // 兩個刻意的設計：
+            //  1. 查不到單價時顯示「單價未設定」而不是 $0——顯示 0 會讓人
+            //     以為免費，比誠實說不知道危險得多。
+            //  2. has_unpriced 時金額標上「≥」，因為那只是已知部分的合計。
+            const fmtUsd = (v) => '$' + Number(v || 0).toFixed(4);
+            const renderUsage = (u) => {
+                if (!u || !u.calls) return '';
+                const tok = Number(u.total_tokens || 0).toLocaleString();
+                let money;
+                if (u.has_unpriced && !u.cost_usd) {
+                    money = '<span class="text-muted">單價未設定</span>';
+                } else if (u.has_unpriced) {
+                    money = `≥ ${fmtUsd(u.cost_usd)}<span class="text-muted">（部分模型未設定單價）</span>`;
+                } else {
+                    money = fmtUsd(u.cost_usd);
+                }
+                const tip = `輸入 ${Number(u.input_tokens||0).toLocaleString()} / `
+                          + `輸出 ${Number(u.output_tokens||0).toLocaleString()} tokens`
+                          + `，${u.calls} 次呼叫
+模型：${(u.models||[]).join(', ') || '—'}`
+                          + `
+金額為估算，實際以廠商帳單為準`;
+                return `<div class="small text-muted mt-1" title="${tip}" style="cursor:help;">
+                            <i class="bi bi-cpu me-1"></i>${tok} tokens · ${money}
+                        </div>`;
+            };
+
+            const renderMilestones = (paper) => {
+                const ms = Array.isArray(paper.milestones) ? paper.milestones : null;
+                if (!ms) return '<span class="text-muted small">—</span>';
+                return ms.map((m, i) =>
+                    (i > 0 ? arrowIcon() : '') +
+                    stageIcon(milestoneIcon(m.state), m.state, m.label)
+                ).join('');
+            };
             // 狀態徽章原本直印內部代號（ready_A / processing_B …），
             // 與階段改百分比的用意相同：對使用者說進度，不說內部流程編號。
             const statusLabel = (st) => ({
@@ -926,20 +985,7 @@ window.literatureApp = {
                 </td>
                 <td>
                     <div class="d-flex align-items-center gap-2 flex-wrap">
-                        ${stageIcon('bi-file-earmark-pdf', (p.stages || {}).s1 || 'pending', 'PDF')}
-                        ${arrowIcon()}
-                        ${stageIcon('bi-eye', (p.stages || {}).s2 || 'pending', '15%')}
-                        ${stageIcon('bi-type', (p.stages || {}).s3 || 'pending', '30%')}
-                        ${arrowIcon()}
-                        ${stageIcon('bi-intersect', (p.stages || {}).s4 || 'pending', '40%')}
-                        ${arrowIcon()}
-                        ${stageIcon('bi-check-circle', flowAReadyState, '60%')}
-                        ${arrowIcon()}
-                        ${stageIcon('bi-translate', (p.stages || {}).s10 || 'pending', '70%')}
-                        ${arrowIcon()}
-                        ${stageIcon('bi-clipboard-check', (p.stages || {}).s11 || 'pending', '80%')}
-                        ${arrowIcon()}
-                        ${stageIcon('bi-file-earmark-richtext', flowBReadyState, '100% 完成')}
+                        ${renderMilestones(p)}
                     </div>
                 </td>
                 <td>
@@ -953,6 +999,7 @@ window.literatureApp = {
                         }">${statusLabel(status)}</span>
                         ${p.error_type ? `<span class="badge bg-danger" title="${p.error_type}"><i class="bi bi-exclamation-triangle"></i></span>` : ''}
                     </div>
+                    ${renderUsage(p.llm_usage)}
                 </td>
                 <td>
                     <div class="d-flex gap-2">

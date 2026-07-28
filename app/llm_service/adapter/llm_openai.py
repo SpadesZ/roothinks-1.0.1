@@ -418,7 +418,18 @@ return {1, 0}
                         if finish_reason == "content_filter":
                             return False, {}, "Blocked by OpenAI safety filters."
                             
-                        return True, {"text": ans_text}, ""
+                        # [usage] response.usage 原本被整個丟掉。文獻解析全走
+                        # 雲端 LLM，沒有用量就無從讓使用者知道跑一篇要多少錢。
+                        # 這裡只取 token 數，不碰 prompt/回應內容。
+                        usage = getattr(response, "usage", None)
+                        usage_dict = {}
+                        if usage is not None:
+                            usage_dict = {
+                                "input_tokens": getattr(usage, "prompt_tokens", 0) or 0,
+                                "output_tokens": getattr(usage, "completion_tokens", 0) or 0,
+                                "total_tokens": getattr(usage, "total_tokens", 0) or 0,
+                            }
+                        return True, {"text": ans_text, "usage": usage_dict}, ""
                     else:
                         return False, {}, "Empty response from OpenAI."
 

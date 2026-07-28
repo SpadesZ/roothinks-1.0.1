@@ -202,7 +202,18 @@ class OpenRouterClient:
             if not answer:
                 return False, {}, "OpenRouter response content is empty"
                 
-            tokens = data.get("usage", {}).get("total_tokens", 0)
-            return True, {"text": answer, "token_usage": tokens}, ""
+            u = data.get("usage", {}) or {}
+            tokens = u.get("total_tokens", 0)
+            # token_usage 保留給既有呼叫端；usage 是統一格式（含輸入/輸出拆分，
+            # OpenRouter 有給就帶上，沒給則由 normalize_usage 用總數處理）。
+            return True, {
+                "text": answer,
+                "token_usage": tokens,
+                "usage": {
+                    "input_tokens": u.get("prompt_tokens", 0) or 0,
+                    "output_tokens": u.get("completion_tokens", 0) or 0,
+                    "total_tokens": tokens or 0,
+                },
+            }, ""
         except Exception as e:
             return False, {}, str(e)

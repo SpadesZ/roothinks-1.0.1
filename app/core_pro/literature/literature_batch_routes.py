@@ -172,6 +172,17 @@ def register_batch_routes(literature_bp, deps):
         app = current_app._get_current_object()
 
         def _pipeline_worker(target_pid, target_ids, app_obj):
+            """薄殼：保證離開時清除 LLM 用量歸屬（見 _pipeline_worker_body）。"""
+            try:
+                return _pipeline_worker_body(target_pid, target_ids, app_obj)
+            finally:
+                try:
+                    from app.llm_service.llm_usage import clear_context
+                    clear_context()
+                except Exception:
+                    pass
+
+        def _pipeline_worker_body(target_pid, target_ids, app_obj):
             """
             背景工作執行緒：依序執行 CV 與 Bridge
             [Updated] 智能重試機制：只執行未完成或失敗的步驟
@@ -179,6 +190,14 @@ def register_batch_routes(literature_bp, deps):
             try:
                 with app_obj.app_context():
                     for pid_paper in target_ids:
+                        # [usage] 標記接下來的 LLM 呼叫屬於哪一篇，dispatcher
+                        # 記錄用量時才掛得上 pid/paper_id。逐篇覆寫即可——
+                        # 這條 worker 是循序處理，且執行緒結束後 context 自動消失。
+                        try:
+                            from app.llm_service.llm_usage import set_context as _usage_ctx
+                            _usage_ctx(target_pid, pid_paper)
+                        except Exception:
+                            deps.logger.warning("[usage] 設定 context 失敗（不影響流程）", exc_info=True)
                         try:
                             deps.logger.info(f"--- Starting Pipeline for {pid_paper} ---")
 
