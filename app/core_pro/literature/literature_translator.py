@@ -259,8 +259,17 @@ class HybridTranslator:
         def _call():
             return bus.dispatch_task(task_id, prompt, priority=priority)
 
+        # [usage] contextvars 不會自動跨執行緒。外層（_translation_worker）
+        # 設好的 pid/paper_id 歸屬，到這裡另開的執行緒裡就沒了，
+        # 於是 Gemini 翻譯的 token 會以 pid/paper_id=NULL 落帳、掛不上任何一篇。
+        try:
+            from app.llm_service.llm_usage import propagate as _propagate
+            _submit_target = _propagate(_call)
+        except Exception:
+            _submit_target = _call
+
         ex = ThreadPoolExecutor(max_workers=1, thread_name_prefix=f"translator-{task_id}")
-        fut = ex.submit(_call)
+        fut = ex.submit(_submit_target)
         try:
             return fut.result(timeout=timeout_sec)
         except FuturesTimeout:

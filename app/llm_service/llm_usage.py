@@ -67,6 +67,7 @@ def _ensure_table(conn: sqlite3.Connection) -> None:
             model_name   TEXT,
             input_tokens INTEGER NOT NULL DEFAULT 0,
             output_tokens INTEGER NOT NULL DEFAULT 0,
+            cached_input_tokens INTEGER NOT NULL DEFAULT 0,
             total_tokens INTEGER NOT NULL DEFAULT 0,
             cost_usd     REAL,
             price_note   TEXT,
@@ -134,6 +135,28 @@ def clear_context() -> None:
     _ctx_paper.set(None)
 
 
+def propagate(fn):
+    """包裝一個要丟到新執行緒執行的函式，讓它帶著目前的用量歸屬。
+
+    **contextvars 不會自動跨執行緒。** ThreadPoolExecutor / threading.Thread
+    起的新執行緒拿到的是空的 context，於是在裡面呼叫 LLM 時
+    pid/paper_id 都是 None——token 有記到，但掛不上任何一篇文獻，
+    該篇的用量摘要會顯示 0 次呼叫。
+
+    翻譯（literature_translator._dispatch_with_timeout）與 LaTeX OCR
+    都是「外層設好 context，內層另開執行緒實際呼叫」的結構，
+    必須用這個包裝才接得起來。
+    """
+    import functools
+    ctx = contextvars.copy_context()
+
+    @functools.wraps(fn)
+    def _wrapped(*args, **kwargs):
+        return ctx.run(fn, *args, **kwargs)
+
+    return _wrapped
+
+
 def current_context() -> Dict[str, Optional[str]]:
     return {"pid": _ctx_pid.get(), "paper_id": _ctx_paper.get()}
 
@@ -146,7 +169,7 @@ def normalize_usage(raw: Any) -> Dict[str, int]:
     OpenRouter: 舊版只給 total（token_usage），輸入輸出無從拆分。
     """
     if not isinstance(raw, dict):
-        return {"input": 0, "output": 0, "total": 0}
+        return {"input": 0, "output": 0, "total": 0, "cached": 0}
 
     def pick(*keys):
         for k in keys:
@@ -158,9 +181,11 @@ def normalize_usage(raw: Any) -> Dict[str, int]:
     i = pick("input_tokens", "prompt_tokens", "prompt_token_count")
     o = pick("output_tokens", "completion_tokens", "candidates_token_count")
     t = pick("total_tokens", "total_token_count")
+    # 廠商回報的 input 已含 cached 部分；分開記才能用較低的快取單價計費。
+    c = min(pick("cached_input_tokens", "cached_tokens"), i)
     if not t:
         t = i + o
-    return {"input": i, "output": o, "total": t}
+    return {"input": i, "output": o, "total": t, "cached": c}
 
 
 def record(
@@ -177,7 +202,8 @@ def record(
             # 沒拿到用量就別寫一筆全 0 的假資料進去，那會讓總計失真。
             return
 
-        cost, note = estimate_cost_usd(vendor, model_name, norm["input"], norm["output"])
+        cost, note = estimate_cost_usd(vendor, model_name, norm["input"],
+                                       norm["output"], norm.get("cached", 0))
         ctx = current_context()
 
         init_storage()
@@ -187,14 +213,15 @@ def record(
         try:
             conn.execute(
                 "INSERT INTO llm_usage_log (created_at, pid, paper_id, task_id, vendor,"
-                " model_name, input_tokens, output_tokens, total_tokens, cost_usd,"
-                " price_note, cache_hit) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
+                " model_name, input_tokens, output_tokens, cached_input_tokens,"
+                " total_tokens, cost_usd, price_note, cache_hit)"
+                " VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)",
                 (
                     datetime.now(timezone.utc).isoformat(),
                     ctx["pid"], ctx["paper_id"], str(task_id or ""),
                     str(vendor or ""), str(model_name or ""),
-                    norm["input"], norm["output"], norm["total"],
-                    cost, note, 1 if cache_hit else 0,
+                    norm["input"], norm["output"], norm.get("cached", 0),
+                    norm["total"], cost, note, 1 if cache_hit else 0,
                 ),
             )
             conn.commit()
@@ -202,6 +229,58 @@ def record(
             conn.close()
     except Exception:
         LOGGER.exception("[usage] 記錄失敗（已忽略，不影響主流程）")
+
+
+def summarize_project(pid: str) -> Dict[str, Dict[str, Any]]:
+    """一次撈完整個專案，回傳 {paper_id: 摘要}。
+
+    狀態輪詢每 3 秒跑一次、每次要列出所有文獻。原本每篇各呼叫一次
+    summarize_paper()，等於每篇開一條 DB 連線——180 篇的專案，每個開著的
+    瀏覽器每 3 秒就建 180 條連線。改成單一連線、單一 GROUP BY。
+    """
+    out: Dict[str, Dict[str, Any]] = {}
+    try:
+        init_storage()
+        if not _initialized:
+            return out
+        conn = sqlite3.connect(get_db_path(), timeout=10)
+        try:
+            rows = conn.execute(
+                "SELECT paper_id, input_tokens, output_tokens, cached_input_tokens,"
+                " total_tokens, cost_usd, vendor, model_name FROM llm_usage_log"
+                " WHERE pid = ? AND paper_id IS NOT NULL",
+                (str(pid),),
+            ).fetchall()
+        finally:
+            conn.close()
+    except Exception:
+        LOGGER.exception("[usage] 專案彙總查詢失敗")
+        return out
+
+    models: Dict[str, set] = {}
+    for paper_id, i, o, c, t, cost, vendor, model in rows:
+        key = str(paper_id)
+        acc = out.setdefault(key, {
+            "input_tokens": 0, "output_tokens": 0, "cached_input_tokens": 0,
+            "total_tokens": 0, "cost_usd": 0.0, "calls": 0,
+            "has_unpriced": False, "models": [],
+        })
+        acc["input_tokens"] += int(i or 0)
+        acc["output_tokens"] += int(o or 0)
+        acc["cached_input_tokens"] += int(c or 0)
+        acc["total_tokens"] += int(t or 0)
+        acc["calls"] += 1
+        if cost is None:
+            acc["has_unpriced"] = True
+        else:
+            acc["cost_usd"] += float(cost)
+        if model:
+            models.setdefault(key, set()).add(f"{vendor}/{model}" if vendor else str(model))
+
+    for key, acc in out.items():
+        acc["cost_usd"] = round(acc["cost_usd"], 6)
+        acc["models"] = sorted(models.get(key, ()))
+    return out
 
 
 def summarize_paper(pid: str, paper_id: str) -> Dict[str, Any]:

@@ -424,10 +424,20 @@ return {1, 0}
                         usage = getattr(response, "usage", None)
                         usage_dict = {}
                         if usage is not None:
+                            # cached_tokens：命中 prompt 快取的部分，單價約為
+                            # 一般 input 的 1/4。不取出來的話會把全部輸入
+                            # 都按原價算，長 prompt 反覆呼叫時系統性高估。
+                            details = getattr(usage, "prompt_tokens_details", None)
+                            cached = 0
+                            if details is not None:
+                                cached = getattr(details, "cached_tokens", 0) or 0
+                            elif isinstance(usage, dict):
+                                cached = (usage.get("prompt_tokens_details") or {}).get("cached_tokens", 0) or 0
                             usage_dict = {
                                 "input_tokens": getattr(usage, "prompt_tokens", 0) or 0,
                                 "output_tokens": getattr(usage, "completion_tokens", 0) or 0,
                                 "total_tokens": getattr(usage, "total_tokens", 0) or 0,
+                                "cached_input_tokens": cached,
                             }
                         return True, {"text": ans_text, "usage": usage_dict}, ""
                     else:

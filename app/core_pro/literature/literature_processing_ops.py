@@ -472,7 +472,31 @@ _MILESTONE_SPEC = [
 _INTERNAL_FIELDS = (
     "status_cv", "status_fix", "status_trans", "db_status", "flow_status",
     "stages", "flowb_generation_mode", "flowb_llm_ready",
+    # flow_a_ready / flow_b_ready 一樣是內部流程名稱。前端已改吃 milestones，
+    # 不再需要這兩個欄位。第一版漏了它們，等於「不外洩」只做了一半。
+    "flow_a_ready", "flow_b_ready",
+    "has_fixed", "has_trans",
 )
+
+# error_type 的原始值可能是 flowb_reflow_heuristic_fallback 這類字串
+# （見 flowb_reflow_issue 的組法），直接吐出去等於把 Flow B 的內部
+# 生成模式名稱交出去。對外只保留「哪一類錯誤」，細節留在伺服器日誌。
+_ERROR_CLASS = {
+    "quota_error": "quota",
+    "degraded_summary": "degraded",
+    "general_error": "failed",
+}
+
+
+def classify_error(raw):
+    if not raw:
+        return None
+    key = str(raw)
+    if key in _ERROR_CLASS:
+        return _ERROR_CLASS[key]
+    if key.startswith("flowb_"):
+        return "translation_incomplete"
+    return "failed"
 
 
 def _expose_internals() -> bool:
@@ -546,6 +570,14 @@ def get_status_impl(deps, pid):
         paper_db_map = {p.paper_id: p for p in paper_rows}
     except Exception as e:
         deps.logger.warning(f"[Status] Failed to load Paper DB map for pid={pid}: {e}")
+
+    # [usage] 整個專案的用量一次查完，迴圈裡只做查表。
+    usage_by_paper = {}
+    try:
+        from app.llm_service.llm_usage import summarize_project
+        usage_by_paper = summarize_project(pid) or {}
+    except Exception:
+        deps.logger.warning("[status] 用量彙總失敗 pid=%s", pid, exc_info=True)
 
     if os.path.exists(p_dir):
         paper_rows = list_literature_papers(deps.DATA_ROOT, pid)
@@ -924,7 +956,7 @@ def get_status_impl(deps, pid):
                 "has_trans": has_summary,
                 "flowb_generation_mode": reflow_generation_mode or None,
                 "flowb_llm_ready": bool(has_trans_b_ready),
-                "error_type": summary_error if db_status in {'need_retry', 'failed'} else None,
+                "error_type": classify_error(summary_error) if db_status in {'need_retry', 'failed'} else None,
             }
 
             # [progress] 對外的中性進度表示。前端顯示一律吃這組欄位，
@@ -935,13 +967,10 @@ def get_status_impl(deps, pid):
             row["progress_state"] = progress_state_of(flow_status)
 
             # [usage] 該篇累計的 LLM token 與費用，供解析後決定是否續跑翻譯。
-            try:
-                from app.llm_service.llm_usage import summarize_paper
-                row["llm_usage"] = summarize_paper(pid, paper_id)
-            except Exception:
-                deps.logger.warning("[status] 用量彙總失敗 pid=%s paper=%s",
-                                    pid, paper_id, exc_info=True)
-                row["llm_usage"] = None
+            # 用量在迴圈外一次查完（usage_by_paper），不要每篇各開一條連線：
+            # 這支 API 每 3 秒被輪詢一次且會列出全部文獻，逐篇查等於
+            # 180 篇的專案每 3 秒建 180 條 SQLite 連線。
+            row["llm_usage"] = usage_by_paper.get(paper_id)
 
             papers.append(strip_internal_fields(row))
 

@@ -158,6 +158,81 @@ def test_clear_context_prevents_thread_pool_leak(usage_db):
     assert llm_usage.summarize_paper("P-p", "leaky")["calls"] == 0
 
 
+def test_context_propagates_into_new_thread(usage_db):
+    """[P1-1 迴歸] contextvars 不會自動跨執行緒。
+
+    翻譯與 LaTeX OCR 都是「外層設好歸屬、內層另開 ThreadPoolExecutor 呼叫」
+    的結構。沒有 propagate() 的話，新執行緒拿到空 context，token 會以
+    pid/paper_id=NULL 落帳——該篇的摘要顯示 0 次呼叫，錢花了卻查不到是誰花的。
+    """
+    from concurrent.futures import ThreadPoolExecutor
+
+    def _call():
+        llm_usage.record("task_5b_reflow", "openai", "gpt-4.1",
+                         {"prompt_tokens": 110, "completion_tokens": 0})
+        return llm_usage.current_context()
+
+    # 沒包 propagate：歸屬會掉
+    with llm_usage.usage_context("P-p", "crossthread"):
+        with ThreadPoolExecutor(max_workers=1) as ex:
+            naive = ex.submit(_call).result()
+    assert naive["paper_id"] is None, "前提不成立則本測試無意義"
+    assert llm_usage.summarize_paper("P-p", "crossthread")["calls"] == 0
+
+    # 包了 propagate：歸屬跟著進去
+    with llm_usage.usage_context("P-p", "crossthread"):
+        with ThreadPoolExecutor(max_workers=1) as ex:
+            fixed = ex.submit(llm_usage.propagate(_call)).result()
+    assert fixed["paper_id"] == "crossthread"
+    s = llm_usage.summarize_paper("P-p", "crossthread")
+    assert s["calls"] == 1 and s["input_tokens"] == 110
+
+
+def test_cached_input_is_billed_at_lower_rate(usage_db):
+    """[P2-4 迴歸] 廠商回報的 input 已含 cached 部分。
+
+    不拆開的話會把全部輸入按原價算，長 prompt 反覆呼叫時系統性高估。
+    """
+    full, _ = llm_pricing.estimate_cost_usd("openai", "gpt-4.1", 1_000_000, 0, 0)
+    half, _ = llm_pricing.estimate_cost_usd("openai", "gpt-4.1", 1_000_000, 0, 500_000)
+    assert full == pytest.approx(2.0)
+    # 一半命中快取：500k @ $2 + 500k @ $0.50
+    assert half == pytest.approx(1.25)
+    assert half < full
+
+
+def test_cached_never_exceeds_input(usage_db):
+    """cached 大於 input 是不合理的回報，不能讓費用變成負的。"""
+    cost, _ = llm_pricing.estimate_cost_usd("openai", "gpt-4.1", 1000, 0, 999999)
+    assert cost is not None and cost >= 0
+
+
+def test_summarize_project_matches_per_paper(usage_db):
+    """[P2-5 迴歸] 一次查完的結果要與逐篇查完全一致。"""
+    with llm_usage.usage_context("PRJ", "p1"):
+        llm_usage.record("t", "openai", "gpt-4.1", {"prompt_tokens": 100, "completion_tokens": 10})
+        llm_usage.record("t", "openai", "gpt-4.1", {"prompt_tokens": 200, "completion_tokens": 20})
+    with llm_usage.usage_context("PRJ", "p2"):
+        llm_usage.record("t", "google", "gemini-flash-latest",
+                         {"prompt_token_count": 300, "candidates_token_count": 30})
+
+    bulk = llm_usage.summarize_project("PRJ")
+    assert set(bulk) == {"p1", "p2"}
+    for paper_id in ("p1", "p2"):
+        one = llm_usage.summarize_paper("PRJ", paper_id)
+        for key in ("input_tokens", "output_tokens", "total_tokens",
+                    "cost_usd", "calls", "has_unpriced", "models"):
+            assert bulk[paper_id][key] == one[key], f"{paper_id}.{key} 不一致"
+
+
+def test_summarize_project_ignores_other_projects(usage_db):
+    with llm_usage.usage_context("A", "x"):
+        llm_usage.record("t", "openai", "gpt-4.1", {"prompt_tokens": 1, "completion_tokens": 0})
+    with llm_usage.usage_context("B", "y"):
+        llm_usage.record("t", "openai", "gpt-4.1", {"prompt_tokens": 1, "completion_tokens": 0})
+    assert set(llm_usage.summarize_project("A")) == {"x"}
+
+
 def test_summarize_unknown_paper_is_empty(usage_db):
     s = llm_usage.summarize_paper("P-p", "never-seen")
     assert s["calls"] == 0 and s["cost_usd"] == 0.0

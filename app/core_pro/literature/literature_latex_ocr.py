@@ -391,8 +391,15 @@ class LatexOCREngine:
                 max_retries=max_retries,
             )
 
+        # [usage] 同 literature_translator：另開執行緒會丟失用量歸屬。
+        try:
+            from app.llm_service.llm_usage import propagate as _propagate
+            _submit_target = _propagate(_call_dispatch)
+        except Exception:
+            _submit_target = _call_dispatch
+
         ex = ThreadPoolExecutor(max_workers=1)
-        fut = ex.submit(_call_dispatch)
+        fut = ex.submit(_submit_target)
         try:
             res = fut.result(timeout=self.dispatch_timeout_sec)
             if isinstance(res, dict):

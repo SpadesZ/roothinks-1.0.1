@@ -958,8 +958,6 @@ window.literatureApp = {
                 ready_B: '完成 100%',
                 failed: '失敗',
             }[st] || st);
-            const flowAReadyState = p.flow_a_ready ? 'done' : (status === 'processing_A' ? 'processing' : 'pending');
-            const flowBReadyState = p.flow_b_ready ? 'done' : (status === 'processing_B' ? 'processing' : 'pending');
 
             let actionBtn = '';
             if (status === 'ready_B') {

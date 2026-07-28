@@ -95,7 +95,16 @@ async function loadPaqStatus() {
 
                 // 嘗試從陣列中尋找 PI
                 if (Array.isArray(members) && members.length > 0) {
-                    let piObj = members.find(m => m && m.role && (m.role.includes('PI') || m.role.includes('主持') || m.role.includes('Principal')));
+                    // [PI 判定] 必須用 startsWith('主持人')，不能用 includes。
+                    // 「共同主持人 (Co-PI)」同時包含 'PI' 與 '主持'，用 includes 的話
+                    // Co-PI 會被當成 PI；名單上 Co-PI 排在前面時就顯示錯的人。
+                    // 語意與後端 _validate_members 的 role.startswith('主持人')
+                    // 及 dashboard.js 的 isPrincipalInvestigator 一致。
+                    const isPI = (role) => {
+                        const r = String(role || '');
+                        return r.startsWith('主持人') || r.startsWith('Principal Investigator');
+                    };
+                    let piObj = members.find(m => m && isPI(m.role));
                     
                     if (!piObj) {
                         // 無差別攻擊：如果沒有標註 role，直接抓出第一個有名字的人！

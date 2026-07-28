@@ -300,11 +300,24 @@ class LiteratureOriginsHandler {
                     `;
 
                     html += files.map(f => {
-                        // 狀態標籤
-                        let badge = '<span class="badge bg-secondary">Pending</span>';
-                        if (f.status_trans === 'done') badge = '<span class="badge bg-success">Ready</span>';
-                        else if (f.status_fix === 'done') badge = '<span class="badge bg-primary">Fixed</span>';
-                        else if (f.status_cv === 'done') badge = '<span class="badge bg-warning text-dark">OCR</span>';
+                        // 狀態標籤。
+                        // 原本讀 status_trans / status_fix / status_cv，但那三個是
+                        // 內部流程欄位、已不再對外提供，照舊讀的話所有檔案都會變成
+                        // Pending（看起來像上傳歷史壞掉，其實是欄位沒了）。
+                        // 改吃中性的 progress_state / progress_pct。
+                        const STATE_BADGE = {
+                            uploaded:    ['bg-secondary', '待處理'],
+                            analyzing:   ['bg-info text-dark', '解析中'],
+                            analyzed:    ['bg-primary', '已解析'],
+                            translating: ['bg-info text-dark', '翻譯中'],
+                            completed:   ['bg-success', '完成'],
+                            failed:      ['bg-danger', '失敗'],
+                        };
+                        const [badgeCls, badgeText] =
+                            STATE_BADGE[f.progress_state] || STATE_BADGE.uploaded;
+                        const pctText = (typeof f.progress_pct === 'number' && f.progress_pct > 0)
+                            ? ` ${f.progress_pct}%` : '';
+                        let badge = `<span class="badge ${badgeCls}">${badgeText}${pctText}</span>`;
 
                         return `
                         <tr>

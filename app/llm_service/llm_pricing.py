@@ -27,12 +27,14 @@ from typing import Dict, Optional, Tuple
 # 超過半年沒核對就該當成不可信——這裡不做自動過期判定，因為悄悄把價格
 # 歸零比顯示舊價更危險，但維護者看到日期就知道該去查了。
 _PRICES: Dict[str, Dict[str, object]] = {
+    # cached_input：重複送出的 prompt 前綴會以快取價計費（約為 input 的 1/4）。
+    # 不分開算的話，長 prompt 反覆呼叫的情境會被系統性高估。
     "openai/gpt-4.1": {
-        "input": 2.00, "output": 8.00,
+        "input": 2.00, "cached_input": 0.50, "output": 8.00,
         "checked": "2026-07-28", "source": "OpenAI 公開價目",
     },
     "openai/gpt-4.1-mini": {
-        "input": 0.40, "output": 1.60,
+        "input": 0.40, "cached_input": 0.10, "output": 1.60,
         "checked": "2026-07-28", "source": "OpenAI 公開價目",
     },
 }
@@ -77,6 +79,7 @@ def estimate_cost_usd(
     model: str,
     input_tokens: int,
     output_tokens: int,
+    cached_input_tokens: int = 0,
 ) -> Tuple[Optional[float], Optional[str]]:
     """換算費用。
 
@@ -89,12 +92,26 @@ def estimate_cost_usd(
     try:
         i = max(0, int(input_tokens or 0))
         o = max(0, int(output_tokens or 0))
+        c = max(0, int(cached_input_tokens or 0))
     except (TypeError, ValueError):
         return None, None
-    cost = (i / 1_000_000.0) * float(price["input"]) + \
+
+    # 廠商回報的 input_tokens **已包含** cached 部分。要把它拆出來以較低的
+    # 快取單價計，否則長 prompt 反覆呼叫的情境會被系統性高估。
+    # c 夾在 [0, i]：回報異常時不能讓費用變成負的。
+    c = min(c, i)
+    fresh = i - c
+    cached_rate = price.get("cached_input")
+
+    cost = (fresh / 1_000_000.0) * float(price["input"]) + \
            (o / 1_000_000.0) * float(price["output"])
-    note = (f"in ${price['input']}/1M, out ${price['output']}/1M "
-            f"({price['checked']} 核對)")
+    if c:
+        rate = float(cached_rate) if cached_rate is not None else float(price["input"])
+        cost += (c / 1_000_000.0) * rate
+
+    note = (f"in ${price['input']}/1M"
+            + (f", cached ${cached_rate}/1M" if cached_rate is not None else "")
+            + f", out ${price['output']}/1M ({price['checked']} 核對)")
     return round(cost, 6), note
 
 

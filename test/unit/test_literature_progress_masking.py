@@ -15,6 +15,7 @@ import pytest
 from app.core_pro.literature.literature_processing_ops import (
     _INTERNAL_FIELDS,
     build_milestones,
+    classify_error,
     progress_pct_of,
     progress_state_of,
     strip_internal_fields,
@@ -95,3 +96,62 @@ def test_flag_only_accepts_explicit_truthy(monkeypatch):
     for val in ["0", "", "no", "off", "false"]:
         monkeypatch.setenv("LITERATURE_EXPOSE_INTERNALS", val)
         assert "stages" not in strip_internal_fields({"stages": {}, "paper_id": "p"})
+
+
+# --- 第一版漏掉的部分（由 code review 指出） -------------------------------
+
+def test_flow_ready_flags_are_stripped():
+    """[迴歸] flow_a_ready / flow_b_ready 第一版沒剝，等於「不外洩」只做一半。
+
+    原本的測試只逐一檢查我當初列進清單的欄位，自然抓不到漏列的。
+    這裡改成「白名單」：明確列出允許外流的欄位，其餘一律不得出現。
+    """
+    row = {
+        "paper_id": "p1", "filename": "a.pdf",
+        "progress_pct": 60, "progress_state": "analyzed",
+        "milestones": [], "llm_usage": None, "error_type": None,
+        # 以下都不該外流
+        "flow_a_ready": True, "flow_b_ready": False,
+        "stages": {"s1": "done"}, "flow_status": "gold_ready",
+        "db_status": "gold_ready", "status_cv": "done",
+        "status_fix": "done", "status_trans": "pending",
+        "flowb_generation_mode": "heuristic_fallback",
+        "flowb_llm_ready": False, "has_fixed": True, "has_trans": False,
+    }
+    allowed = {"paper_id", "filename", "progress_pct", "progress_state",
+               "milestones", "llm_usage", "error_type"}
+    out = strip_internal_fields(row)
+    assert set(out) == allowed, f"多出不該外流的欄位: {set(out) - allowed}"
+
+
+def test_every_internal_field_is_actually_listed():
+    """清單本身要涵蓋所有內部欄位——防止日後新增欄位時又漏列。"""
+    for f in ("flow_a_ready", "flow_b_ready", "stages", "flow_status",
+              "db_status", "status_cv", "status_fix", "status_trans",
+              "flowb_generation_mode", "flowb_llm_ready"):
+        assert f in _INTERNAL_FIELDS, f"{f} 不在剝除清單中"
+
+
+@pytest.mark.parametrize("raw,expected", [
+    ("quota_error", "quota"),
+    ("degraded_summary", "degraded"),
+    ("general_error", "failed"),
+    ("flowb_reflow_missing", "translation_incomplete"),
+    ("flowb_reflow_heuristic_fallback", "translation_incomplete"),
+    ("flowb_reflow_unknown_mode", "translation_incomplete"),
+    ("flowb_artifact_missing", "translation_incomplete"),
+    (None, None),
+    ("", None),
+])
+def test_error_type_is_classified_not_raw(raw, expected):
+    """[迴歸] error_type 原本直接吐 flowb_reflow_{generation_mode}，
+    等於把 Flow B 的內部生成模式名稱交出去。"""
+    assert classify_error(raw) == expected
+
+
+def test_error_class_never_leaks_internal_vocabulary():
+    for raw in ["flowb_reflow_heuristic_fallback", "flowb_reflow_missing",
+                "flowb_artifact_missing", "flowb_reflow_not_ready"]:
+        out = classify_error(raw)
+        for leak in ["flowb", "reflow", "artifact", "heuristic"]:
+            assert leak not in out
