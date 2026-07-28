@@ -9,8 +9,8 @@
       後端 _validate_members 用 startswith 是對的，前端一度用 includes，
       造成「一位 PI + 一位 Co-PI」被擋下、卡片顯示錯的主持人。
 為什麼要靜態檢查：這個 repo 沒有 JS 測試框架也沒有 CI，
-      test_pi_role_matching.py 只涵蓋後端——前端被改回 includes 不會有人發現。
-      這裡直接盯著原始碼裡的危險寫法，是目前唯一擋得住回歸的方式。
+      所以 pytest 直接盯住危險寫法；角色輸入輸出的行為另由
+      test/js/test_pi_role_matching.js 使用 Node 內建 assert 驗證。
 維護提醒：
       新增任何會判斷「誰是主持人」的前端檔案時，請把它加進 _FILES。
 """
@@ -81,3 +81,9 @@ def test_dashboard_exposes_shared_helper():
     assert "function isPrincipalInvestigator(" in src
     # 四個使用點：卡片顯示 x2、下拉 selected、送出前驗證
     assert src.count("isPrincipalInvestigator(") >= 5
+
+
+def test_paq_exposes_node_testable_helper():
+    src = _read("app/static/js/paq_project.js")
+    assert "function isPaqPrincipalInvestigator(" in src
+    assert "module.exports = { isPaqPrincipalInvestigator }" in src

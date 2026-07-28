@@ -40,6 +40,14 @@
 // 3. 資料載入與 API 串接 (Data Loading & API)
 // ==================================================================================
 
+function isPaqPrincipalInvestigator(role) {
+    const r = String(role || '').trim();
+    if (!r || r.startsWith('共同主持人') || /\bco[\s-]*pi\b/i.test(r)) return false;
+    return r.startsWith('主持人')
+        || /^principal investigator\b/i.test(r)
+        || /\bpi\b/i.test(r);
+}
+
 /**
  * 載入專案完整狀態 (Status & Survey Data)
  * 呼叫 API: GET /api/paq/status/<pid> 
@@ -95,16 +103,10 @@ async function loadPaqStatus() {
 
                 // 嘗試從陣列中尋找 PI
                 if (Array.isArray(members) && members.length > 0) {
-                    // [PI 判定] 必須用 startsWith('主持人')，不能用 includes。
-                    // 「共同主持人 (Co-PI)」同時包含 'PI' 與 '主持'，用 includes 的話
-                    // Co-PI 會被當成 PI；名單上 Co-PI 排在前面時就顯示錯的人。
-                    // 語意與後端 _validate_members 的 role.startswith('主持人')
-                    // 及 dashboard.js 的 isPrincipalInvestigator 一致。
-                    const isPI = (role) => {
-                        const r = String(role || '');
-                        return r.startsWith('主持人') || r.startsWith('Principal Investigator');
-                    };
-                    let piObj = members.find(m => m && isPI(m.role));
+                    // 精準排除 Co-PI，同時保留舊資料的 PI / Lead PI 英文角色。
+                    let piObj = members.find(
+                        m => m && isPaqPrincipalInvestigator(m.role)
+                    );
                     
                     if (!piObj) {
                         // 無差別攻擊：如果沒有標註 role，直接抓出第一個有名字的人！
@@ -331,4 +333,8 @@ async function submitPromote() {
     } catch (e) {
         alert('Error: ' + e.message);
     }
+}
+
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = { isPaqPrincipalInvestigator };
 }

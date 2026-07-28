@@ -467,16 +467,12 @@ _MILESTONE_SPEC = [
     (None, 100, "100% 完成"),  # flow_b_ready
 ]
 
-# 內部欄位：預設不外流。設 LITERATURE_EXPOSE_INTERNALS=1 可保留，
-# 供既有測試與本機除錯使用——正式部署不該開。
-_INTERNAL_FIELDS = (
-    "status_cv", "status_fix", "status_trans", "db_status", "flow_status",
-    "stages", "flowb_generation_mode", "flowb_llm_ready",
-    # flow_a_ready / flow_b_ready 一樣是內部流程名稱。前端已改吃 milestones，
-    # 不再需要這兩個欄位。第一版漏了它們，等於「不外洩」只做了一半。
-    "flow_a_ready", "flow_b_ready",
-    "has_fixed", "has_trans",
-)
+# 對外 API 只允許這些產品層欄位。設 LITERATURE_EXPOSE_INTERNALS=1 可保留
+# 完整 row 供本機除錯；正式部署不該開。
+_PUBLIC_FIELDS = frozenset({
+    "paper_id", "filename", "progress_pct", "progress_state",
+    "milestones", "llm_usage", "error_type",
+})
 
 # error_type 的原始值可能是 flowb_reflow_heuristic_fallback 這類字串
 # （見 flowb_reflow_issue 的組法），直接吐出去等於把 Flow B 的內部
@@ -547,10 +543,10 @@ def progress_state_of(flow_status):
 
 
 def strip_internal_fields(row):
-    """移除會洩漏內部流程的欄位（除非明確以環境變數開啟）。"""
+    """只輸出明確允許的產品層欄位（除非明確開啟本機除錯）。"""
     if _expose_internals():
         return row
-    return {k: v for k, v in row.items() if k not in _INTERNAL_FIELDS}
+    return {k: v for k, v in row.items() if k in _PUBLIC_FIELDS}
 
 
 def get_status_impl(deps, pid):

@@ -13,7 +13,7 @@
 import pytest
 
 from app.core_pro.literature.literature_processing_ops import (
-    _INTERNAL_FIELDS,
+    _PUBLIC_FIELDS,
     build_milestones,
     classify_error,
     progress_pct_of,
@@ -77,12 +77,14 @@ def test_mapped_states_never_leak_internal_vocabulary():
 
 def test_internal_fields_stripped_by_default(monkeypatch):
     monkeypatch.delenv("LITERATURE_EXPOSE_INTERNALS", raising=False)
-    row = {f: "x" for f in _INTERNAL_FIELDS}
-    row.update({"paper_id": "p1", "progress_pct": 60})
+    row = {
+        "paper_id": "p1", "progress_pct": 60,
+        "stages": {"s1": "done"}, "future_internal_mode": "flowc_secret",
+    }
     out = strip_internal_fields(row)
     assert out == {"paper_id": "p1", "progress_pct": 60}
-    for f in _INTERNAL_FIELDS:
-        assert f not in out
+    assert "stages" not in out
+    assert "future_internal_mode" not in out
 
 
 def test_internal_fields_kept_when_flag_on(monkeypatch):
@@ -118,18 +120,18 @@ def test_flow_ready_flags_are_stripped():
         "flowb_generation_mode": "heuristic_fallback",
         "flowb_llm_ready": False, "has_fixed": True, "has_trans": False,
     }
-    allowed = {"paper_id", "filename", "progress_pct", "progress_state",
-               "milestones", "llm_usage", "error_type"}
     out = strip_internal_fields(row)
-    assert set(out) == allowed, f"多出不該外流的欄位: {set(out) - allowed}"
+    assert set(out) == _PUBLIC_FIELDS, \
+        f"對外欄位不符 allowlist: {set(out) ^ _PUBLIC_FIELDS}"
 
 
-def test_every_internal_field_is_actually_listed():
-    """清單本身要涵蓋所有內部欄位——防止日後新增欄位時又漏列。"""
-    for f in ("flow_a_ready", "flow_b_ready", "stages", "flow_status",
-              "db_status", "status_cv", "status_fix", "status_trans",
-              "flowb_generation_mode", "flowb_llm_ready"):
-        assert f in _INTERNAL_FIELDS, f"{f} 不在剝除清單中"
+def test_unknown_fields_are_denied_by_default():
+    """新增內部欄位不需要記得補黑名單；未明確允許就不得外流。"""
+    out = strip_internal_fields({
+        "paper_id": "p1",
+        "future_internal_mode": "flowc_secret_algorithm",
+    })
+    assert out == {"paper_id": "p1"}
 
 
 @pytest.mark.parametrize("raw,expected", [

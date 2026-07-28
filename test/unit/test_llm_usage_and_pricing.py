@@ -93,6 +93,56 @@ def test_record_and_summarize(usage_db):
     assert s["cost_usd"] == pytest.approx(3000/1e6*2.0 + 600/1e6*8.0)
 
 
+def test_existing_usage_table_is_upgraded_without_losing_rows(usage_db):
+    """父版本已建過舊表時，要原地加欄位，不能讓後續記帳靜默失效。"""
+    conn = sqlite3.connect(usage_db)
+    try:
+        conn.execute("""
+            CREATE TABLE llm_usage_log (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                created_at TEXT NOT NULL,
+                pid TEXT,
+                paper_id TEXT,
+                task_id TEXT NOT NULL,
+                vendor TEXT,
+                model_name TEXT,
+                input_tokens INTEGER NOT NULL DEFAULT 0,
+                output_tokens INTEGER NOT NULL DEFAULT 0,
+                total_tokens INTEGER NOT NULL DEFAULT 0,
+                cost_usd REAL,
+                price_note TEXT,
+                cache_hit INTEGER NOT NULL DEFAULT 0
+            )
+        """)
+        conn.execute(
+            "INSERT INTO llm_usage_log "
+            "(created_at, pid, paper_id, task_id, input_tokens, total_tokens) "
+            "VALUES ('old', 'P', 'old-paper', 'old-task', 7, 7)"
+        )
+        conn.commit()
+    finally:
+        conn.close()
+
+    with llm_usage.usage_context("P", "new-paper"):
+        llm_usage.record(
+            "new-task", "openai", "gpt-4.1",
+            {"input_tokens": 100, "cached_input_tokens": 40},
+        )
+
+    conn = sqlite3.connect(usage_db)
+    try:
+        columns = {row[1] for row in conn.execute("PRAGMA table_info(llm_usage_log)")}
+        rows = conn.execute(
+            "SELECT paper_id, cached_input_tokens FROM llm_usage_log ORDER BY id"
+        ).fetchall()
+    finally:
+        conn.close()
+
+    assert "cached_input_tokens" in columns
+    assert rows == [("old-paper", 0), ("new-paper", 40)]
+    assert llm_usage.summarize_project("P")["new-paper"]["calls"] == 1
+
+
 def test_unpriced_model_is_flagged(usage_db):
     """混到查不到單價的模型時，必須標記出來——
     否則使用者會把「已知部分的合計」當成全部花費。"""

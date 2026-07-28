@@ -74,6 +74,18 @@ def _ensure_table(conn: sqlite3.Connection) -> None:
             cache_hit    INTEGER NOT NULL DEFAULT 0
         )
     """)
+    columns = {row[1] for row in conn.execute("PRAGMA table_info(llm_usage_log)")}
+    if "cached_input_tokens" not in columns:
+        # ponytail: v1 目前只需一個 additive migration；欄位再增加時改用 schema version。
+        try:
+            conn.execute(
+                "ALTER TABLE llm_usage_log ADD COLUMN "
+                "cached_input_tokens INTEGER NOT NULL DEFAULT 0"
+            )
+        except sqlite3.OperationalError as exc:
+            # 多個 app worker 可能同時首次記帳；另一個 worker 已加欄位就算成功。
+            if "duplicate column name" not in str(exc).lower():
+                raise
     conn.execute("CREATE INDEX IF NOT EXISTS ix_usage_pid_paper "
                  "ON llm_usage_log (pid, paper_id)")
 
