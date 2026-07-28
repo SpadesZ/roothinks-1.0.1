@@ -27,8 +27,23 @@ document.addEventListener('DOMContentLoaded', () => {
     switchDashboardView(initialStatus);
 });
 
+// [feature-flag] 「成員管理 (Members)」選單暫時隱藏（2026-07-28，產品決定）。
+//
+// 為什麼用開關而不是把三處樣板註解掉：這個選單項在三個地方各渲染一次
+// （待擬研究的唯讀卡、可編輯卡、正式研究卡），逐處註解容易漏掉其中一處，
+// 之後要恢復也得三處都改回來。集中在這裡一行控制。
+//
+// 只藏前端入口，modal（#membersModal）、openMembersModal() 與後端
+// /api/projects/<pid>/members 全部保留且仍受權限保護——這不是安全措施，
+// 只是先不讓使用者從選單走進來。要恢復把這個值改回 true 即可。
+const SHOW_MEMBERS_MENU = false;
+
+const MEMBERS_MENU_ITEM = (safePidJs) => SHOW_MEMBERS_MENU
+    ? `<li><a class="dropdown-item" href="#" onclick="openMembersModal('${safePidJs}')"><i class="bi bi-people me-2"></i>成員管理 (Members)</a></li>`
+    : '';
+
 let currentStatus = 'temp';
-let allProjectsCache = []; 
+let allProjectsCache = [];
 
 function escapeHtml(value) {
     return String(value ?? '')
@@ -180,9 +195,9 @@ function renderTempCards(projects) {
             
         const actionMenu = isReadonly
             ? `<li><a class="dropdown-item" href="#" onclick="openCreateModal('${safePidJs}', true)"><i class="bi bi-eye me-2"></i>檢視 (View)</a></li>
-               <li><a class="dropdown-item" href="#" onclick="openMembersModal('${safePidJs}')"><i class="bi bi-people me-2"></i>成員管理 (Members)</a></li>`
+               ${MEMBERS_MENU_ITEM(safePidJs)}`
             : `<li><a class="dropdown-item" href="#" onclick="openCreateModal('${safePidJs}')"><i class="bi bi-pencil me-2"></i>編輯 (Edit)</a></li>
-               <li><a class="dropdown-item" href="#" onclick="openMembersModal('${safePidJs}')"><i class="bi bi-people me-2"></i>成員管理 (Members)</a></li>`;
+               ${MEMBERS_MENU_ITEM(safePidJs)}`;
             
         const enterBtn = isReadonly
             ? `<a href="/paq?pid=${projectIdUrl}" class="btn btn-outline-secondary w-100 fw-bold"><i class="bi bi-lock-fill me-1"></i> 唯讀工作檯 (Read-Only)</a>`
@@ -283,7 +298,7 @@ function renderFormalCards(projects) {
                             </button>
                             <ul class="dropdown-menu dropdown-menu-end shadow">
                                 <li><a class="dropdown-item" href="#" onclick="openCreateFormalModal('${safePidJs}')"><i class="bi bi-pencil me-2"></i>編輯 (Edit)</a></li>
-                                <li><a class="dropdown-item" href="#" onclick="openMembersModal('${safePidJs}')"><i class="bi bi-people me-2"></i>成員管理 (Members)</a></li>
+                                ${MEMBERS_MENU_ITEM(safePidJs)}
                                 <li><hr class="dropdown-divider"></li>
                                 <li><a class="dropdown-item text-danger" href="#" onclick="deleteProject(event, '${safePidJs}')"><i class="bi bi-trash me-2"></i>刪除 (Delete)</a></li>
                             </ul>
