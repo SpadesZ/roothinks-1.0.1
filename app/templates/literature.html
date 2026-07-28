@@ -270,8 +270,11 @@
         </div>
     </div>
 
-    <div class="row g-4 mb-4">
-        <div class="col-lg-6">
+    <!-- [ui] 作業順序：搜尋 → 文獻庫（下載/標記）→ 上傳 → 解析/翻譯。
+         原本 2.2B 上傳和 2.2A 搜尋並排在最上面，等於要使用者還沒挑完文獻就先上傳；
+         改成上傳緊接在文獻庫之後、流程之前，與實際作業順序一致。 -->
+    <div class="row mb-4">
+<div class="col-12">
             <div class="card shadow-sm border-0 h-100">
                 <div class="card-header bg-white border-bottom fw-bold py-3 d-flex justify-content-between">
                     <span><i class="bi bi-search text-primary me-2"></i>2.2A 開啟文獻搜尋 (Search)</span>
@@ -292,8 +295,63 @@
                 </div>
             </div>
         </div>
+    </div>
 
-        <div class="col-lg-6">
+    <div class="row mb-4" id="libraryPanel">
+        <div class="col-12">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white border-bottom fw-bold py-3 d-flex justify-content-between align-items-center">
+                    <span><i class="bi bi-collection-fill text-primary me-2"></i>2.2C 文獻庫 (Library)</span>
+                    <span class="badge bg-secondary" id="libCountBadge">0 entries</span>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+                        <select id="libFilterScreening" class="form-select form-select-sm" style="width:auto;">
+                            <option value="">篩選: 全部</option>
+                            <option value="candidate">candidate</option>
+                            <option value="included">included</option>
+                            <option value="excluded">excluded</option>
+                        </select>
+                        <input id="libFilterQuery" class="form-control form-control-sm" style="width:220px;" placeholder="關鍵字 (Enter 搜尋)">
+                        <button class="btn btn-sm btn-outline-secondary" onclick="window.literatureLibrary.loadLibrary()"><i class="bi bi-arrow-clockwise"></i> Refresh</button>
+                        <div class="ms-auto d-flex align-items-center gap-2">
+                            <select id="libExportScope" class="form-select form-select-sm" style="width:auto;">
+                                <option value="included">匯出: included</option>
+                                <option value="all">匯出: 全部</option>
+                            </select>
+                            <button class="btn btn-sm btn-outline-primary" onclick="window.literatureLibrary.exportRefs('bibtex')">BibTeX</button>
+                            <button class="btn btn-sm btn-outline-primary" onclick="window.literatureLibrary.exportRefs('ris')">RIS</button>
+                            <button class="btn btn-sm btn-outline-primary" onclick="window.literatureLibrary.exportRefs('csl-json')">CSL</button>
+                            <button class="btn btn-sm btn-outline-dark" onclick="window.literatureLibrary.rebuildIndex()" title="Backfill / 重建 evidence index"><i class="bi bi-database-gear"></i> 索引重建</button>
+                        </div>
+                    </div>
+                    <div class="table-responsive" style="max-height: 340px; overflow-y: auto;">
+                        <table class="table table-sm table-hover align-middle mb-2">
+                            <thead class="table-light sticky-top">
+                                <!-- [ui] Reading 欄已移除：讀了沒讀是閱讀進度，歸 Study 模組管，
+                                     放在文獻庫會和 Screening（納入與否）混淆。 -->
+                                <tr><th>Title</th><th>DOI</th><th style="width:120px;">Screening</th><th>PDF</th><th>Sources</th></tr>
+                            </thead>
+                            <tbody id="libraryTableBody">
+                                <tr><td colspan="5" class="text-center text-muted small py-3">Loading...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="row g-2">
+                        <div class="col-md-9">
+                            <textarea id="libImportText" class="form-control form-control-sm" rows="2" placeholder='批次匯入：貼上 CSL JSON 或 normalized JSON 陣列，例如 [{"title":"...","DOI":"..."}]'></textarea>
+                        </div>
+                        <div class="col-md-3 d-grid">
+                            <button class="btn btn-sm btn-outline-success" onclick="window.literatureLibrary.importItems()"><i class="bi bi-box-arrow-in-down"></i> 匯入 (CSL / normalized)</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+<div class="col-12">
             <div class="card shadow-sm border-0 h-100">
                 <div class="card-header bg-white border-bottom fw-bold py-3 d-flex justify-content-between">
                     <span><i class="bi bi-cloud-upload-fill text-success me-2"></i>2.2B 上傳文件 (Upload)</span>
@@ -328,63 +386,6 @@
         </div>
     </div>
 
-    <div class="row mb-4" id="libraryPanel">
-        <div class="col-12">
-            <div class="card shadow-sm border-0">
-                <div class="card-header bg-white border-bottom fw-bold py-3 d-flex justify-content-between align-items-center">
-                    <span><i class="bi bi-collection-fill text-primary me-2"></i>2.2C 文獻庫 (Library)</span>
-                    <span class="badge bg-secondary" id="libCountBadge">0 entries</span>
-                </div>
-                <div class="card-body">
-                    <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
-                        <select id="libFilterScreening" class="form-select form-select-sm" style="width:auto;">
-                            <option value="">篩選: 全部</option>
-                            <option value="candidate">candidate</option>
-                            <option value="included">included</option>
-                            <option value="excluded">excluded</option>
-                        </select>
-                        <select id="libFilterReading" class="form-select form-select-sm" style="width:auto;">
-                            <option value="">閱讀: 全部</option>
-                            <option value="unread">unread</option>
-                            <option value="reading">reading</option>
-                            <option value="read">read</option>
-                        </select>
-                        <input id="libFilterQuery" class="form-control form-control-sm" style="width:220px;" placeholder="關鍵字 (Enter 搜尋)">
-                        <button class="btn btn-sm btn-outline-secondary" onclick="window.literatureLibrary.loadLibrary()"><i class="bi bi-arrow-clockwise"></i> Refresh</button>
-                        <div class="ms-auto d-flex align-items-center gap-2">
-                            <select id="libExportScope" class="form-select form-select-sm" style="width:auto;">
-                                <option value="included">匯出: included</option>
-                                <option value="all">匯出: 全部</option>
-                            </select>
-                            <button class="btn btn-sm btn-outline-primary" onclick="window.literatureLibrary.exportRefs('bibtex')">BibTeX</button>
-                            <button class="btn btn-sm btn-outline-primary" onclick="window.literatureLibrary.exportRefs('ris')">RIS</button>
-                            <button class="btn btn-sm btn-outline-primary" onclick="window.literatureLibrary.exportRefs('csl-json')">CSL</button>
-                            <button class="btn btn-sm btn-outline-dark" onclick="window.literatureLibrary.rebuildIndex()" title="Backfill / 重建 evidence index"><i class="bi bi-database-gear"></i> 索引重建</button>
-                        </div>
-                    </div>
-                    <div class="table-responsive" style="max-height: 340px; overflow-y: auto;">
-                        <table class="table table-sm table-hover align-middle mb-2">
-                            <thead class="table-light sticky-top">
-                                <tr><th>Title</th><th>DOI</th><th style="width:120px;">Screening</th><th style="width:110px;">Reading</th><th>PDF</th><th>Sources</th></tr>
-                            </thead>
-                            <tbody id="libraryTableBody">
-                                <tr><td colspan="6" class="text-center text-muted small py-3">Loading...</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
-                    <div class="row g-2">
-                        <div class="col-md-9">
-                            <textarea id="libImportText" class="form-control form-control-sm" rows="2" placeholder='批次匯入：貼上 CSL JSON 或 normalized JSON 陣列，例如 [{"title":"...","DOI":"..."}]'></textarea>
-                        </div>
-                        <div class="col-md-3 d-grid">
-                            <button class="btn btn-sm btn-outline-success" onclick="window.literatureLibrary.importItems()"><i class="bi bi-box-arrow-in-down"></i> 匯入 (CSL / normalized)</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
     <div class="row mb-5">
         <div class="col-12">
             <div class="card shadow-sm border-0">
@@ -393,34 +394,33 @@
                 </div>
                 
                 <div class="card-body p-0">
+                    <!-- [ui] 改為「一次一篇」：拿掉全選與批次執行按鈕，
+                         每篇文獻在自己那一列各自有「文獻解析」與「文獻翻譯」。
+                         解析要打雲端 LLM（task_4cv 走 gpt-4.1），批次跑等於一次噴掉
+                         好幾篇的費用而使用者看不到中間結果；改成單篇才能在解析後
+                         看到實際 token 用量與金額，再決定要不要翻譯。 -->
                     <div class="p-3 border-bottom bg-light d-flex align-items-center gap-3">
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" id="checkAllPipeline">
-                            <label class="form-check-label fw-bold" for="checkAllPipeline">全選</label>
-                        </div>
-                        <button class="btn btn-primary btn-sm px-4 fw-bold" onclick="window.literatureApp.runPipelineBatch()">
-                            <i class="bi bi-play-circle-fill me-1"></i> 產生辨識成果 (Flow A)
-                        </button>
-                        <button id="btnRunFlowBBatch" class="btn btn-success btn-sm px-4 fw-bold" onclick="window.literatureApp.runTranslationBatch()" disabled title="請先勾選且完成 Flow A 的文件">
-                            <i class="bi bi-translate me-1"></i> 產生雙語對照 (Flow B)
+                        <button class="btn btn-primary btn-sm px-4 fw-bold" onclick="document.getElementById('pdfUploadInput')?.click()">
+                            <i class="bi bi-upload me-1"></i> Upload Papers
                         </button>
                         <button id="btnPreloadNllb" class="btn btn-outline-secondary btn-sm px-3" onclick="window.literatureApp.preloadTranslationModels()">
                             <i class="bi bi-lightning-charge me-1"></i> 預熱翻譯模型
                         </button>
-                        <div id="runtimeModeBadges" class="d-flex align-items-center gap-2 ms-2"></div>
                         <span class="text-muted small ms-auto">
-                            <i class="bi bi-info-circle me-1"></i> 對外僅保留 A/B 兩流程；對內仍保留子任務鏈以便研究追蹤。
+                            <i class="bi bi-info-circle me-1"></i> 一次處理一篇：上傳後先「文獻解析」，看過用量再決定是否「文獻翻譯」。
                         </span>
                     </div>
 
                     <div class="table-responsive" style="max-height: 500px; overflow-y: auto;">
                         <table class="table table-hover align-middle mb-0">
                             <thead class="table-light sticky-top">
+                                <!-- 第一欄原為勾選框（配合全選批次）。改為一次一篇後勾選失去意義，
+                                     欄位保留為空白佔位，維持既有欄寬比例不跑版。 -->
                                 <tr>
-                                    <th style="width: 5%;"></th>
+                                    <th style="width: 3%;"></th>
                                     <th style="width: 25%;">Table 1: 文件基本資訊</th>
                                     <th style="width: 40%;">Table 2: 處理狀態 (Flow A/B)</th>
-                                    <th style="width: 20%;">Table 3: 流程狀態</th>
+                                    <th style="width: 17%;">Table 3: 流程狀態</th>
                                     <th style="width: 15%;">操作 (Correction)</th>
                                 </tr>
                             </thead>
@@ -536,10 +536,10 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz" crossorigin="anonymous"></script>
-<script src="{{ url_for('static', filename='js/literature_app.js') }}?v=4.5"></script>
-<script src="{{ url_for('static', filename='js/literature_library.js') }}?v=0.1"></script>
+<script src="{{ url_for('static', filename='js/literature_app.js') }}?v=4.6"></script>
+<script src="{{ url_for('static', filename='js/literature_library.js') }}?v=0.2"></script>
 <script src="{{ url_for('static', filename='js/literature_scholar.js') }}?v=1.4"></script>
-<script src="{{ url_for('static', filename='js/literature_origins.js') }}?v=0.8"></script>
+<script src="{{ url_for('static', filename='js/literature_origins.js') }}?v=0.9"></script>
 <script src="{{ url_for('static', filename='js/workflow_status.js') }}?v=0.2"></script>
 </body>
 </html>

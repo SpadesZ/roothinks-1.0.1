@@ -1,14 +1,37 @@
 //路徑(./app/static/js/literature_origins.js) #版本 v0.9 #更版時間 20260209-0100
 class LiteratureOriginsHandler {
     constructor(app) {
-        this.app = app; 
-        this.pid = this.resolvePid();
+        this.app = app;
+        this._pidOverride = '';
         this.init();
+    }
+
+    /**
+     * 目前的專案 id —— 每次讀取都重新解析，**刻意不快取**。
+     *
+     * 這裡原本是在建構子做 `this.pid = this.resolvePid()` 存成固定欄位。
+     * 但本物件比 literatureApp.loadBootstrap() 更早建立，建構當下
+     * app.currentPid 還是空的，於是 pid 永遠停在「當時能拿到的值」
+     * （沒帶 ?pid 進來時就是空字串或 localStorage 的舊值）。
+     * bootstrap 之後只有 switchProject() 會回頭同步 pid，初次載入不會，
+     * 結果就是上傳歷史一直拿錯的 pid 去查 /api/literature/status/<pid>：
+     * 檔案明明已經出現在 2.3 流程表，這裡卻永遠顯示 No files uploaded。
+     */
+    get pid() {
+        return this.resolvePid();
+    }
+
+    /** 保留可寫入：switchProject() 會直接指派。寫入的值只當備援，
+     *  app.currentPid 仍優先，避免又出現「指派過就固定住」的老問題。 */
+    set pid(value) {
+        this._pidOverride = String(value || '').trim();
     }
 
     resolvePid() {
         const fromApp = (this.app && this.app.currentPid) ? String(this.app.currentPid).trim() : '';
         if (fromApp) return fromApp;
+
+        if (this._pidOverride) return this._pidOverride;
 
         const urlParams = new URLSearchParams(window.location.search);
         const fromUrl = (urlParams.get('pid') || '').trim();

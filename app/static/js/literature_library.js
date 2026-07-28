@@ -3,7 +3,8 @@
 // 依賴 window.literatureApp.currentPid；所有寫入皆走後端 API，前端不持狀態。
 (function () {
     const SCREENING = ["candidate", "included", "excluded"];
-    const READING = ["unread", "reading", "read"];
+    // [ui] READING 已不在文獻庫呈現：閱讀進度歸 Study 模組管，
+// 放在這裡會與 Screening（納入與否）混淆。後端欄位保留不動。
 
     function pid() {
         return (window.literatureApp && window.literatureApp.currentPid) || "";
@@ -19,13 +20,11 @@
         const host = document.getElementById("libraryTableBody");
         if (!host || !pid()) return;
         const screening = document.getElementById("libFilterScreening").value;
-        const reading = document.getElementById("libFilterReading").value;
         const q = document.getElementById("libFilterQuery").value.trim();
         const params = new URLSearchParams({ pid: pid() });
         if (screening) params.set("screening", screening);
-        if (reading) params.set("reading", reading);
         if (q) params.set("q", q);
-        host.innerHTML = '<tr><td colspan="6" class="text-center text-muted small py-3">Loading...</td></tr>';
+        host.innerHTML = '<tr><td colspan="5" class="text-center text-muted small py-3">Loading...</td></tr>';
         try {
             const res = await fetch(`/api/literature/library?${params.toString()}`);
             const data = await res.json();
@@ -33,7 +32,7 @@
             const badge = document.getElementById("libCountBadge");
             if (badge) badge.innerText = `${entries.length} entries`;
             if (!entries.length) {
-                host.innerHTML = '<tr><td colspan="6" class="text-center text-muted small py-3">Library is empty. 執行搜尋或匯入後會自動累積。</td></tr>';
+                host.innerHTML = '<tr><td colspan="5" class="text-center text-muted small py-3">Library is empty. 執行搜尋或匯入後會自動累積。</td></tr>';
                 return;
             }
             host.innerHTML = entries.map(function (e) {
@@ -54,7 +53,6 @@
                     <td class="small">${titleHtml}<div class="text-muted">${esc(authors)}${e.year ? " · " + esc(e.year) : ""}${e.venue ? " · " + esc(e.venue) : ""}</div></td>
                     <td class="small text-muted">${esc(e.doi || "")}</td>
                     <td>${selectHtml("screening_status", SCREENING, e.screening_status)}</td>
-                    <td>${selectHtml("reading_status", READING, e.reading_status)}</td>
                     <td>${paperTag}</td>
                     <td class="small text-muted">${esc((e.sources || []).join(","))}</td>
                 </tr>`;
@@ -68,7 +66,7 @@
                 btn.addEventListener("click", function () { triggerUpload(btn.dataset.entry); });
             });
         } catch (err) {
-            host.innerHTML = `<tr><td colspan="6" class="text-danger small py-3">Load failed: ${esc(err)}</td></tr>`;
+            host.innerHTML = `<tr><td colspan="5" class="text-danger small py-3">Load failed: ${esc(err)}</td></tr>`;
         }
     }
 
@@ -181,7 +179,7 @@
 
     document.addEventListener("DOMContentLoaded", function () {
         if (!document.getElementById("libraryPanel")) return;
-        ["libFilterScreening", "libFilterReading"].forEach(function (id) {
+        ["libFilterScreening"].forEach(function (id) {
             const el = document.getElementById(id);
             if (el) el.addEventListener("change", loadLibrary);
         });

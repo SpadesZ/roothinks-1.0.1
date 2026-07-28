@@ -34,6 +34,14 @@ window.literatureApp = {
             this.loadContextHistory();
             this.loadSavedSearchResults();
             this.editor.init();
+            // [fix] 上傳歷史必須等 bootstrap 決定出 currentPid 之後再抓一次。
+            // LiteratureOriginsHandler 在建構時就呼叫過 loadFileList()，但那時
+            // pid 還沒解析出來（沒帶 ?pid 進頁面時是空字串），查到的是錯的專案，
+            // 而初次載入原本沒有任何地方會回頭重抓——結果就是檔案已經在 2.3
+            // 流程表出現了，上傳歷史卻永遠停在 No files uploaded。
+            if (window.literatureOrigins) {
+                window.literatureOrigins.loadFileList();
+            }
         });
     },
 
@@ -317,22 +325,9 @@ window.literatureApp = {
             }
         });
 
-        // [New v2.1] 5. Batch Trigger & Select All
-        const btnBatch = document.getElementById('btnBatchAnalyze');
-        if (btnBatch) {
-            btnBatch.addEventListener('click', () => this.runPipelineBatch());
-        }
-        
-        // [New] Select All Checkbox
-        const checkAllPipeline = document.getElementById('checkAllPipeline');
-        if (checkAllPipeline) {
-            checkAllPipeline.addEventListener('change', (e) => {
-                document.querySelectorAll('.paper-checkbox').forEach(cb => {
-                    cb.checked = e.target.checked;
-                });
-                this.updateFlowBButtonState();
-            });
-        }
+        // [ui] 批次執行與全選已移除——改為每列各自操作「文獻解析 / 文獻翻譯」。
+        // runPipelineBatch / runTranslationBatch 兩支函式保留但不再有 UI 入口：
+        // 解析要打雲端 LLM，批次會一次噴掉多篇費用且看不到中間結果。
 
         document.addEventListener('change', (e) => {
             if (e.target && e.target.classList && e.target.classList.contains('paper-checkbox')) {
@@ -889,22 +884,20 @@ window.literatureApp = {
             if (status === 'ready_B') {
                 actionBtn = `<a href="/study/project/${this.currentPid}?paper_id=${p.paper_id}" class="btn btn-sm btn-success fw-bold"><i class="bi bi-book me-1"></i>Study</a>`;
             } else if (status === 'ready_A') {
-                actionBtn = `<button class="btn btn-sm btn-outline-success btn-trigger-translation fw-bold" data-id="${p.paper_id}"><i class="bi bi-translate me-1"></i>產生雙語對照</button>`;
+                actionBtn = `<button class="btn btn-sm btn-outline-success btn-trigger-translation fw-bold" data-id="${p.paper_id}"><i class="bi bi-translate me-1"></i>文獻翻譯</button>`;
             } else if (status === 'processing_B') {
-                actionBtn = '<button class="btn btn-sm btn-secondary" disabled><span class="spinner-border spinner-border-sm me-1"></span>Flow B處理中</button>';
+                actionBtn = '<button class="btn btn-sm btn-secondary" disabled><span class="spinner-border spinner-border-sm me-1"></span>翻譯中</button>';
             } else if (status === 'processing_A') {
-                actionBtn = '<button class="btn btn-sm btn-secondary" disabled><span class="spinner-border spinner-border-sm me-1"></span>Flow A處理中</button>';
+                actionBtn = '<button class="btn btn-sm btn-secondary" disabled><span class="spinner-border spinner-border-sm me-1"></span>解析中</button>';
             } else if (status === 'failed') {
-                actionBtn = `<button class="btn btn-sm btn-warning btn-trigger-ai fw-bold" data-id="${p.paper_id}" title="流程失敗，點擊重跑 Flow A"><i class="bi bi-arrow-clockwise me-1"></i>重跑 Flow A</button>`;
+                actionBtn = `<button class="btn btn-sm btn-warning btn-trigger-ai fw-bold" data-id="${p.paper_id}" title="流程失敗，點擊重跑文獻解析"><i class="bi bi-arrow-clockwise me-1"></i>重跑解析</button>`;
             } else {
-                actionBtn = `<button class="btn btn-sm btn-primary btn-trigger-ai fw-bold" data-id="${p.paper_id}"><i class="bi bi-play-circle me-1"></i>產生辨識成果</button>`;
+                actionBtn = `<button class="btn btn-sm btn-primary btn-trigger-ai fw-bold" data-id="${p.paper_id}"><i class="bi bi-play-circle me-1"></i>文獻解析</button>`;
             }
-
-            const isChecked = checkedIds.has(p.paper_id) ? 'checked' : '';
 
             html += `
             <tr>
-                <td><input type="checkbox" class="form-check-input paper-checkbox" value="${p.paper_id}" ${isChecked}></td>
+                <td></td>
                 <td>
                     <div class="fw-bold text-dark">${p.filename}</div>
                     <div class="small text-muted">ID: ${p.paper_id}</div>
@@ -995,7 +988,7 @@ window.literatureApp = {
 
     triggerTranslation: function(paperId, btnElement) {
         if (!this.canRunFlowBForPaper(paperId)) {
-            alert('此文件尚未完成 Flow A，請先產生辨識成果。');
+            alert('此文件尚未完成解析，請先執行「文獻解析」。');
             return;
         }
 
