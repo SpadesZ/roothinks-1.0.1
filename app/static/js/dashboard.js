@@ -42,6 +42,21 @@ const MEMBERS_MENU_ITEM = (safePidJs) => SHOW_MEMBERS_MENU
     ? `<li><a class="dropdown-item" href="#" onclick="openMembersModal('${safePidJs}')"><i class="bi bi-people me-2"></i>成員管理 (Members)</a></li>`
     : '';
 
+/**
+ * 這個成員是不是「主持人 (PI)」。
+ *
+ * 必須用 startsWith 而不是 includes——「共同主持人 (Co-PI)」這個字串
+ * 本身就包含「主持人」三個字。用 includes 的話 Co-PI 會被算成第二位 PI，
+ * 一個正常的「一位 PI + 一位 Co-PI」專案就會被「必須且只能有一位主持人」
+ * 擋下來，人員加不了也存不了。
+ *
+ * 語意刻意與後端 _validate_members 的 role.startswith('主持人') 一致：
+ * 兩邊判斷不同的話，前端會擋掉後端其實接受的資料（這正是原本的狀況）。
+ */
+function isPrincipalInvestigator(role) {
+    return String(role || '').startsWith('主持人');
+}
+
 let currentStatus = 'temp';
 let allProjectsCache = [];
 
@@ -167,7 +182,7 @@ function renderTempCards(projects) {
 
         let piName = 'Unknown';
         if (p.members && Array.isArray(p.members)) {
-            const pi = p.members.find(m => m.role && m.role.includes('主持人'));
+            const pi = p.members.find(m => isPrincipalInvestigator(m.role));
             if (pi) {
                 if (pi.name && typeof pi.name === 'object' && pi.name.en) {
                     piName = `${pi.name.en.given || ''} ${pi.name.en.surname || ''}`.trim();
@@ -263,7 +278,7 @@ function renderFormalCards(projects) {
         const projectIdUrl = encodeURIComponent(projectId);
         let piName = 'Unknown';
         if (p.members && Array.isArray(p.members)) {
-            const pi = p.members.find(m => m.role && m.role.includes('主持人'));
+            const pi = p.members.find(m => isPrincipalInvestigator(m.role));
             if (pi) {
                 if (pi.name && typeof pi.name === 'object' && pi.name.en) {
                     piName = `${pi.name.en.given || ''} ${pi.name.en.surname || ''}`.trim();
@@ -562,7 +577,7 @@ function addMemberRow(data = null) {
                 <div class="col-md-6">
                     <label class="small text-muted">角色 (Role)</label>
                     <select class="form-select form-select-sm role-select">
-                        <option value="主持人 (Principal Investigator)" ${role.includes('主持人') ? 'selected' : ''}>1. 主持人 (Principal Investigator)</option>
+                        <option value="主持人 (Principal Investigator)" ${isPrincipalInvestigator(role) ? 'selected' : ''}>1. 主持人 (Principal Investigator)</option>
                         <option value="共同主持人 (Co-PI)" ${role.includes('共同主持人') ? 'selected' : ''}>2. 共同主持人 (Co-PI)</option>
                         <option value="主貢獻人員 (Principal Contributor)" ${role.includes('主貢獻') ? 'selected' : ''}>3. 主貢獻人員 (Principal Contributor)</option>
                         <option value="通信窗口 (Correspondent)" ${role.includes('通信') ? 'selected' : ''}>4. 通信窗口 (Correspondent)</option>
@@ -785,7 +800,7 @@ async function submitCreate() {
 
     // v1.9: 主持人驗證與後端一致——恰一位主持人,且姓名(英文或原文)至少填一種。
     // 舊版額外硬要求單位 L1,但 UI 未標必填,移除以免使用者被莫名擋下。
-    const pis = members.filter(m => m.role.includes('主持人'));
+    const pis = members.filter(m => isPrincipalInvestigator(m.role));
     if (pis.length === 0) {
         showCreateFormError("請在成員中指定一位「主持人 (Principal Investigator)」並填寫姓名。");
         return;
