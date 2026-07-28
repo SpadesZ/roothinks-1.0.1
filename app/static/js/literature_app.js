@@ -811,7 +811,7 @@ window.literatureApp = {
         if (blocked.length > 0) {
             btn.disabled = true;
             const preview = blocked.slice(0, 3).join(', ');
-            btn.title = `尚未完成 Flow A: ${preview}${blocked.length > 3 ? ' ...' : ''}`;
+            btn.title = `尚未完成解析: ${preview}${blocked.length > 3 ? ' ...' : ''}`;
             return;
         }
 
@@ -832,7 +832,7 @@ window.literatureApp = {
             lines.push(`Missing PDF: ${details.missing_pdf.join(', ')}`);
         }
         if (Array.isArray(details.flow_a_not_ready) && details.flow_a_not_ready.length > 0) {
-            lines.push(`Flow A not ready: ${details.flow_a_not_ready.join(', ')}`);
+            lines.push(`尚未完成解析: ${details.flow_a_not_ready.join(', ')}`);
         }
         return lines.join('\n');
     },
@@ -871,12 +871,34 @@ window.literatureApp = {
                 if (state === 'error') return 'text-danger';
                 return 'text-secondary opacity-25';
             };
-            const stageIcon = (icon, state, label) => `
-                <div class="d-flex flex-column align-items-center" title="${label}">
+            // [ui] 階段標示改為百分比進度。
+            //
+            // 原本直接寫「OCR-A / OCR-B / 規則仲裁 / 校對」等步驟名稱，等於把
+            // 內部演算法的分工攤在畫面上給任何看得到這頁的人。改成單一 0~100%
+            // 的進度尺規：使用者要知道的是「跑到哪了」，不是「用了什麼方法」。
+            //
+            // title 也一併改掉——只改可見文字而 tooltip 仍寫著步驟名，等於沒遮。
+            const stageIcon = (icon, state, label) => {
+                const tip = state === 'done' ? `已完成 ${label}`
+                          : state === 'processing' ? `進行中（${label}）`
+                          : `尚未開始（${label}）`;
+                return `
+                <div class="d-flex flex-column align-items-center" title="${tip}">
                     <i class="bi ${icon} fs-5 ${getColor(state)}"></i>
                     <span class="small" style="font-size:0.62rem;">${label}</span>
                 </div>`;
+            };
             const arrowIcon = () => '<i class="bi bi-arrow-right text-muted small"></i>';
+            // 狀態徽章原本直印內部代號（ready_A / processing_B …），
+            // 與階段改百分比的用意相同：對使用者說進度，不說內部流程編號。
+            const statusLabel = (st) => ({
+                pending: '待處理',
+                processing_A: '解析中',
+                ready_A: '已解析 60%',
+                processing_B: '翻譯中',
+                ready_B: '完成 100%',
+                failed: '失敗',
+            }[st] || st);
             const flowAReadyState = p.flow_a_ready ? 'done' : (status === 'processing_A' ? 'processing' : 'pending');
             const flowBReadyState = p.flow_b_ready ? 'done' : (status === 'processing_B' ? 'processing' : 'pending');
 
@@ -906,18 +928,18 @@ window.literatureApp = {
                     <div class="d-flex align-items-center gap-2 flex-wrap">
                         ${stageIcon('bi-file-earmark-pdf', (p.stages || {}).s1 || 'pending', 'PDF')}
                         ${arrowIcon()}
-                        ${stageIcon('bi-eye', (p.stages || {}).s2 || 'pending', 'OCR-A')}
-                        ${stageIcon('bi-type', (p.stages || {}).s3 || 'pending', 'OCR-B')}
+                        ${stageIcon('bi-eye', (p.stages || {}).s2 || 'pending', '15%')}
+                        ${stageIcon('bi-type', (p.stages || {}).s3 || 'pending', '30%')}
                         ${arrowIcon()}
-                        ${stageIcon('bi-intersect', (p.stages || {}).s4 || 'pending', '規則仲裁')}
+                        ${stageIcon('bi-intersect', (p.stages || {}).s4 || 'pending', '40%')}
                         ${arrowIcon()}
-                        ${stageIcon('bi-check-circle', flowAReadyState, 'Flow A')}
+                        ${stageIcon('bi-check-circle', flowAReadyState, '60%')}
                         ${arrowIcon()}
-                        ${stageIcon('bi-translate', (p.stages || {}).s10 || 'pending', '翻譯')}
+                        ${stageIcon('bi-translate', (p.stages || {}).s10 || 'pending', '70%')}
                         ${arrowIcon()}
-                        ${stageIcon('bi-clipboard-check', (p.stages || {}).s11 || 'pending', '校對')}
+                        ${stageIcon('bi-clipboard-check', (p.stages || {}).s11 || 'pending', '80%')}
                         ${arrowIcon()}
-                        ${stageIcon('bi-file-earmark-richtext', flowBReadyState, 'Flow B')}
+                        ${stageIcon('bi-file-earmark-richtext', flowBReadyState, '100% 完成')}
                     </div>
                 </td>
                 <td>
@@ -928,7 +950,7 @@ window.literatureApp = {
                             status === 'processing_A' || status === 'processing_B' ? 'bg-info' :
                             status === 'failed' ? 'bg-danger' :
                             'bg-secondary'
-                        }">${status}</span>
+                        }">${statusLabel(status)}</span>
                         ${p.error_type ? `<span class="badge bg-danger" title="${p.error_type}"><i class="bi bi-exclamation-triangle"></i></span>` : ''}
                     </div>
                 </td>
@@ -975,7 +997,7 @@ window.literatureApp = {
                 } else {
                     btnElement.classList.remove('btn-warning', 'btn-primary');
                     btnElement.classList.add('btn-secondary');
-                    btnElement.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Flow A處理中...';
+                    btnElement.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> 解析中...';
                     setTimeout(() => this.loadPipelineTable(), 1000);
                 }
             })
@@ -1018,7 +1040,7 @@ window.literatureApp = {
                 } else {
                     btnElement.classList.remove('btn-outline-success');
                     btnElement.classList.add('btn-secondary');
-                    btnElement.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Flow B處理中...';
+                    btnElement.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> 翻譯中...';
                     setTimeout(() => this.loadPipelineTable(), 1000);
                 }
             })
@@ -1038,7 +1060,7 @@ window.literatureApp = {
             return;
         }
 
-        if (!confirm(`確定要對 ${ids.length} 份文件執行 Flow A (辨識成果)?`)) return;
+        if (!confirm(`確定要對 ${ids.length} 份文件執行文獻解析?`)) return;
 
         fetch('/api/literature/run_batch', {
             method: 'POST',
@@ -1069,12 +1091,12 @@ window.literatureApp = {
 
         const blocked = ids.filter(id => !this.canRunFlowBForPaper(id));
         if (blocked.length > 0) {
-            alert(`以下文件尚未完成 Flow A：${blocked.join(', ')}`);
+            alert(`以下文件尚未完成解析：${blocked.join(', ')}`);
             this.updateFlowBButtonState();
             return;
         }
 
-        if (!confirm(`確定要對 ${ids.length} 份文件執行 Flow B (雙語對照)?`)) return;
+        if (!confirm(`確定要對 ${ids.length} 份文件執行文獻翻譯?`)) return;
 
         fetch('/api/literature/run_translation', {
             method: 'POST',
@@ -1358,16 +1380,16 @@ window.literatureApp = {
                             .then(res => res.json())
                             .then(runResp => {
                                 if (runResp.status === 'success') {
-                                    alert('✅ 修改已儲存，Flow B 已送出（排隊中）...');
+                                    alert('✅ 修改已儲存，翻譯已送出（排隊中）...');
                                 } else {
-                                    alert('⚠️ 修改已儲存，但 Flow B 啟動失敗：' + (runResp.message || '未知錯誤'));
+                                    alert('⚠️ 修改已儲存，但翻譯啟動失敗：' + (runResp.message || '未知錯誤'));
                                 }
                                 this.modal.hide();
                                 literatureApp.loadPipelineTable();
                                 setTimeout(() => literatureApp.refreshView(), 1200);
                             })
                             .catch(err => {
-                                alert('⚠️ 修改已儲存，但 Flow B 啟動失敗（網路錯誤）：' + err.message);
+                                alert('⚠️ 修改已儲存，但翻譯啟動失敗（網路錯誤）：' + err.message);
                                 this.modal.hide();
                                 literatureApp.loadPipelineTable();
                                 setTimeout(() => literatureApp.refreshView(), 1200);
