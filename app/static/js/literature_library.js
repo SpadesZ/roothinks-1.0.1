@@ -41,9 +41,12 @@
                     ? `<a href="${esc(link)}" target="_blank" rel="noopener">${esc(e.title || "(untitled)")}</a>`
                     : esc(e.title || "(untitled)");
                 const authors = (e.authors || []).slice(0, 3).join(", ") + ((e.authors || []).length > 3 ? " et al." : "");
+                // [ui] 移除逐列的「上傳PDF」按鈕：上傳統一由 2.2C 上傳文件／
+                // 2.3 的 Upload Papers 進入，同一件事不要有兩個入口。
+                // 已連結的仍顯示 paper_id——那是資訊（這篇已進 pipeline），不是操作。
                 const paperTag = e.paper_id
                     ? `<span class="badge bg-success-subtle text-success border border-success" title="已連結 PDF pipeline">PDF: ${esc(e.paper_id)}</span>`
-                    : `<button class="btn btn-xs btn-outline-secondary py-0 px-1 lib-upload" data-entry="${esc(e.entry_id)}" title="上傳這篇的 PDF 並自動連結"><i class="bi bi-upload"></i> 上傳PDF</button>`;
+                    : '<span class="text-muted small">—</span>';
                 const selectHtml = function (field, options, current) {
                     return `<select class="form-select form-select-sm lib-status" data-entry="${esc(e.entry_id)}" data-field="${field}">`
                         + options.map(o => `<option value="${o}" ${o === current ? "selected" : ""}>${o}</option>`).join("")
@@ -62,9 +65,8 @@
                     updateEntry(sel.dataset.entry, sel.dataset.field, sel.value);
                 });
             });
-            host.querySelectorAll("button.lib-upload").forEach(function (btn) {
-                btn.addEventListener("click", function () { triggerUpload(btn.dataset.entry); });
-            });
+            // 逐列的「上傳PDF」按鈕已移除（上傳統一走 2.2C 上傳文件／2.3 Upload
+            // Papers），這裡不再需要綁定。triggerUpload 保留供日後恢復時使用。
         } catch (err) {
             host.innerHTML = `<tr><td colspan="5" class="text-danger small py-3">Load failed: ${esc(err)}</td></tr>`;
         }

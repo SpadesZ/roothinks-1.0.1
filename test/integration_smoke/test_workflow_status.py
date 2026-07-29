@@ -121,83 +121,87 @@ def test_submit_status_waits_for_manuscript_before_ready(monkeypatch, tmp_path):
     assert payload["modules"]["submit"]["next_action"] == "先在 Manuscript 保存草稿"
 
 
-def test_paq_page_exposes_workflow_status_mount(monkeypatch, tmp_path):
-    app, _data_root = _make_app(monkeypatch, tmp_path)
-    client = app.test_client()
-
-    html = client.get("/paq/WFLOW1-p").get_data(as_text=True)
-
-    assert 'data-workflow-status' in html
-    assert 'data-focus="paq"' in html
-    assert '/static/js/workflow_status.js' in html
-
-
-def test_literature_page_exposes_workflow_status_mount(monkeypatch, tmp_path):
-    app, _data_root = _make_app(monkeypatch, tmp_path)
-    client = app.test_client()
-
-    html = client.get("/literature", query_string={"pid": "WFLOW1-p"}).get_data(as_text=True)
-
-    assert 'data-workflow-status' in html
-    assert 'data-focus="literature"' in html
-    assert 'workflow_status.js' in html
-
-
-def test_study_page_exposes_workflow_status_mount(monkeypatch, tmp_path):
-    app, _data_root = _make_app(monkeypatch, tmp_path)
+def _seed_project(app, pid="WFLOW1-p"):
+    """批次端點的測試也要有專案存在——沒有的話會被 `if not project: continue`
+    靜默略過，回傳空 dict（第一版就是這樣誤判成端點壞掉）。"""
+    # db / Project 在這個檔案裡是函式內 import（見 _make_app），這裡照做。
     from app import db
     from app.models import Project
-
     with app.app_context():
-        db.session.add(Project(project_id="WFLOW1-p", name="Workflow Test", status="formal"))
+        db.session.add(Project(project_id=pid, name="Batch Test",
+                               research_title="Batch", status="formal"))
         db.session.commit()
 
-    client = app.test_client()
 
-    html = client.get("/study/project/WFLOW1-p").get_data(as_text=True)
-
-    assert 'data-workflow-status' in html
-    assert 'data-focus="study"' in html
-    assert 'workflow_status.js' in html
-
-
-def test_manuscript_page_exposes_workflow_status_mount(monkeypatch, tmp_path):
-    app, _data_root = _make_app(monkeypatch, tmp_path)
-    from app import db
-    from app.models import Project
-
-    with app.app_context():
-        db.session.add(Project(project_id="WFLOW1-p", name="Workflow Test", status="formal"))
-        db.session.commit()
-
-    client = app.test_client()
-    html = client.get("/manuscript/", query_string={"pid": "WFLOW1-p"}).get_data(as_text=True)
-
-    assert 'data-workflow-status' in html
-    assert 'data-focus="manuscript"' in html
-    assert 'workflow_status.js' in html
+def _module_pages(client):
+    """五個模組頁的 HTML。"""
+    return {
+        "paq": client.get("/paq/WFLOW1-p").get_data(as_text=True),
+        "literature": client.get("/literature", query_string={"pid": "WFLOW1-p"}).get_data(as_text=True),
+        "manuscript": client.get("/manuscript/", query_string={"pid": "WFLOW1-p"}).get_data(as_text=True),
+        "submit": client.get("/submit", query_string={"pid": "WFLOW1-p"}).get_data(as_text=True),
+    }
 
 
-def test_csp_keeps_frame_ancestors_locked_while_allowing_drive_frames(monkeypatch, tmp_path):
-    app, _data_root = _make_app(monkeypatch, tmp_path)
-    resp = app.test_client().get("/")
+def test_module_pages_no_longer_duplicate_the_workflow_strip(monkeypatch, tmp_path):
+    """[契約變更] 五模組進度改在 dashboard 一覽，模組頁不再重複掛載。
 
-    csp = resp.headers.get("Content-Security-Policy", "")
-
-    assert "frame-src 'self' https://content.googleapis.com https://accounts.google.com" in csp
-    assert "frame-ancestors 'none'" in csp
-
-
-def test_submit_page_exposes_workflow_status_mount(monkeypatch, tmp_path):
+    原本每個模組頁頂部都有一條五模組狀態列，但那些頁面的導覽列本來就有
+    同樣五個模組的按鈕——同一組資訊重複兩次，還佔掉垂直空間。
+    進度改為顯示在 dashboard 的每張專案卡上，一眼可比較所有專案。
+    """
     app, _data_root = _make_app(monkeypatch, tmp_path)
     client = app.test_client()
 
-    html = client.get("/submit", query_string={"pid": "WFLOW1-p"}).get_data(as_text=True)
+    for name, html in _module_pages(client).items():
+        assert 'data-workflow-status' not in html, f"{name} 仍掛著重複的狀態列"
 
-    assert 'data-workflow-status' in html
-    assert 'data-focus="submit"' in html
-    assert 'workflow_status.js' in html
-    assert '投稿版型輸出' in html
-    assert '雙欄' in html
-    assert '單欄' in html
-    assert 'href="/submit?pid=' in client.get("/paq/WFLOW1-p").get_data(as_text=True)
+
+def test_dashboard_renders_per_project_workflow(monkeypatch, tmp_path):
+    """進度改由 dashboard.js 逐張專案卡渲染。"""
+    app, _data_root = _make_app(monkeypatch, tmp_path)
+    client = app.test_client()
+
+    html = client.get("/").get_data(as_text=True)
+    assert 'dashboard.js' in html
+
+    js = client.get("/static/js/dashboard.js").get_data(as_text=True)
+    assert 'data-workflow-card' in js
+    assert '/api/project/workflow?pids=' in js
+
+
+def test_workflow_batch_endpoint_returns_requested_projects(monkeypatch, tmp_path):
+    """批次端點：逐張卡各打一次的話，9 個專案就是 9 次請求。"""
+    app, _data_root = _make_app(monkeypatch, tmp_path)
+    _seed_project(app)
+    client = app.test_client()
+
+    res = client.get("/api/project/workflow", query_string={"pids": "WFLOW1-p"})
+    payload = res.get_json()
+    assert res.status_code == 200
+    assert payload["success"] is True
+    assert "WFLOW1-p" in payload["projects"]
+    assert payload["projects"]["WFLOW1-p"]["order"] == [
+        "paq", "literature", "study", "manuscript", "submit"
+    ]
+
+
+def test_workflow_batch_skips_unknown_pids_without_failing(monkeypatch, tmp_path):
+    """不存在或無權限的 pid 靜默略過，不能讓整批失敗。"""
+    app, _data_root = _make_app(monkeypatch, tmp_path)
+    _seed_project(app)
+    client = app.test_client()
+
+    res = client.get("/api/project/workflow",
+                     query_string={"pids": "WFLOW1-p,NO-SUCH-PID"})
+    payload = res.get_json()
+    assert res.status_code == 200
+    assert set(payload["projects"]) == {"WFLOW1-p"}
+
+
+def test_workflow_batch_empty_input_is_ok(monkeypatch, tmp_path):
+    app, _data_root = _make_app(monkeypatch, tmp_path)
+    client = app.test_client()
+    res = client.get("/api/project/workflow")
+    assert res.status_code == 200
+    assert res.get_json()["projects"] == {}

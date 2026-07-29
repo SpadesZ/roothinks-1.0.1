@@ -231,6 +231,41 @@ def list_projects():
         return jsonify({'success': False, 'message': "Internal server error"}), 500
 
 
+@bp.route('/workflow', methods=['GET'])
+def project_workflow_batch():
+    """一次取多個專案的五模組進度。
+
+    Dashboard 每張專案卡都要顯示進度，逐張打 /workflow/<pid> 的話 9 個專案
+    就是 9 次請求（每次還各自查 DB 並掃檔案系統）。這裡一次收 pids。
+
+    權限：逐一套用 enforce_project_ownership，沒權限的**靜默略過**而不是
+    整批失敗——dashboard 本來就只列出自己有權限的專案，
+    真有不該看的混進來也不會回傳任何內容。
+    """
+    raw = (request.args.get('pids') or '').strip()
+    if not raw:
+        return jsonify({'success': True, 'projects': {}}), 200
+
+    pids = [p.strip() for p in raw.split(',') if p.strip()][:50]   # 上限防濫用
+    data_root = resolve_data_root()
+    out = {}
+    for raw_pid in pids:
+        try:
+            pid = validate_id(raw_pid, "project_id")
+            enforce_project_ownership(pid)
+            project = Project.query.filter_by(project_id=pid).first()
+            if not project:
+                continue
+            survey = PaqSurvey.query.filter_by(project_ref_id=project.id).first()
+            out[pid] = build_workflow_status(data_root, pid, project=project, survey=survey)
+        except (BadRequest, Unauthorized, Forbidden):
+            continue
+        except Exception:
+            logger.warning("[Workflow Batch] 略過 %s", raw_pid, exc_info=True)
+            continue
+    return jsonify({'success': True, 'projects': out}), 200
+
+
 @bp.route('/workflow/<pid>', methods=['GET'])
 def project_workflow(pid):
     try:

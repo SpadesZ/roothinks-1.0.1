@@ -239,7 +239,6 @@
         </div>
     </div>
 
-    <div class="mb-4" data-workflow-status data-focus="literature" data-pid="{{ pid or '' }}"></div>
 
     <div class="row mb-4">
         <div class="col-12">
@@ -331,7 +330,7 @@
                             <thead class="table-light sticky-top">
                                 <!-- [ui] Reading 欄已移除：讀了沒讀是閱讀進度，歸 Study 模組管，
                                      放在文獻庫會和 Screening（納入與否）混淆。 -->
-                                <tr><th>Title</th><th>DOI</th><th style="width:120px;">Screening</th><th>PDF</th><th>Sources</th></tr>
+                                <tr><th>Title</th><th>DOI</th><th style="width:120px;">Screening</th><th style="width:110px;">PDF</th><th style="width:110px;">來源</th></tr>
                             </thead>
                             <tbody id="libraryTableBody">
                                 <tr><td colspan="5" class="text-center text-muted small py-3">Loading...</td></tr>
@@ -538,7 +537,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz" crossorigin="anonymous"></script>
 <script src="{{ url_for('static', filename='js/literature_app.js') }}?v=4.9"></script>
-<script src="{{ url_for('static', filename='js/literature_library.js') }}?v=0.2"></script>
+<script src="{{ url_for('static', filename='js/literature_library.js') }}?v=0.3"></script>
 <script src="{{ url_for('static', filename='js/literature_scholar.js') }}?v=1.4"></script>
 <script src="{{ url_for('static', filename='js/literature_origins.js') }}?v=1.0"></script>
 <script src="{{ url_for('static', filename='js/workflow_status.js') }}?v=0.2"></script>

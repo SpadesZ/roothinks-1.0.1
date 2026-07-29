@@ -57,6 +57,54 @@ function isPrincipalInvestigator(role) {
     return String(role || '').startsWith('主持人');
 }
 
+// [workflow] 五模組進度改在 dashboard 一覽。
+//
+// 原本這條狀態列出現在 PAQ/Literature/Study/Manuscript/Submit 五個模組頁，
+// 但那五頁的導覽列本來就有同樣五個模組的按鈕——同一組資訊重複兩次，
+// 還佔掉每頁頂部的垂直空間。改成只在 dashboard 呈現，且是「每張專案卡各自的
+// 進度」，這樣一眼就能比較所有專案，而不是切進某一個專案才看得到它的進度。
+const WORKFLOW_LABELS = {
+    paq: 'PAQ', literature: '文獻', study: '研究',
+    manuscript: '手稿', submit: '投稿',
+};
+const WORKFLOW_TONE = {
+    complete: 'bg-success', ready: 'bg-primary', working: 'bg-warning',
+    blocked: 'bg-secondary', empty: 'bg-light text-muted border',
+};
+
+async function renderCardWorkflows(projects) {
+    const hosts = document.querySelectorAll('[data-workflow-card]');
+    if (!hosts.length) return;
+    const pids = Array.from(hosts).map(h => h.dataset.workflowCard).filter(Boolean);
+    if (!pids.length) return;
+    try {
+        // 批次端點：逐張卡各打一次的話，9 個專案就是 9 次請求。
+        const res = await fetch('/api/project/workflow?pids='
+            + encodeURIComponent(pids.join(',')));
+        const data = await res.json();
+        if (!data || !data.success) return;
+        hosts.forEach(host => {
+            const wf = (data.projects || {})[host.dataset.workflowCard];
+            // 契約：{ order: [key...], modules: { key: {status, detail, done, total, href} } }
+            // 不是陣列、欄位叫 status 不叫 state——第一版寫錯過，改動時請對照
+            // app/core_pro/workflow_status.py 的 _module()。
+            if (!wf || !wf.modules) { host.innerHTML = ''; return; }
+            const order = Array.isArray(wf.order) && wf.order.length
+                ? wf.order : ['paq', 'literature', 'study', 'manuscript', 'submit'];
+            host.innerHTML = order.map(k => {
+                const m = wf.modules[k] || {};
+                const tone = WORKFLOW_TONE[m.status] || WORKFLOW_TONE.empty;
+                const tip = `${WORKFLOW_LABELS[k] || k}：${m.status || 'empty'}`
+                          + (m.detail ? ` — ${m.detail}` : '');
+                return `<span class="badge ${tone} me-1 mb-1" title="${escapeHtml(tip)}"
+                              style="font-weight:600;">${escapeHtml(WORKFLOW_LABELS[k] || k)}</span>`;
+            }).join('');
+        });
+    } catch (err) {
+        console.warn('[workflow] 進度載入失敗', err);
+    }
+}
+
 let currentStatus = 'temp';
 let allProjectsCache = [];
 
@@ -163,6 +211,7 @@ async function fetchProjects(status) {
             } else {
                 renderFormalCards(projects);
             }
+            renderCardWorkflows(projects);
         }
     } catch (e) {
         console.error(e);
@@ -259,6 +308,7 @@ function renderTempCards(projects) {
                     </p>
                 </div>
                 <div class="card-footer bg-white border-top-0 pt-0 pb-3">
+                    <div class="rt-card-workflow small mb-2" data-workflow-card="${escapeHtml(projectId)}"></div>
                     ${enterBtn}
                 </div>
             </div>
@@ -341,6 +391,7 @@ function renderFormalCards(projects) {
                     </div>
                 </div>
                 <div class="card-footer bg-white border-top-0 pt-0 pb-3">
+                    <div class="rt-card-workflow small mb-2" data-workflow-card="${escapeHtml(projectId)}"></div>
                     <div class="row g-2">
                         <div class="col-6">
                             <a href="/literature?pid=${projectIdUrl}" class="btn btn-success w-100 fw-bold">
