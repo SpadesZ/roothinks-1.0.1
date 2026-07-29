@@ -138,6 +138,7 @@ def _module_pages(client):
     return {
         "paq": client.get("/paq/WFLOW1-p").get_data(as_text=True),
         "literature": client.get("/literature", query_string={"pid": "WFLOW1-p"}).get_data(as_text=True),
+        "study": client.get("/study/project/WFLOW1-p", query_string={"pid": "WFLOW1-p"}).get_data(as_text=True),
         "manuscript": client.get("/manuscript/", query_string={"pid": "WFLOW1-p"}).get_data(as_text=True),
         "submit": client.get("/submit", query_string={"pid": "WFLOW1-p"}).get_data(as_text=True),
     }
@@ -155,6 +156,7 @@ def test_module_pages_no_longer_duplicate_the_workflow_strip(monkeypatch, tmp_pa
 
     for name, html in _module_pages(client).items():
         assert 'data-workflow-status' not in html, f"{name} 仍掛著重複的狀態列"
+        assert 'workflow_status.js' not in html, f"{name} 仍載入無掛載點的狀態腳本"
 
 
 def test_dashboard_renders_per_project_workflow(monkeypatch, tmp_path):
@@ -168,6 +170,9 @@ def test_dashboard_renders_per_project_workflow(monkeypatch, tmp_path):
     js = client.get("/static/js/dashboard.js").get_data(as_text=True)
     assert 'data-workflow-card' in js
     assert '/api/project/workflow?pids=' in js
+    assert 'WORKFLOW_STATUS_LABELS' in js
+    assert "complete: '完成'" in js
+    assert 'aria-label=' in js
 
 
 def test_workflow_batch_endpoint_returns_requested_projects(monkeypatch, tmp_path):

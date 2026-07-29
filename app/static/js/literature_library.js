@@ -24,7 +24,7 @@
         const params = new URLSearchParams({ pid: pid() });
         if (screening) params.set("screening", screening);
         if (q) params.set("q", q);
-        host.innerHTML = '<tr><td colspan="5" class="text-center text-muted small py-3">Loading...</td></tr>';
+        host.innerHTML = '<tr><td colspan="4" class="text-center text-muted small py-3">Loading...</td></tr>';
         try {
             const res = await fetch(`/api/literature/library?${params.toString()}`);
             const data = await res.json();
@@ -32,7 +32,7 @@
             const badge = document.getElementById("libCountBadge");
             if (badge) badge.innerText = `${entries.length} entries`;
             if (!entries.length) {
-                host.innerHTML = '<tr><td colspan="5" class="text-center text-muted small py-3">Library is empty. 執行搜尋或匯入後會自動累積。</td></tr>';
+                host.innerHTML = '<tr><td colspan="4" class="text-center text-muted small py-3">Library is empty. 執行搜尋或匯入後會自動累積。</td></tr>';
                 return;
             }
             host.innerHTML = entries.map(function (e) {
@@ -57,7 +57,6 @@
                     <td class="small text-muted">${esc(e.doi || "")}</td>
                     <td>${selectHtml("screening_status", SCREENING, e.screening_status)}</td>
                     <td>${paperTag}</td>
-                    <td class="small text-muted">${esc((e.sources || []).join(","))}</td>
                 </tr>`;
             }).join("");
             host.querySelectorAll("select.lib-status").forEach(function (sel) {
@@ -65,10 +64,8 @@
                     updateEntry(sel.dataset.entry, sel.dataset.field, sel.value);
                 });
             });
-            // 逐列的「上傳PDF」按鈕已移除（上傳統一走 2.2C 上傳文件／2.3 Upload
-            // Papers），這裡不再需要綁定。triggerUpload 保留供日後恢復時使用。
         } catch (err) {
-            host.innerHTML = `<tr><td colspan="5" class="text-danger small py-3">Load failed: ${esc(err)}</td></tr>`;
+            host.innerHTML = `<tr><td colspan="4" class="text-danger small py-3">Load failed: ${esc(err)}</td></tr>`;
         }
     }
 
@@ -135,40 +132,6 @@
         } catch (err) {
             alert(`重建失敗: ${err}`);
         }
-    }
-
-    // 從 library entry 直接上傳其 PDF，並以 entry_id 連結（Library 管 metadata、Paper 管 pipeline）。
-    function triggerUpload(entryId) {
-        let input = document.getElementById("libHiddenUpload");
-        if (!input) {
-            input = document.createElement("input");
-            input.type = "file";
-            input.accept = ".pdf,image/*";
-            input.id = "libHiddenUpload";
-            input.style.display = "none";
-            document.body.appendChild(input);
-        }
-        input.onchange = function () {
-            const file = input.files && input.files[0];
-            if (!file) return;
-            const fd = new FormData();
-            fd.append("file", file);
-            fd.append("pid", pid());
-            fd.append("entry_id", entryId);
-            fetch("/api/literature/upload", { method: "POST", body: fd })
-                .then(r => r.json())
-                .then(function (data) {
-                    if (data.status === "success") {
-                        alert(`已上傳並連結：paper_id=${data.paper_id}`);
-                        loadLibrary();
-                    } else {
-                        alert(`上傳失敗：${data.message || "unknown"}`);
-                    }
-                })
-                .catch(err => alert(`上傳失敗：${err}`))
-                .finally(() => { input.value = ""; });
-        };
-        input.click();
     }
 
     function exportRefs(fmt) {

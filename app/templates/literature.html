@@ -330,10 +330,10 @@
                             <thead class="table-light sticky-top">
                                 <!-- [ui] Reading 欄已移除：讀了沒讀是閱讀進度，歸 Study 模組管，
                                      放在文獻庫會和 Screening（納入與否）混淆。 -->
-                                <tr><th>Title</th><th>DOI</th><th style="width:120px;">Screening</th><th style="width:110px;">PDF</th><th style="width:110px;">來源</th></tr>
+                                <tr><th>Title</th><th>DOI</th><th style="width:120px;">Screening</th><th style="width:110px;">PDF</th></tr>
                             </thead>
                             <tbody id="libraryTableBody">
-                                <tr><td colspan="5" class="text-center text-muted small py-3">Loading...</td></tr>
+                                <tr><td colspan="4" class="text-center text-muted small py-3">Loading...</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -540,7 +540,6 @@
 <script src="{{ url_for('static', filename='js/literature_library.js') }}?v=0.3"></script>
 <script src="{{ url_for('static', filename='js/literature_scholar.js') }}?v=1.4"></script>
 <script src="{{ url_for('static', filename='js/literature_origins.js') }}?v=1.0"></script>
-<script src="{{ url_for('static', filename='js/workflow_status.js') }}?v=0.2"></script>
 </body>
 </html>
 

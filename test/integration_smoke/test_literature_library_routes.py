@@ -71,6 +71,7 @@ def test_library_import_list_update_export(monkeypatch, tmp_path):
     entries = client.get(f"/api/literature/library?pid={pid}").get_json()["entries"]
     assert len(entries) == 2
     target = next(e for e in entries if e["title"] == "CSL One")
+    assert target["sources"] == ["import"]
 
     # 更新 screening 狀態
     upd = client.post(
@@ -84,6 +85,21 @@ def test_library_import_list_update_export(monkeypatch, tmp_path):
     body = export.get_data(as_text=True)
     assert "10.1/one" in body
     assert "Norm Two" not in body
+
+
+def test_library_main_table_hides_provenance_and_row_upload(monkeypatch, tmp_path):
+    """Provenance 留在 API；主表不顯示，也不保留已取消入口的死程式。"""
+    app, _ = _make_app(monkeypatch, tmp_path)
+    client = app.test_client()
+
+    html = client.get("/literature", query_string={"pid": "LIBR1-p"}).get_data(as_text=True)
+    js = client.get("/static/js/literature_library.js").get_data(as_text=True)
+
+    assert ">來源</th>" not in html
+    assert 'colspan="4"' in html
+    assert "e.sources" not in js
+    assert "triggerUpload" not in js
+    assert "libHiddenUpload" not in js
 
 
 def test_library_update_rejects_unknown_paper_link(monkeypatch, tmp_path):

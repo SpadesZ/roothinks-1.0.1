@@ -67,6 +67,10 @@ const WORKFLOW_LABELS = {
     paq: 'PAQ', literature: '文獻', study: '研究',
     manuscript: '手稿', submit: '投稿',
 };
+const WORKFLOW_STATUS_LABELS = {
+    complete: '完成', ready: '可進行', working: '進行中',
+    blocked: '受阻', empty: '未開始',
+};
 const WORKFLOW_TONE = {
     complete: 'bg-success', ready: 'bg-primary', working: 'bg-warning',
     blocked: 'bg-secondary', empty: 'bg-light text-muted border',
@@ -94,10 +98,12 @@ async function renderCardWorkflows(projects) {
             host.innerHTML = order.map(k => {
                 const m = wf.modules[k] || {};
                 const tone = WORKFLOW_TONE[m.status] || WORKFLOW_TONE.empty;
-                const tip = `${WORKFLOW_LABELS[k] || k}：${m.status || 'empty'}`
+                const status = WORKFLOW_STATUS_LABELS[m.status] || WORKFLOW_STATUS_LABELS.empty;
+                const tip = `${WORKFLOW_LABELS[k] || k}：${status}`
                           + (m.detail ? ` — ${m.detail}` : '');
                 return `<span class="badge ${tone} me-1 mb-1" title="${escapeHtml(tip)}"
-                              style="font-weight:600;">${escapeHtml(WORKFLOW_LABELS[k] || k)}</span>`;
+                              aria-label="${escapeHtml(tip)}" style="font-weight:600;">`
+                     + `${escapeHtml(WORKFLOW_LABELS[k] || k)} · ${escapeHtml(status)}</span>`;
             }).join('');
         });
     } catch (err) {
