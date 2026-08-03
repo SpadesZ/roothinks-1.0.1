@@ -14,6 +14,7 @@ import pytest
 
 from app.core_pro.literature.literature_processing_ops import (
     _PUBLIC_FIELDS,
+    _resolved_paper_title,
     build_milestones,
     classify_error,
     progress_pct_of,
@@ -109,7 +110,7 @@ def test_flow_ready_flags_are_stripped():
     這裡改成「白名單」：明確列出允許外流的欄位，其餘一律不得出現。
     """
     row = {
-        "paper_id": "p1", "filename": "a.pdf",
+        "paper_id": "p1", "title": "A Survey on Something", "filename": "a.pdf",
         "progress_pct": 60, "progress_state": "analyzed",
         "milestones": [], "llm_usage": None, "error_type": None,
         # 以下都不該外流
@@ -123,6 +124,45 @@ def test_flow_ready_flags_are_stripped():
     out = strip_internal_fields(row)
     assert set(out) == _PUBLIC_FIELDS, \
         f"對外欄位不符 allowlist: {set(out) ^ _PUBLIC_FIELDS}"
+
+
+# --- Table 1 的標題回填 -----------------------------------------------------
+#
+# 列表在解析完成後要顯示真正的論文標題而不是上傳檔名。難點在於 Paper.title
+# 在「上傳當下」就先被塞成檔名當佔位值，所以「有值」不等於「知道標題」。
+
+class _Row:
+    def __init__(self, title):
+        self.title = title
+
+
+@pytest.mark.parametrize("title", [
+    "Beyond_Monolingual_Assumptions.pdf",   # 就是上傳檔名
+    "Beyond_Monolingual_Assumptions",       # 檔名去掉副檔名＝paper_id
+    "beyond_monolingual_assumptions.PDF",   # 大小寫不該影響判定
+    "  ", "", None,
+])
+def test_seeded_filename_is_not_treated_as_a_known_title(title):
+    """佔位值不能當標題顯示，否則每一篇還沒解析就先掛一個假標題。"""
+    assert _resolved_paper_title(
+        _Row(title),
+        "Beyond_Monolingual_Assumptions.pdf",
+        "Beyond_Monolingual_Assumptions",
+    ) is None
+
+
+def test_extracted_title_is_returned():
+    """解析階段回填的真標題要顯示出來。"""
+    assert _resolved_paper_title(
+        _Row("Beyond Monolingual Assumptions: A Survey on CS-NLP"),
+        "Beyond_Monolingual_Assumptions.pdf",
+        "Beyond_Monolingual_Assumptions",
+    ) == "Beyond Monolingual Assumptions: A Survey on CS-NLP"
+
+
+def test_missing_db_row_yields_no_title():
+    """DB 查不到這篇時不能爆，就當標題未知。"""
+    assert _resolved_paper_title(None, "a.pdf", "a") is None
 
 
 def test_unknown_fields_are_denied_by_default():

@@ -895,12 +895,12 @@ window.literatureApp = {
                           : state === 'processing' ? `進行中（${label}）`
                           : `尚未開始（${label}）`;
                 return `
-                <div class="d-flex flex-column align-items-center" title="${tip}">
-                    <i class="bi ${icon} fs-5 ${getColor(state)}"></i>
-                    <span class="small" style="font-size:0.62rem;">${label}</span>
+                <div class="stage-step" title="${tip}">
+                    <i class="bi ${icon} ${getColor(state)}"></i>
+                    <span class="stage-label">${label}</span>
                 </div>`;
             };
-            const arrowIcon = () => '<i class="bi bi-arrow-right text-muted small"></i>';
+            const arrowIcon = () => '<i class="bi bi-arrow-right text-muted stage-arrow"></i>';
 
             // [ui] 圖示一律中性：原本用眼睛(OCR)、交集(仲裁)、翻譯符號，
             // 就算文字改成百分比，圖示本身仍暗示了每一步在做什麼。
@@ -917,7 +917,9 @@ window.literatureApp = {
             //  1. 查不到單價時顯示「單價未設定」而不是 $0——顯示 0 會讓人
             //     以為免費，比誠實說不知道危險得多。
             //  2. has_unpriced 時金額標上「≥」，因為那只是已知部分的合計。
-            const fmtUsd = (v) => '$' + Number(v || 0).toFixed(4);
+            // 幣別一律寫成 US$：畫面上只有一個裸 `$` 時，看的人無從判斷那是
+            // 美金還是本地幣值，而這個數字是要拿來決定要不要繼續花錢的。
+            const fmtUsd = (v) => 'US$' + Number(v || 0).toFixed(4);
             const renderUsage = (u) => {
                 if (!u || !u.calls) return '';
                 const tok = Number(u.total_tokens || 0).toLocaleString();
@@ -934,10 +936,28 @@ window.literatureApp = {
                           + `，${u.calls} 次呼叫
 模型：${(u.models||[]).join(', ') || '—'}`
                           + `
-金額為估算，實際以廠商帳單為準`;
+金額以美金 (USD) 估算，實際以廠商帳單為準`;
                 return `<div class="small text-muted mt-1" title="${tip}" style="cursor:help;">
                             <i class="bi bi-cpu me-1"></i>${tok} tokens · ${money}
                         </div>`;
+            };
+
+            // [ui] Table 1 只認 ID，標題已知才補上去。
+            //
+            // 原本主標顯示上傳檔名——那是一長串底線串接的字串，佔滿整格卻幾乎
+            // 讀不出是哪一篇。改成：解析前只顯示 ID（唯一且夠用），解析完成、
+            // 後端從首頁抽出真正的論文標題後，才把標題放到主標、ID 退成次要行。
+            // 後端已經處理「title 只是上傳時塞的檔名佔位值」的情況（回 null），
+            // 這裡不必再猜。
+            const renderIdentity = (paper) => {
+                const id = this._escapeHtml(paper.paper_id);
+                const title = (paper.title || '').trim();
+                if (!title) {
+                    return `<div class="fw-bold text-dark paper-id-cell">${id}</div>`;
+                }
+                return `
+                    <div class="fw-bold text-dark" title="${this._escapeHtml(title)}">${this._escapeHtml(title)}</div>
+                    <div class="small text-muted paper-id-cell">ID: ${id}</div>`;
             };
 
             const renderMilestones = (paper) => {
@@ -977,12 +997,9 @@ window.literatureApp = {
             html += `
             <tr>
                 <td></td>
+                <td>${renderIdentity(p)}</td>
                 <td>
-                    <div class="fw-bold text-dark">${p.filename}</div>
-                    <div class="small text-muted">ID: ${p.paper_id}</div>
-                </td>
-                <td>
-                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                    <div class="pipeline-progress">
                         ${renderMilestones(p)}
                     </div>
                 </td>

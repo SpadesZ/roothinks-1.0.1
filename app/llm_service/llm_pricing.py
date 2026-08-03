@@ -15,6 +15,8 @@
 #   - 換算結果僅供參考，實際帳單以廠商為準。UI 上必須寫明這點。
 # 維護提醒:
 #   - 新增模型請一併補上 checked 日期。
+#   - 依 prompt 長度分段收費的模型（Gemini pro 系列）要填 tier_over_input_tokens
+#     與 tier_* 費率；只填低價那段會系統性低估長 prompt 的花費。
 #   - 模型名稱比對採「前綴 + 正規化」：gpt-4.1-2025-04-14 這種帶日期後綴的
 #     會落到 gpt-4.1；但 gemini-flash-latest 這類 alias 指向的實際模型會變，
 #     刻意不給預設價，逼使用者明確設定。
@@ -36,6 +38,55 @@ _PRICES: Dict[str, Dict[str, object]] = {
     "openai/gpt-4.1-mini": {
         "input": 0.40, "cached_input": 0.10, "output": 1.60,
         "checked": "2026-07-28", "source": "OpenAI 公開價目",
+    },
+
+    # --- Google Gemini ---
+    # 文獻解析的 task_5interpret / task_5b_reflow 走 Gemini，但這一整個系列
+    # 原本都沒有單價，於是文獻列表的金額只能顯示「≥ $X（部分模型未設定單價）」。
+    # 使用者要的是一個可以直接拿來決定「要不要繼續跑翻譯」的完整美金數字，
+    # 補上單價才給得出來。
+    "google/gemini-2.5-flash": {
+        "input": 0.30, "cached_input": 0.03, "output": 2.50,
+        "checked": "2026-08-03", "source": "Google Gemini API 公開價目",
+    },
+    "google/gemini-2.5-flash-lite": {
+        "input": 0.10, "cached_input": 0.01, "output": 0.40,
+        "checked": "2026-08-03", "source": "Google Gemini API 公開價目",
+    },
+    # tier_over_input_tokens / tier_*：pro 系列依 prompt 長度分兩段收費。
+    # 只登記低價那段的話，長 prompt 會被系統性低估——而低估比高估危險：
+    # 使用者會照著一個偏小的數字決定要不要繼續花錢。
+    "google/gemini-2.5-pro": {
+        "input": 1.25, "cached_input": 0.125, "output": 10.00,
+        "tier_over_input_tokens": 200_000,
+        "tier_input": 2.50, "tier_cached_input": 0.25, "tier_output": 15.00,
+        "checked": "2026-08-03", "source": "Google Gemini API 公開價目",
+    },
+    "google/gemini-3-flash-preview": {
+        "input": 0.50, "cached_input": 0.05, "output": 3.00,
+        "checked": "2026-08-03", "source": "Google Gemini API 公開價目",
+    },
+    "google/gemini-3.1-flash-lite": {
+        "input": 0.25, "cached_input": 0.025, "output": 1.50,
+        "checked": "2026-08-03", "source": "Google Gemini API 公開價目",
+    },
+    "google/gemini-3.1-pro-preview": {
+        "input": 2.00, "cached_input": 0.20, "output": 12.00,
+        "tier_over_input_tokens": 200_000,
+        "tier_input": 4.00, "tier_cached_input": 0.40, "tier_output": 18.00,
+        "checked": "2026-08-03", "source": "Google Gemini API 公開價目",
+    },
+    "google/gemini-3.5-flash": {
+        "input": 1.50, "cached_input": 0.15, "output": 9.00,
+        "checked": "2026-08-03", "source": "Google Gemini API 公開價目",
+    },
+    "google/gemini-3.5-flash-lite": {
+        "input": 0.30, "cached_input": 0.03, "output": 2.50,
+        "checked": "2026-08-03", "source": "Google Gemini API 公開價目",
+    },
+    "google/gemini-3.6-flash": {
+        "input": 1.50, "cached_input": 0.15, "output": 7.50,
+        "checked": "2026-08-03", "source": "Google Gemini API 公開價目",
     },
 }
 
@@ -74,6 +125,21 @@ def lookup(vendor: str, model: str) -> Optional[Dict[str, object]]:
     return None
 
 
+def _effective_rates(price: Dict[str, object], input_tokens: int):
+    """依這次呼叫的 prompt 長度取出實際適用的費率。
+
+    Gemini pro 系列以 prompt 長度分兩段收費（>200k tokens 走高階費率），
+    門檻用 input_tokens 判定，與廠商計費方式一致。
+    沒有 tier_over_input_tokens 的模型維持單一費率，行為不變。
+    """
+    threshold = price.get("tier_over_input_tokens")
+    if threshold and input_tokens > int(threshold):  # type: ignore[arg-type]
+        return (float(price["tier_input"]),
+                price.get("tier_cached_input"),
+                float(price["tier_output"]))
+    return float(price["input"]), price.get("cached_input"), float(price["output"])
+
+
 def estimate_cost_usd(
     vendor: str,
     model: str,
@@ -101,17 +167,16 @@ def estimate_cost_usd(
     # c 夾在 [0, i]：回報異常時不能讓費用變成負的。
     c = min(c, i)
     fresh = i - c
-    cached_rate = price.get("cached_input")
+    in_rate, cached_rate, out_rate = _effective_rates(price, i)
 
-    cost = (fresh / 1_000_000.0) * float(price["input"]) + \
-           (o / 1_000_000.0) * float(price["output"])
+    cost = (fresh / 1_000_000.0) * in_rate + (o / 1_000_000.0) * out_rate
     if c:
-        rate = float(cached_rate) if cached_rate is not None else float(price["input"])
+        rate = float(cached_rate) if cached_rate is not None else in_rate
         cost += (c / 1_000_000.0) * rate
 
-    note = (f"in ${price['input']}/1M"
+    note = (f"in ${in_rate}/1M"
             + (f", cached ${cached_rate}/1M" if cached_rate is not None else "")
-            + f", out ${price['output']}/1M ({price['checked']} 核對)")
+            + f", out ${out_rate}/1M ({price['checked']} 核對)")
     return round(cost, 6), note
 
 

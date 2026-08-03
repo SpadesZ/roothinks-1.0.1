@@ -37,6 +37,54 @@
             font-weight: bold;
         }
 
+        /* Table 2「處理進度」：任何螢幕與縮放比例都必須維持單行。
+         *
+         * 原本用 Bootstrap 的 .d-flex.flex-wrap，於是視窗一窄或瀏覽器一放大，
+         * 八個里程碑就折成兩三行，整列高度跳動、上下篇文獻對不齊，很難一眼
+         * 看出進度跑到哪。
+         *
+         * 作法分兩層：
+         *  1. flex-wrap: nowrap 加上標籤 white-space: nowrap —— 從根本上不允許
+         *     折行。這一格的 min-content 寬度因此等於整條進度條的寬度，
+         *     空間不足時由外層的 .table-responsive 產生水平捲軸，而不是折行。
+         *  2. 字級與間距用 clamp() 綁 vw —— 瀏覽器縮放會改變 vw 的實際像素值，
+         *     所以放大時整條進度條會跟著等比縮小，多數情況下根本不會捲到。
+         *     clamp 的下限保證縮到最小仍讀得出來。
+         */
+        .pipeline-progress {
+            display: flex;
+            flex-wrap: nowrap;
+            align-items: flex-start;
+            gap: clamp(1px, 0.25vw, 6px);
+        }
+        .pipeline-progress > * {
+            flex: 0 0 auto;
+        }
+        .pipeline-progress .stage-step {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .pipeline-progress .stage-step > i {
+            font-size: clamp(0.8rem, 1.05vw, 1.25rem);
+            line-height: 1.15;
+        }
+        .pipeline-progress .stage-label {
+            font-size: clamp(0.5rem, 0.62vw, 0.62rem);
+            line-height: 1.2;
+            white-space: nowrap;
+        }
+        .pipeline-progress .stage-arrow {
+            align-self: center;
+            font-size: clamp(0.55rem, 0.7vw, 0.8rem);
+        }
+
+        /* 檔名/ID 是不含空白的長字串，不強制斷字就會把 Table 1 撐寬，
+         * 進而擠壓 Table 2 的空間。 */
+        .paper-id-cell {
+            word-break: break-all;
+        }
+
         .result-badge {
             font-size: 0.75rem;
             opacity: 0.4;

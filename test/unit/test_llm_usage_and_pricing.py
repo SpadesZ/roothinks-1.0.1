@@ -50,6 +50,38 @@ def test_zero_tokens_costs_zero():
     assert cost == 0.0
 
 
+def test_gemini_models_are_priced():
+    """task_5interpret / task_5b_reflow 走 Gemini。
+
+    這一系列原本整組沒單價，於是文獻列表只能顯示「≥ $X（部分模型未設定單價）」，
+    給不出一個完整的美金金額。
+    """
+    cost, note = llm_pricing.estimate_cost_usd("google", "gemini-2.5-flash",
+                                               1_000_000, 1_000_000)
+    assert cost == pytest.approx(2.80)      # 0.30 in + 2.50 out
+    assert note is not None
+
+
+def test_tiered_model_charges_higher_rate_over_threshold():
+    """Gemini pro 系列 >200k prompt 走高階費率。
+
+    只登記低價那段會系統性低估長 prompt 的花費——使用者會照著一個偏小的
+    數字決定要不要繼續花錢，這個方向的錯比高估危險。
+    """
+    below, _ = llm_pricing.estimate_cost_usd("google", "gemini-2.5-pro", 200_000, 0)
+    above, _ = llm_pricing.estimate_cost_usd("google", "gemini-2.5-pro", 200_001, 0)
+    assert below == pytest.approx(200_000 / 1_000_000 * 1.25)
+    assert above == pytest.approx(200_001 / 1_000_000 * 2.50)
+    assert above > below * 1.9
+
+
+def test_flat_priced_model_is_unaffected_by_tier_logic():
+    """沒有分段設定的模型，費率不因 prompt 長度改變。"""
+    small, _ = llm_pricing.estimate_cost_usd("openai", "gpt-4.1", 1_000, 0)
+    large, _ = llm_pricing.estimate_cost_usd("openai", "gpt-4.1", 1_000_000, 0)
+    assert large == pytest.approx(small * 1000)
+
+
 # --- usage 正規化 ---------------------------------------------------------
 
 @pytest.mark.parametrize("raw,expected", [

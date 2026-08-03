@@ -470,7 +470,7 @@ _MILESTONE_SPEC = [
 # 對外 API 只允許這些產品層欄位。設 LITERATURE_EXPOSE_INTERNALS=1 可保留
 # 完整 row 供本機除錯；正式部署不該開。
 _PUBLIC_FIELDS = frozenset({
-    "paper_id", "filename", "progress_pct", "progress_state",
+    "paper_id", "title", "filename", "progress_pct", "progress_state",
     "milestones", "llm_usage", "error_type",
 })
 
@@ -482,6 +482,32 @@ _ERROR_CLASS = {
     "degraded_summary": "degraded",
     "general_error": "failed",
 }
+
+
+def _resolved_paper_title(db_row, filename, paper_id):
+    """回傳「已經知道的論文標題」，還不知道就回 None。
+
+    Paper.title 上傳當下就會被塞成檔名當佔位值，因此「有值」不等於「知道標題」。
+    只有當它已經不是檔名（被解析階段的 metadata 回填換掉，或匯入 library entry
+    時就帶著真標題）才算數。比對時忽略副檔名與大小寫，因為 paper_id 是
+    去掉 .pdf 的檔名，兩者只差一個副檔名。
+    """
+    if db_row is None:
+        return None
+    title = (getattr(db_row, "title", None) or "").strip()
+    if not title:
+        return None
+
+    def _norm(s):
+        s = str(s or "").strip().lower()
+        for ext in (".pdf", ".png", ".jpg", ".jpeg", ".tif", ".tiff"):
+            if s.endswith(ext):
+                return s[: -len(ext)]
+        return s
+
+    if _norm(title) in {_norm(filename), _norm(paper_id)}:
+        return None
+    return title
 
 
 def classify_error(raw):
@@ -937,8 +963,21 @@ def get_status_impl(deps, pid):
                 ),
             }
 
+            # [ui] 解析階段（trigger_gold_bridge_impl → _update_paper_metadata）會把
+            # 從首頁抽出的論文標題寫回 Paper.title；列表要在標題已知後顯示真正的
+            # 論文名稱，而不是上傳檔名——檔名常是一長串底線串接，看不出是哪一篇。
+            #
+            # 但 Paper.title 在「上傳當下」就先被塞成檔名當佔位值
+            # （literature_batch_routes 的 seed_title），所以不能只判斷有沒有值：
+            # 那會讓每一篇在還沒解析時就顯示一個假的「標題」。
+            # 判定方式是拿它跟檔名比對，只有真的被換掉才算標題已知。
+            # 從 library entry（CSL 匯入）帶進來的標題本來就是真標題，
+            # 與檔名不同，因此同樣會被視為已知——這是對的。
+            db_title = _resolved_paper_title(paper_db_map.get(paper_id), filename, paper_id)
+
             row = {
                 "paper_id": paper_id,
+                "title": db_title,
                 "filename": filename,
                 "status_cv": status_cv,
                 "status_fix": status_fix,
