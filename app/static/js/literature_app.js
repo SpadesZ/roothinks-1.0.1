@@ -29,6 +29,7 @@ window.literatureApp = {
 
         this.bindEvents();
         this.bindPipelineFilter();
+        this.bindTranslationEngine();
         this.loadBootstrap().finally(() => {
             this.loadSystemProfile();
             this.startStatusPolling();
@@ -797,6 +798,42 @@ window.literatureApp = {
         return stages.s4 === 'done' || stages.s8 === 'done' || stages.s9 === 'done' || stages.s12 === 'done';
     },
 
+    // 翻譯引擎選擇。記進 localStorage：這是「這台機器適合哪個引擎」的偏好，
+    // 每次翻譯都要重選很煩，而且選錯（在 2 vCPU 上選本機 NLLB）的代價是
+    // 等兩小時才 timeout 失敗。
+    ENGINE_STORAGE_KEY: 'rtk_translation_engine',
+
+    getSelectedTranslationEngine: function() {
+        const sel = document.getElementById('translationEngineSelect');
+        return sel ? sel.value : 'auto';
+    },
+
+    bindTranslationEngine: function() {
+        const sel = document.getElementById('translationEngineSelect');
+        if (!sel) return;
+        try {
+            const saved = localStorage.getItem(this.ENGINE_STORAGE_KEY);
+            if (saved && [...sel.options].some(o => o.value === saved)) sel.value = saved;
+        } catch (e) { /* 無痕模式等情況讀不到，用預設值就好 */ }
+        this.updateTranslationEngineHint();
+        sel.addEventListener('change', () => {
+            try { localStorage.setItem(this.ENGINE_STORAGE_KEY, sel.value); } catch (e) {}
+            this.updateTranslationEngineHint();
+        });
+    },
+
+    updateTranslationEngineHint: function() {
+        const el = document.getElementById('translationEngineHint');
+        if (!el) return;
+        const hints = {
+            auto:   '自動：本機模型可用時優先用它（省費用，但機器慢就可能逾時）',
+            google: 'Google 翻譯：免費、最快，適合先看懂內容',
+            nllb:   '本機 NLLB：零 API 費用，但吃 CPU；核心數少的機器可能跑不完',
+            llm:    '雲端 LLM：學術術語最準，會依 token 計費',
+        };
+        el.textContent = hints[this.getSelectedTranslationEngine()] || '';
+    },
+
     updatePipelineFilterCount: function(shown, total) {
         const el = document.getElementById('paperFilterCount');
         if (!el) return;
@@ -1167,7 +1204,11 @@ window.literatureApp = {
         fetch('/api/literature/run_translation', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ pid: this.currentPid, paper_ids: [paperId] }),
+            body: JSON.stringify({
+                pid: this.currentPid,
+                paper_ids: [paperId],
+                engine: this.getSelectedTranslationEngine(),
+            }),
         })
             .then(res => res.json())
             .then(data => {

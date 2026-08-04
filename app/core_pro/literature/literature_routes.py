@@ -1467,6 +1467,7 @@ def _run_flowb_subprocess(
     fusion_input: str,
     trans_output: str,
     result_path: str,
+    engine: str = "auto",
 ) -> tuple[bool, str, dict]:
     return _bflow_run_flowb_subprocess(
         deps=_get_flowb_runtime_deps(),
@@ -1475,6 +1476,7 @@ def _run_flowb_subprocess(
         fusion_input=fusion_input,
         trans_output=trans_output,
         result_path=result_path,
+        engine=engine,
     )
 
 

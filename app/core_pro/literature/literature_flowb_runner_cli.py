@@ -30,6 +30,9 @@ def _parse_args() -> argparse.Namespace:
     p.add_argument("--input-path", required=True)
     p.add_argument("--output-path", required=True)
     p.add_argument("--result-path", required=True)
+    # 翻譯引擎由主程序決定後傳進來。預設 auto＝維持原本的自動判斷，
+    # 舊的呼叫端不帶這個參數也不會壞。
+    p.add_argument("--engine", default="auto")
     return p.parse_args()
 
 
@@ -53,18 +56,24 @@ def main() -> int:
 
         os.makedirs(os.path.dirname(args.output_path), exist_ok=True)
 
-        from app.core_pro.literature.literature_translator import TranslationContext, get_translator
+        from app.core_pro.literature.literature_translator import (
+            TranslationContext, get_translator, normalize_engine,
+        )
 
         translator = get_translator()
         if translator is None:
             payload["error"] = "translator unavailable"
             return 1
 
+        engine = normalize_engine(args.engine)
+        payload["engine"] = engine
+
         ok = bool(
             translator.translate_file(
                 args.input_path,
                 args.output_path,
                 TranslationContext.LITERATURE_BATCH,
+                engine,
             )
         )
 

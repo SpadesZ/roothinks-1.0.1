@@ -183,10 +183,29 @@ def run_translation_impl(deps: FlowBRouteDeps):
     pid = deps._normalize_literature_pid(data.get("pid"))
     paper_ids = data.get("paper_ids", [])
 
+    # 使用者選的翻譯引擎。normalize 過才往下傳——這個值最後會變成子行程的
+    # 命令列參數，不正規化等於讓請求內容直接進 argv。
+    from app.core_pro.literature.literature_translator import (
+        normalize_engine, get_translator,
+    )
+    engine = normalize_engine(data.get("engine"))
+
     if not pid:
         return deps.jsonify({"status": "error", "message": "Invalid pid"}), 404
     if not paper_ids:
         return deps.jsonify({"status": "error", "message": "No papers selected"}), 400
+
+    # 指定引擎時先確認它真的能用，不要讓使用者等兩小時才發現引擎沒裝起來。
+    if engine != "auto":
+        try:
+            ok_engine, why = get_translator().engine_available(engine)
+        except Exception as e:
+            ok_engine, why = False, str(e)
+        if not ok_engine:
+            return deps.jsonify({
+                "status": "error",
+                "message": f"翻譯引擎「{engine}」目前不可用：{why}",
+            }), 400
     try:
         paper_ids = [deps._safe_paper_id(p) for p in paper_ids]
         paper_ids = deps._dedupe_keep_order(paper_ids)
@@ -511,6 +530,7 @@ def run_translation_impl(deps: FlowBRouteDeps):
                         fusion_input=fusion_input,
                         trans_output=trans_output,
                         result_path=result_path,
+                        engine=engine,
                     )
                     deps._append_flow_event(
                         target_pid,
@@ -566,7 +586,9 @@ def run_translation_impl(deps: FlowBRouteDeps):
                         )
                         return
 
-                    ok = bool(local_translator.translate_file(fusion_input, trans_output, TranslationContext.LITERATURE_BATCH))
+                    ok = bool(local_translator.translate_file(
+                        fusion_input, trans_output,
+                        TranslationContext.LITERATURE_BATCH, engine))
                     err_msg = "" if ok else "translator returned false"
                     deps._append_flow_event(
                         target_pid,
@@ -840,6 +862,7 @@ def run_flowb_subprocess(
     fusion_input: str,
     trans_output: str,
     result_path: str,
+    engine: str = "auto",
 ) -> tuple[bool, str, dict]:
     try:
         if os.path.exists(result_path):
@@ -863,6 +886,8 @@ def run_flowb_subprocess(
         trans_output,
         "--result-path",
         result_path,
+        "--engine",
+        str(engine or "auto"),
     ]
 
     try:

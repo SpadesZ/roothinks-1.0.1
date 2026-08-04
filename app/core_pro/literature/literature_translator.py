@@ -62,6 +62,33 @@ class TranslationContext(Enum):
     REALTIME = "realtime"               # 即時翻譯請求
 
 
+# 使用者可指定的翻譯引擎。
+#
+# 為什麼要讓人選：原本一律由 _decide_engine() 自動判斷，而它的規則是
+# 「NLLB ready 就優先用 NLLB」（省 API 配額）。在 2 vCPU 的機器上這條規則
+# 會讓整篇論文的翻譯跑到 timeout 被砍——省了配額卻永遠翻不完。
+# 機器條件差異太大，不是程式猜得準的事，交給使用者按情況選。
+ENGINE_AUTO = "auto"      # 沿用原本的自動判斷（預設，行為不變）
+ENGINE_NLLB = "nllb"      # 本機 NLLB-200-600M，零 API 費用，但吃 CPU
+ENGINE_GOOGLE = "google"  # Google 翻譯（deep-translator），免金鑰、快
+ENGINE_LLM = "llm"        # 雲端 LLM（走 llm_bus 綁定的模型），品質最好、要錢
+
+VALID_ENGINES = {ENGINE_AUTO, ENGINE_NLLB, ENGINE_GOOGLE, ENGINE_LLM}
+
+
+def normalize_engine(value) -> str:
+    """把外部傳進來的引擎名正規化；不認得的一律當 auto。
+
+    這個值會從 HTTP 請求一路傳到子行程的命令列參數，
+    不設防的話等於讓外部字串直接影響流程分支。
+    """
+    v = str(value or "").strip().lower()
+    # gemini 是舊稱，保留相容
+    if v == "gemini":
+        return ENGINE_LLM
+    return v if v in VALID_ENGINES else ENGINE_AUTO
+
+
 class HybridTranslator:
     """
     混合智能翻譯器
@@ -122,32 +149,44 @@ class HybridTranslator:
             logger.warning(f"[HybridTranslator] Quick translator unavailable: {e}")
     
     def translate(
-        self, 
-        text: str, 
+        self,
+        text: str,
         context: TranslationContext = TranslationContext.LITERATURE_BATCH,
         source_lang: str = "eng_Latn",
-        target_lang: str = "zho_Hant"
+        target_lang: str = "zho_Hant",
+        engine: str = ENGINE_AUTO,
     ) -> Tuple[bool, str, str]:
         """
         智能翻譯
-        
+
         Args:
             text: 要翻譯的文本
             context: 使用情境
             source_lang: 來源語言
             target_lang: 目標語言
-            
+            engine: 指定引擎（auto/nllb/google/llm）。auto 以外一律不跨引擎降級——
+                    使用者指定 google 通常正是為了避開跑不動的 NLLB，
+                    偷偷降回去等於把他要避開的問題又裝回來。
+
         Returns:
             (success, translated_text, engine_used)
         """
         if not text or not text.strip():
             return True, "", "skip"
-        
+
+        engine = normalize_engine(engine)
         text_len = len(text)
+
+        if engine != ENGINE_AUTO:
+            ok, result = self._translate_with(engine, text, source_lang, target_lang)
+            if ok:
+                return True, result, engine
+            return False, f"翻譯失敗({engine}): {result}", "error"
+
         engine_choice = self._decide_engine(text_len, context)
-        
+
         logger.info(f"[HybridTranslator] Text length: {text_len}, Context: {context.value}, Engine: {engine_choice}")
-        
+
         # 執行翻譯
         if engine_choice == "nllb":
             success, result = self._translate_nllb(text, source_lang, target_lang)
@@ -156,15 +195,40 @@ class HybridTranslator:
             # NLLB 失敗，降級到 Gemini
             logger.warning("[HybridTranslator] NLLB failed, falling back to Gemini")
             engine_choice = "gemini"
-        
+
         if engine_choice == "gemini":
             success, result = self._translate_gemini(text, target_lang)
             if success:
                 return True, result, "gemini"
             return False, f"翻譯失敗: {result}", "error"
-        
+
         return False, "No translation engine available", "error"
-    
+
+    def _translate_with(self, engine: str, text: str, source_lang: str,
+                        target_lang: str) -> Tuple[bool, str]:
+        """依指定引擎翻譯單段，不做跨引擎降級。"""
+        if engine == ENGINE_NLLB:
+            return self._translate_nllb(text, source_lang, target_lang)
+        if engine == ENGINE_GOOGLE:
+            return self._translate_quick_google(text, target_lang)
+        if engine == ENGINE_LLM:
+            return self._translate_gemini(text, target_lang)
+        return False, f"unknown engine: {engine}"
+
+    def engine_available(self, engine: str) -> Tuple[bool, str]:
+        """指定引擎現在能不能用。給 API 在開跑前擋掉，
+        而不是讓使用者等兩小時才發現引擎根本沒裝起來。"""
+        engine = normalize_engine(engine)
+        if engine == ENGINE_NLLB:
+            ready = bool(self._nllb and self._nllb.ready)
+            return ready, "" if ready else "本機 NLLB 模型未就緒"
+        if engine == ENGINE_GOOGLE:
+            ready = bool(self._quick_translator)
+            return ready, "" if ready else "Google 翻譯不可用（deep-translator 未安裝或無外網）"
+        if engine == ENGINE_LLM:
+            return bool(self._gemini_available), "" if self._gemini_available else "未設定可用的雲端 LLM 連線"
+        return True, ""
+
     def _decide_engine(self, text_len: int, context: TranslationContext) -> str:
         """
         決策邏輯: 選擇翻譯引擎
@@ -353,10 +417,15 @@ class HybridTranslator:
         cjk = sum(1 for c in visible if '一' <= c <= '鿿')
         return (cjk / len(visible)) >= threshold
 
-    def _translate_segments_small_batch(self, segments, target_lang: str = 'zho_Hant'):
+    def _translate_segments_small_batch(self, segments, target_lang: str = 'zho_Hant',
+                                        engine: str = ENGINE_AUTO):
         """Translate split segments in small batches. Return (ok, merged_text)."""
         if not segments:
             return True, ""
+
+        engine = normalize_engine(engine)
+        if engine != ENGINE_AUTO:
+            return self._translate_segments_forced(segments, target_lang, engine)
 
         translated = []
         i = 0
@@ -434,8 +503,87 @@ class HybridTranslator:
                     translated.append(f"{self.UNTRANSLATED_MARK} {seg}")
 
         return True, "\n".join(translated)
-    
-    def translate_file(self, input_path: str, output_path: str, context: TranslationContext = TranslationContext.LITERATURE_BATCH) -> bool:
+
+    def _translate_segments_forced(self, segments, target_lang: str, engine: str):
+        """使用者指定引擎時的翻譯路徑。
+
+        與 auto 路徑最大的差別是**不跨引擎降級**：指定了就只用那一個，
+        翻不動就標記未翻譯。理由是使用者選 google 幾乎都是為了避開在這台機器
+        上跑不完的 NLLB，偷偷降回 NLLB 等於把他要避開的問題又裝回來，
+        而且會再一次跑到 timeout。
+        """
+        translated = []
+
+        # google 有原生批次介面，一次送一批比逐段送快得多。
+        if engine == ENGINE_GOOGLE and self._quick_translator \
+                and hasattr(self._quick_translator, 'translate_batch'):
+            i = 0
+            while i < len(segments):
+                batch, chars = [], 0
+                while i < len(segments):
+                    seg_len = len(segments[i])
+                    if batch and (len(batch) >= self.BATCH_MAX_ITEMS
+                                  or chars + seg_len > self.BATCH_MAX_CHARS):
+                        break
+                    batch.append(segments[i])
+                    chars += seg_len
+                    i += 1
+                try:
+                    protected, maps = [], []
+                    for seg in batch:
+                        ptxt, pmap = self._protect_nonlinguistic_segments(seg)
+                        protected.append(ptxt)
+                        maps.append(pmap)
+                    outs = self._quick_translator.translate_batch(protected)
+                    if isinstance(outs, list) and len(outs) == len(batch):
+                        for out, pmap in zip(outs, maps):
+                            translated.append(
+                                self._restore_nonlinguistic_segments(str(out), pmap))
+                        continue
+                except Exception as e:
+                    logger.warning("[HybridTranslator] google batch failed: %s", e)
+                # 批次失敗就這一批逐段補，仍然只用 google。
+                for seg in batch:
+                    ok, out = self._translate_with(engine, seg, 'eng_Latn', target_lang)
+                    translated.append(out if (ok and out) else f"{self.UNTRANSLATED_MARK} {seg}")
+            return True, "\n".join(translated)
+
+        # NLLB 也有批次介面。
+        if engine == ENGINE_NLLB and self._nllb and self._nllb.ready \
+                and hasattr(self._nllb, 'translate_texts'):
+            i = 0
+            while i < len(segments):
+                batch, chars = [], 0
+                while i < len(segments):
+                    seg_len = len(segments[i])
+                    if batch and (len(batch) >= self.BATCH_MAX_ITEMS
+                                  or chars + seg_len > self.BATCH_MAX_CHARS):
+                        break
+                    batch.append(segments[i])
+                    chars += seg_len
+                    i += 1
+                outs = self._nllb.translate_texts(batch, target_lang)
+                if isinstance(outs, list) and len(outs) == len(batch) \
+                        and all(str(o or "").strip() for o in outs):
+                    translated.extend(outs)
+                    continue
+                for seg in batch:
+                    ok, out = self._translate_with(engine, seg, 'eng_Latn', target_lang)
+                    translated.append(out if (ok and out) else f"{self.UNTRANSLATED_MARK} {seg}")
+            return True, "\n".join(translated)
+
+        # llm，以及上面兩個引擎沒有批次介面時的通用逐段路徑。
+        for seg in segments:
+            ok, out = self._translate_with(engine, seg, 'eng_Latn', target_lang)
+            if ok and out:
+                translated.append(out)
+            else:
+                logger.warning("[HybridTranslator] segment untranslated (engine=%s, len=%d)",
+                               engine, len(seg))
+                translated.append(f"{self.UNTRANSLATED_MARK} {seg}")
+        return True, "\n".join(translated)
+
+    def translate_file(self, input_path: str, output_path: str, context: TranslationContext = TranslationContext.LITERATURE_BATCH, engine: str = ENGINE_AUTO) -> bool:
         """
         翻譯整個 JSON 文件
         
@@ -443,19 +591,20 @@ class HybridTranslator:
         對於其他情境，逐塊翻譯
         """
         # 統一走 blockwise，避免 NLLB recursive file mode 在 CPU 上長時間卡住
-        return self._translate_file_blockwise(input_path, output_path, context)
-    
-    def _translate_file_blockwise(self, input_path: str, output_path: str, context: TranslationContext) -> bool:
+        return self._translate_file_blockwise(input_path, output_path, context, engine)
+
+    def _translate_file_blockwise(self, input_path: str, output_path: str, context: TranslationContext, engine: str = ENGINE_AUTO) -> bool:
         """逐塊翻譯文件"""
         import json
-        
+
+        engine = normalize_engine(engine)
         try:
             with open(input_path, 'r', encoding='utf-8') as f:
                 data = json.load(f)
 
             # Literature 批次優先使用每頁批次翻譯，降低 API 次數與 timeout 風險
             if context == TranslationContext.LITERATURE_BATCH and isinstance(data, dict) and isinstance(data.get('content'), list):
-                translated_count = self._translate_pages_batch(data)
+                translated_count = self._translate_pages_batch(data, engine)
                 with open(output_path, 'w', encoding='utf-8') as f:
                     json.dump(data, f, ensure_ascii=False, indent=2)
                 logger.info(f"[HybridTranslator] Batch-translated {translated_count} blocks to {output_path}")
@@ -470,7 +619,8 @@ class HybridTranslator:
                     if 'content' in item and isinstance(item['content'], str):
                         content = item['content']
                         if content and len(content) > 10:  # 跳過太短的
-                            success, translated, engine = self.translate(content, context)
+                            success, translated, _used = self.translate(
+                                content, context, engine=engine)
                             if success and translated:
                                 item['content_zh'] = translated
                                 translated_count += 1
@@ -495,9 +645,10 @@ class HybridTranslator:
             logger.error(f"[HybridTranslator] Block-wise translation error: {e}")
             return False
 
-    def _translate_pages_batch(self, data: dict) -> int:
+    def _translate_pages_batch(self, data: dict, engine: str = ENGINE_AUTO) -> int:
         """Translate blocks page by page with JSON mapping response."""
         translated_count = 0
+        engine = normalize_engine(engine)
         pages = data.get('content', [])
 
         # v1.0.1: 資料層標題 retag(零配額、確定性)——segmentizer 不產 Title 型別,
@@ -515,8 +666,15 @@ class HybridTranslator:
         # Fall back to quick-google batch fast-path only when NLLB is NOT ready.
         # Both paths converge on _translate_segments_small_batch which has its own
         # per-segment NLLB→quick-google→REALTIME→Gemini chain.
+        # 指定 llm 時直接走下方的 JSON 批次路徑：一次送一整組 block 比逐段呼叫
+        # 少非常多次 API，省錢也省時間。指定 google/nllb 則走逐段路徑，
+        # 因為那兩個引擎的批次介面在下面的 _translate_segments_forced 裡。
         nllb_ready = bool(self._nllb and self._nllb.ready)
-        if nllb_ready or self._quick_translator:
+        use_segment_path = (
+            engine in (ENGINE_GOOGLE, ENGINE_NLLB)
+            or (engine == ENGINE_AUTO and (nllb_ready or self._quick_translator))
+        )
+        if use_segment_path:
             for page in pages:
                 if not isinstance(page, dict):
                     continue
@@ -535,7 +693,8 @@ class HybridTranslator:
                     if len(txt) <= 8:
                         continue
                     segments = self._split_long_text(txt, self.SEGMENT_MAX_CHARS)
-                    ok, translated = self._translate_segments_small_batch(segments, 'zho_Hant')
+                    ok, translated = self._translate_segments_small_batch(
+                        segments, 'zho_Hant', engine)
                     if ok and translated:
                         b['content_zh'] = translated
                         translated_count += 1
@@ -605,9 +764,10 @@ class HybridTranslator:
                                 translated_count += 1
                     continue
 
-                # 批次失敗時，降級單筆翻譯
+                # 批次失敗時，降級單筆翻譯（指定引擎時仍只用該引擎）
                 for idx, txt in group:
-                    success, translated, _ = self.translate(txt, TranslationContext.REALTIME)
+                    success, translated, _ = self.translate(
+                        txt, TranslationContext.REALTIME, engine=engine)
                     if success and translated:
                         blocks[idx]['content_zh'] = translated
                         translated_count += 1
