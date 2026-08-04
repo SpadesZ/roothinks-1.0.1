@@ -28,6 +28,7 @@ window.literatureApp = {
         if (pid) this.currentPid = pid;
 
         this.bindEvents();
+        this.bindPipelineFilter();
         this.loadBootstrap().finally(() => {
             this.loadSystemProfile();
             this.startStatusPolling();
@@ -796,6 +797,15 @@ window.literatureApp = {
         return stages.s4 === 'done' || stages.s8 === 'done' || stages.s9 === 'done' || stages.s12 === 'done';
     },
 
+    updatePipelineFilterCount: function(shown, total) {
+        const el = document.getElementById('paperFilterCount');
+        if (!el) return;
+        // 有篩選時一定要把「總共幾篇」也講出來，否則使用者會以為文獻不見了。
+        el.textContent = (shown === total)
+            ? `共 ${total} 篇`
+            : `顯示 ${shown} / ${total} 篇`;
+    },
+
     updateFlowBButtonState: function() {
         const btn = document.getElementById('btnRunFlowBBatch');
         if (!btn) return;
@@ -837,19 +847,69 @@ window.literatureApp = {
         return lines.join('\n');
     },
 
+    // 搜尋/篩選條件。狀態放在 app 上而不是只讀 DOM，因為狀態輪詢每幾秒就
+    // 重畫一次表格——條件若不保存，使用者打到一半的搜尋會被下一次輪詢洗掉。
+    pipelineFilter: { q: '', onlyAnalyzed: false },
+
+    applyPipelineFilter: function(papers) {
+        const q = (this.pipelineFilter.q || '').trim().toLowerCase();
+        const onlyAnalyzed = !!this.pipelineFilter.onlyAnalyzed;
+        return (papers || []).filter(p => {
+            if (onlyAnalyzed) {
+                // 「已解析完成」＝解析那一段跑完（含之後的翻譯階段）。
+                // 還在解析中與失敗的都不算。
+                const st = p.progress_state;
+                if (st !== 'analyzed' && st !== 'translating' && st !== 'completed') return false;
+            }
+            if (!q) return true;
+            // 解析前只有 ID、解析後才有標題，兩邊都要比才不會有一半搜不到。
+            return `${p.title || ''} ${p.paper_id || ''}`.toLowerCase().includes(q);
+        });
+    },
+
+    bindPipelineFilter: function() {
+        const input = document.getElementById('paperSearchInput');
+        const clear = document.getElementById('paperSearchClear');
+        const only = document.getElementById('paperOnlyAnalyzed');
+        const rerender = () => {
+            // 直接用上一輪的資料重畫，不必等下一次輪詢——否則打字後要等幾秒才有反應。
+            if (this.pipelineLastGoodPapers) this.renderPipelineTable(this.pipelineLastGoodPapers);
+        };
+        if (input) input.addEventListener('input', () => {
+            this.pipelineFilter.q = input.value;
+            rerender();
+        });
+        if (clear) clear.addEventListener('click', () => {
+            if (input) input.value = '';
+            this.pipelineFilter.q = '';
+            rerender();
+        });
+        if (only) only.addEventListener('change', () => {
+            this.pipelineFilter.onlyAnalyzed = only.checked;
+            rerender();
+        });
+    },
+
     renderPipelineTable: function(papers) {
         const tbody = document.getElementById('pipelineTableBody');
         if (!tbody) return;
         this.paperStatusMap = {};
         this.paperStageMap = {};
 
-        const checkedIds = new Set();
-        document.querySelectorAll('.paper-checkbox:checked').forEach(cb => {
-            checkedIds.add(cb.value);
-        });
-
-        if (!papers || papers.length === 0) {
+        const total = (papers || []).length;
+        if (total === 0) {
             tbody.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-muted">No papers found. Upload specific PDF to start.</td></tr>';
+            this.updatePipelineFilterCount(0, 0);
+            this.updateFlowBButtonState();
+            return;
+        }
+
+        papers = this.applyPipelineFilter(papers);
+        this.updatePipelineFilterCount(papers.length, total);
+
+        if (papers.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-muted">'
+                            + '<i class="bi bi-search me-1"></i>沒有符合條件的文獻</td></tr>';
             this.updateFlowBButtonState();
             return;
         }
