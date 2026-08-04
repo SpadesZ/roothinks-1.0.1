@@ -275,7 +275,7 @@ def summarize_project(pid: str) -> Dict[str, Dict[str, Any]]:
         acc = out.setdefault(key, {
             "input_tokens": 0, "output_tokens": 0, "cached_input_tokens": 0,
             "total_tokens": 0, "cost_usd": 0.0, "calls": 0,
-            "has_unpriced": False, "models": [],
+            "has_unpriced": False, "unpriced_tokens": 0, "models": [],
         })
         acc["input_tokens"] += int(i or 0)
         acc["output_tokens"] += int(o or 0)
@@ -283,7 +283,12 @@ def summarize_project(pid: str) -> Dict[str, Dict[str, Any]]:
         acc["total_tokens"] += int(t or 0)
         acc["calls"] += 1
         if cost is None:
+            # unpriced_tokens：未計價的**量**。只給 has_unpriced 這個布林值的話，
+            # UI 只能一律標「≥」，於是 9千 tokens 的未知會讓 55 萬 tokens 的
+            # 金額整個顯示成不確定——比例上是誤導。有了量才能讓使用者判斷
+            # 那筆未知到底重不重要。
             acc["has_unpriced"] = True
+            acc["unpriced_tokens"] += int(t or 0)
         else:
             acc["cost_usd"] += float(cost)
         if model:
@@ -303,7 +308,8 @@ def summarize_paper(pid: str, paper_id: str) -> Dict[str, Any]:
     """
     empty = {
         "input_tokens": 0, "output_tokens": 0, "total_tokens": 0,
-        "cost_usd": 0.0, "calls": 0, "has_unpriced": False, "models": [],
+        "cost_usd": 0.0, "calls": 0, "has_unpriced": False,
+        "unpriced_tokens": 0, "models": [],
     }
     try:
         init_storage()
@@ -335,6 +341,7 @@ def summarize_paper(pid: str, paper_id: str) -> Dict[str, Any]:
         out["calls"] += 1
         if cost is None:
             out["has_unpriced"] = True
+            out["unpriced_tokens"] += int(t or 0)
         else:
             out["cost_usd"] += float(cost)
         if model:

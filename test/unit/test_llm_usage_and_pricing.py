@@ -188,6 +188,32 @@ def test_unpriced_model_is_flagged(usage_db):
     assert s["calls"] == 2
     assert s["total_tokens"] == 6100      # token 數照樣算得出來
     assert s["has_unpriced"] is True      # 但金額不完整，要講清楚
+    # 未計價的「量」也要給：只有布林值的話，UI 只能一律標記整筆金額不可信，
+    # 一次小呼叫就會讓一筆大金額看起來完全不能用。
+    assert s["unpriced_tokens"] == 6000
+    assert s["total_tokens"] - s["unpriced_tokens"] == 100
+
+
+def test_unpriced_tokens_is_zero_when_everything_priced(usage_db):
+    with llm_usage.usage_context("P-p", "allpriced"):
+        llm_usage.record("task_4cv", "openai", "gpt-4.1",
+                         {"prompt_tokens": 100, "completion_tokens": 10})
+    s = llm_usage.summarize_paper("P-p", "allpriced")
+    assert s["has_unpriced"] is False
+    assert s["unpriced_tokens"] == 0
+
+
+def test_project_summary_also_reports_unpriced_tokens(usage_db):
+    """列表走的是 summarize_project（一次撈全專案），兩邊欄位要一致，
+    否則畫面吃不到這個欄位會靜默退化成 undefined。"""
+    with llm_usage.usage_context("P-p", "paper3"):
+        llm_usage.record("task_4cv", "openai", "gpt-4.1",
+                         {"prompt_tokens": 100, "completion_tokens": 0})
+        llm_usage.record("task_5interpret", "google", "gemini-flash-latest",
+                         {"prompt_token_count": 900, "candidates_token_count": 100})
+    s = llm_usage.summarize_project("P-p")["paper3"]
+    assert s["has_unpriced"] is True
+    assert s["unpriced_tokens"] == 1000
 
 
 def test_papers_are_isolated(usage_db):

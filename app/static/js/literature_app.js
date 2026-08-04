@@ -923,11 +923,23 @@ window.literatureApp = {
             const renderUsage = (u) => {
                 if (!u || !u.calls) return '';
                 const tok = Number(u.total_tokens || 0).toLocaleString();
+                // 未計價的部分改成「講出比重」而不是一律標「≥」。
+                //
+                // 只有布林值 has_unpriced 時，一次 9 千 tokens 的 alias 呼叫
+                // 會讓 55 萬 tokens 的金額整個顯示成「≥ …（部分模型未設定單價）」——
+                // 那筆未知其實只佔 1.6%，這樣標等於把一分錢的不確定講得像整筆都不可信。
+                // 改成把未計價的 token 佔比寫出來，使用者自己判斷重不重要。
+                // 完全沒有任何一筆算得出來時仍舊只說「單價未設定」，不編數字。
+                const totalTok = Number(u.total_tokens || 0);
+                const unpricedTok = Number(u.unpriced_tokens || 0);
                 let money;
                 if (u.has_unpriced && !u.cost_usd) {
                     money = '<span class="text-muted">單價未設定</span>';
                 } else if (u.has_unpriced) {
-                    money = `≥ ${fmtUsd(u.cost_usd)}<span class="text-muted">（部分模型未設定單價）</span>`;
+                    const pct = totalTok > 0 ? (unpricedTok / totalTok * 100) : 0;
+                    const pctText = pct >= 0.1 ? pct.toFixed(1) : '<0.1';
+                    money = `${fmtUsd(u.cost_usd)}<span class="text-muted small">`
+                          + `（另 ${pctText}% token 未計價）</span>`;
                 } else {
                     money = fmtUsd(u.cost_usd);
                 }
@@ -935,6 +947,10 @@ window.literatureApp = {
                           + `輸出 ${Number(u.output_tokens||0).toLocaleString()} tokens`
                           + `，${u.calls} 次呼叫
 模型：${(u.models||[]).join(', ') || '—'}`
+                          + (unpricedTok > 0
+                              ? `
+其中 ${unpricedTok.toLocaleString()} tokens 的模型未登記單價，未計入金額`
+                              : '')
                           + `
 金額以美金 (USD) 估算，實際以廠商帳單為準`;
                 return `<div class="small text-muted mt-1" title="${tip}" style="cursor:help;">
