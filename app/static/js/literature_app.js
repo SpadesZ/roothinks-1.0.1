@@ -815,23 +815,9 @@ window.literatureApp = {
             const saved = localStorage.getItem(this.ENGINE_STORAGE_KEY);
             if (saved && [...sel.options].some(o => o.value === saved)) sel.value = saved;
         } catch (e) { /* 無痕模式等情況讀不到，用預設值就好 */ }
-        this.updateTranslationEngineHint();
         sel.addEventListener('change', () => {
             try { localStorage.setItem(this.ENGINE_STORAGE_KEY, sel.value); } catch (e) {}
-            this.updateTranslationEngineHint();
         });
-    },
-
-    updateTranslationEngineHint: function() {
-        const el = document.getElementById('translationEngineHint');
-        if (!el) return;
-        const hints = {
-            auto:   '自動：本機模型可用時優先用它（省費用，但機器慢就可能逾時）',
-            google: 'Google 翻譯：免費、最快，適合先看懂內容',
-            nllb:   '本機 NLLB：零 API 費用，但吃 CPU；核心數少的機器可能跑不完',
-            llm:    '雲端 LLM：學術術語最準，會依 token 計費',
-        };
-        el.textContent = hints[this.getSelectedTranslationEngine()] || '';
     },
 
     updatePipelineFilterCount: function(shown, total) {
