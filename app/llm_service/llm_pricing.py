@@ -88,6 +88,20 @@ _PRICES: Dict[str, Dict[str, object]] = {
         "input": 1.50, "cached_input": 0.15, "output": 7.50,
         "checked": "2026-08-03", "source": "Google Gemini API 公開價目",
     },
+
+    # Robotics ER 系列：具身推理模型，**不適合拿來做文字任務**。
+    # 會登記在這裡不是推薦使用，而是因為正式站曾經誤綁在 task_4cv 上跑過
+    # （下拉選單只過濾「名字含 gemini」，把 robotics/TTS/image 全列了出來）。
+    # 那些呼叫的花費是真的，不給單價的話歷史帳就永遠是「未設定」。
+    # 定價與推薦與否是兩件事——記帳要誠實，選型的建議寫在文件裡。
+    "google/gemini-robotics-er-1.6-preview": {
+        "input": 1.00, "output": 5.00,
+        "checked": "2026-08-04", "source": "Google Gemini API 公開價目",
+    },
+    "google/gemini-robotics-er-2-preview": {
+        "input": 2.00, "output": 10.00,
+        "checked": "2026-08-04", "source": "Google Gemini API 公開價目",
+    },
 }
 
 # 這些是 alias（指向的實際模型會隨時間改變），刻意不給預設單價：
