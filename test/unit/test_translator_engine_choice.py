@@ -173,3 +173,41 @@ def test_engine_available_reports_reason():
     for eng in (ENGINE_NLLB, ENGINE_GOOGLE, ENGINE_LLM):
         ok, _ = tr2.engine_available(eng)
         assert ok is True
+
+
+# --- 重複退化偵測 -----------------------------------------------------------
+#
+# 實測案例（正式站 SEBASR_IJMIR）：原文是乾淨英文，譯文前半正確、
+# 後半崩成「格」重複 320 次，而 translation_needs_review 是 None。
+# 原因是舊品質閘只看 _is_mostly_chinese，而「格」本身就是中文字——
+# 重複越多反而讓中文比例越高，這個失效模式剛好繞過防線。
+
+def test_detects_single_char_repetition_loop():
+    good_head = "SEB-ASR系統工作流程,如圖5所示,從採取音訊輸入,並使用VOSK普通話ASR模型來識別"
+    degenerate = good_head + "格" * 320
+    assert HybridTranslator._has_degenerate_repetition(degenerate) is True
+
+
+def test_repetition_case_passes_old_chinese_ratio_gate():
+    """證明舊防線對這個案例無效——這正是要新增偵測的理由。"""
+    degenerate = "系統工作流程如圖所示" + "格" * 320
+    assert HybridTranslator._is_mostly_chinese(degenerate) is True   # 舊閘放行
+    assert HybridTranslator._has_degenerate_repetition(degenerate) is True  # 新閘攔下
+
+
+def test_detects_short_cycle_repetition():
+    assert HybridTranslator._has_degenerate_repetition("正常開頭的譯文" + "的是" * 40) is True
+
+
+def test_normal_translation_is_not_flagged():
+    """正常譯文不得誤判，否則整份都被標紅等於沒有標記。"""
+    normal = ("本研究提出一套混合語言語音辨識系統，透過雙引擎架構分別處理中文與英文片段，"
+              "並以信心值進行融合。實驗結果顯示，混合錯誤率相較基線降低約百分之十二。")
+    assert HybridTranslator._has_degenerate_repetition(normal) is False
+
+
+def test_legitimate_repeats_are_not_flagged():
+    """數字與標點的合理重複（表格、省略號）不該誤判。"""
+    assert HybridTranslator._has_degenerate_repetition("結果為 100 / 200 / 300，見表 3。") is False
+    assert HybridTranslator._has_degenerate_repetition("") is False
+    assert HybridTranslator._has_degenerate_repetition("略……") is False

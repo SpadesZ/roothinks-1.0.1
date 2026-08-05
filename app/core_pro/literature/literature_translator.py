@@ -408,6 +408,53 @@ class HybridTranslator:
     UNTRANSLATED_MARK = "[未翻譯]"
 
     @staticmethod
+    def _has_degenerate_repetition(text: str, min_run: int = 8,
+                                   min_cycle_repeats: int = 6) -> bool:
+        """偵測 seq2seq 的重複退化（翻到一半崩成同一個字/詞無限重複）。
+
+        為什麼要獨立一個檢查：既有的品質閘只看 _is_mostly_chinese，
+        而退化輸出通常是**中文字**在重複（實測案例是「格」重複 320 次）。
+        中文字比例反而因此變高，等於這個失效模式剛好繞過原本的防線，
+        壞掉的譯文就被當成正常結果存起來、還不會被標記複核。
+
+        兩種型態都要抓：
+          1. 單字連續重複     「格格格格格…」
+          2. 短詞循環重複     「的的的是的的的是…」/「ababab…」
+        """
+        s = str(text or "").strip()
+        if not s:
+            return False
+
+        # 1) 單一字元連續重複
+        run = 1
+        for i in range(1, len(s)):
+            if s[i] == s[i - 1] and not s[i].isspace():
+                run += 1
+                if run >= min_run:
+                    return True
+            else:
+                run = 1
+
+        # 2) 短循環（2~4 字）在尾段反覆出現。退化通常發生在後半段，
+        #    只看整體佔比會被前半段正常的譯文稀釋掉。
+        tail = s[len(s) // 2:]
+        for size in (2, 3, 4):
+            if len(tail) < size * min_cycle_repeats:
+                continue
+            for start in range(0, min(size * 2, len(tail) - size)):
+                unit = tail[start:start + size]
+                if not unit.strip() or len(set(unit)) == 0:
+                    continue
+                repeats = 1
+                pos = start + size
+                while tail[pos:pos + size] == unit:
+                    repeats += 1
+                    pos += size
+                    if repeats >= min_cycle_repeats:
+                        return True
+        return False
+
+    @staticmethod
     def _is_mostly_chinese(text: str, threshold: float = 0.4) -> bool:
         """粗估中文比例(僅計 CJK 對非空白字元的占比)。"""
         s = str(text or "")
@@ -700,8 +747,22 @@ class HybridTranslator:
                         translated_count += 1
                         # v1.2: 品質閘——中文比例過低或含未翻譯標記時顯性標記,
                         # 供 UI 高亮與後續重翻批次挑選。
-                        if (not self._is_mostly_chinese(translated)) or (self.UNTRANSLATED_MARK in translated):
+                        # v1.4: 加上重複退化偵測。退化輸出重複的是中文字,
+                        # 中文比例檢查不但抓不到、還會因此更容易放行。
+                        reasons = []
+                        if not self._is_mostly_chinese(translated):
+                            reasons.append('low_chinese_ratio')
+                        if self.UNTRANSLATED_MARK in translated:
+                            reasons.append('untranslated_segment')
+                        if self._has_degenerate_repetition(translated):
+                            reasons.append('repetition_loop')
+                            logger.warning(
+                                "[HybridTranslator] 偵測到重複退化,原文長度=%d 譯文長度=%d",
+                                len(txt), len(translated))
+                        if reasons:
                             b['translation_needs_review'] = True
+                            # 記下原因,否則使用者只看到一個紅旗不知道要修什麼。
+                            b['translation_review_reasons'] = reasons
             return translated_count
 
         for page in pages:
