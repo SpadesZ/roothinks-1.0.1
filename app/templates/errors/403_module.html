@@ -1,0 +1,37 @@
+{# 模組層權限不足的說明頁。
+   刻意講清楚「為什麼看不到」而不是丟一個冷冰冰的 403——
+   限定編輯看到空白或錯誤頁只會來問人，說明角色與去處才省得掉那趟。 #}
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>沒有存取權 - roothinks</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+</head>
+<body class="bg-light">
+{% include '_navbar.html' %}
+<div class="container" style="max-width: 640px; margin-top: 8vh;">
+    <div class="card shadow-sm border-0">
+        <div class="card-body p-4 text-center">
+            <i class="bi bi-shield-lock text-secondary" style="font-size: 3rem;"></i>
+            <h5 class="fw-bold mt-3 mb-2">這個模組不在你的權限範圍內</h5>
+            <p class="text-muted mb-1">
+                你在這個專案的角色是<strong>限定編輯</strong>，
+                只能存取<strong>論文手稿（Manuscript）</strong>中被指派給你的章節。
+            </p>
+            <p class="text-muted small mb-4">
+                需要其他模組的權限，請專案擁有者調整你的角色。
+            </p>
+            <a href="/manuscript" class="btn btn-primary">
+                <i class="bi bi-pen me-1"></i>前往我的章節
+            </a>
+            <a href="/" class="btn btn-outline-secondary ms-2">
+                <i class="bi bi-speedometer2 me-1"></i>回 Dashboard
+            </a>
+        </div>
+    </div>
+</div>
+</body>
+</html>

@@ -28,7 +28,7 @@ import time
 from datetime import datetime, timedelta, timezone
 
 from cryptography.fernet import Fernet
-from flask import Flask, flash, jsonify, redirect, request, url_for
+from flask import Flask, flash, jsonify, redirect, render_template, request, url_for
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from flask_login import LoginManager, current_user
@@ -378,6 +378,26 @@ def create_app(test_config=None):
 
     # socketio.init_app 刻意延後到路由模組匯入之後才呼叫，見下方 [socketio 註冊順序]。
 
+    @app.context_processor
+    def _inject_module_access():
+        """給模板一個 can_show_module()，讓導覽列只列出進得去的模組。
+
+        注意：這只是**不顯示**，不是防護。真正的把關在 _auth_guard 的
+        模組守衛——藏起連結擋不住直接打網址的人。兩層都要有：
+        沒有前者使用者會一直點到 403，沒有後者則根本沒擋住。
+        """
+        def can_show_module(module: str) -> bool:
+            try:
+                if not current_user.is_authenticated:
+                    return True
+                from app.security import can_access_module, request_pid
+
+                return can_access_module(current_user.id, request_pid(), module)
+            except Exception:
+                return True   # 導覽列不該因為判斷失敗就整條消失
+
+        return {"can_show_module": can_show_module}
+
     @app.before_request
     def _auth_guard():
         # ── 1. CSRF guard（非 API 的寫入請求）─────────────────────────────
@@ -406,6 +426,41 @@ def create_app(test_config=None):
                 if is_api_request_path(_path):
                     return jsonify({"success": False, "error": "login_required"}), 401
                 return redirect(url_for("auth.login", next=_path))
+
+            # ── 2b. 模組層存取控制 ──────────────────────────────────────
+            # 放在全域守衛而不是逐條路由加裝飾器：模組頁面與 API 加起來
+            # 有數十個進入點，散著加一定會漏掉一兩個，而漏掉的那個就是洞。
+            # 這裡是唯一咽喉，新增路由不必記得補。
+            #
+            # 擋的是「限定編輯(coauthor)進到 Manuscript 以外的模組」——
+            # enforce_project_ownership 對 GET 用 min_role=viewer，
+            # 而 coauthor 在 ROLE_ORDER 上高於 viewer 會直接通過，
+            # 但它的讀取範圍其實比 viewer 還窄（見 models.ROLE_ORDER 註解）。
+            if current_user.is_authenticated and not _is_whitelisted:
+                try:
+                    from app.security import (
+                        can_access_module, module_of_path, request_pid,
+                    )
+
+                    _module = module_of_path(_path)
+                    if _module and not can_access_module(
+                        current_user.id, request_pid(), _module
+                    ):
+                        app.logger.warning(
+                            "[perm] 擋下模組存取 user_id=%s module=%s path=%s",
+                            current_user.id, _module, _path,
+                        )
+                        if is_api_request_path(_path):
+                            return jsonify({
+                                "success": False, "error": "forbidden",
+                                "message": "你的角色沒有此模組的存取權",
+                            }), 403
+                        return render_template("errors/403_module.html",
+                                               module=_module), 403
+                except Exception:
+                    # 守衛本身壞掉不可以變成「全部放行」——那會把洞開得更大。
+                    app.logger.exception("[perm] 模組守衛失敗，保守擋下 path=%s", _path)
+                    return jsonify({"success": False, "error": "forbidden"}), 403
 
             # 已有 session user → 跳過 Bearer 守衛（session 即身分）
             if current_user.is_authenticated:

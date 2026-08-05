@@ -21,43 +21,58 @@
                 </li>
             </ul>
 
+            {# [perm] 模組連結依角色顯示。限定編輯(coauthor)只該看到 Manuscript。
+               這裡只是「不顯示」，真正的把關在 app/__init__.py 的 _auth_guard
+               模組守衛——藏連結擋不住直接打網址的人。 #}
             <div class="d-flex align-items-center gap-2">
+                {% if can_show_module('paq') %}
                 <a href="{% if pid %}/paq?pid={{ pid }}{% else %}/paq{% endif %}" class="btn btn-outline-secondary btn-sm d-flex align-items-center"
                    title="問題定義建模 (PAQ)">
                     <i class="bi bi-box me-1"></i>
                     <span class="d-none d-lg-inline">PAQ</span>
                 </a>
+                {% endif %}
 
+                {% if can_show_module('literature') %}
                 <a href="/literature{% if pid %}?pid={{ pid }}{% endif %}" class="btn btn-outline-secondary btn-sm d-flex align-items-center"
                    title="文獻回顧學習 (Literature)">
                     <i class="bi bi-book me-1"></i>
                     <span class="d-none d-lg-inline">Literature</span>
                 </a>
+                {% endif %}
 
+                {% if can_show_module('study') %}
                 <a href="{% if pid %}/study/project/{{ pid }}{% else %}/study{% endif %}" class="btn btn-outline-secondary btn-sm d-flex align-items-center"
                    title="研究主題學習 (Study)">
                     <i class="bi bi-journal-text me-1"></i>
                     <span class="d-none d-lg-inline">Study</span>
                 </a>
+                {% endif %}
 
+                {% if can_show_module('manuscript') %}
                 <a href="/manuscript{% if pid %}?pid={{ pid }}{% endif %}" class="btn btn-outline-secondary btn-sm d-flex align-items-center"
                    title="撰寫論文手稿 (Manuscript)">
                     <i class="bi bi-pen me-1"></i>
                     <span class="d-none d-lg-inline">Manuscript</span>
                 </a>
+                {% endif %}
 
+                {% if can_show_module('submit') %}
                 <a href="/submit{% if pid %}?pid={{ pid }}{% endif %}" class="btn btn-outline-secondary btn-sm d-flex align-items-center"
                    title="論文格式處理 (Submission)">
                     <i class="bi bi-file-earmark-check me-1"></i>
                     <span class="d-none d-lg-inline">Submit</span>
                 </a>
+                {% endif %}
 
+                {% if can_show_module('setup') %}
                 <div class="vr bg-secondary mx-2" style="height: 20px;"></div>
 
                 <a href="/setup" class="btn btn-outline-warning btn-sm d-flex align-items-center" title="LAVA 連線設定">
                     <i class="bi bi-router me-1"></i>
                     <span class="d-none d-lg-inline">LAVA Setup</span>
                 </a>
+                {% endif %}
 
                 <div class="btn-group shadow-sm ms-1" role="group" aria-label="Font Size Control">
                     <button type="button" class="btn btn-outline-light btn-sm" onclick="adjustFontSize(5)" title="放大字體 (A+)">

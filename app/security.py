@@ -477,6 +477,125 @@ def can_assign_sections(user_id: int, pid: str) -> bool:
     return ROLE_ORDER.get(role or "", 0) >= ROLE_ORDER[ROLE_EDITOR]
 
 
+# =============================================================================
+# 模組層存取控制
+#
+# 為什麼要獨立這一層：模組／專案層的守衛 enforce_project_ownership 對 GET
+# 一律用 min_role="viewer"，再交給 require_workspace_role 做 ROLE_ORDER 線性
+# 比較。而 coauthor(2) >= viewer(1) 會通過——於是「限定編輯」讀得到
+# Literature / PAQ / Study 的全部資料。
+#
+# models.ROLE_ORDER 的註解早就寫明「coauthor 的讀取範圍比 viewer 還窄，
+# 線性比較會得到相反結果」，章節層也照辦用了 can_read_section 繞開，
+# 但模組層一直沒有對應的判斷，就這樣漏了。
+#
+# 這裡刻意用白名單（只列允許的）而不是黑名單：日後新增模組時，
+# 預設是「限定編輯看不到」，忘記更新的後果是少看到東西，而不是外洩。
+# =============================================================================
+
+#: 限定編輯（coauthor）唯一進得去的模組。
+COAUTHOR_ALLOWED_MODULES = frozenset({"manuscript"})
+
+#: 路徑前綴 → 模組代號。順序有意義：長的前綴要排在前面。
+_MODULE_PATH_PREFIXES = (
+    ("/api/literature", "literature"),
+    ("/api/study", "study"),
+    ("/api/paq", "paq"),
+    ("/api/submit", "submit"),
+    ("/api/manuscript", "manuscript"),
+    ("/literature", "literature"),
+    ("/study", "study"),
+    ("/manuscript", "manuscript"),
+    ("/submit", "submit"),
+    ("/paq", "paq"),
+    ("/setup", "setup"),
+    ("/lava_setup", "setup"),
+)
+
+
+def module_of_path(path: Optional[str]) -> Optional[str]:
+    """由請求路徑判斷屬於哪個模組；判斷不出來回 None（不擋）。"""
+    p = str(path or "").rstrip("/").lower()
+    if not p:
+        return None
+    for prefix, module in _MODULE_PATH_PREFIXES:
+        if p == prefix or p.startswith(prefix + "/") or p.startswith(prefix + "."):
+            return module
+    return None
+
+
+def can_access_module(user_id: int, pid: Optional[str], module: Optional[str]) -> bool:
+    """該使用者能不能進這個模組。
+
+    **刻意不看 coauthor_open_access**：那個開關的語意是「放寬限定編輯能讀到
+    哪些章節」，與「能進哪些模組」是兩件事。一個開關同時控制兩件事，
+    owner 會誤判自己開放了什麼。
+    """
+    if not module:
+        return True
+    role = get_workspace_role(user_id, pid) if pid else None
+
+    if pid:
+        if role is None:
+            return False          # 非成員：本來就不該進
+        # 這裡傳 pid=None：模組權限不受開放開關影響（理由見 docstring）。
+        if is_section_scoped_role(role):
+            return module in COAUTHOR_ALLOWED_MODULES
+        return True
+
+    # 沒帶 pid 的裸頁面（例如 /literature 不帶 ?pid）。此時無從判斷專案，
+    # 改看這個人在**任何**專案是否有非限定編輯的身分：若他所有的成員資格
+    # 都是限定編輯，那他在任何專案都不該進這些模組。
+    if module in COAUTHOR_ALLOWED_MODULES:
+        return True
+    return _has_any_non_section_scoped_membership(user_id)
+
+
+def _has_any_non_section_scoped_membership(user_id: int) -> bool:
+    """該使用者是否至少在一個專案「不是」限定編輯。
+
+    完全沒有任何成員資格的帳號回 True（放行）。「沒有專案」不等於
+    「是限定編輯」——那只是還沒被加入任何專案的新帳號，頁面本來就是空的。
+    把新帳號一律擋在模組外，等於註冊完什麼都不能開。
+    只有「有成員資格、而且每一筆都是限定編輯」才該擋。
+    """
+    try:
+        from app.models import ROLE_COAUTHOR, WorkspaceMember
+
+        roles = [
+            m.role
+            for m in WorkspaceMember.query.filter(
+                WorkspaceMember.user_id == user_id
+            ).all()
+        ]
+        if not roles:
+            return True
+        return any(r != ROLE_COAUTHOR for r in roles)
+    except Exception:
+        LOGGER.exception("_has_any_non_section_scoped_membership failed user_id=%s", user_id)
+        # 查不出來時保守放行：這個分支只在「沒帶 pid」時走到，
+        # 真正的資料存取仍會帶 pid 再被擋一次。
+        return True
+
+
+def request_pid() -> Optional[str]:
+    """從當前請求盡力取出 pid（query / path 參數 / JSON body）。"""
+    try:
+        pid = request.args.get("pid") or ""
+        if not pid and request.view_args:
+            for key in ("pid", "project_id"):
+                if request.view_args.get(key):
+                    pid = str(request.view_args[key])
+                    break
+        if not pid and request.method in {"POST", "PUT", "PATCH", "DELETE"}:
+            body = request.get_json(silent=True) or {}
+            if isinstance(body, dict):
+                pid = str(body.get("pid") or "")
+        return pid.strip() or None
+    except Exception:
+        return None
+
+
 def enforce_project_ownership(pid: str) -> None:
     """
     三模式分派的專案存取守衛（見模組標頭決策表）。
