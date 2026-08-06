@@ -1,7 +1,13 @@
 //路徑(./app/static/js/manuscript_soed.js)
-//版本 v1.0 (Server-assigned versions + autosave draft)
-//更版時間 20260726-0200
-// inner comment: 保留 v0.9 全量代碼與防呆邏輯。本版變更：
+//版本 v1.1 (Drafter request never hangs silently)
+//更版時間 20260806-0130
+// inner comment: 保留 v1.0 全量代碼與防呆邏輯。本版變更：
+//   [v1.1] 修掉「送出後永久轉圈」：新增 _armAckTimeout / _failPendingRequest。
+//     - 舊 _armTypingTimeout 在 activeJobId 為 null 時直接 return，
+//       而收不到 job_queued 正是 activeJobId 為 null 的情況 ——
+//       等於唯一的逾時保護在最需要它的時候被關掉，實測可無聲轉三小時。
+//     - 新增 20s ack 時限、sys_msg 終結、disconnect 終結三個出口，
+//       對應伺服器 manuscript_routes.py v1.8 的 chat_message 事件契約。
 //   [v1.0] 版本號改由伺服器指派（max + 0.1），前端不再自行遞增。
 //     - cardActionSave 只送 from_ver（目前檢視版本），版號由 save_ack 回傳。
 //     - S.Ver / G.Ver 由文字輸入框改為版本選單，選取即載入該版。
@@ -20,6 +26,11 @@ class ManuSoed {
         this.activeJobId = null;
         this.typingTimeoutHandle = null;
         this.typingWarnMs = 120000;
+        // [v1.1] 送出後等待 job_queued 的硬性時限。
+        // typingWarnMs(120s) 是「job 已在跑但很久」的提示，兩者不能共用一支計時器：
+        // 沒收到 ack 代表伺服器根本沒接下這個請求，再等下去也不會有結果。
+        this.ackTimeoutHandle = null;
+        this.ackWaitMs = 20000;
         // [v0.9] 衝突防護：記錄目前開啟段落的版本號 { sectionId: rev }
         this._blockRevMap = {};
     }
@@ -532,6 +543,12 @@ class ManuSoed {
 
         this.app.socket.on('disconnect', () => {
             this.addSystemMessage("Drafter Server disconnected. Reconnecting...");
+            // 連線斷掉後 sid 就換人了，伺服器 _sid_connected(sid) 會判定失聯而
+            // 靜默結束該 job（manuscript_routes.py:426/467）——沒有任何事件會回來。
+            // 這裡不收掉轉圈的話，重連後就是一個永遠不會結束的指示器。
+            if (document.getElementById('typingIndicator')) {
+                this._failPendingRequest('Connection lost while the request was running. Please retry.');
+            }
         });
 
         // [presence] 在線協作者。伺服器只送「誰在線上」，不含誰在改哪一章。
@@ -541,6 +558,14 @@ class ManuSoed {
 
         this.app.socket.on('sys_msg', (data) => {
             this.addSystemMessage(data.msg);
+            // 伺服器在驗證失敗時只回 sys_msg、不會有 job_queued（例如訊息過長、
+            // pid 解析失敗、無專案權限）。此時若還在等 ack，這就是最終結果，
+            // 轉圈必須立刻收掉，否則使用者會以為還在生成。
+            if (!this.activeJobId && document.getElementById('typingIndicator')) {
+                this._clearAckTimeout();
+                this._clearTypingTimeout();
+                this.removeTypingIndicator();
+            }
             // [collab] 權限是別人（owner）可以隨時改的，前端的 permissions 是快取。
             // 一旦伺服器以權限為由拒絕，立刻重抓權限並重新上鎖 ——
             // 否則畫布仍是可編輯狀態，使用者會一直打字到下次存檔才發現白打。
@@ -550,6 +575,7 @@ class ManuSoed {
         });
         this.app.socket.on('ai_response', (data) => this.handleAIResponse(data));
         this.app.socket.on('job_queued', (data) => {
+            this._clearAckTimeout();
             this.activeJobId = data.job_id;
             this.updateTypingIndicator(`Job queued (${data.job_id}). Waiting worker...`);
             this._armTypingTimeout();
@@ -562,6 +588,7 @@ class ManuSoed {
         });
         this.app.socket.on('job_done', (data) => {
             if (this.activeJobId && data.job_id !== this.activeJobId) return;
+            this._clearAckTimeout();
             this._clearTypingTimeout();
             this.activeJobId = null;
             this.removeTypingIndicator();
@@ -571,6 +598,7 @@ class ManuSoed {
         });
         this.app.socket.on('job_error', (data) => {
             if (this.activeJobId && data.job_id !== this.activeJobId) return;
+            this._clearAckTimeout();
             this._clearTypingTimeout();
             this.activeJobId = null;
             this.removeTypingIndicator();
@@ -578,6 +606,7 @@ class ManuSoed {
         });
         this.app.socket.on('job_cancelled', (data) => {
             if (this.activeJobId && data.job_id !== this.activeJobId) return;
+            this._clearAckTimeout();
             this._clearTypingTimeout();
             this.activeJobId = null;
             this.removeTypingIndicator();
@@ -946,6 +975,7 @@ class ManuSoed {
         this.app.ui.clearFile(); 
         this.showTypingIndicator();
         this._armTypingTimeout();
+        this._armAckTimeout();
     }
 
     triggerAutoDraft() {
@@ -962,6 +992,7 @@ class ManuSoed {
         this.app.socket.emit('chat_message', { msg: refineMsg, context: this.app.editorCanvas.innerText.substring(0,3000), target_lang: targetLang, pid: this.app.pid, title: currentTitle, section: targetSection, s_ver: '0.1' });
         this.showTypingIndicator();
         this._armTypingTimeout();
+        this._armAckTimeout();
     }
     
     handleAIResponse(d) {
@@ -990,6 +1021,7 @@ class ManuSoed {
             console.error("處理 AI 回應時發生錯誤:", err);
             this.addSystemMessage("系統處理回應時發生異常錯誤。");
         } finally {
+            this._clearAckTimeout();
             this._clearTypingTimeout();
             this.activeJobId = null;
             this.removeTypingIndicator();
@@ -1067,7 +1099,15 @@ class ManuSoed {
     _armTypingTimeout() {
         this._clearTypingTimeout();
         this.typingTimeoutHandle = setTimeout(() => {
-            if (!this.activeJobId) return;
+            // [v1.1] 原本這裡是 `if (!this.activeJobId) return;`，
+            // 意思是「沒有 job 在跑就不用提醒」——但那正是最該提醒的情況：
+            // 沒有 activeJobId 代表 job_queued 從沒到過，也就沒有任何
+            // job_done/job_error 會來收掉轉圈指示器。那個 return 把唯一的
+            // 逃生口關掉了，實測可以無聲轉三小時。
+            if (!this.activeJobId) {
+                this._failPendingRequest('Server did not acknowledge the request. Please retry.');
+                return;
+            }
             this.addSystemMessage('Request is taking too long. You can wait or cancel and retry.');
         }, this.typingWarnMs);
     }
@@ -1077,5 +1117,34 @@ class ManuSoed {
             clearTimeout(this.typingTimeoutHandle);
             this.typingTimeoutHandle = null;
         }
+    }
+
+    // [v1.1] 等待伺服器 ack 的硬性時限。
+    // 伺服器契約（manuscript_routes.py v1.8）：chat_message 通過驗證必定回 job_queued，
+    // 未通過必定回 sys_msg。超過 ackWaitMs 兩者都沒來，就是連線或 handler 出事了，
+    // 此時不能繼續轉圈假裝在運算。
+    _armAckTimeout() {
+        this._clearAckTimeout();
+        this.ackTimeoutHandle = setTimeout(() => {
+            if (this.activeJobId) return;
+            this._failPendingRequest('No response from Drafter server (timed out waiting for job ack). Please retry.');
+        }, this.ackWaitMs);
+    }
+
+    _clearAckTimeout() {
+        if (this.ackTimeoutHandle) {
+            clearTimeout(this.ackTimeoutHandle);
+            this.ackTimeoutHandle = null;
+        }
+    }
+
+    // 收掉轉圈並回到可再送出的狀態。任何「請求已經死了」的路徑都要走這裡，
+    // 否則 activeJobId 會卡住，sendUserMessage 會一直擋在 'A job is still running'。
+    _failPendingRequest(msg) {
+        this._clearAckTimeout();
+        this._clearTypingTimeout();
+        this.activeJobId = null;
+        this.removeTypingIndicator();
+        this.addSystemMessage(msg);
     }
 }

@@ -1,6 +1,6 @@
 # 檔案路徑: app/core_pro/manuscript/manuscript_routes.py
 # 產生時間: 2026-07-19 09:00 +08:00
-# 版本: v1.7
+# 版本: v1.8
 # 模組定位:
 #   Manuscript 模組 Flask Blueprint + Socket.IO namespace /manu_ws 控制層。
 # 主要責任:
@@ -19,9 +19,18 @@
 #        衝突時 emit save_conflict {section, current_rev, base_rev, updated_by, updated_at}。
 #      - cmd_load_block 回應帶 _rev。
 #      - save_ack 帶 _rev（新欄位，舊前端忽略即可）。
+#   9. [v1.8] chat_message handler 的「無聲黑洞」修復：
+#      - job_queued 提前到所有可能失敗的工作之前（原本排在 save_chat_history 之後，
+#        該函式的 FileLock 逾時會讓 handler 死在 ack 之前，前端永久轉圈）。
+#      - save_chat_history 失敗只 log，不中斷生成。
+#      - ack 之後任何例外一律補 emit job_error，確保前端一定收得到終止事件。
 # 呼叫來源:
 #   app/__init__.py register_blueprint；前端 Socket.IO /manu_ws namespace。
 # 輸入輸出契約:
+#   - [v1.8] chat_message 事件契約（前端 manuscript_soed.js 依賴此保證）：
+#       通過驗證 → 必定先收到 job_queued，之後必定收到
+#       job_done / job_error / job_cancelled 其中之一；
+#       未通過驗證 → 必定收到 sys_msg。兩者皆不得「什麼都不回」。
 #   - save 類 Socket 事件在 session 模式下需 editor 以上角色。
 #   - RevisionLog 寫入失敗只 log warning，不影響主流程。
 #   - peer_update 廣播：{kind, section, by: username} 給 room("ws:{pid}")。
@@ -1005,21 +1014,34 @@ def handle_chat(data):
     target_lang = data.get('target_lang', 'Academic English')
     attachment = data.get('attachment')
     import_type = data.get('import_type', 'other')
-    pid = _resolve_socket_pid_or_emit(data)
-    if not pid:
-        return
-    if not _ensure_socket_project_access(pid):
+
+    # 專案解析與權限檢查會碰 DB，例外不能讓 handler 靜默死亡：
+    # 這段在 ack 之前，前端此時只有轉圈、沒有 job_id，
+    # 唯一還能通知它的管道就是 sys_msg。
+    try:
+        pid = _resolve_socket_pid_or_emit(data)
+        if not pid:
+            return
+        if not _ensure_socket_project_access(pid):
+            return
+    except Exception:
+        logger.error("[manu_chat] 專案解析／權限檢查失敗", exc_info=True)
+        emit('sys_msg', {'msg': 'Server error while resolving project. Please retry.'})
         return
     title = data.get('title', 'Untitled Paper')
     section = data.get('section', 'general')
     s_ver = data.get('s_ver', '0.1')
-    
-    save_chat_history(pid, section, 'user', user_msg, 'text')
 
     job_id = f"job_{int(time.time() * 1000)}_{os.getpid()}"
     sid = request.sid
     _set_job_state(job_id, cancelled=False, sid=sid, pid=pid, section=section)
 
+    # [v1.8] ack 必須排在所有會失敗的工作之前。
+    # 原本 save_chat_history() 排在這個 emit 之前，而它會走 security.write_json_locked
+    # 的 FileLock(timeout=10)；鎖逾時／磁碟寫入失敗都是例外，handler 直接死在這裡，
+    # 前端於是收不到 job_queued、收不到 job_error、收不到任何東西 ——
+    # 轉圈指示器沒有任何人會收掉，實測可以無聲轉三小時以上。
+    # 先發 job_queued，前端才有 job_id 可以對帳、可以取消、可以逾時。
     emit('job_queued', {
         'job_id': job_id,
         'stage': 'queued',
@@ -1033,19 +1055,43 @@ def handle_chat(data):
         section,
     )
 
-    app_obj = current_app._get_current_object()
-    payload = {
-        'user_msg': user_msg,
-        'context_text': context_text,
-        'target_lang': target_lang,
-        'attachment': attachment,
-        'import_type': import_type,
-        'pid': pid,
-        'title': title,
-        'section': section,
-        's_ver': s_ver,
-    }
-    _CHAT_EXECUTOR.submit(_process_chat_job, app_obj, sid, job_id, payload)
+    try:
+        # 使用者訊息寫不進聊天歷史，不該連帶讓整個草稿請求消失：
+        # 使用者要的是草稿，歷史少一筆可以事後補，靜默吞掉請求不行。
+        try:
+            save_chat_history(pid, section, 'user', user_msg, 'text')
+        except Exception:
+            logger.warning(
+                "[manu_chat] save_chat_history(user) 失敗（已忽略，不影響生成） id=%s pid=%s section=%s",
+                job_id,
+                pid,
+                section,
+                exc_info=True,
+            )
+
+        app_obj = current_app._get_current_object()
+        payload = {
+            'user_msg': user_msg,
+            'context_text': context_text,
+            'target_lang': target_lang,
+            'attachment': attachment,
+            'import_type': import_type,
+            'pid': pid,
+            'title': title,
+            'section': section,
+            's_ver': s_ver,
+        }
+        _CHAT_EXECUTOR.submit(_process_chat_job, app_obj, sid, job_id, payload)
+    except Exception:
+        # ack 之後才炸的話前端已經在等這個 job_id，一定要補一個終止事件，
+        # 否則就退化回「永遠轉圈」——這正是本次修的病。
+        logger.error("[manu_chat] job 派送失敗 id=%s pid=%s", job_id, pid, exc_info=True)
+        _delete_job_state(job_id)
+        emit('job_error', {
+            'job_id': job_id,
+            'stage': 'error',
+            'message': 'Failed to queue job',
+        })
 
 
 @socketio.on('cmd_cancel_job', namespace='/manu_ws')

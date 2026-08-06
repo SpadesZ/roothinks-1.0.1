@@ -1,4 +1,8 @@
-#路徑(./app/llm_service/llm_routes.py) #版本 v0.3 #更版時間 20260419-1700
+#路徑(./app/llm_service/llm_routes.py) #版本 v0.4 #更版時間 20260806-0130
+# [v0.4] 新增 NON_GENERATIVE_MODEL_HINTS：guardrail／embedding／rerank／TTS 類模型
+#   不得進入模型選單，也不得經 /connection/update 寫入 llm_connections。
+#   起因：nvidia/nemotron-3.5-content-safety:free 被綁到 task_8drafter，
+#   /binding/test 仍回綠燈，但草稿永遠生不出來。
 # [MVP+Prototype Handoff Header]
 # 本檔案目前定位為 MVP/Prototype 實作；非最終產品級設計。
 # 對應規劃檔：CHANGE_PLAN_STUDY_FLOWB_2026-04-20.md
@@ -33,6 +37,26 @@ DISALLOWED_OPENROUTER_HINTS = (
     "hunyuan",
     "doubao",
     "yi-",
+)
+
+# [v0.4] 非生成用途模型：OpenRouter 的 catalog 把它們跟聊天模型混在同一份清單，
+# 但它們的工作不是寫東西 —— guardrail 只回安全性判定、embedding 只回向量、
+# rerank 只回排序分數。綁到生成類 task 不會噴錯，只會安靜地吐垃圾。
+# 而 /binding/test 送的是 "reply with OK only" 這種短句，連 guardrail 都能回 200，
+# 測試燈號照樣是綠的 —— 所以下游沒有任何一關擋得住，這份清單是唯一的閘門。
+# 實例：nvidia/nemotron-3.5-content-safety:free 是 4B guardrail 模型，
+# 曾被綁到 task_8drafter，草稿永遠生不出來。
+NON_GENERATIVE_MODEL_HINTS = (
+    "content-safety",
+    "guard",          # llama-guard / nemoguard / shieldgemma 都吃這個字
+    "safeguard",
+    "moderation",
+    "embed",
+    "rerank",
+    "-tts",
+    "text-to-speech",
+    "whisper",
+    "robotics",
 )
 
 TASK_BINDING_ORDER = [
@@ -81,6 +105,11 @@ def _is_openrouter_free_model(model_item: Dict) -> bool:
 def _is_disallowed_openrouter_model(model_id: str) -> bool:
     text = _normalize_text(model_id)
     return any(hint in text for hint in DISALLOWED_OPENROUTER_HINTS)
+
+
+def _is_non_generative_model(model_id: str) -> bool:
+    text = _normalize_text(model_id)
+    return any(hint in text for hint in NON_GENERATIVE_MODEL_HINTS)
 
 
 def _is_nemotron_model(model_id: str) -> bool:
@@ -153,6 +182,10 @@ def _rank_openrouter_free_models(model_items: List[Dict], allow_nemotron: bool) 
         seen.add(model_id)
 
         if _is_disallowed_openrouter_model(model_id):
+            continue
+        # nemotron 桶被排在回傳清單最前面，而 content-safety 在字母序又靠前，
+        # 等於 guardrail 模型會變成下拉選單的第一個選項 —— 不擋掉就是在誘導誤綁。
+        if _is_non_generative_model(model_id):
             continue
         if not _is_openrouter_free_model(item):
             continue
@@ -291,6 +324,22 @@ def update_connection():
         api_key = str(data.get("api_key", "")).strip()
         model_name = str(data.get("model_name", "")).strip()
         status = str(data.get("status", "draft")).strip() or "draft"
+
+        # 選單過濾只擋 UI；這裡擋 API，否則舊分頁、手動 POST、既有髒資料
+        # 還是能把 guardrail 模型寫進 llm_connections。
+        if _is_non_generative_model(model_name):
+            return (
+                jsonify(
+                    {
+                        "success": False,
+                        "message": (
+                            f"'{model_name}' 不是生成模型（guardrail／embedding／rerank 類），"
+                            "綁到任務只會產生空白或無意義輸出，請改選一般對話模型。"
+                        ),
+                    }
+                ),
+                400,
+            )
 
         if _normalize_text(vendor) == "openrouter" and _is_nemotron_model(model_name):
             policy = _get_nemotron_policy(conn_id=conn_id)
