@@ -1,4 +1,9 @@
-#路徑(./app/llm_service/llm_routes.py) #版本 v0.4 #更版時間 20260806-0130
+#路徑(./app/llm_service/llm_routes.py) #版本 v0.5 #更版時間 20260806-1500
+# [v0.5] 補上 v0.4 沒堵到的洞：/binding/update 不得把 task 綁到非生成模型，
+#   /connection/list 額外回 is_non_generative 讓前端把該選項關掉。
+#   v0.4 只擋「寫入新模型」與「選單來源」，既有的髒連線（例如事故當下已經躺在
+#   llm_connections 裡的 nemotron guardrail）仍然出現在配對下拉選單，
+#   仍然可以被重新綁上去 —— 修完當天 task_2a_chat / task_2cubegen 就還綁著它。
 # [v0.4] 新增 NON_GENERATIVE_MODEL_HINTS：guardrail／embedding／rerank／TTS 類模型
 #   不得進入模型選單，也不得經 /connection/update 寫入 llm_connections。
 #   起因：nvidia/nemotron-3.5-content-safety:free 被綁到 task_8drafter，
@@ -110,6 +115,20 @@ def _is_disallowed_openrouter_model(model_id: str) -> bool:
 def _is_non_generative_model(model_id: str) -> bool:
     text = _normalize_text(model_id)
     return any(hint in text for hint in NON_GENERATIVE_MODEL_HINTS)
+
+
+def _connection_model_name(conn_id) -> str:
+    """查某條連線目前掛的模型名稱；查不到一律回空字串（空字串不會命中任何 hint）。"""
+    try:
+        row = LLMModel.execute_query(
+            "SELECT model_name FROM llm_connections WHERE id = ?",
+            (conn_id,),
+            fetch_one=True,
+        )
+    except Exception:
+        LOGGER.exception("Lookup connection model_name failed: conn_id=%s", conn_id)
+        return ""
+    return str((dict(row) if row else {}).get("model_name") or "")
 
 
 def _is_nemotron_model(model_id: str) -> bool:
@@ -268,7 +287,13 @@ def _normalize_page_workers(raw_value):
 def list_connections():
     try:
         conns = LLMModel.execute_query("SELECT * FROM llm_connections ORDER BY id ASC") or []
-        safe_rows = [LLMModel.sanitize_connection_for_output(c) for c in conns]
+        safe_rows = []
+        for conn in conns:
+            row = LLMModel.sanitize_connection_for_output(conn)
+            # 不把這種連線從清單濾掉：濾掉等於使用者在 UI 上看不到也刪不掉，
+            # 只會多一筆看不見的髒資料。這裡只標記，由前端把選項關成 disabled。
+            row["is_non_generative"] = _is_non_generative_model(row.get("model_name"))
+            safe_rows.append(row)
         return jsonify({"success": True, "connections": safe_rows}), 200
     except Exception:
         LOGGER.exception("List connections failed")
@@ -488,6 +513,27 @@ def update_binding():
         data = request.get_json(silent=True) or {}
         task_id = data.get("task_id")
         conn_id = data.get("connection_id")
+
+        # 這是最後一道閘門。/connection/update 只擋「換模型」，擋不住既有的髒連線
+        # 被重新綁到別的 task；而 /binding/test 送的是 "reply with OK only"，
+        # 連 guardrail 都回得出 200，燈號永遠是綠的，下游沒人擋得住。
+        if conn_id not in (None, "", 0):
+            model_name = _connection_model_name(conn_id)
+            if _is_non_generative_model(model_name):
+                return (
+                    jsonify(
+                        {
+                            "success": False,
+                            "message": (
+                                f"LLM-{conn_id} 掛的是 '{model_name}'，屬於非生成模型"
+                                "（guardrail／embedding／rerank 類），綁到任務只會產生"
+                                "空白或無意義輸出，請改選一般對話模型。"
+                            ),
+                        }
+                    ),
+                    400,
+                )
+
         LLMModel.execute_query(
             "UPDATE task_bindings SET connection_id = ? WHERE task_id = ?",
             (conn_id, task_id),

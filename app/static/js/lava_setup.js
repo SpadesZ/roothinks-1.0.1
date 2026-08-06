@@ -1,4 +1,11 @@
-/* 路徑(./app/static/js/lava_setup.js) #版本 v0.8 #更版時間 20260419-1730 */
+/* 路徑(./app/static/js/lava_setup.js) #版本 v0.9 #更版時間 20260806-1500 */
+/* [v0.9] 配對下拉選單把非生成模型（is_non_generative）關成 disabled，
+ *   並讓 updateBinding 真的去看 /binding/update 的回應。
+ *   原本這兩件都沒做：guardrail 模型照樣出現在選單，選下去後端就算擋了，
+ *   畫面也只是靜靜地跳回舊值，使用者拿不到任何理由。
+ *   對應後端 llm_routes.py v0.5。
+ *   注意：lava_setup.html 的 <script src> 要一起 bump 版號，否則瀏覽器吃舊 JS。
+ */
 /* [MVP+Prototype Handoff Header]
  * 本檔案目前定位為 MVP/Prototype 實作；非最終產品級設計。
  * 對應規劃檔：CHANGE_PLAN_STUDY_FLOWB_2026-04-20.md
@@ -626,8 +633,13 @@ function renderBindingRow(tbody, task) {
     let optionsHtml = '<option value="">-- 尚未指派 --</option>';
     globalLockedConnections.forEach(conn => {
         const selected = (task.connection_id === conn.id) ? 'selected' : '';
+        // guardrail／embedding／rerank 這類非生成模型綁上去不會噴錯，只會安靜地
+        // 吐垃圾（task_8drafter 就這樣轉了三小時），所以選單先關掉；
+        // 後端 /binding/update 另有同一道擋 —— 兩邊都不能少。
+        const blocked = conn.is_non_generative ? 'disabled' : '';
+        const tag = conn.is_non_generative ? ' ⚠ 非生成模型，不可綁定' : '';
         // 下拉選單同步顯示連續視覺序號
-        optionsHtml += `<option value="${conn.id}" ${selected}>LLM-${escapeHtml(conn.visual_id || conn.id)} (${escapeHtml(conn.model_name)})</option>`;
+        optionsHtml += `<option value="${conn.id}" ${selected} ${blocked}>LLM-${escapeHtml(conn.visual_id || conn.id)} (${escapeHtml(conn.model_name)})${tag}</option>`;
     });
 
     tr.innerHTML = `
@@ -662,15 +674,22 @@ function renderBindingRow(tbody, task) {
 async function updateBinding(taskId, connId) {
     const targetConnId = connId ? parseInt(connId) : null;
     try {
-        await fetch('/api/llm/binding/update', {
+        const res = await fetch('/api/llm/binding/update', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({ task_id: taskId, connection_id: targetConnId })
         });
+        // 這裡原本完全不看回應：後端就算擋下來，畫面也只是被 loadBindings()
+        // 重畫回舊值，使用者看到「我選的沒存進去」卻拿不到任何理由。
+        const result = await res.json().catch(() => ({}));
+        if (!res.ok || result.success === false) {
+            alert('更新配對失敗: ' + (result.message || `HTTP ${res.status}`));
+        }
         loadBindings();
     } catch(e) {
         console.error(e);
         alert('更新配對失敗');
+        loadBindings();
     }
 }
 

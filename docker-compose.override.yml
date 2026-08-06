@@ -16,7 +16,8 @@ services:
     # Dev stability profile:
     # - Use gthread for CPU-heavy OCR flow (avoid eventlet worker freeze)
     # - Relax local resource limits for demo/testing
-    cpus: 4.0
+    # 開發機給 4 核；GCP VM 是 e2-medium（2 vCPU），在該機 .env 設 COMPOSE_CPUS=2.0。
+    cpus: ${COMPOSE_CPUS:-4.0}
     mem_limit: 4g
     environment:
       - FLASK_ENV=development

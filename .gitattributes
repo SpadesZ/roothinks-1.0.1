@@ -1,0 +1,19 @@
+# 路徑(./.gitattributes) #版本 v1.0 #更版時間 20260806-1500
+#
+# 模組定位：換行符正規化。
+#
+# 背景：GCP VM 上的 ~/roothinks-app 曾經用「Windows 複製檔案」的方式部署，
+#   帶著 CRLF 覆蓋過去，於是 `git diff --stat` 顯示 +9326/−8546，
+#   實際改動只有 840 行 —— 其餘八千多行全是換行符雜訊，
+#   判斷 VM 到底髒在哪都得先加 --ignore-cr-at-eol 才看得懂。
+#
+# 目前 repo 內所有 blob 都是 LF（2026-08-06 全量確認：236 個文字檔零 CR），
+#   所以加這個檔不會產生 renormalize 的大 diff，純粹是把現況釘住：
+#   Windows 開發機的 core.autocrlf=true 從此不會再把 CRLF 帶進工作目錄。
+#
+# 維護提醒：容器是 Linux，shell script 與 Python 一律 LF。
+#   只有 PowerShell 腳本留 CRLF（部分 Windows 工具對 LF 的 .ps1 會有雜音）。
+
+* text=auto eol=lf
+
+*.ps1 text eol=crlf
