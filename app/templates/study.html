@@ -105,7 +105,9 @@ Study 的 Matrix/Fulltext 內嵌切換為階段性方案，後續請由人類團
         }
     </style>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/study.css') }}">
+    <!-- 改 study.css 一定要一起 bump 這個版號，否則瀏覽器吃舊樣式表，
+         看起來就像「CSS 改了但沒生效」。 -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/study.css') }}?v=1.1">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" crossorigin="anonymous">
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" crossorigin="anonymous"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" crossorigin="anonymous"></script>
@@ -238,8 +240,11 @@ Study 的 Matrix/Fulltext 內嵌切換為階段性方案，後續請由人類團
                             <option value="table">Tables</option>
                         </select>
                     </div>
-                    <div class="vr mx-1"></div>
-                    <span id="matrix-title" class="fw-bold small text-dark">等待任務啟動...</span>
+                    <!-- 預設留空。空的時候由 CSS (#matrix-title:empty) 整個隱藏，
+                         連分隔線一起消失 —— 分隔線是這個 span 的 border-left，
+                         不是獨立的 .vr，否則會留下一根孤兒直線。
+                         原本預設字串是「等待任務啟動...」，在 Idle 狀態純屬雜訊。 -->
+                    <span id="matrix-title" class="fw-bold small text-dark"></span>
                 </div>
                 <div class="d-flex gap-2">
                     <button id="btn-media-refresh" class="btn btn-sm btn-outline-secondary" onclick="window.studyView.refreshCurrentMediaAnalysis()" title="重跑目前圖表的 LLM 解說" disabled>
@@ -298,7 +303,7 @@ Study 的 Matrix/Fulltext 內嵌切換為階段性方案，後續請由人類團
 
         <div id="aux-pane" class="bg-white border-start d-flex flex-column">
             
-            <div class="d-flex flex-column h-50 border-bottom" style="min-height: 200px;">
+            <div id="aux-chat-pane" class="d-flex flex-column border-bottom">
                 <div class="p-2 bg-light border-bottom fw-bold text-primary d-flex justify-content-between align-items-center">
                     <span><i class="bi bi-robot me-2"></i>AI 家教 (Task 7)</span>
                     <span class="badge bg-secondary" id="chat-context-badge" title="Current Context">Context: None</span>
@@ -321,7 +326,7 @@ Study 的 Matrix/Fulltext 內嵌切換為階段性方案，後續請由人類團
                 </div>
             </div>
 
-            <div class="d-flex flex-column h-50 bg-light" style="min-height: 150px;">
+            <div id="aux-notes-pane" class="d-flex flex-column bg-light">
                 <div class="p-2 border-bottom fw-bold text-success d-flex justify-content-between">
                     <span><i class="bi bi-journal-text me-2"></i>研究筆記</span>
                     <button class="btn btn-xs btn-link text-success p-0" onclick="window.studyCore.saveNotes()">儲存</button>
@@ -407,9 +412,21 @@ Study 的 Matrix/Fulltext 內嵌切換為階段性方案，後續請由人類團
             // 初始化 Split.js
             console.log('[App Init] 初始化 Split.js...');
             if (typeof Split !== 'undefined') {
+                // minSize 原本是 [400, 300]：兩邊加 gutter 就吃掉 708px，
+                // 視窗一窄就再也拉不動，工具列被擠爆後壓到 aux-pane 上。
+                // 放到 25px，讓任一側都能收成一條窄邊，把空間整個讓給另一側。
                 Split(['#matrix-pane', '#aux-pane'], {
-                    sizes: [70, 30], 
-                    minSize: [400, 300],
+                    sizes: [70, 30],
+                    minSize: [25, 25],
+                    gutterSize: 8,
+                    snapOffset: 0
+                });
+
+                // AI 家教與研究筆記原本是寫死的 h-50，完全拉不動。
+                Split(['#aux-chat-pane', '#aux-notes-pane'], {
+                    direction: 'vertical',
+                    sizes: [50, 50],
+                    minSize: [25, 25],
                     gutterSize: 8,
                     snapOffset: 0
                 });

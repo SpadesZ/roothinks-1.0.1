@@ -165,7 +165,57 @@
     position: relative;
     /* Keep above matrix sticky cells, but below Bootstrap modal/backdrop. */
     z-index: 60;
+    /* 維度篩選的 dropdown 要能溢出工具列，所以這裡必須是 visible。
+       代價是：工具列一旦被擠到超過 pane 寬度，內容就會直接壓到隔壁的
+       aux-pane 上（AI 家教標題被蓋掉、「重跑解說」被壓成直書）。
+       解法不是改成 hidden（那樣 dropdown 會被剪掉），而是讓工具列會換行，
+       從根本上不產生水平溢出。 */
     overflow: visible;
+    flex-wrap: wrap;
+    gap: .5rem;
+    row-gap: .5rem;
+}
+
+/* 工具列裡的每一組都不許被壓縮到字元逐字斷行。
+   寧可整組換到第二行，也不要出現「重／跑／解／說」那種直書破圖。 */
+.matrix-toolbar > div {
+    min-width: 0;
+}
+
+.matrix-toolbar .btn,
+.matrix-toolbar .btn-group,
+.matrix-toolbar .badge {
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+/* 矩陣標題：沒有內容時整個消失，連同左邊的分隔線。
+   分隔線做成 border-left 而不是獨立的 .vr 元素，才能跟著一起隱藏，
+   否則會留下一根孤兒直線。 */
+#matrix-title:empty {
+    display: none;
+}
+
+#matrix-title:not(:empty) {
+    border-left: 1px solid var(--bs-border-color, #dee2e6);
+    padding-left: .5rem;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* --- 5b. aux-pane 上下分割 --- */
+/* Split.js 會把高度寫成 inline style，這裡只負責「縮到很小也不破」。
+   原本兩塊是寫死的 h-50 + min-height 200/150px，完全拉不動。 */
+#aux-chat-pane,
+#aux-notes-pane {
+    min-height: 0;
+    overflow: hidden;
+}
+
+#aux-pane .gutter.gutter-vertical {
+    cursor: row-resize;
 }
 
 #matrix-pane .matrix-toolbar .dropdown {
