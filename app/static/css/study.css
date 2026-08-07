@@ -182,6 +182,23 @@
     min-width: 0;
 }
 
+/* flex-wrap 只解決「擠成直書」，解決不了「pane 比最寬那一項還窄」。
+   子元素有 flex-shrink:0，加上工具列的 overflow:visible，
+   pane 一旦被拉到 25px，整條工具列仍會照原尺寸畫出去、蓋在 aux-pane 上
+   （AI 家教標題被壓掉就是這樣來的）。
+   所以真正的封口要下在 pane 這一層：任何東西都不准畫到 matrix-pane 之外。
+   代價：pane 窄於維度篩選選單(280px)時選單會被裁掉 —— 但那個寬度下
+   工具列本來就無法使用。矩陣自己的捲動不受影響，
+   .matrix-container 有自己的 overflow:auto。 */
+#matrix-pane {
+    overflow: hidden;
+}
+
+/* pane 拉窄時，佔位提示會逐字折成一長條直書。讓它維持單行、被裁掉就好。 */
+.matrix-placeholder-hint {
+    white-space: nowrap;
+}
+
 .matrix-toolbar .btn,
 .matrix-toolbar .btn-group,
 .matrix-toolbar .badge {

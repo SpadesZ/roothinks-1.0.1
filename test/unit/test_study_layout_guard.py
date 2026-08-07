@@ -92,6 +92,26 @@ def test_toolbar_buttons_do_not_shrink_to_vertical_text():
     )
 
 
+def test_matrix_pane_clips_its_own_overflow():
+    """最後一道封口：任何東西都不准畫到 matrix-pane 之外。
+
+    flex-wrap 只解決「擠成直書」，解決不了「pane 比最寬那一項還窄」——
+    子元素有 flex-shrink:0 又碰上工具列的 overflow:visible，pane 拉到 25px
+    時整條工具列仍會照原尺寸畫出去、蓋掉 AI 家教標題。
+    實測（elementFromPoint 在 pane 右緣外取樣 99 點）：
+      有這條規則 → 命中 0；拿掉 → 命中 4（「Fulltext (Block)」畫到 x=332~362）。
+    """
+    assert re.search(r"#matrix-pane\s*\{[^}]*overflow:\s*hidden", CSS), (
+        "#matrix-pane 少了 overflow:hidden —— 工具列會畫到 aux-pane 上"
+    )
+
+
+def test_placeholder_hint_does_not_go_vertical():
+    """pane 拉窄時佔位提示不得逐字折成直書，維持單行被裁掉即可。"""
+    assert "matrix-placeholder-hint" in HTML_RENDERED
+    assert re.search(r"\.matrix-placeholder-hint\s*\{[^}]*white-space:\s*nowrap", CSS)
+
+
 # --- 3 & 4. 分割 -----------------------------------------------------------
 
 def test_aux_panes_have_ids_and_no_fixed_half_height():

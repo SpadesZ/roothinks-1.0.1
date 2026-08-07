@@ -107,7 +107,7 @@ Study 的 Matrix/Fulltext 內嵌切換為階段性方案，後續請由人類團
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <!-- 改 study.css 一定要一起 bump 這個版號，否則瀏覽器吃舊樣式表，
          看起來就像「CSS 改了但沒生效」。 -->
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/study.css') }}?v=1.1">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/study.css') }}?v=1.2">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" crossorigin="anonymous">
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" crossorigin="anonymous"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" crossorigin="anonymous"></script>
@@ -270,7 +270,7 @@ Study 的 Matrix/Fulltext 內嵌切換為階段性方案，後續請由人類團
             <div id="matrixContainer" class="matrix-container flex-grow-1">
                 <div class="d-flex flex-column align-items-center justify-content-center h-100 text-muted">
                     <i class="bi bi-table display-1 opacity-25"></i>
-                    <p class="mt-3">請展開左側欄勾選文獻</p>
+                    <p class="mt-3 matrix-placeholder-hint">請展開左側欄勾選文獻</p>
                 </div>
             </div>
 
