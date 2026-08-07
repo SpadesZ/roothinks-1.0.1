@@ -236,11 +236,11 @@ def upgrade_database():
                 CREATE TABLE projects_new (
                     id INTEGER PRIMARY KEY,
                     project_id VARCHAR(20) NOT NULL UNIQUE,
-                    name VARCHAR(100) NOT NULL,
+                    name VARCHAR(300) NOT NULL,
                     abbreviation VARCHAR(50),
-                    research_title VARCHAR(200),
+                    research_title VARCHAR(300),
                     status VARCHAR(20) NOT NULL DEFAULT 'temp',
-                    classification VARCHAR(50),
+                    classification VARCHAR(200),
                     keywords VARCHAR(200),
                     context_background TEXT,
                     ai_summary TEXT,
@@ -299,11 +299,14 @@ def upgrade_database():
             project_cols_info = cursor.fetchall()
             columns = {col[1] for col in project_cols_info}
 
+        # 這裡的型別必須與上面 CREATE TABLE projects_new 及 app/models.py 的
+        # Project 宣告三方一致。散在三處是既有設計，test_project_schema_lengths.py
+        # 有一道測試會比對，改一處沒改另一處會紅。
         column_defs = {
             "ai_summary": "TEXT",
             "abbreviation": "VARCHAR(50)",
-            "classification": "VARCHAR(50)",
-            "research_title": "VARCHAR(200)",
+            "classification": "VARCHAR(200)",
+            "research_title": "VARCHAR(300)",
             "keywords": "VARCHAR(200)",
             "context_background": "TEXT",
             "members": "JSON",

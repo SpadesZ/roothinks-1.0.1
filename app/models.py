@@ -600,15 +600,21 @@ class Project(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     project_id = db.Column(db.String(20), unique=True, nullable=False, index=True)
-    name = db.Column(db.String(100), nullable=False)
-    
+    # name 與 research_title 是同一個概念（專案名稱即研究題目，見
+    # ProjectService.update_project），型別必須一致，否則同步會在邊界爆掉。
+    # 長度取 300：正式站實測最長題目 158 字，學術題名少有超過 300。
+    # 原本宣告 100，但 SQLite 不強制 VARCHAR 長度，於是 158 字的題目一路
+    # 靜靜寫進去 —— 換成 PostgreSQL 才會炸，而且是在 production 才炸。
+    name = db.Column(db.String(300), nullable=False)
+
     # [Fix] 簡稱 (必備欄位，對應 fix_db_schema)
     abbreviation = db.Column(db.String(50), nullable=True)
-    
-    research_title = db.Column(db.String(200), nullable=True)
+
+    research_title = db.Column(db.String(300), nullable=True)
     status = db.Column(db.String(20), default='temp', nullable=False)
-    
-    classification = db.Column(db.String(50), nullable=True) 
+
+    # 同樣超標過：宣告 50 但正式站已有 63 字的分類字串。對齊 keywords 的 200。
+    classification = db.Column(db.String(200), nullable=True)
     keywords = db.Column(db.String(200), nullable=True)
     
     context_background = db.Column(db.Text, nullable=True)

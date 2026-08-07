@@ -98,20 +98,23 @@
                             <div class="row g-3">
                                 <div class="col-md-8">
                                     <label for="c_name" class="form-label fw-bold">專案名稱 (Project Name) <span class="text-danger">*</span></label>
-                                    <input type="text" class="form-control" id="c_name" placeholder="請輸入專案全名..." required>
+                                    <!-- maxlength 對齊 Project 欄位宣告。原本四個欄位都沒設限，
+                                         使用者打多長都收，資料庫（SQLite 不強制長度）也照單全收，
+                                         於是正式站長出 158 字的專案名稱塞在宣告 100 的欄位裡。 -->
+                                    <input type="text" class="form-control" id="c_name" placeholder="請輸入專案全名..." maxlength="300" required>
                                 </div>
                                 <div class="col-md-4">
                                     <label for="c_abbr" class="form-label">專案簡稱 (Abbreviation)</label>
-                                    <input type="text" class="form-control" id="c_abbr" placeholder="e.g. Roothinks-B">
+                                    <input type="text" class="form-control" id="c_abbr" placeholder="e.g. Roothinks-B" maxlength="50">
                                 </div>
 
                                 <div class="col-md-6">
                                     <label for="c_class" class="form-label">分類 (Classification)</label>
-                                    <input type="text" class="form-control" id="c_class" placeholder="e.g. Computer Science, AI">
+                                    <input type="text" class="form-control" id="c_class" placeholder="e.g. Computer Science, AI" maxlength="200">
                                 </div>
                                 <div class="col-md-6">
                                     <label for="c_keywords" class="form-label">關鍵字 (Keywords)</label>
-                                    <input type="text" class="form-control" id="c_keywords" placeholder="Use comma to separate">
+                                    <input type="text" class="form-control" id="c_keywords" placeholder="Use comma to separate" maxlength="200">
                                 </div>
                                 
                                 <div class="col-12" id="ai-summary-block" style="display: none;">
