@@ -265,9 +265,13 @@ def promote_project():
             or "Untitled Project"
         )
             
+        # 專案名稱即研究題目：轉正 modal 填的 final topic 要同時成為 name。
+        # 只寫 research_title 的話，正式卡片顯示 final topic、編輯視窗卻顯示
+        # 舊的 name，使用者一改題目就會發現「改了沒反應」——實際上是改到了
+        # 另一個欄位。兩欄從轉正這一刻起就必須一致。
         new_project = Project(
             project_id=new_pid,
-            name=project.name,
+            name=resolved_title,
             abbreviation=project.abbreviation,
             research_title=resolved_title,
             status='formal',

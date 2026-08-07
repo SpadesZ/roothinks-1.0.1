@@ -102,11 +102,10 @@ def create_project():
                     new_pid = f"{old_pid}-p"
                     project.project_id = new_pid
                     project.status = 'formal'
-                    project.research_title = (
-                        (project.research_title or '').strip()
-                        or (project.context_background or '').strip()
-                        or (project.name or '').strip()
-                    )
+                    # 專案名稱即研究題目。原本的 fallback 鏈會在 name 之前先拿
+                    # context_background —— 那是「研究背景與動機」整段文字，
+                    # 落進標題欄只會讓正式研究卡片顯示一整段敘述。
+                    project.research_title = (project.name or '').strip()
                     project.ai_summary = "等待系統執行摘要..."
                     
                     # 處理實體資料夾的重新命名與結構建立

@@ -285,7 +285,14 @@ class ProjectService:
             return False, "Project not found"
         
         try:
-            if 'name' in data: project.name = data['name']
+            if 'name' in data:
+                project.name = data['name']
+                # 專案名稱即研究題目，兩欄不得分岔。
+                # research_title 才是 dashboard 正式研究卡片與所有 LLM task
+                # （SWOT／cubegen／2A chat／手稿初始標題／文獻 context）實際讀的欄位，
+                # 它們一律是 `research_title or name`。這裡不同步的話，轉正之後
+                # 改題目就只改得到 name，畫面與 AI 模組會永遠停在轉正當下那一版。
+                project.research_title = data['name']
             if 'abbreviation' in data: project.abbreviation = data['abbreviation']
             if 'classification' in data: project.classification = data['classification']
             if 'keywords' in data: project.keywords = data['keywords']
