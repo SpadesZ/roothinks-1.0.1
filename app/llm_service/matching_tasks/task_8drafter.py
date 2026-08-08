@@ -271,7 +271,7 @@ class Task8Drafter:
 
         max_user_prompt_chars = self._read_int_env("DRAFTER_MAX_USER_PROMPT_CHARS", 4000)
         user_prompt = self._sanitize_untrusted_text(user_prompt, max_user_prompt_chars)
-        context_text = self._sanitize_untrusted_text(context_text, self._read_int_env("DRAFTER_MAX_CONTEXT_CHARS", 24000))
+        context_text = self._sanitize_untrusted_text(context_text, self._read_int_env("DRAFTER_MAX_CONTEXT_CHARS", 400000))
         if not user_prompt:
             return {
                 "type": "text",
@@ -421,7 +421,7 @@ class Task8Drafter:
 
     def _generate_text_response(self, prompt, context, target_lang, attachment, import_type, title, section, intent):
         safe_prompt = self._sanitize_untrusted_text(prompt, self._read_int_env("DRAFTER_MAX_USER_PROMPT_CHARS", 4000))
-        safe_context = self._sanitize_untrusted_text(context, self._read_int_env("DRAFTER_MAX_CONTEXT_CHARS", 24000))
+        safe_context = self._sanitize_untrusted_text(context, self._read_int_env("DRAFTER_MAX_CONTEXT_CHARS", 400000))
         
         import_instruction = ""
         file_name = attachment.get('name') if attachment else "No File"
