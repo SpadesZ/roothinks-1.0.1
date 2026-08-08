@@ -144,6 +144,36 @@ def test_split_min_sizes_allow_shrinking():
             assert value <= 50, f"minSize {value} 太大，分割會拉不小"
 
 
+# --- 6. 分割位置持久化 -----------------------------------------------------
+
+def test_split_sizes_are_persisted():
+    """拉好的版面每次重整都跳回預設值等於白拉。
+
+    實測（真實 study_split_prefs.js + 真實 localStorage，模擬拖曳）：
+      70% → 拖曳後 36% → 整頁重載後仍是 36%。
+    """
+    assert "study_split_prefs.js" in HTML, "study.html 沒有載入持久化模組"
+    assert HTML.count("onDragEnd:") >= 2, "兩個 Split 都要在拖曳結束時存檔"
+    assert HTML.count("loadSizes(") >= 2, "兩個 Split 都要從儲存值還原"
+
+
+def test_split_prefs_reject_corrupt_stored_values():
+    """localStorage 是使用者可竄改的儲存區，壞值會讓版面每次重整都壞掉。
+
+    實測：塞入 [-999, 0.5] 後重載，版面回到預設 70/30 而非爛掉。
+    """
+    prefs = (
+        PROJECT_ROOT / "app" / "static" / "js" / "study_split_prefs.js"
+    ).read_text(encoding="utf-8")
+    # 四道驗證缺一不可：型別、有限值、非負、總和
+    assert "Array.isArray(raw)" in prefs
+    assert "isFinite(n)" in prefs
+    assert "n < 0" in prefs
+    assert re.search(r"Math\.abs\(total - 100\)", prefs)
+    # 存檔失敗不得讓拖曳失敗
+    assert re.search(r"function saveSplitSizes.*?try\s*\{.*?catch", prefs, re.S)
+
+
 # --- 5. cache-bust ---------------------------------------------------------
 
 def test_study_css_is_cache_busted():
