@@ -63,6 +63,7 @@ from app.core_pro.manuscript.manuscript_io import ManuscriptIO, _get_data_root
 from app.core_pro.manuscript.manuscript_image import ManuscriptImage
 from app.core_pro.manuscript import presence
 from app.core_pro.manuscript.model_section import ManuSectionConfig
+from app.core_pro.manuscript.source_context import build_drafter_corpus
 from app.models import Project
 from app.security import (
     check_ownership,
@@ -1070,6 +1071,31 @@ def handle_chat(data):
             )
 
         app_obj = current_app._get_current_object()
+
+        # 伺服器端語料建構：讀取研究筆記與論文全文，合併進 context_text。
+        # 瀏覽器傳來的 context_text（目前 2B 編輯器文字）是「使用者正在寫的草稿」，
+        # 與語料庫是互補而非替代關係——草稿非空時仍保留，放在語料之後作為即時脈絡。
+        # 任何語料建構失敗只 log，不中斷生成。
+        try:
+            corpus_result = build_drafter_corpus(pid=pid, title=title)
+            corpus_text = corpus_result.get("corpus", "")
+            if corpus_result.get("skipped_papers"):
+                logger.info(
+                    "[manu_chat] 語料略過論文（缺 full_text.json）: %s",
+                    corpus_result["skipped_papers"],
+                )
+            if corpus_text:
+                # 語料放前面（研究筆記 > 論文全文），草稿放後面作補充
+                if context_text.strip():
+                    context_text = corpus_text + "\n\n[目前草稿 / Current Draft]\n" + context_text
+                else:
+                    context_text = corpus_text
+        except Exception:
+            logger.warning(
+                "[manu_chat] build_drafter_corpus 失敗（已忽略，用原始 context） id=%s pid=%s",
+                job_id, pid, exc_info=True,
+            )
+
         payload = {
             'user_msg': user_msg,
             'context_text': context_text,

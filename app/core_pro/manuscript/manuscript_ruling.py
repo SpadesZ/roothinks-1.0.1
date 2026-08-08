@@ -1,11 +1,11 @@
 # 檔案路徑: app/core_pro/manuscript/manuscript_ruling.py
 # 產生時間: 2026-07-04 19:10 +08:00
-# 版本: v0.3
+# 版本: v0.4
 # 模組定位:
 #   Manuscript 規則引擎與上下文管制中樞。
 # 主要責任:
 #   1. 攔截缺 title 的生成請求。
-#   2. 彙整 history / upstream / paragraph-level injected context。
+#   2. 以研究筆記優先，彙整 history / upstream / paragraph-level context。
 #   3. 寫入 context audit sidecar 以保留 provenance。
 # 呼叫來源:
 #   manuscript_routes.py Task8Drafter.process_request 前置攔截。
@@ -35,7 +35,10 @@ class ManuscriptRuling:
     """
 
     @classmethod
-    def validate_and_prepare(cls, pid, title, section, s_ver, current_context, attachment, import_type):
+    def validate_and_prepare(
+        cls, pid, title, section, s_ver, current_context, attachment, import_type,
+        user_prompt="",
+    ):
         """
         核心監聽與準備流程：
         1. 檢核 Title 條件
@@ -52,20 +55,32 @@ class ManuscriptRuling:
             }
 
         # --- 規則 2: 上下文數據整合 (Context Preparation) ---
-        final_context = current_context if current_context else ""
-        original_len = len(final_context.strip())
+        current_context = current_context if current_context else ""
+        working_context = current_context
+        original_len = len(current_context.strip())
+        source_manifest = []
+        if current_context.strip():
+            source_manifest.append({"source_type": "current_draft", "source_id": section or "general"})
 
         # 讀取本機 Section 歷史數據 (從 Drafter 移植過來的邏輯)
         if pid and section and original_len < 50:
             history_content = cls._read_local_file(pid, section, s_ver)
             if history_content:
-                final_context = f"[History Content from {section}_{s_ver}.json]:\n{history_content}\n\n" + final_context
+                working_context = f"[History Content from {section}_{s_ver}.json]:\n{history_content}\n\n" + working_context
+                source_manifest.append({"source_type": "manuscript_history", "source_id": f"{section}:{s_ver}"})
 
-        # [Sync Bridge] 在上下文不足時，注入前置模組摘要資料（PAQ/Literature/Study）
-        if pid and len(final_context.strip()) < 300:
-            upstream_ctx = cls._load_upstream_context(pid)
-            if upstream_ctx:
-                final_context = f"{upstream_ctx}\n\n{final_context}".strip()
+        # 前置模組不是冷啟動備案，而是 Manuscript 的正式輸入。即使 2B 已有文字，
+        # 研究筆記仍須保留，否則長一點的草稿會讓作者想法整段消失。
+        upstream_ctx = cls._load_upstream_context(pid) if pid else ""
+        for marker, source_type in (
+            ("[Study Notes]", "study_note"),
+            ("[Project Background]", "project_background"),
+            ("[PAQ Taxonomy]", "paq_note"),
+        ):
+            if marker in upstream_ctx:
+                source_manifest.append({"source_type": source_type, "source_id": pid})
+
+        retrieval_seed = "\n\n".join(x for x in (upstream_ctx, working_context) if x.strip())
 
         injected_context_items = []
         context_audit_path = ""
@@ -77,23 +92,51 @@ class ManuscriptRuling:
                 injected_context_items = retrieve_paragraph_context(
                     project_id=pid,
                     section_title=section,
-                    paragraph_goal=current_context or "",
-                    draft_text=final_context,
+                    # 自然語言指令才包含「以 SEB-ASR 為主／取 Method 段」等選材意圖；
+                    # 舊版只查 2B 文字，因此使用者點名論文不會影響檢索。
+                    paragraph_goal=user_prompt or current_context or "",
+                    draft_text=retrieval_seed,
                     max_tokens=1200,
                     top_k=8,
                 )
                 injected_block = build_injected_context_block(injected_context_items)
                 if injected_block:
-                    final_context = f"{injected_block}\n\n{final_context}".strip()
                     context_audit_path = write_context_audit(
                         project_id=pid,
                         section_id=section,
                         context_items=injected_context_items,
-                        prompt=final_context,
+                        prompt="\n\n".join(
+                            x for x in (upstream_ctx, injected_block, working_context) if x.strip()
+                        ),
                     )
             except Exception:
                 # Context injection is value-add; generation should degrade, not crash.
                 injected_context_items = []
+
+        injected_block = build_injected_context_block(injected_context_items)
+        final_context = "\n\n".join(
+            x for x in (upstream_ctx, injected_block, working_context) if x.strip()
+        )
+        source_manifest.extend(
+            {
+                "source_type": item.get("source_type") or "context",
+                "source_id": item.get("source_id"),
+                "paper_id": item.get("paper_id"),
+                "paper_title": item.get("paper_title"),
+                "segment_id": item.get("segment_id"),
+            }
+            for item in injected_context_items
+        )
+
+        # Title / Literature Hints 只負責定位，不能單獨被當成寫摘要的依據。
+        has_grounding = bool(attachment) or any(
+            item.get("source_type") in {
+                "current_draft", "manuscript_history", "study_note",
+                "project_background", "paq_note", "paper_segment",
+                "context_chain_item", "manuscript_note",
+            }
+            for item in source_manifest
+        )
 
         # --- 規則 3: 回傳放行狀態與準備完畢的數據 ---
         return {
@@ -103,6 +146,8 @@ class ManuscriptRuling:
             "injected_context_ids": [x.get("source_id") for x in injected_context_items],
             "injected_context_fingerprints": [x.get("fingerprint") for x in injected_context_items],
             "context_audit_path": context_audit_path,
+            "context_sources": source_manifest,
+            "has_grounding": has_grounding,
         }
 
     @staticmethod
@@ -150,7 +195,8 @@ class ManuscriptRuling:
             # Project 基本資訊
             try:
                 from app.models import Project
-                proj = Project.query.filter_by(project_id=base_pid).first() or Project.query.filter_by(project_id=pid).first()
+                # 正式專案的題目可能已更新；精確 pid 必須優先於 readonly base 專案。
+                proj = Project.query.filter_by(project_id=pid).first() or Project.query.filter_by(project_id=base_pid).first()
                 if proj:
                     title = (proj.research_title or proj.name or '').strip()
                     if title:
@@ -223,11 +269,12 @@ class ManuscriptRuling:
                     notes = ""
 
             if notes:
-                snippets.append(f"[Study Notes]\n{notes[:1200]}")
+                # 研究筆記是作者意圖，放在 context 最前面，避免 token 截斷時被尾端吃掉。
+                snippets.insert(0, f"[Study Notes]\n{notes[:2400]}")
 
             if not snippets:
                 return ""
             merged = "\n\n".join(snippets)
-            return merged[:5000]
+            return merged[:6000]
         except Exception:
             return ""

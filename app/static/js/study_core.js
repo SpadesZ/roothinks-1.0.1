@@ -55,6 +55,12 @@ class StudyCore {
         // 3.1 Init matrix history list
         this.initMatrixHistory();
 
+        // 最新矩陣早已持久化在伺服器；舊版只填歷史清單，重新整理後主畫面仍空白。
+        // 有指定 paper_id 時保留全文入口，不用矩陣把它蓋回去。
+        if (!this.currentPaperId) {
+            this.loadLatestMatrix(0, {switchMode: true, silentWhenMissing: true});
+        }
+
         // 4. Gatekeeper & Content Load (From v2.1)
         if (this.currentPaperId) {
             this.checkGatekeeper().then(passed => {

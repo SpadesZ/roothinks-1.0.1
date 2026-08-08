@@ -75,8 +75,11 @@ class Task8Drafter:
         return ans + "\n...[context truncated by token budget]"
 
     def _compress_context_for_prompt(self, context, attachment_content=""):
-        # 以實務保守值限制 context，避免超長 prompt 導致 provider 超時或拒絕
-        max_context_tokens = 2200
+        # context 上限由環境變數控制，預設 110000 tokens 以容納伺服器端語料庫。
+        # 原本的 2200 token 硬限制是為了防止空 context 時的 token 浪費，
+        # 現在語料庫已透過 source_context.py 建構並公平截斷，這裡只需保留
+        # 一個安全上限（避免 provider 拒絕），不再需要那麼激進地截斷。
+        max_context_tokens = self._read_int_env("DRAFTER_COMPRESS_CONTEXT_MAX_TOKENS", 110000)
         max_attach_tokens = 1200
         c_ctx = self._truncate_to_budget(context, max_context_tokens)
         c_att = self._truncate_to_budget(attachment_content, max_attach_tokens)
@@ -279,7 +282,8 @@ class Task8Drafter:
         # 0. 呼叫 ManuscriptRuling 進行絕對檢核與上下文準備
         ruling_result = ManuscriptRuling.validate_and_prepare(
             pid=pid, title=title, section=section, s_ver=s_ver,
-            current_context=context_text, attachment=attachment, import_type=import_type
+            current_context=context_text, attachment=attachment, import_type=import_type,
+            user_prompt=user_prompt,
         )
         
         if not ruling_result.get("ok"):
@@ -290,24 +294,29 @@ class Task8Drafter:
             }
             
         context_text = ruling_result.get("context_text", context_text)
+        context_sources = ruling_result.get("context_sources", [])
 
         # 1. Intent Detection (使用 v2.7 智能語義路由)
         intent = self._detect_intent(user_prompt)
         
         # 2. Zero-Context Guard (防呆與引導機制)
-        has_meaningful_context = len(context_text.strip()) > 50 or attachment is not None
+        has_meaningful_context = bool(ruling_result.get("has_grounding"))
         
         if intent == "draft" and not has_meaningful_context:
-            # [v2.5 修正] 徹底解除零上下文防呆攔截，允許基於 Title 的冷啟動
-            logger.info(f"[Task8Drafter] Zero-Context detected. Bypassing guard to allow Cold Start for section: {section}")
-            # 為了確保行數不減，原本的 return 邏輯改為註解保留
-            # return {
-            #     "type": "text", 
-            #     "chat_msg": "您好，我是您的 Drafter 編輯助理！",
-            #     "content": f"現在沒有任何上下文可以輸入生成 **{section}** 草稿，請問您要我協助提供什麼題目的草稿生成？\n(您可以在左側編輯區輸入一些關鍵字，或上傳參考文獻給我)",
-            #     "meta": {"source": "system_guard", "lang": target_lang}
-            # }
-            pass
+            logger.info("[Task8Drafter] Grounding guard blocked title-only draft for section: %s", section)
+            return {
+                "type": "text",
+                "chat_msg": "目前只有題目，還沒有可追溯的寫作材料。",
+                "content": (
+                    f"無法只依 Title 生成 **{section}**。請先在 Study 填寫研究筆記、"
+                    "完成至少一篇論文解析，或在 2B 放入你的既有草稿後再試。"
+                ),
+                "meta": {
+                    "source": "system_guard",
+                    "lang": target_lang,
+                    "context_sources": context_sources,
+                },
+            }
         
         # 3. Dispatch & Payload Passthrough
         try:
@@ -315,20 +324,23 @@ class Task8Drafter:
                 logger.info("[Task8Drafter] Intent=1. Routing payload to Task9Visioner...")
                 agent = Task9Visioner()
                 # 完整透傳 attachment (含圖片/Excel Base64 數據) 至子節點
-                return agent.generate_image(user_prompt, context_text, attachment)
+                result = agent.generate_image(user_prompt, context_text, attachment)
             
             elif intent == "sheet":
                 logger.info("[Task8Drafter] Intent=2. Routing payload to TaskXTabulator...")
                 agent = TaskXTabulator()
                 # 完整透傳 attachment 讓 LLM 將上傳檔案轉成 JSON 數據表
-                return agent.generate_sheet(user_prompt, context_text, attachment)
+                result = agent.generate_sheet(user_prompt, context_text, attachment)
             
             else:
                 logger.info("[Task8Drafter] Intent=0. Handling as native Draft generation...")
-                return self._generate_text_response(
+                result = self._generate_text_response(
                     user_prompt, context_text, target_lang, attachment, import_type,
                     title, section, intent
                 )
+            if isinstance(result, dict):
+                result.setdefault("meta", {})["context_sources"] = context_sources
+            return result
 
         except Exception as e:
             return {"type": "error", "content": f"Drafter Error: {str(e)}"}

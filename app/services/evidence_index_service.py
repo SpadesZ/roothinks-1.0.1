@@ -16,6 +16,7 @@ from __future__ import annotations
 import hashlib
 import json
 import math
+import re
 from datetime import datetime, timezone
 from typing import Any
 
@@ -23,7 +24,7 @@ from sqlalchemy.exc import OperationalError, ProgrammingError
 
 from app import db
 from app.errors import AppError, ErrorCode, ErrorSeverity
-from app.models import EvidenceSegment
+from app.models import EvidenceSegment, Paper
 from app.services.evidence_types import SOURCE_PRIORITY, EvidenceSourceType
 from app.services.text_tokenize import tokenize
 
@@ -216,8 +217,10 @@ def index_paper_segments(project_id: str, paper_id: str, segments: list[dict]) -
     return rows
 
 
-def _score(query_tokens: list[str], row: EvidenceSegment) -> float:
-    text_tokens = tokenize(f"{row.title or ''} {row.text or ''}")
+def _score(query_tokens: list[str], row: EvidenceSegment, aliases: str = "") -> float:
+    text_tokens = tokenize(
+        f"{row.paper_id or ''} {row.source_id or ''} {aliases} {row.title or ''} {row.text or ''}"
+    )
     if not query_tokens or not text_tokens:
         return 0.0
     qset = set(query_tokens)
@@ -231,6 +234,16 @@ def _score(query_tokens: list[str], row: EvidenceSegment) -> float:
     source_weight = SOURCE_PRIORITY.get(row.source_type, 0.5)
     recency = 0.02 if row.updated_at else 0.0
     return round((0.58 * coverage + 0.37 * bm25ish + recency) * source_weight, 6)
+
+
+def _compact_identifier(value: str) -> str:
+    """Normalize SEB-ASR / SEBASR / SEBASR_IJMIR to comparable identifiers."""
+    return re.sub(r"[^a-z0-9]+", "", str(value or "").lower())
+
+
+def _identifier_variants(value: str) -> set[str]:
+    parts = re.findall(r"[a-z0-9]+", str(value or "").lower())
+    return {item for item in ["".join(parts), *parts] if len(item) >= 4}
 
 
 def _snippet(text: str, query_tokens: list[str], size: int = 420) -> str:
@@ -257,6 +270,10 @@ def search_evidence(
         # 全專案掃描：180+ 篇 × 段落數在數千列等級，Python 端打分仍在毫秒級；
         # 舊的 limit(1000) 會讓早期索引的段落永遠檢索不到，已移除。
         rows = q.order_by(EvidenceSegment.id.asc()).all()
+        project = str(project_id or "")
+        base_project = project[:-2] if project.endswith("-p") else project
+        paper_rows = Paper.query.filter(Paper.pid.in_([base_project, f"{base_project}-p"])).all()
+        paper_titles = {str(item.paper_id): str(item.title or "") for item in paper_rows}
     except (OperationalError, ProgrammingError) as exc:
         raise AppError(
             ErrorCode.DB_SCHEMA_MISMATCH,
@@ -268,8 +285,20 @@ def search_evidence(
         raise AppError(ErrorCode.UNKNOWN, "Evidence search failed", ErrorSeverity.RECOVERABLE, exc) from exc
 
     scored = []
+    compact_query = _compact_identifier(query)
     for row in rows:
-        score = _score(qtokens, row)
+        paper_title = paper_titles.get(str(row.paper_id or ""), "")
+        aliases = f"{row.paper_id or ''} {paper_title}"
+        score = _score(qtokens, row, aliases)
+        # ponytail: identifier substring matching is the smallest bridge for named-paper NL
+        # queries; if fuzzy aliases become necessary, replace only this boost with a resolver.
+        compact_aliases = _identifier_variants(row.paper_id) | _identifier_variants(paper_title)
+        if any(
+            len(alias) >= 4 and (alias in compact_query or compact_query in alias)
+            for alias in compact_aliases
+            if compact_query
+        ):
+            score += 1.0
         if score <= 0:
             continue
         metadata = _read_metadata(row.metadata_json)
@@ -278,6 +307,7 @@ def search_evidence(
                 "source_type": row.source_type,
                 "source_id": row.source_id,
                 "paper_id": row.paper_id,
+                "paper_title": paper_title,
                 "segment_id": row.segment_id,
                 "title": row.title or "",
                 "snippet": _snippet(row.text, qtokens),

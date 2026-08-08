@@ -422,6 +422,23 @@ class ManuSoed {
         if (this._draftPrompted[section]) return;
         this._draftPrompted[section] = true;
 
+        const restore = () => {
+            this.app.selectedSections = new Set([section]);
+            this.app.ui.updateDropdownLabel();
+            this.app.editorCanvas.innerHTML = '';
+            this.insertEditorCard(draft.content, section);
+            this.addSystemMessage(`已復原「${section}」的自動儲存草稿。按存檔可將它建立為正式版本。`);
+        };
+
+        // 初次進頁時畫布是空的，自己的 autosave 應直接回來；只有畫布已有內容時
+        // 才詢問，避免跨章切換時覆蓋使用者眼前的工作。
+        const hasEditorContent = Array.from(this.app.editorCanvas.querySelectorAll('.card-content'))
+            .some(el => String(el.innerText || '').trim().length > 0);
+        if (!hasEditorContent) {
+            restore();
+            return;
+        }
+
         const when = draft._updated_at
             ? new Date(draft._updated_at).toLocaleString()
             : '稍早';
@@ -429,11 +446,7 @@ class ManuSoed {
             return;
         }
 
-        this.app.selectedSections = new Set([section]);
-        this.app.ui.updateDropdownLabel();
-        this.app.editorCanvas.innerHTML = '';
-        this.insertEditorCard(draft.content, section);
-        this.addSystemMessage(`已復原「${section}」的自動儲存草稿。按存檔可將它建立為正式版本。`);
+        restore();
     }
 
     _flushAutosave() {
@@ -530,6 +543,9 @@ class ManuSoed {
         this.app.chatContainer.innerHTML = ''; 
         this.addSystemMessage(`Synchronizing context for section: [${sectionId}]...`);
         this.app.socket.emit('cmd_load_chat', { pid: this.app.pid, section: sectionId });
+        // 同一個切章入口一併要求版本與自己的 autosave 草稿；舊版只載聊天，
+        // 因而後端雖有 _draft__<user>.json，重新進頁仍永遠看不到。
+        this.app.socket.emit('cmd_list_blocks', { pid: this.app.pid, section: sectionId });
     }
 
     // =========================================================================
@@ -703,6 +719,18 @@ class ManuSoed {
             // [v1.8] 同步 G.Ver 版本選單。原本只有存檔成功（save_ack）才會填，
             // 導致重新進頁面時既有的主論文版本完全看不到，也就無法用選單還原。
             this.renderPaperVersions(data.versions, null);
+
+            // 初次進頁自動還原最新 2C 主論文；後續 list 事件（例如剛存檔）不重載，
+            // 避免把目前正在編輯的內容蓋回磁碟版本。
+            if (!this._initialPaperHydrated) {
+                this._initialPaperHydrated = true;
+                const currentText = this.app.fusionCanvas
+                    ? this.app.fusionCanvas.innerText.replace('來自 2B 的段落將會依序插入於此處...', '').trim()
+                    : '';
+                if (!currentText && data.files && data.files.length > 0) {
+                    this.app.socket.emit('cmd_load_paper', {pid: this.app.pid, filename: data.files[0]});
+                }
+            }
 
             const container = document.getElementById('oldPaperListContainer');
             container.innerHTML = '';

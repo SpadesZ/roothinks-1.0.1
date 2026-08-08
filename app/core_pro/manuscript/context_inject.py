@@ -230,6 +230,7 @@ def build_injected_context_block(context_items: list[dict]) -> str:
                 f"source_type: {item.get('source_type', '')}",
                 f"source_id: {item.get('source_id', '')}",
                 f"paper_id: {item.get('paper_id', '') or ''}",
+                f"paper_title: {item.get('paper_title', '') or ''}",
                 f"segment_id: {item.get('segment_id', '') or ''}",
                 f"title: {item.get('title', '')}",
                 f"score: {item.get('score', 0)}",
