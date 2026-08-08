@@ -122,7 +122,10 @@
                 <div class="global-bar px-3 py-2 bg-white border-bottom d-flex align-items-center gap-2">
                     <div class="input-group input-group-sm flex-grow-1">
                         <span class="input-group-text bg-white fw-bold">Title</span>
-                        <input type="text" class="form-control fw-bold" id="paperTitle" placeholder="Enter Paper Title..." value="{{ initial_title or pid }}">
+                        <!-- maxlength 對齊 Project.name / research_title 的 VARCHAR(300)。
+                             這個欄位改了就是改專案題目（離開欄位時寫回）。 -->
+                        <input type="text" class="form-control fw-bold" id="paperTitle" maxlength="300"
+                               placeholder="Enter Paper Title..." value="{{ initial_title or pid }}">
                     </div>
                     <!-- [v1.8] 版本改為選單：版本號由伺服器指派，不再讓使用者手打。
                          舊的自由輸入框可以打回既有版號，會靜默覆蓋該版內容。 -->
@@ -292,7 +295,12 @@
                                 <option value="한국어">한국어</option>
                             </select>
                         </div>
-                        <span class="badge bg-success border border-light me-1">Online</span>
+                        <!-- 這個徽章原本是寫死的 bg-success/Online：socket 從未連上時
+                             它照樣顯示綠燈。CORS 擋掉 websocket 那次，它正是讓人誤判
+                             「連線正常」而繞遠路的來源。初始狀態改為未連線，實際狀態由
+                             manuscript_soed.js 的 connect/disconnect/connect_error 更新。 -->
+                        <span class="badge bg-secondary border border-light me-1"
+                              id="socketStatusBadge" title="尚未建立連線">Connecting…</span>
                         <button class="btn btn-sm btn-outline-light py-0 border-0" onclick="wsApp.hidePanel('2A')" title="Hide Window"><i class="bi bi-eye-slash"></i></button>
                         <button class="btn btn-sm btn-outline-light py-0 border-0" id="btnExpand2A" onclick="wsApp.fullscreenPanel('2A')" title="Toggle Fullscreen"><i class="bi bi-arrows-angle-expand"></i></button>
                     </div>
@@ -582,7 +590,7 @@
     
     <script src="{{ url_for('static', filename='js/manuscript_wsui.js') }}?v=1.4"></script>
     <script src="{{ url_for('static', filename='js/manuscript_image.js') }}?v=1.8"></script>
-    <script src="{{ url_for('static', filename='js/manuscript_soed.js') }}?v=1.7"></script>
+    <script src="{{ url_for('static', filename='js/manuscript_soed.js') }}?v=1.8"></script>
     <script src="{{ url_for('static', filename='js/manuscript_collab.js') }}?v=1.6"></script>
     <script src="{{ url_for('static', filename='js/manuscript_ws.js') }}?v=4.9"></script>
     <script src="{{ url_for('static', filename='js/manuscript_citation.js') }}?v=0.1"></script>

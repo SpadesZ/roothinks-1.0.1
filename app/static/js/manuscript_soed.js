@@ -203,6 +203,30 @@ class ManuSoed {
         }
     }
 
+    /**
+     * 確保插入點落在 2B 畫布內；不在就收合到畫布尾端（＝附加在既有內容之後）。
+     *
+     * 為什麼需要：execCommand('insertHTML') 插在「目前的插入點」，插入點不在
+     * contenteditable 畫布內時它會安靜地什麼都不做，不丟例外也不回 false。
+     * formatText() 早就有同一段前置動作，insertEditorCard() 當初漏了。
+     */
+    _placeCaretInEditor() {
+        const canvas = this.app.editorCanvas;
+        if (!canvas) return;
+        const selection = window.getSelection();
+        if (!selection) return;
+        if (selection.rangeCount > 0
+            && canvas.contains(selection.getRangeAt(0).commonAncestorContainer)) {
+            return;   // 使用者正在畫布裡編輯，尊重他既有的插入點
+        }
+        canvas.focus();
+        const range = document.createRange();
+        range.selectNodeContents(canvas);
+        range.collapse(false);
+        selection.removeAllRanges();
+        selection.addRange(range);
+    }
+
     insertEditorCard(content, sectionId = 'general') {
         const sectionLabel = this.app.sections.find(s => s.id === sectionId)?.label || sectionId;
         const cardHtml = `
@@ -216,6 +240,13 @@ class ManuSoed {
                 <div class="card-content" contenteditable="true">${content}</div>
             </div><p><br></p>
         `;
+        // 載入舊版（block_loaded）與復原自動儲存草稿都是「先清空畫布再呼叫這裡」，
+        // 此時插入點不在畫布內，execCommand 什麼都不做而系統訊息照報成功
+        // ——症狀就是「回報載入成功，但編輯畫布是空的」。
+        // importToEditor() 與 Word 匯入之所以一直正常，只是因為它們在呼叫前
+        // 自己 focus 過。這個前提屬於本函式，補在這裡才不必每個呼叫端各自記得。
+        this._placeCaretInEditor();
+
         if (document.queryCommandSupported('insertHTML')) {
             document.execCommand('insertHTML', false, cardHtml);
         } else {
@@ -551,13 +582,44 @@ class ManuSoed {
     // =========================================================================
     // Socket 與 通訊事件處理
     // =========================================================================
+    /**
+     * 更新右上角連線徽章。
+     *
+     * 為什麼要有這個：徽章原本是寫死的 "Online"，socket 完全沒連上時仍是綠的。
+     * CORS 擋掉 websocket 那次（128 次握手全 400），畫面上看起來一切正常，
+     * 診斷因此往錯的方向走了一輪。訊號寧可難看，也不能說謊。
+     */
+    _setConnectionBadge(state, detail = '') {
+        const el = document.getElementById('socketStatusBadge');
+        if (!el) return;
+        const map = {
+            online: ['bg-success', 'Online', '已連線'],
+            offline: ['bg-danger', 'Offline', '連線中斷'],
+            connecting: ['bg-secondary', 'Connecting…', '尚未建立連線'],
+        };
+        const [cls, text, defaultTitle] = map[state] || map.connecting;
+        el.className = `badge ${cls} border border-light me-1`;
+        el.textContent = text;
+        el.title = detail ? `${defaultTitle}：${detail}` : defaultTitle;
+    }
+
     setupSocketEvents() {
         this.app.socket.on('connect', () => {
             console.log("[Socket] Connection established successfully.");
+            this._setConnectionBadge('online');
             this.addSystemMessage("Drafter Server Connection: Active.");
         });
 
-        this.app.socket.on('disconnect', () => {
+        // 連不上（CORS 被拒、伺服器沒起來）時 socket.io 只會不斷重試，
+        // 沒有這個 handler 的話畫面上不會有任何跡象。
+        this.app.socket.on('connect_error', (err) => {
+            const reason = (err && err.message) ? err.message : 'unknown error';
+            this._setConnectionBadge('offline', reason);
+            console.error('[Socket] connect_error:', reason);
+        });
+
+        this.app.socket.on('disconnect', (reason) => {
+            this._setConnectionBadge('offline', reason || '');
             this.addSystemMessage("Drafter Server disconnected. Reconnecting...");
             // 連線斷掉後 sid 就換人了，伺服器 _sid_connected(sid) 會判定失聯而
             // 靜默結束該 job（manuscript_routes.py:426/467）——沒有任何事件會回來。
@@ -907,6 +969,45 @@ class ManuSoed {
 
     // =========================================================================
     // UI 事件綁定 - 【v0.5 核心修復：防堵空畫布強制存檔跳號】
+    /**
+     * 把手稿 Title 寫回專案（name 與 research_title 由後端同步）。
+     *
+     * 走既有的 POST /api/project/update/<pid>，刻意不另開 socket 端點：
+     * 那個端點已有 enforce_project_ownership（POST 需 editor 以上），
+     * 自建一條等於繞過它。
+     */
+    async savePaperTitle() {
+        const input = this.app.paperTitleInput;
+        if (!input || !this.app.pid) return;
+        const title = (input.value || '').trim();
+        if (!title) {
+            this.addSystemMessage('標題不可為空白，未寫入。');
+            return;
+        }
+        if (title === this._lastSavedTitle) return;
+
+        try {
+            const res = await fetch(`/api/project/update/${encodeURIComponent(this.app.pid)}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name: title }),
+            });
+            const result = await res.json().catch(() => ({}));
+            // 失敗一定要講原因。前端無聲失敗是這套 UI 的通病 —— 只把畫面重畫回
+            // 舊值，使用者拿不到任何理由，然後以為是「系統沒存成功」。
+            if (!res.ok || !result.success) {
+                this.addSystemMessage(
+                    `標題儲存失敗（${result.message || 'HTTP ' + res.status}）。重整後會回到舊標題。`
+                );
+                return;
+            }
+            this._lastSavedTitle = title;
+            this.addSystemMessage(`論文標題已更新為「${title}」，專案題目一併更新。`);
+        } catch (err) {
+            this.addSystemMessage(`標題儲存失敗（${err.message}）。重整後會回到舊標題。`);
+        }
+    }
+
     // =========================================================================
     setupUIEvents() {
         this.app.btnSend.onclick = () => this.sendUserMessage();
@@ -923,6 +1024,16 @@ class ManuSoed {
             });
         }
         
+        // 手稿 Title 就是專案題目（擁有者決策：專案名稱即研究題目，兩欄永遠相等）。
+        // 在這之前 Title 只會被寫進版本檔的 payload，沒有任何程式碼把它讀回輸入框
+        // ——頁面一律以 research_title 重新填值，所以「改了、重整就變回舊的」。
+        // 寫回專案是唯一能讓它在重整後留存的路徑，也讓儀表板卡片與所有 LLM task
+        // 立刻跟上（它們讀的都是 research_title or name）。
+        if (this.app.paperTitleInput) {
+            this._lastSavedTitle = (this.app.paperTitleInput.value || '').trim();
+            this.app.paperTitleInput.addEventListener('change', () => this.savePaperTitle());
+        }
+
         if(this.app.btnSaveGlobal) {
             this.app.btnSaveGlobal.onclick = () => {
                 const rawText = this.app.fusionCanvas ? this.app.fusionCanvas.innerText.trim() : "";

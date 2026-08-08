@@ -274,8 +274,27 @@ class ManuscriptIO:
 
     @staticmethod
     def _safe_component(value: str, fallback: str = "untitled", max_len: int = 80) -> str:
+        """檔名／目錄名用的清洗。**只可用於會進路徑的字串。**
+
+        對展示用的標題使用這個會把資料毀掉，見 _clean_display_title。
+        """
         safe = re.sub(r"[^A-Za-z0-9._-]+", "_", str(value or "").strip())[:max_len]
         return safe or fallback
+
+    @staticmethod
+    def _clean_display_title(value: str, max_len: int = 300) -> str:
+        """版本檔 payload 裡要保存的「人看的標題」。
+
+        為什麼不再用 _safe_component：版本檔名早已改成 V2.json / V0.4.json，
+        標題不再進檔名（見 list_papers 的 v1.0 註解），所以那層檔名清洗只剩副作用
+        —— 空白變底線、非 ASCII 整串變底線、超過 80 字元從字中間截斷。
+        正式站實測存進去的就是
+        'An_LLM-Augmented_Validation_and_Analysis_Framework_for_A_Self_Evaluated_Bilingua'
+        （在 Bilingual 中間被切斷），等於標題一存檔就毀了。
+
+        max_len 取 300，與 Project.name / research_title 的宣告一致。
+        """
+        return str(value or "").strip()[:max_len] or "Untitled"
 
     # -- [v1.0] 章節版本與草稿 ------------------------------------------------
 
@@ -393,7 +412,7 @@ class ManuscriptIO:
 
         回傳 {"ok": True, "ver": "0.4", "from_ver": "0.1", "filename": "V0.4.json", ...}
         """
-        title = ManuscriptIO._safe_component(title or 'Untitled', "Untitled")
+        title = ManuscriptIO._clean_display_title(title)
         dir_path = ManuscriptIO._block_dir(pid, section, create=True)
 
         start = next_version_tenths(ManuscriptIO._existing_block_tenths(dir_path))
@@ -664,7 +683,7 @@ class ManuscriptIO:
 
         章節用小數（草稿迭代）、主論文用整數（投稿候選稿），刻意分層。
         """
-        title = ManuscriptIO._safe_component(title or 'Untitled', "Untitled")
+        title = ManuscriptIO._clean_display_title(title)
         dir_path = ManuscriptIO._paper_dir(pid, create=True)
 
         # 與章節同規：以 O_EXCL 原子占用檔名，杜絕覆寫既有版本。

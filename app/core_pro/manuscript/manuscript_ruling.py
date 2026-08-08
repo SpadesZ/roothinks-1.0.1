@@ -24,8 +24,11 @@
 import os
 import json
 import glob
+import logging
 
 from app.core_pro.manuscript.manuscript_io import _get_data_root
+
+logger = logging.getLogger(__name__)
 
 
 def _read_int_env(key: str, default_val: int) -> int:
@@ -134,6 +137,15 @@ class ManuscriptRuling:
                     )
             except Exception:
                 # Context injection is value-add; generation should degrade, not crash.
+                #
+                # 但「降級」不等於「不留痕跡」：這個 except 原本完全靜默，檢索一壞
+                # 使用者只會拿到沒有依據的草稿，而且沒有任何訊號指出檢索失敗過
+                # ——先前那個 UnboundLocalError 正是躲在這個區塊裡。
+                # 至少要讓日誌看得見，否則下一次同樣的故障還是查不到。
+                logger.exception(
+                    "[manuscript_ruling] 段落檢索失敗，本次草稿將缺少論文依據 "
+                    "pid=%s section=%s", pid, section,
+                )
                 injected_context_items = []
                 injected_block = ""
 
