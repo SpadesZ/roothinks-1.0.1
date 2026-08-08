@@ -16,6 +16,7 @@ from __future__ import annotations
 import hashlib
 import json
 import math
+import os
 import re
 from datetime import datetime, timezone
 from typing import Any
@@ -246,7 +247,25 @@ def _identifier_variants(value: str) -> set[str]:
     return {item for item in ["".join(parts), *parts] if len(item) >= 4}
 
 
-def _snippet(text: str, query_tokens: list[str], size: int = 420) -> str:
+def _default_snippet_size() -> int:
+    """420 字元的窗口是為「一頁一段」的粗索引設計的：段落是一整頁，只能挖一小塊。
+    索引改成章節級之後（build_segments_from_fusion_sections / flow_b_reflow），
+    整段本身就是一個語意單位，再切 420 字元反而把結論句與數據切散。
+
+    這是檢索管線上第三道獨立上限。實測：max_tokens 從 1200 拉到 12000 之後，
+    注入區塊仍只有 9563 字元、12 段每段恰好 ~420 字元 —— 預算根本沒生效，
+    SEBASR 的 7.56% 也因此進不到 prompt。
+    三道上限（snippet 窗口 / max_tokens / provider TPM）任何一道沒放大都沒有用。
+    """
+    try:
+        val = int(str(os.environ.get("EVIDENCE_SNIPPET_CHARS", 3000)).strip())
+        return val if val > 0 else 3000
+    except Exception:
+        return 3000
+
+
+def _snippet(text: str, query_tokens: list[str], size: int | None = None) -> str:
+    size = _default_snippet_size() if size is None else size
     body = str(text or "").strip()
     if len(body) <= size:
         return body
