@@ -24,7 +24,13 @@ services:
       - FLASK_DEBUG=1
       - TZ=Asia/Taipei
       - API_AUTH_ENABLED=0
-      - CORS_ALLOWED_ORIGINS=http://127.0.0.1:10005,http://localhost:10005
+      # 這一行寫死曾經讓正式站的 Socket.IO 完全連不上：對外是
+      # http://34.80.240.29，不在名單內 → 每次 websocket 握手都回 400
+      # （實測 128 次全 400、polling 請求 0 次，等於沒有任何可用傳輸）。
+      # 於是 chat_message 送不到伺服器，草稿請求永遠沒有回應。
+      # compose 的 environment: 優先序高於 env_file:，所以就算該機 .env
+      # 設對了也會被這一行蓋掉 —— 必須做成變數才輪得到 .env 生效。
+      - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS:-http://127.0.0.1:10005,http://localhost:10005}
       - GUNICORN_WORKERS=1
       - GUNICORN_WORKER_CLASS=gthread
       - GUNICORN_THREADS=8
