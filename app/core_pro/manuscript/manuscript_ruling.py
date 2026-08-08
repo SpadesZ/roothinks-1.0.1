@@ -83,6 +83,12 @@ class ManuscriptRuling:
         retrieval_seed = "\n\n".join(x for x in (upstream_ctx, working_context) if x.strip())
 
         injected_context_items = []
+        # injected_block 必須在這裡就有值。build_injected_context_block 的 import
+        # 在下面的 try 內、try 又在 if 內，只要 pid/section 缺一或 import 失敗，
+        # 名稱就未綁定 —— 之前在 if 之外無條件呼叫它，實測直接
+        # UnboundLocalError，而且發生在 except 之外，下面那句
+        # 「degrade, not crash」的防護等於是假的。
+        injected_block = ""
         context_audit_path = ""
         if pid and section:
             try:
@@ -112,8 +118,8 @@ class ManuscriptRuling:
             except Exception:
                 # Context injection is value-add; generation should degrade, not crash.
                 injected_context_items = []
+                injected_block = ""
 
-        injected_block = build_injected_context_block(injected_context_items)
         final_context = "\n\n".join(
             x for x in (upstream_ctx, injected_block, working_context) if x.strip()
         )
