@@ -113,6 +113,28 @@ def test_connection_badge_bound_to_real_socket_events():
         assert f"_setConnectionBadge({state}" in src, f"徽章沒有 {state} 狀態的更新點"
 
 
+def test_connection_badge_initialises_from_current_socket_state():
+    """socket 在 manuscript_ws.js 就建立，往往在 setupSocketEvents() 註冊 handler
+    之前就已連上 —— 'connect' 事件不會補送，只靠事件更新的徽章會永遠停在
+    Connecting…。
+
+    這個缺陷是**瀏覽器實測**才抓到的：socket.connected 為 true、console 沒有任何
+    [Socket] Connection established、徽章卻是灰的。純靜態檢查（上面那個測試）
+    當時是綠的 —— 這就是為什麼 UI 一定要真的點過。
+    """
+    body = _method_body(_js(), "setupSocketEvents")
+    init = body.find("_setConnectionBadge(")
+    on_connect = body.find("this.app.socket.on('connect'")
+    assert init != -1, "setupSocketEvents 沒有先以當下狀態初始化徽章"
+    assert on_connect != -1, "找不到 connect handler"
+    assert init < on_connect, (
+        "徽章必須在註冊 connect handler 之前先讀 socket.connected 初始化；"
+        "只靠事件的話，早於註冊時機的連線永遠不會反映出來"
+    )
+    assert "socket.connected" in body[init:on_connect], \
+        "初始化沒有讀 socket.connected，等於又是一個猜的狀態"
+
+
 # --- 3. 標題不得被檔名清洗毀掉 ------------------------------------------------
 
 @pytest.fixture

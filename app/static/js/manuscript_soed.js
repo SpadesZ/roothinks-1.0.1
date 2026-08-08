@@ -604,6 +604,13 @@ class ManuSoed {
     }
 
     setupSocketEvents() {
+        // socket 在 manuscript_ws.js 就建立了，往往在本函式註冊 handler **之前**
+        // 就已經連上 —— 那個 'connect' 事件不會再補送一次，徽章於是永遠停在
+        // Connecting…（瀏覽器實測：socket.connected 為 true、console 沒有任何
+        // [Socket] Connection established，徽章仍是灰的）。
+        // 事件只負責「之後的變化」，當下狀態必須自己讀。
+        this._setConnectionBadge(this.app.socket.connected ? 'online' : 'connecting');
+
         this.app.socket.on('connect', () => {
             console.log("[Socket] Connection established successfully.");
             this._setConnectionBadge('online');

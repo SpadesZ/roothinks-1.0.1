@@ -114,4 +114,4 @@ def test_study_and_manuscript_rehydrate_from_server():
     assert "this.app.socket.emit('cmd_list_blocks'" in manu_js
     assert "this.app.socket.emit('cmd_load_paper'" in manu_js
     assert "study_core.js') }}?v=2.5" in study_html
-    assert "manuscript_soed.js') }}?v=1.8" in manu_html
+    assert "manuscript_soed.js') }}?v=1.9" in manu_html

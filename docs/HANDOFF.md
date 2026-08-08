@@ -36,7 +36,7 @@
 
 | 項目 | 值 |
 |---|---|
-| 單元測試 | 592 passed（本輪起點 577，新增 15） |
+| 單元測試 | 593 passed（本輪起點 577，新增 16） |
 | VM 工作目錄 | `git status --porcelain` 空 |
 | 容器 | `roothinks_progress_paq_v8_10005` healthy，`0.0.0.0:80->10005` |
 | 專案數 | 7；`name`/`research_title` 分岔筆數 0 |
@@ -212,9 +212,22 @@ Word 匯入都在呼叫前 `editorCanvas.focus()`。壞掉的兩條沒有：
 ### 3.5.3 Online 徽章不是「會說謊」，是根本沒接線
 
 它是 `manuscript_workspace.html` 一段**寫死的靜態 HTML**，沒有 id、沒有任何
-JS 綁定，永遠顯示綠色 Online。已改為 `id="socketStatusBadge"`，初始狀態
-`Connecting…`，由 `connect` / `disconnect` / `connect_error` 更新
-（`connect_error` handler 本來不存在 —— 連不上時畫面沒有任何跡象）。
+JS 綁定，永遠顯示綠色 Online。已改為 `id="socketStatusBadge"`，由
+`connect` / `disconnect` / `connect_error` 更新（`connect_error` handler 本來
+不存在 —— 連不上時畫面沒有任何跡象）。
+
+**第一版修法是錯的，瀏覽器實測才抓到。** 只把徽章初始值設成 `Connecting…`
+再靠事件更新，結果是：`socket.connected === true`、console 完全沒有
+`[Socket] Connection established`、徽章卻一直停在灰色 `Connecting…`。
+原因是 socket 在 `manuscript_ws.js` 就建立，**往往在 `setupSocketEvents()`
+註冊 handler 之前就已連上**，那個 `connect` 事件不會補送。
+
+一度比原本更糟：寫死綠燈至少在「已連線」這個常見情況下是對的。
+已改為註冊 handler 前先讀 `socket.connected` 初始化。
+
+**這是本輪最重要的教訓**：靜態測試（「原始碼裡有沒有呼叫 `_setConnectionBadge`」）
+當時是**綠的**，缺陷照樣存在。事件式 UI 的狀態一定要同時處理「當下狀態」與
+「之後的變化」，只做後者就是這個下場。
 
 ### 3.5.4 檢索失敗不再靜默
 
@@ -226,12 +239,10 @@ JS 綁定，永遠顯示綠色 Online。已改為 `id="socketStatusBadge"`，初
 
 ## 4. 卡在哪 / 還沒做
 
-1. **瀏覽器實機點擊從未完成 —— 這已經是連續第三輪。** Chrome extension 每次
-   `list_connected_browsers` 都回空陣列，computer-use 對瀏覽器只有唯讀權限
-   （看得到、點不了），所以沒有任何一輪是真的用滑鼠點過。
-   待確認清單只增不減：Drafter 草稿生成、LAVA 綁定選單、Study 分割與破圖、
-   正式研究改題目、開啟舊版、草稿復原、Title 存檔、連線徽章。
-   **下一個 AI 請先解決這件事再改功能**，否則交出去的每一輪都只是「靜態上看起來對」。
+1. **瀏覽器實機驗證：§3.5 三項已實測通過（見 §6），其餘仍未點過。**
+   仍待確認：Drafter 草稿生成走真實 socket、LAVA 綁定選單、Study 分割與破圖。
+   Chrome extension 一直連不上（`list_connected_browsers` 恆為空、computer-use
+   對瀏覽器只有唯讀權限），**但那不再是藉口** —— §6 的免登入預覽容器不需要它。
 2. **`DGVRYV-p` 的研究筆記是空字串。** 擁有者說筆記應是主要來源，但欄位沒東西。
    目前只能用單元測試證明筆記路徑會動，無法用真實資料證明。
 3. **文獻流程有失敗沒被發現**：`Code-Switching_Red-Teaming` 缺 `full_text.json`；
@@ -274,14 +285,61 @@ PY
 docker run --rm --user 0:0 ... python -m pytest test/unit -q   # 期望 592 passed
 ```
 
-**瀏覽器實機（唯一能驗收 §3.5 的方式，至今未做）**：進手稿頁後 Ctrl+F5，然後
+**瀏覽器實機**（作法見 §6）。2026-08-09 在 `PAPER1-p` 上實測結果：
 
-| 動作 | 期望 | 對應修正 |
-|---|---|---|
-| 看右上角徽章 | 連上後才變綠 Online；連不上是紅色 Offline | §3.5.3 |
-| 2B 按「開啟舊版」選 V0.1 | **編輯畫布出現內容**（不是只有系統訊息說載入成功） | §3.5.1 |
-| 改 Title 後點畫布別處，再 F5 | 標題留著，儀表板卡片同步變 | §3.5.2 |
-| 按「草稿生成」 | 內文含論文專屬數據（如 7.56%） | §3 |
+| 動作 | 期望 | 實測 | 對應 |
+|---|---|---|---|
+| 2B 按「開啟舊版」選 V0.1 | 編輯畫布出現內容 | ✅ 845 字元／1 張卡；拿掉修正則 0／0 | §3.5.1 |
+| 改 Title → blur → 重載 | 標題留著、`name`=`research_title` | ✅ 中文與括號完整保留，兩欄一致 | §3.5.2 |
+| 徽章（已連線） | 綠色 Online | ✅（第一版修法在此為灰色，已再修） | §3.5.3 |
+| 徽章（`socket.disconnect()`） | 紅色 Offline＋原因 | ✅ tooltip 帶 `io client disconnect` | §3.5.3 |
+| 按「草稿生成」 | 內文含論文專屬數據（如 7.56%） | ❌ 尚未測（本機複本沒有那批語料） | §3 |
+
+---
+
+## 6. 怎麼在沒有 Chrome extension 的情況下做實機驗證
+
+連續三輪卡在「Chrome extension 連不上」，2026-08-09 找到不需要它的路：
+**另起一顆關掉認證的本機容器，用 preview 工具內建的瀏覽器驅動它。**
+
+```powershell
+# 1) 複製一份最小 data root（別讓兩個行程同時寫同一個 SQLite；
+#    也保證不會動到使用者的真實資料）
+#    需要的只有：roothinks.db、要測的專案目錄、sys/、_locks/、_logs/
+
+# 2) 起容器。三個關鍵旗標，缺一不可：
+docker run -d --name roothinks_preview_10099 --user 0:0 `
+  -p 127.0.0.1:10099:10000 `                # gunicorn 聽 10000，不是 10005
+  -v "<repo>:/app" -v "<複本>:/app/data" `
+  -e AUTH_MODE=none `                       # 免登入，不必碰帳密
+  -e API_AUTH_ENABLED=0 -e FLASK_ENV=development `
+  -e RATELIMIT_STORAGE_URI=memory:// -e SOCKETIO_MESSAGE_QUEUE= `
+  -e LOCK_ROOT=/tmp/rlocks -e GUNICORN_WORKERS=1 `
+  -e "CORS_ALLOWED_ORIGINS=http://127.0.0.1:10099,http://localhost:10099" `
+  roothinks10005-roothinks-paq:latest
+```
+
+踩過的三個坑：
+- **少了 `--user 0:0`** → `PermissionError: '/app/app/llm_service/.../task_6_debug.log'`，
+  worker failed to boot。與跑測試時同一個原因。
+- **gunicorn 實際聽 10000**，不是 compose 對外寫的 10005。映射錯的話容器 healthy
+  但 curl 回 `http=000`（curl exit 52，empty reply）。
+- **preview 工具不接管已佔用的 port**：要先 `docker stop`，再讓
+  `.claude/launch.json` 的設定用 `docker start -a <name>` 把它起起來。
+
+驗證時 `preview_eval` 直接讀 DOM 最有效（`preview_snapshot` 對這個畫面太雜）：
+
+```js
+// 舊版載入：有修正 → editorLen 845 / cardCount 1；拿掉修正 → 0 / 0
+document.getElementById('editorCanvas').querySelectorAll('.editor-card').length
+// 徽章：務必同時檢查 socket.connected 與徽章文字，兩者不一致就是有 bug
+({c: wsApp.socket.connected, t: document.getElementById('socketStatusBadge').textContent})
+```
+
+**A/B 反證是這輪唯一真正有說服力的證據**：把修正拿掉、重載、重跑同一組點擊，
+確認畫布是空的，再還原。靜態測試綠燈證明不了 execCommand 真的插入了。
+
+---
 
 **判準提醒**：測試綠燈不足以證明目標達成。本輪 567 個測試全綠的同時，
 `manuscript_ruling.py` 有一個 `UnboundLocalError`（import 在 `try` 內、
