@@ -21,6 +21,9 @@ from app.security import load_json_locked
 from app.services.evidence_index_service import replace_paper_segments
 
 STAGE_FLOW_A = "flow_a_fusion"
+# 由 fusion 的 Title 區塊切出的章節索引。品質介於 flow_a_fusion（頁）與
+# flow_b_reflow（語意章節）之間，用來讓 Flow B 跑不動的論文也有章節級索引。
+STAGE_FLOW_A_SECTIONS = "flow_a_fusion_sections"
 STAGE_FLOW_B = "flow_b_reflow"
 
 _MIN_SEGMENT_CHARS = 20
@@ -64,6 +67,102 @@ def build_segments_from_fusion(fusion_payload: dict) -> list[dict]:
             }
         )
     return out
+
+
+def build_segments_from_fusion_sections(fusion_payload: dict) -> list[dict]:
+    """Flow A 章節索引：以 fusion 的 Title 區塊為界切段。
+
+    為什麼需要這條路：章節級索引原本只有 Flow B 的 semantic_sections.json 提供，
+    但 Flow B 在正式站的 e2-medium（2 vCPU）跑本機 NLLB 翻譯必定 timeout，
+    多數論文永遠拿不到 semantic_sections，索引就一路退回「一頁一段」。
+    頁的邊界會把一個論點攔腰切斷，是目前檢索品質的主要損失來源。
+
+    fusion 的 block 自帶 type，實測 SEBASR_IJMIR 有 18 個 Title 區塊
+    （例如 '1 Introduction'），足以切章節，不必等 Flow B。
+
+    回傳空 list 代表這份 fusion 沒有可用的 Title 區塊，呼叫端應退回頁分段 ——
+    寧可粗一點也不要沒有索引。
+    """
+    out: list[dict] = []
+    content = (fusion_payload or {}).get("content")
+    if not isinstance(content, list):
+        return out
+
+    current: dict[str, Any] | None = None
+    saw_title = False
+
+    def _flush(sec: dict[str, Any] | None) -> None:
+        if not sec:
+            return
+        joined = "\n".join(sec["texts"]).strip()
+        if len(joined) < _MIN_SEGMENT_CHARS:
+            return
+        idx = len(out) + 1
+        out.append(
+            {
+                "segment_id": f"fsec-{idx}",
+                "title": sec["label"],
+                "text": joined,
+                "metadata": {
+                    "section_label": sec["label"],
+                    # 保留頁碼區間與 block ids，才回溯得到 PDF 原始位置。
+                    "page_start": sec["page_start"],
+                    "page_end": sec["page_end"],
+                    "block_ids": sec["block_ids"],
+                    "derived_from": "fusion_titles",
+                },
+            }
+        )
+
+    for page_obj in content:
+        if not isinstance(page_obj, dict):
+            continue
+        page_no = page_obj.get("page")
+        raw_blocks = page_obj.get("blocks") if isinstance(page_obj.get("blocks"), list) else []
+        # reading_order 才是版面上的閱讀順序；照陣列順序讀會把雙欄排版讀錯。
+        blocks = sorted(
+            (b for b in raw_blocks if isinstance(b, dict)),
+            key=lambda b: (b.get("reading_order") if isinstance(b.get("reading_order"), int) else 10**6),
+        )
+        for block in blocks:
+            btype = str(block.get("type") or "").strip().lower()
+            if btype in _SKIP_BLOCK_TYPES or block.get("is_page_noise"):
+                continue
+            text = str(block.get("content") or "").strip()
+            if not text:
+                continue
+
+            if btype == "title":
+                saw_title = True
+                _flush(current)
+                current = {
+                    "label": text[:120],
+                    "texts": [],
+                    "block_ids": [],
+                    "page_start": page_no,
+                    "page_end": page_no,
+                }
+                continue
+
+            if current is None:
+                # 第一個 Title 之前的內容（標題頁、作者、Abstract）不能丟掉 ——
+                # Abstract 往往正是寫摘要時最該被檢索到的東西。
+                current = {
+                    "label": "Front Matter",
+                    "texts": [],
+                    "block_ids": [],
+                    "page_start": page_no,
+                    "page_end": page_no,
+                }
+            current["texts"].append(text)
+            current["page_end"] = page_no
+            block_id = str(block.get("id") or block.get("seq_id") or "").strip()
+            if block_id:
+                current["block_ids"].append(block_id)
+
+    _flush(current)
+    # 沒有任何 Title 就不算章節索引，交還給頁分段處理。
+    return out if saw_title else []
 
 
 def build_segments_from_reflow(reflow_payload: dict) -> list[dict]:
@@ -150,8 +249,13 @@ def sync_paper_evidence(project_id: str, paper_id: str, paper_dir: str, *, prefe
         stage = STAGE_FLOW_B
     if not segments and os.path.exists(paths["fusion"]):
         fusion_payload = load_json_locked(paths["fusion"], {})
-        segments = build_segments_from_fusion(fusion_payload)
-        stage = STAGE_FLOW_A
+        # 章節優先、頁墊底。Flow B 跑不動的論文（正式站多數）過去只能拿到
+        # 頁分段，一段就是一整頁 4000～6500 字元，檢索預算根本塞不下一段。
+        segments = build_segments_from_fusion_sections(fusion_payload)
+        stage = STAGE_FLOW_A_SECTIONS
+        if not segments:
+            segments = build_segments_from_fusion(fusion_payload)
+            stage = STAGE_FLOW_A
     if not segments:
         return {"skipped": True, "reason": "no indexable artifacts", "paper_id": paper_id}
 

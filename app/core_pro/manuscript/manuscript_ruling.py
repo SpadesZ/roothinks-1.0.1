@@ -28,6 +28,16 @@ import glob
 from app.core_pro.manuscript.manuscript_io import _get_data_root
 
 
+def _read_int_env(key: str, default_val: int) -> int:
+    """壞值一律回預設。檢索預算被設成 0 或負數會讓草稿靜默失去依據，
+    那種故障沒有任何外顯症狀，比直接報錯難查得多。"""
+    try:
+        val = int(str(os.environ.get(key, default_val)).strip())
+        return val if val > 0 else default_val
+    except Exception:
+        return default_val
+
+
 class ManuscriptRuling:
     """
     Manuscript 規則引擎與上下文管制中樞
@@ -102,8 +112,15 @@ class ManuscriptRuling:
                     # 舊版只查 2B 文字，因此使用者點名論文不會影響檢索。
                     paragraph_goal=user_prompt or current_context or "",
                     draft_text=retrieval_seed,
-                    max_tokens=1200,
-                    top_k=8,
+                    # 1200 tokens 配上「一頁一段」的粗索引等於幾乎沒有檢索：
+                    # 每個 segment 是一整頁（4000～6500 字元，約 1500～2000 tokens），
+                    # 就算 top_k 撈回 8 段，預算也只塞得下不到一段。
+                    # 實測正式站 75 個 segment 全是頁層級，草稿因此永遠缺依據。
+                    # 檢索是唯一能隨論文數量擴展的路（整包倒語料在
+                    # GOOGLE_LLM_GLOBAL_TPM_LIMIT=25000 之下超過兩篇就必死），
+                    # 所以這裡要給得起真正有用的量。
+                    max_tokens=_read_int_env("MANUSCRIPT_RETRIEVAL_MAX_TOKENS", 12000),
+                    top_k=_read_int_env("MANUSCRIPT_RETRIEVAL_TOP_K", 12),
                 )
                 injected_block = build_injected_context_block(injected_context_items)
                 if injected_block:
