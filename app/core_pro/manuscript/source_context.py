@@ -242,7 +242,15 @@ def build_drafter_corpus(
       }
     """
     if budget_tokens <= 0:
-        budget_tokens = _read_int_env("DRAFTER_CORPUS_MAX_TOKENS", 120000)
+        # 預設 16000 而不是模型 context 視窗大小：真正的瓶頸是 provider 的每分鐘
+        # token 節流（compose 的 GOOGLE_LLM_GLOBAL_TPM_LIMIT，正式站是 25000），
+        # 不是 gemini-2.5-flash 的視窗。
+        # 實測：正式站語料全量 81749 tokens 送出去必定回
+        # 「quota throttle (tpm_limit) exceeded wait budget 180s」，永遠生不出東西；
+        # 降到 16098 tokens 則成功產出，且引用了 SEBASR 的 MER 65%→13% 與 7.56%。
+        # 要放大語料就得連同 GOOGLE_LLM_GLOBAL_TPM_LIMIT 一起提高 ——
+        # 只調這一個數字會讓草稿生成整個停擺。
+        budget_tokens = _read_int_env("DRAFTER_CORPUS_MAX_TOKENS", 16000)
 
     data_root = _data_root()
     sections: list[str] = []   # 最終要拼接進 corpus 的段落
