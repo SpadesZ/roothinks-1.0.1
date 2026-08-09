@@ -1,3 +1,10 @@
+// Roothinks source maintenance contract
+// 檔案路徑: app/static/js/cube_renderer.js
+// 模組定位: 瀏覽器互動層；把頁面元件、目前 PID 與後端 API/Socket 狀態同步。
+// 主要責任: 將 2C cube 資料安全渲染成可編輯格狀 UI，處理欄位對應、空值與更新事件。
+// 上下游: Jinja template 建立 DOM 與初始 PID；本檔呼叫 /api、Socket.IO 或鄰接前端 controller 後更新可見狀態。
+// 維護邊界: 前端狀態不是授權來源；外部文字必須 escape/sanitize，非同步回應須核對目前 PID/使用者後才能套用。
+// 驗證: node --check app/static/js/cube_renderer.js
 /* 路徑(./app/static/js/cube_renderer.js) #版本 v1.6 #更版時間 20260226-0630 */
 
 /** CubeRenderer (v1.6) - 3D Academic Cube 視覺化

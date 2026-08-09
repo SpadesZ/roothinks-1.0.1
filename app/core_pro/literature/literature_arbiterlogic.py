@@ -1,10 +1,12 @@
+# Roothinks source maintenance contract
+# 上下游: Literature routes/runner 呼叫本層，讀寫 data/<pid>/literature、EvidenceSegment 與 LLM task，結果回到 Literature UI。
 # 檔案路徑: roothinks/app/core_pro/literature/literature_arbiterlogic.py
 # 產生時間: 2026-07-05 01:10 +08:00
 # 版本: v1.5
 # 模組定位:
 #   Arbiter 雙軌融合仲裁者。以 Stack A 為骨架對齊 Stack B:先 seq_id 精準
 #   配對,失配時回退 IoU 配對;產出頁級 raw 與專案級 arbiter 重組檔。
-# 主要責任:
+# 主要責任: 比較 Stack A/B 與 OCR 候選品質並選擇/融合可追溯結果，不讓 fallback 冒充高品質輸出。
 #   1. arbitrate():逐 block 仲裁 A/B 內容,Equation 帶失敗標記傳遞。
 #   2. rescue 迴圈:補入未被骨架覆蓋的 Stack B 區塊。
 #   3. compile_project_arbiter():彙整各頁為專案級結構(含章節狀態機)。

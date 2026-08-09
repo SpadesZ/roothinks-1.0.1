@@ -1,9 +1,11 @@
+# Roothinks source maintenance contract
+# 驗證: python -m pytest test/unit/test_manuscript_grounding.py -q
 # 檔案路徑: test/unit/test_manuscript_grounding.py
 # 產生時間: 2026-08-07 23:20 +08:00
 # 版本: v1.1；更新時間: 2026-08-10 +08:00
 # 模組定位:
 #   Manuscript 持久化接線與 Drafter grounding 的最小回歸護欄。
-# 主要責任:
+# 主要責任: 重現並驗收 manuscript grounding 的成功、失敗與回歸邊界。
 #   1. 證明自然語言指令會進入論文段落檢索，而非只看 2B 畫布。
 #   2. 證明研究筆記在長草稿下仍保留，Title-only 不能冒充有依據。
 #   3. 守住 Study 最新矩陣、2B 草稿與 2C 最新版本的重新載入入口。

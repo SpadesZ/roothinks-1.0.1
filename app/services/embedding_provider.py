@@ -1,9 +1,12 @@
+# Roothinks source maintenance contract
+# 上下游: 由 Blueprint 或 matching task 呼叫，輸入專案/論文識別與內容，輸出正規化 metadata、segments 或檢索 context。
+# 驗證: python -m pytest test/unit tests -q
 # 檔案路徑: app/services/embedding_provider.py
 # 產生時間: 2026-07-04 18:50 +08:00
 # 版本: v0.1
 # 模組定位:
 #   Evidence retrieval 的 embedding provider 介面與 deterministic 測試實作。
-# 主要責任:
+# 主要責任: 定義 embedding provider protocol 與 deterministic hash baseline，讓索引可離線重現且可替換。
 #   1. 定義可替換介面。
 #   2. 提供不需外部模型的 HashEmbeddingProvider。
 # 維護提醒:

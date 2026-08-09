@@ -1,9 +1,11 @@
+# Roothinks source maintenance contract
+# 上下游: Literature routes/runner 呼叫本層，讀寫 data/<pid>/literature、EvidenceSegment 與 LLM task，結果回到 Literature UI。
 # 檔案路徑: app/core_pro/literature/literature_library_routes.py
 # 產生時間: 2026-07-19
 # 版本: v0.1
 # 模組定位:
 #   持久文獻庫 API：list / update / import / export / rebuild_evidence_index。
-# 主要責任:
+# 主要責任: 註冊 Literature library 清單、匯入、screening 與 metadata 更新 API，逐次驗證 PID/paper scope。
 #   1. Library entry 狀態管理（screening 與 reading 分開）與 Paper 連結驗證。
 #   2. 外部 normalized / CSL JSON 批次匯入。
 #   3. Reference export（BibTeX/RIS/CSL JSON，缺欄位省略、不捏造）。

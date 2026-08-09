@@ -1,3 +1,10 @@
+# 檔案路徑: patch_schema.py
+# 模組定位: 歷史一次性 source patch 工具；把 papers composite-key migration 片段注入 fix_db_schema.py，不屬於啟動 migration。
+# 主要責任: 以精確 old/new 字串替換補入 papers 表重建、資料搬移與 pid index 建立程式，供舊基線人工升級。
+# 上下游: 維護者於 disposable checkout 明確執行 -> fix_db_schema.py -> 後續隔離 SQLite migration/restore drill。
+# 維護邊界: 字串未唯一命中必須 fail closed；不得直接對正式 checkout 或 DB 執行，schema 變更須先備份並驗證 quick_check/資料 digest。
+# 驗證: python -m py_compile patch_schema.py；在 disposable worktree 執行後檢查唯一 diff，再以舊 schema 複本跑 migration 測試。
+
 with open('fix_db_schema.py', 'r', encoding='utf-8') as f:
     text = f.read()
 

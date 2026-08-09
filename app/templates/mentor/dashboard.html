@@ -1,10 +1,13 @@
+<!-- Roothinks source maintenance contract
+  上下游: Flask route 注入 session/PID/initial data，模板載入 static CSS/JS，使用者操作再回到後端 API。
+-->
 <!--
   檔案路徑: app/templates/mentor/dashboard.html
   產生時間: 2026-07-26 04:20 +08:00
   版本: v2.0
   模組定位:
     Mentor / Reviewer 的 2C 主論文審閱工作台。
-  主要責任:
+  主要責任: 宣告可存取的頁面結構、表單/狀態容器與靜態資源接線；不承擔授權判斷。
     1. 左側選擇 mentee，右側直接顯示其可審閱專案的最新 2C 全篇。
     2. 在同一頁提供意見、建議、PDF 與網址資源。
     3. 以 email 新增 mentee；不再要求 reviewer 在其他模組分頁間切換。

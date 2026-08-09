@@ -1,9 +1,12 @@
+# Roothinks source maintenance contract
+# 上下游: 由 Blueprint 或 matching task 呼叫，輸入專案/論文識別與內容，輸出正規化 metadata、segments 或檢索 context。
+# 驗證: python -m pytest test/unit tests -q
 # 檔案路徑: app/services/literature_library.py
 # 產生時間: 2026-07-19
 # 版本: v0.1
 # 模組定位:
 #   持久文獻庫（library.json）：跨多輪、多主題搜尋累積候選與納入文獻。
-# 主要責任:
+# 主要責任: 正規化 CSL/raw 文獻 metadata、建立穩定 entry key 並合併 library records，保留來源 provenance。
 #   1. Library 只管 metadata 與人工狀態；Paper 表只管 PDF/pipeline，兩者以
 #      entry.paper_id 明確連結。
 #   2. 所有寫入為「整段 read-modify-write 都在同一把 FileLock 內」＋

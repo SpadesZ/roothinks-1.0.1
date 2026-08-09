@@ -1,9 +1,11 @@
+# Roothinks source maintenance contract
+# 上下游: pytest/node runner -> fixture/monkeypatch -> 對應 app 模組；測試資料只放 tmp/in-memory。
 # 檔案路徑: roothinks/test/unit/test_translator_fallback.py
 # 產生時間: 2026-07-05 06:00 +08:00
 # 版本: v1.0
 # 模組定位:
 #   literature_translator v1.2「中英夾雜靜默殘留」修復的單元測試。
-# 主要責任:
+# 主要責任: 重現並驗收 translator fallback 的成功、失敗與回歸邊界。
 #   1. 全引擎失敗的段落帶 [未翻譯] 標記,不再無聲保留英文。
 #   2. quick-google 失敗後會嘗試 Gemini 逐段重試。
 #   3. _is_mostly_chinese 品質閘判定正確。

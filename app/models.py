@@ -1,9 +1,11 @@
+# Roothinks source maintenance contract
+# 上下游: Flask-Login/route decorator -> User/Project/WorkspaceMember/Session -> 各 Blueprint 的授權與序列化。
 # 檔案路徑: app/models.py
 # 產生時間: 2026-07-26 00:30 +08:00
 # 版本: v1.9
 # 模組定位:
 #   Roothinks Flask-SQLAlchemy domain models。
-# 主要責任:
+# 主要責任: 定義使用者、專案、成員、mentor 關係、論文、evidence 與 session 的 canonical SQLAlchemy schema。
 #   1. 保存 Project / Paper / ConfigKV 等既有模型。
 #   2. 新增 EvidenceSegment 作為本地 evidence index，不改 Paper 複合主鍵。
 #   3. [Batch A] 新增 User model，支援 flask-login 多人登入系統。

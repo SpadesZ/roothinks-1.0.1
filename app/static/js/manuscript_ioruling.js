@@ -1,3 +1,10 @@
+// Roothinks source maintenance contract
+// 檔案路徑: app/static/js/manuscript_ioruling.js
+// 模組定位: 瀏覽器互動層；把頁面元件、目前 PID 與後端 API/Socket 狀態同步。
+// 主要責任: 管理 Manuscript 章節輸入/輸出規則、選取狀態與 hypothetical scope，供 workspace 編輯流程使用。
+// 上下游: Jinja template 建立 DOM 與初始 PID；本檔呼叫 /api、Socket.IO 或鄰接前端 controller 後更新可見狀態。
+// 維護邊界: 前端狀態不是授權來源；外部文字必須 escape/sanitize，非同步回應須核對目前 PID/使用者後才能套用。
+// 驗證: node --check app/static/js/manuscript_ioruling.js
 //路徑(./app/static/js/manuscript_ioruling.js)
 //版本 v0.1
 //更版時間 20260319-1530

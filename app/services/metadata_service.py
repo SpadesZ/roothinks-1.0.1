@@ -1,9 +1,12 @@
+# Roothinks source maintenance contract
+# 上下游: 由 Blueprint 或 matching task 呼叫，輸入專案/論文識別與內容，輸出正規化 metadata、segments 或檢索 context。
+# 驗證: python -m pytest test/unit tests -q
 # 檔案路徑: app/services/metadata_service.py
 # 產生時間: 2026-07-04 18:50 +08:00
 # 版本: v0.1
 # 模組定位:
 #   Paper metadata normalization 與 local reference export。
-# 主要責任:
+# 主要責任: 正規化論文 metadata 並輸出 BibTeX、RIS、CSL JSON，保持作者與識別碼欄位一致。
 #   1. 正規化 title/authors/year/journal/doi/url 等欄位。
 #   2. 輸出 BibTeX / RIS / CSL JSON，不捏造缺失 metadata。
 # 維護提醒:

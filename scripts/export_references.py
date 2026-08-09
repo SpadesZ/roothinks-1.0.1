@@ -1,3 +1,7 @@
+# Roothinks source maintenance contract
+# 主要責任: 讀取指定專案的 citation ledger，驗證 CSL JSON 後輸出可交付的參考文獻檔。
+# 上下游: 命令列參數/環境 -> 明確目標檔或 DB -> 可稽核輸出；不由一般 HTTP request 隱式觸發。
+# 驗證: python -m py_compile scripts/export_references.py
 # 檔案路徑: scripts/export_references.py
 # 產生時間: 2026-07-04 19:14 +08:00
 # 版本: v0.1

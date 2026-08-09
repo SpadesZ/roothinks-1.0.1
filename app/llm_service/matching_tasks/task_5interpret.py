@@ -1,10 +1,12 @@
+# Roothinks source maintenance contract
+# 上下游: matching task -> dispatcher -> LlmBus -> provider adapter；binding/usage 由 llm_match DB 與 usage store 支援。
 # 檔案路徑: roothinks/app/llm_service/matching_tasks/task_5interpret.py
 # 產生時間: 2026-07-05 04:20 +08:00
 # 版本: v1.1-Lite
 # 模組定位:
 #   Task 5: Interpretation & Summarization(不含翻譯)。
 #   Merge page JSONs -> full_text.json(Fusion);structured summary。
-# 主要責任:
+# 主要責任: Task 5: Interpretation & Summarization (不含翻譯)。
 #   1. run_fusion():逐頁 03_recognizes -> 05_interprets/fusion/full_text.json。
 #   2. run_summary():全文 -> summary.json。
 # 維護提醒:

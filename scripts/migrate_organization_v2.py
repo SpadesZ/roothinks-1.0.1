@@ -1,4 +1,8 @@
 #!/usr/bin/env python
+# Roothinks source maintenance contract
+# 主要責任: 偵測舊三層組織欄位並轉為五層結構，提供 dry-run、備份與可重跑的 CLI migration。
+# 上下游: 命令列參數/環境 -> 明確目標檔或 DB -> 可稽核輸出；不由一般 HTTP request 隱式觸發。
+# 驗證: python -m py_compile scripts/migrate_organization_v2.py
 # 檔案路徑: scripts/migrate_organization_v2.py
 # 產生時間: 2026-07-27 +08:00
 # 版本: v1.0

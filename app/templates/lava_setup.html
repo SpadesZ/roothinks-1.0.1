@@ -1,3 +1,11 @@
+<!-- Roothinks source maintenance contract
+  檔案路徑: app/templates/lava_setup.html
+  模組定位: Flask/Jinja 呈現層；建立頁面結構與前端腳本所依賴的穩定 DOM contract。
+  主要責任: 宣告可存取的頁面結構、表單/狀態容器與靜態資源接線；不承擔授權判斷。
+  上下游: Flask route 注入 session/PID/initial data，模板載入 static CSS/JS，使用者操作再回到後端 API。
+  維護邊界: 前端狀態不是授權來源；外部文字必須 escape/sanitize，非同步回應須核對目前 PID/使用者後才能套用。
+  驗證: python -m pytest test/integration_smoke/test_routes_smoke.py -q；再以登入後瀏覽器檢查對應頁面。
+-->
 {% include '_header.html' %}
 <div class="container mt-4">
     <div class="card shadow-sm mb-4">

@@ -1,3 +1,6 @@
+# Roothinks source maintenance contract
+# 主要責任: 重現並驗收 llm cancellation 的成功、失敗與回歸邊界。
+# 上下游: pytest/node runner -> fixture/monkeypatch -> 對應 app 模組；測試資料只放 tmp/in-memory。
 # 檔案路徑: test/unit/test_llm_cancellation.py
 # 建立時間: 2026-08-10 +08:00；版本: v1.0
 # 模組定位: Manuscript 2A provider-aware cancellation 的最小回歸護欄。

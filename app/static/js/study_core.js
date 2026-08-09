@@ -1,3 +1,10 @@
+// Roothinks source maintenance contract
+// 檔案路徑: app/static/js/study_core.js
+// 模組定位: 瀏覽器互動層；把頁面元件、目前 PID 與後端 API/Socket 狀態同步。
+// 主要責任: 初始化 Study 的 PID/paper context、共享事件與 controller lifecycle，避免子模組各自解析 URL。
+// 上下游: Jinja template 建立 DOM 與初始 PID；本檔呼叫 /api、Socket.IO 或鄰接前端 controller 後更新可見狀態。
+// 維護邊界: 前端狀態不是授權來源；外部文字必須 escape/sanitize，非同步回應須核對目前 PID/使用者後才能套用。
+// 驗證: node --check app/static/js/study_core.js
 // #路徑(app/static/js/study_core.js) #版本 v2.2-Merged #更版時間 20260209-1400
 /* [MVP+Prototype Handoff Header]
  * 本檔案目前定位為 MVP/Prototype 實作；非最終產品級設計。

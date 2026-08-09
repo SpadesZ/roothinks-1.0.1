@@ -1,9 +1,11 @@
+# Roothinks source maintenance contract
+# 上下游: pytest/node runner -> fixture/monkeypatch -> 對應 app 模組；測試資料只放 tmp/in-memory。
 # 檔案路徑: roothinks/test/unit/test_reflow_coverage.py
 # 產生時間: 2026-07-05 03:40 +08:00
 # 版本: v1.0
 # 模組定位:
 #   reflow 內容零損失防線(v0.2/v3.6)的單元測試。
-# 主要責任:
+# 主要責任: 重現並驗收 reflow coverage 的成功、失敗與回歸邊界。
 #   1. 覆蓋率驗證器:全分配 -> 無 unassigned;漏 ref -> 正確列出。
 #   2. Abstract 保底:第一頁長文 + 輸出無 Abstract -> 注入 fallback。
 #   3. running header 過濾:>=3 頁重複 -> 移除;1 頁 -> 保留。

@@ -1,4 +1,11 @@
 #!/usr/bin/env python3
+# Roothinks source maintenance contract
+# 檔案路徑: deploy_preflight.py
+# 模組定位: 部署前唯讀檢查層；在 GCP cutover 前驗證環境、檔案與資料恢復條件。
+# 主要責任: 驗證部署目標、必要檔案、Git 狀態、SQLite 可讀性與備份條件，產生 cutover 前的唯讀檢查報告。
+# 上下游: 命令列參數/環境 -> 明確目標檔或 DB -> 可稽核輸出；不由一般 HTTP request 隱式觸發。
+# 維護邊界: 任何資料變更都需明確目標、備份、idempotency 與失敗回滾；預設不得碰正式 data 或輸出秘密。
+# 驗證: python -m py_compile deploy_preflight.py
 """
 Roothinks deployment preflight checker.
 

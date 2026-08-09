@@ -1,3 +1,5 @@
+# Roothinks source maintenance contract
+# 上下游: pytest/node runner -> fixture/monkeypatch -> 對應 app 模組；測試資料只放 tmp/in-memory。
 # 檔案路徑: roothinks/test/unit/test_translator_engine_choice.py
 # 產生時間: 2026-08-04 +08:00
 # 版本: v1.0

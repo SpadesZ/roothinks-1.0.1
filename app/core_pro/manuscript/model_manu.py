@@ -1,3 +1,10 @@
+# Roothinks source maintenance contract
+# 檔案路徑: app/core_pro/manuscript/model_manu.py
+# 模組定位: Manuscript 核心層；位於 HTTP/Socket 工作台、章節協作與持久化之間。
+# 主要責任: 定義 Manuscript 專案、成員與 section lock ORM schema，保存協作權限與鎖定生命週期。
+# 上下游: manuscript_routes 與前端 workspace 呼叫本層，經 ManuscriptIO/DB 寫入 data/<pid>/manuscript 並回送 HTTP/Socket 事件。
+# 維護邊界: 所有讀寫保留 PID、user 與 section scope；草稿/版本/快取不得跨使用者、跨章或以舊非同步回應覆蓋新狀態。
+# 驗證: python -m pytest test/unit tests -q
 #路徑(./app/core_proc/manuscript/model_manu.py) 
 #版本 v0.1 
 #更版時間 20260120-0550

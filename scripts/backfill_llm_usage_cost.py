@@ -1,3 +1,5 @@
+# Roothinks source maintenance contract
+# 驗證: python -m py_compile scripts/backfill_llm_usage_cost.py
 # 檔案路徑: scripts/backfill_llm_usage_cost.py
 # 產生時間: 2026-08-04 +08:00
 # 版本: v1.0

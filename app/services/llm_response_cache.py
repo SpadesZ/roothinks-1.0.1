@@ -1,9 +1,12 @@
+# Roothinks source maintenance contract
+# 上下游: 由 Blueprint 或 matching task 呼叫，輸入專案/論文識別與內容，輸出正規化 metadata、segments 或檢索 context。
+# 驗證: python -m pytest test/unit tests -q
 # 檔案路徑: app/services/llm_response_cache.py
 # 產生時間: 2026-07-04 18:50 +08:00
 # 版本: v0.1
 # 模組定位:
 #   LLM response cache 的保守檔案型 utility。
-# 主要責任:
+# 主要責任: 以 task/model/prompt fingerprint 管理可選 LLM response cache，隔離專案且不保存秘密。
 #   1. 產生不含 secret 的 cache key。
 #   2. 只快取成功 response。
 #   3. 預設 opt-in，不改變既有 dispatcher 行為。

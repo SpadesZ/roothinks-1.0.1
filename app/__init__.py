@@ -1,9 +1,11 @@
+# Roothinks source maintenance contract
+# 上下游: main/create_app 啟動本層，再註冊 Blueprint、DB、Socket、runtime service 供 HTTP/worker 使用。
 # 檔案路徑: app/__init__.py
 # 產生時間: 2026-07-04 18:55 +08:00
 # 版本: v1.4
 # 模組定位:
 #   Roothinks Flask app factory 與啟動期 DB/runtime 初始化。
-# 主要責任:
+# 主要責任: 建立 Flask app、DB、Login、Socket.IO 與各 Blueprint 的唯一組裝入口，按設定初始化 schema/runtime。
 #   1. create_app 工廠；初始化 SQLAlchemy、CSRF、SocketIO、LoginManager 等擴充。
 #   2. [Batch A] 新增 AUTH_MODE config（none / session）；控制 session 登入守衛。
 #   3. [Batch A] _auth_guard 統一處理 CSRF + session 守衛 + Bearer token 守衛。

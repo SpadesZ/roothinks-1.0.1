@@ -1,3 +1,10 @@
+# Roothinks source maintenance contract
+# 檔案路徑: app/core_pro/literature/literature_nllb.py
+# 模組定位: Literature 核心層；位於上傳/解析 API、Flow A/B 處理與 evidence index 之間。
+# 主要責任: 懶載入本地 NLLB 模型並翻譯指定文字，明確回報模型缺件與品質降級。
+# 上下游: Literature routes/runner 呼叫本層，讀寫 data/<pid>/literature、EvidenceSegment 與 LLM task，結果回到 Literature UI。
+# 維護邊界: 維持 PID/paper_id 隔離、來源 lineage、segment identity 與可重跑性；fallback 不得冒充高品質完成。
+# 驗證: python -m pytest test/unit tests -q
 #路徑(./app/core_proc/literature/Literature_nllb.py) #版本 v0.2 #更版時間 20260215-2200
 import os
 import json

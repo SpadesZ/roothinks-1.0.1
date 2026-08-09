@@ -1,10 +1,13 @@
+<!-- Roothinks source maintenance contract
+  上下游: Flask route 注入 session/PID/initial data，模板載入 static CSS/JS，使用者操作再回到後端 API。
+-->
 <!--
   檔案路徑: app/templates/auth/account.html
   產生時間: 2026-07-26 00:42 +08:00
   版本: v2.0
   模組定位:
     已登入使用者的帳號設定頁面（改密碼）。
-  主要責任:
+  主要責任: 宣告可存取的頁面結構、表單/狀態容器與靜態資源接線；不承擔授權判斷。
     1. 顯示當前帳號的登入 Email 與顯示名。
     2. 提供改密碼表單（需驗舊密碼，新密碼 >= 8 字元）。
     3. 表單含 csrf_token()。

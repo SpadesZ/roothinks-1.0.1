@@ -1,3 +1,10 @@
+# Roothinks source maintenance contract
+# 檔案路徑: test/integration_smoke/test_literature_flowb_refactor.py
+# 模組定位: Roothinks 自動化驗收層；把對應 production contract 固定成可重跑案例。
+# 主要責任: 重現並驗收 literature flowb refactor 的成功、失敗與回歸邊界。
+# 上下游: pytest/node runner -> fixture/monkeypatch -> 對應 app 模組；測試資料只放 tmp/in-memory。
+# 維護邊界: 不得讀寫正式 data/.env、送出真實外部請求或以弱化 assertion 配合實作；環境缺件要明確 skip/fail。
+# 驗證: python -m pytest test/integration_smoke/test_literature_flowb_refactor.py -q
 from pathlib import Path
 
 

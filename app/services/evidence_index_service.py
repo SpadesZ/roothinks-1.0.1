@@ -1,9 +1,12 @@
+# Roothinks source maintenance contract
+# 上下游: 由 Blueprint 或 matching task 呼叫，輸入專案/論文識別與內容，輸出正規化 metadata、segments 或檢索 context。
+# 驗證: python -m pytest test/unit tests -q
 # 檔案路徑: app/services/evidence_index_service.py
 # 產生時間: 2026-07-04 18:55 +08:00
 # 版本: v0.1
 # 模組定位:
 #   Local-first evidence indexing/search service。
-# 主要責任:
+# 主要責任: 建立、取代與搜尋 project/paper-scoped evidence segments，執行 lexical ranking、點名論文配額與 context packing。
 #   1. Upsert 文獻段落、study/PAQ/manuscript/context chain items。
 #   2. 提供 lexical baseline retrieval。
 #   3. 若 evidence_segments table 不存在，明確丟 AppError。

@@ -1,3 +1,9 @@
+# Roothinks source maintenance contract
+# 檔案路徑: app/llm_service/matching_tasks/task_1paqswot.py
+# 模組定位: LLM task 業務層；組合特定任務 prompt，經 dispatcher 呼叫已綁定模型。
+# 主要責任: 將研究問題與 taxonomy 轉成 Task 1 SWOT/分類輸出，驗證模型回傳結構。
+# 上下游: matching task -> dispatcher -> LlmBus -> provider adapter；binding/usage 由 llm_match DB 與 usage store 支援。
+# 維護邊界: 不得記錄 API key 或完整 prompt；provider error、usage、cache 與 cancel_event 身分不可在層間遺失或靜默降級。
 #路徑(./app/llm_service/matching_tasks/task_1paqswot.py) #版本 v1.2 #更版時間 20260219-1300
 import json
 from app.llm_service.llm_dispatcher import dispatcher

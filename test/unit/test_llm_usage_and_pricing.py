@@ -1,3 +1,9 @@
+# Roothinks source maintenance contract
+# 檔案路徑: test/unit/test_llm_usage_and_pricing.py
+# 主要責任: 重現並驗收 llm usage and pricing 的成功、失敗與回歸邊界。
+# 上下游: pytest/node runner -> fixture/monkeypatch -> 對應 app 模組；測試資料只放 tmp/in-memory。
+# 維護邊界: 不得讀寫正式 data/.env、送出真實外部請求或以弱化 assertion 配合實作；環境缺件要明確 skip/fail。
+# 驗證: python -m pytest test/unit/test_llm_usage_and_pricing.py -q
 """
 路徑(./test/unit/test_llm_usage_and_pricing.py)
 版本 v1.0

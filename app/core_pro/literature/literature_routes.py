@@ -1,3 +1,5 @@
+# Roothinks source maintenance contract
+# 上下游: Literature routes/runner 呼叫本層，讀寫 data/<pid>/literature、EvidenceSegment 與 LLM task，結果回到 Literature UI。
 # 檔案路徑: roothinks/app/core_pro/literature/literature_routes.py
 # 產生時間: 2026-07-05 03:30 +08:00
 # 版本: v3.6
@@ -5,7 +7,7 @@
 #   Literature 主藍圖入口與共用依賴註冊(ACL、lazy loader、執行器);
 #   統一註冊 context/batch/context-chain/debug 子路由;
 #   Flow B reflow artifact 生成(task_5b -> heuristic fallback)。
-# 主要責任:
+# 主要責任: 組裝 Literature 頁面、上傳、解析與 pipeline 控制 API，將共用操作轉交 processing/service 層。
 #   1. 保留相容 wrapper(供測試 monkeypatch)並轉發至拆分模組。
 #   2. _generate_flowb_reflow_artifact():semantic_sections.json 生成。
 # 維護提醒:

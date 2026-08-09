@@ -1,3 +1,5 @@
+# Roothinks source maintenance contract
+# 上下游: 命令列參數/環境 -> 明確目標檔或 DB -> 可稽核輸出；不由一般 HTTP request 隱式觸發。
 # 檔案路徑: roothinks/scripts/claim_projects.py
 # 產生時間: 2026-07-20 10:40 +08:00
 # 版本: v1.0
@@ -5,7 +7,7 @@
 #   一次性 CLI:把「無任何成員的既有專案」認領給指定使用者(設為 owner)。
 #   單機時代的專案沒有 workspace membership,開啟 AUTH_MODE=session 後
 #   所有人都看不到它們——用本工具移交給第一位帳號。
-# 主要責任:
+# 主要責任: 將明確指定的 legacy projects 歸屬到目標帳號，並保留可稽核的變更摘要。
 #   1. --username <帳號> [--pid P1 P2 ...]:指定專案認領;不給 --pid 則
 #      認領「目前沒有任何成員」的全部專案。
 #   2. 已有成員的專案一律跳過(避免奪權),除非 --force。

@@ -1,10 +1,12 @@
+# Roothinks source maintenance contract
+# 上下游: Literature routes/runner 呼叫本層，讀寫 data/<pid>/literature、EvidenceSegment 與 LLM task，結果回到 Literature UI。
 # 檔案路徑: roothinks/app/core_pro/literature/literature_cvpipeline.py
 # 產生時間: 2026-07-05 00:05 +08:00
 # 版本: v0.7
 # 模組定位:
 #   CV Pipeline 雙軌並行控制器。PDF -> Images -> (Stack A || Stack B) -> Arbiter,
 #   含頁級快取、timeout grace window 與 Stack A 過熱保護。
-# 主要責任:
+# 主要責任: 協調 PDF/page image 的 CV segmentation、OCR 與 artifact 寫入，保留每頁處理狀態。
 #   1. PDF 轉圖(頁級增量,已轉頁不重轉)。
 #   2. 逐頁調度 Stack A/B OCR 與 Arbiter 融合。
 #   3. 單軌失敗時降級為另一軌結果,雙軌皆失敗寫空頁。

@@ -1,9 +1,12 @@
+# Roothinks source maintenance contract
+# 上下游: 由 Blueprint 或 matching task 呼叫，輸入專案/論文識別與內容，輸出正規化 metadata、segments 或檢索 context。
+# 驗證: python -m pytest test/unit tests -q
 # 檔案路徑: app/services/paper_evidence_sync.py
 # 產生時間: 2026-07-19
 # 版本: v0.1
 # 模組定位:
 #   Literature artifacts → EvidenceSegment 的同步層。
-# 主要責任:
+# 主要責任: 把 fusion/reflow/summary artifacts 轉成穩定 EvidenceSegment records，再以 paper identity 同步索引。
 #   1. Flow A 粗索引：full_text.json 以「頁」為單位切段（含 block id 供回溯）。
 #   2. Flow B 精索引：semantic_sections.json 以 section 為單位
 #      （雙語內文 + source_block_refs 可回溯 PDF 區塊）。

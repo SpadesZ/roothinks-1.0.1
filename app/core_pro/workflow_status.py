@@ -1,3 +1,9 @@
+# Roothinks source maintenance contract
+# 檔案路徑: app/core_pro/workflow_status.py
+# 模組定位: Roothinks 應用程式入口/共用控制層；組裝 Flask runtime 與各 Blueprint/service。
+# 主要責任: 彙整 PAQ、Literature、Study 與 Manuscript 的實際產物，產生 Dashboard 可消費的工作流狀態。
+# 維護邊界: 設定與共享狀態只能在既定初始化邊界改動；錯誤不得以表面成功掩蓋資料或授權不完整。
+# 驗證: python -m pytest test/unit tests -q
 import glob
 import os
 from urllib.parse import quote

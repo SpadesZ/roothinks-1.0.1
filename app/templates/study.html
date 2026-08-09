@@ -1,3 +1,11 @@
+<!-- Roothinks source maintenance contract
+  檔案路徑: app/templates/study.html
+  模組定位: Flask/Jinja 呈現層；建立頁面結構與前端腳本所依賴的穩定 DOM contract。
+  主要責任: 宣告可存取的頁面結構、表單/狀態容器與靜態資源接線；不承擔授權判斷。
+  上下游: Flask route 注入 session/PID/initial data，模板載入 static CSS/JS，使用者操作再回到後端 API。
+  維護邊界: 前端狀態不是授權來源；外部文字必須 escape/sanitize，非同步回應須核對目前 PID/使用者後才能套用。
+  驗證: python -m pytest test/integration_smoke/test_routes_smoke.py -q；再以登入後瀏覽器檢查對應頁面。
+-->
 <!-- 路徑(app/templates/study.html) 版本(v2.6-MediaMode) 更版時間(20260430-1835)
 [MVP+Prototype Handoff Header]
 本模板目前定位為 MVP/Prototype 實作；非最終產品級設計。

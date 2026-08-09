@@ -1,9 +1,12 @@
+# Roothinks source maintenance contract
+# 上下游: matching task -> dispatcher -> LlmBus -> provider adapter；binding/usage 由 llm_match DB 與 usage store 支援。
+# 驗證: python -m pytest test/unit tests -q
 # 檔案路徑: app/llm_service/llm_pricing.py
 # 產生時間: 2026-07-28 +08:00
 # 版本: v1.0
 # 模組定位:
 #   LLM 單價表與費用換算。純函數，不碰資料庫、不依賴 Flask context。
-# 主要責任:
+# 主要責任: 正規化模型名稱、查詢版本化價格表並估算 token 成本；未知模型不得假裝有精確價格。
 #   1. 依 vendor + model 查出每百萬 token 的輸入/輸出單價。
 #   2. 由 token 用量換算成金額（USD）。
 # 安全邊界:

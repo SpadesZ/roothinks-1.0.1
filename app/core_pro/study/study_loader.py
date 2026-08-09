@@ -1,3 +1,10 @@
+# Roothinks source maintenance contract
+# 檔案路徑: app/core_pro/study/study_loader.py
+# 模組定位: Study 核心層；協調論文閱讀、筆記/矩陣與 AI tutor 的專案內狀態。
+# 主要責任: 從 Literature canonical artifacts 載入論文全文、metadata、媒體與段落，轉成 Study 可消費結構。
+# 上下游: Study routes/static JS 呼叫本層，讀取 Literature 素材並把筆記、對話或矩陣保存到 data/<pid>/study。
+# 維護邊界: 所有讀寫保留 PID、user 與 section scope；草稿/版本/快取不得跨使用者、跨章或以舊非同步回應覆蓋新狀態。
+# 驗證: python -m pytest test/unit tests -q
 #路徑(./app/core_proc/study/study_loader.py) #版本 v0.7-FixFilter #更版時間 20260209-0410
 import os
 import json

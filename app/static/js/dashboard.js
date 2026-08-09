@@ -1,9 +1,11 @@
+// Roothinks source maintenance contract
+// 上下游: Jinja template 建立 DOM 與初始 PID；本檔呼叫 /api、Socket.IO 或鄰接前端 controller 後更新可見狀態。
 // 檔案路徑: roothinks/app/static/js/dashboard.js
 // 產生時間: 2026-07-19 11:40 +08:00
 // 版本: v2.0
 // 模組定位:
 //   Dashboard 專案管理中心前端:專案列表、建立/編輯 modal、刪除流程。
-// 主要責任:
+// 主要責任: 初始化 Dashboard 專案清單、workflow status、成員選單與導頁狀態，依 server 授權結果顯示操作。
 //   1. fetchProjects/switchDashboardView:列表載入與 tab 切換。
 //   2. submitCreate:建立/更新專案(含成員組織表)。
 //   3. [v2.0] openMembersModal:成員管理 modal(GET/POST/PATCH/DELETE members API)。

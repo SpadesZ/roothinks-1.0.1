@@ -1,10 +1,13 @@
+# Roothinks source maintenance contract
+# 上下游: main/create_app 啟動本層，再註冊 Blueprint、DB、Socket、runtime service 供 HTTP/worker 使用。
+# 驗證: python -m pytest test/unit tests -q
 # 檔案路徑: app/errors.py
 # 產生時間: 2026-07-04 18:50 +08:00
 # 版本: v0.1
 # 模組定位:
 #   Roothinks 中央錯誤分類模組，提供可被 API、背景任務、LLM dispatcher 與
 #   Context Chain 共用的結構化錯誤碼。
-# 主要責任:
+# 主要責任: 定義穩定錯誤碼、嚴重度與 AppError payload，讓 route、worker 與 UI 使用一致失敗語意。
 #   1. 定義 ErrorSeverity 與 ErrorCode。
 #   2. 定義 AppError，避免核心路徑只靠自由文字判斷錯誤。
 # 維護提醒:

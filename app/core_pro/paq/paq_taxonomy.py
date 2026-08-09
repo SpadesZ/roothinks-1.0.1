@@ -1,3 +1,10 @@
+# Roothinks source maintenance contract
+# 檔案路徑: app/core_pro/paq/paq_taxonomy.py
+# 模組定位: PAQ 核心層；管理研究題目、分類矩陣與 provisional/formal 專案銜接。
+# 主要責任: 定義 PAQ taxonomy 的預設類別、正規化與持久化格式，讓 UI 與 LLM task 使用同一套分類。
+# 上下游: Dashboard/PAQ 頁面 -> PAQ routes/core -> Project 與 data/<pid>/literature/paq_records。
+# 維護邊界: 設定與共享狀態只能在既定初始化邊界改動；錯誤不得以表面成功掩蓋資料或授權不完整。
+# 驗證: python -m pytest test/unit tests -q
 #路徑(./app/core_pro/paq/paq_taxonomy.py) #版本 v1.0 #更版時間 20260220-1830
 from app import db
 from app.models import Project, PaqSurvey

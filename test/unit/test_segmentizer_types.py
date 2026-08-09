@@ -1,9 +1,11 @@
+# Roothinks source maintenance contract
+# 上下游: pytest/node runner -> fixture/monkeypatch -> 對應 app 模組；測試資料只放 tmp/in-memory。
 # 檔案路徑: roothinks/test/unit/test_segmentizer_types.py
 # 產生時間: 2026-07-05 02:35 +08:00
 # 版本: v1.0
 # 模組定位:
 #   segmentizer/body_segmenter 分類修復(v2.5/v0.6)的單元測試。
-# 主要責任:
+# 主要責任: 重現並驗收 segmentizer types 的成功、失敗與回歸邊界。
 #   1. _normalize_llm_label:title/subtitle 落地為真實 heading 類,不再 Unknown。
 #   2. BodySegmenter:llm_heading_hint 升格、running header 判定(含首頁豁免)。
 #   3. eq_wratio_max 常數與 env 覆寫。

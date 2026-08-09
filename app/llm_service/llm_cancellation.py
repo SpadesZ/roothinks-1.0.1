@@ -1,7 +1,9 @@
+# Roothinks source maintenance contract
+# 上下游: matching task -> dispatcher -> LlmBus -> provider adapter；binding/usage 由 llm_match DB 與 usage store 支援。
 # 檔案路徑: app/llm_service/llm_cancellation.py
 # 版本: v1.0；建立時間: 2026-08-10 +08:00
 # 模組定位: 同步 Flask worker 與 async provider transport 之間的取消橋接層。
-# 主要責任:
+# 主要責任: 提供跨同步/async provider 的共同取消例外、狀態判斷與 coroutine 終止橋接。
 #   1. 定義可被 dispatcher 辨識、不得轉成一般 provider failure 的取消例外。
 #   2. 在獨立 event loop 執行單一 async request，輪詢 threading.Event 與 timeout。
 #   3. 取消勝出時 cancel 並 await provider task，讓 HTTP 連線確實離開 worker。

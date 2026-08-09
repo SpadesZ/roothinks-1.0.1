@@ -1,3 +1,8 @@
+# Roothinks source maintenance contract
+# 模組定位: Roothinks 自動化驗收層；把對應 production contract 固定成可重跑案例。
+# 主要責任: 重現並驗收 literature library 的成功、失敗與回歸邊界。
+# 上下游: pytest/node runner -> fixture/monkeypatch -> 對應 app 模組；測試資料只放 tmp/in-memory。
+# 驗證: python -m pytest tests/test_literature_library.py -q
 # 檔案路徑: tests/test_literature_library.py
 # 產生時間: 2026-07-19
 # 維護提醒: 持久文獻庫契約——多輪累積、不覆寫使用者狀態、doi 去重、CSL 匯入。

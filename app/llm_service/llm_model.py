@@ -1,3 +1,10 @@
+# Roothinks source maintenance contract
+# 檔案路徑: app/llm_service/llm_model.py
+# 模組定位: LLM 控制層；管理 task binding、provider 派送、用量/價格與取消生命週期。
+# 主要責任: 定義可選模型與 task binding 所需的資料結構，正規化 provider/model identity。
+# 上下游: matching task -> dispatcher -> LlmBus -> provider adapter；binding/usage 由 llm_match DB 與 usage store 支援。
+# 維護邊界: 不得記錄 API key 或完整 prompt；provider error、usage、cache 與 cancel_event 身分不可在層間遺失或靜默降級。
+# 驗證: python -m pytest test/unit tests -q
 #路徑(./app/llm_service/llm_model.py) #版本 v0.3 #更版時間 20260429-2230
 # [MVP+Prototype Handoff Header]
 # 本檔案目前定位為 MVP/Prototype 實作；非最終產品級設計。

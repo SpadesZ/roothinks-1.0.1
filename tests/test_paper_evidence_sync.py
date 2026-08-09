@@ -1,7 +1,11 @@
+# Roothinks source maintenance contract
+# 驗證: python -m pytest tests/test_paper_evidence_sync.py -q
+# Roothinks source maintenance contract
+# 上下游: pytest/node runner -> fixture/monkeypatch -> 對應 app 模組；測試資料只放 tmp/in-memory。
 # 檔案路徑: tests/test_paper_evidence_sync.py
 # 版本: v1.1；更新時間: 2026-08-10 +08:00
 # 模組定位: Paper evidence index 的 artifact-to-segment 與原子取代回歸測試。
-# 主要責任: 驗證 Flow A title-derived sections、page fallback、Flow B 雙語 sections，
+# 主要責任: 重現並驗收 paper evidence sync 的成功、失敗與回歸邊界。
 #   以及重跑時 stale rows 全部刪除而其他 paper 不受影響。
 # 安全邊界: 僅使用 tmp_path 與 in-memory SQLite，不讀寫正式 literature/data。
 # 維護提醒: 有 Title 的 fusion 現行契約是 STAGE_FLOW_A_SECTIONS；只有無 Title 才是

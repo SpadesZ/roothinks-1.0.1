@@ -1,3 +1,7 @@
+# Roothinks source maintenance contract
+# 檔案路徑: test/unit/test_pi_role_frontend_guard.py
+# 主要責任: 重現並驗收 pi role frontend guard 的成功、失敗與回歸邊界。
+# 上下游: pytest/node runner -> fixture/monkeypatch -> 對應 app 模組；測試資料只放 tmp/in-memory。
 """
 路徑(./test/unit/test_pi_role_frontend_guard.py)
 版本 v1.0

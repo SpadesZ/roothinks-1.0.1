@@ -1,3 +1,6 @@
+# Roothinks source maintenance contract
+# 模組定位: Roothinks 自動化驗收層；把對應 production contract 固定成可重跑案例。
+# 主要責任: 重現並驗收 literature library routes 的成功、失敗與回歸邊界。
 # 檔案路徑: test/integration_smoke/test_literature_library_routes.py
 # 產生時間: 2026-07-19
 # 維護提醒:

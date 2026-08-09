@@ -1,9 +1,12 @@
+# Roothinks source maintenance contract
+# 上下游: pytest/node runner -> fixture/monkeypatch -> 對應 app 模組；測試資料只放 tmp/in-memory。
+# 維護邊界: 不得讀寫正式 data/.env、送出真實外部請求或以弱化 assertion 配合實作；環境缺件要明確 skip/fail。
 # 檔案路徑: roothinks/test/unit/test_literature_bootstrap_isolation.py
 # 產生時間: 2026-07-22 +08:00
 # 版本: v1.0
 # 模組定位:
 #   Literature bootstrap 跨租戶隔離迴歸測試（Security Fix 20260722）。
-# 主要責任:
+# 主要責任: 重現並驗收 literature bootstrap isolation 的成功、失敗與回歸邊界。
 #   1. [核心] 全新帳號（零 WorkspaceMember membership）呼叫
 #      GET /api/literature/bootstrap（不帶 pid）必須拿到空結果，
 #      不得回傳他人正式專案清單或第一個專案的 manual_context。

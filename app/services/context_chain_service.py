@@ -1,9 +1,12 @@
+# Roothinks source maintenance contract
+# 上下游: 由 Blueprint 或 matching task 呼叫，輸入專案/論文識別與內容，輸出正規化 metadata、segments 或檢索 context。
+# 驗證: python -m pytest test/unit tests -q
 # 檔案路徑: app/services/context_chain_service.py
 # 產生時間: 2026-07-04 19:00 +08:00
 # 版本: v0.2
 # 模組定位:
 #   Context Chain Orchestrator，負責 L1/L2/L3/KG persistence 與檢索。
-# 主要責任:
+# 主要責任: 升級並讀寫 project-scoped context chain schema，維持節點 identity、順序與來源 metadata。
 #   1. 保存 context_chain.json 並維持 schema_version。
 #   2. 以 env config 控制 L2 packet 上限。
 #   3. 腐敗 context 檔案回傳明確 failed 狀態，不假裝成功。

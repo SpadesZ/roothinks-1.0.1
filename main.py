@@ -1,3 +1,10 @@
+# Roothinks source maintenance contract
+# 檔案路徑: main.py
+# 模組定位: Roothinks 應用程式入口/共用控制層；組裝 Flask runtime 與各 Blueprint/service。
+# 主要責任: 建立 Roothinks Flask/Socket.IO process 入口，套用 runtime 設定後啟動 app；不在入口複製 Blueprint 業務邏輯。
+# 上下游: main/create_app 啟動本層，再註冊 Blueprint、DB、Socket、runtime service 供 HTTP/worker 使用。
+# 維護邊界: 設定與共享狀態只能在既定初始化邊界改動；錯誤不得以表面成功掩蓋資料或授權不完整。
+# 驗證: python -m pytest test/unit tests -q
 #路徑(./main.py) #版本 v0.2 #更版時間 20260408-1200
 import os
 from app import create_app, socketio

@@ -1,9 +1,11 @@
+# Roothinks source maintenance contract
+# 上下游: pytest/node runner -> fixture/monkeypatch -> 對應 app 模組；測試資料只放 tmp/in-memory。
 # 檔案路徑: roothinks/test/unit/test_fusion_merge.py
 # 產生時間: 2026-07-05 04:30 +08:00
 # 版本: v1.0
 # 模組定位:
 #   task_5interpret._simple_merge(v1.1)合併規則的單元測試。
-# 主要責任:
+# 主要責任: 重現並驗收 fusion merge 的成功、失敗與回歸邊界。
 #   1. heading 樣式短 Body(標題/章節名)不被併入正文。
 #   2. 真正的正文段落(句號結尾)仍會合併。
 #   3. is_page_noise 塊與非 Body type 不參與合併。

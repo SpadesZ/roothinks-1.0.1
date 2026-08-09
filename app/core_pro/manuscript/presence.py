@@ -1,3 +1,5 @@
+# Roothinks source maintenance contract
+# 驗證: python -m pytest test/unit tests -q
 # 檔案路徑: app/core_pro/manuscript/presence.py
 # 產生時間: 2026-07-27 +08:00
 # 版本: v1.0

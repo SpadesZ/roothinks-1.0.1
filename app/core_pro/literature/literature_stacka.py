@@ -1,3 +1,10 @@
+# Roothinks source maintenance contract
+# 檔案路徑: app/core_pro/literature/literature_stacka.py
+# 模組定位: Literature 核心層；位於上傳/解析 API、Flow A/B 處理與 evidence index 之間。
+# 主要責任: 執行 Literature Stack A 初步解析與文字/版面 artifact 建置，為後續 arbitration 提供輸入。
+# 上下游: Literature routes/runner 呼叫本層，讀寫 data/<pid>/literature、EvidenceSegment 與 LLM task，結果回到 Literature UI。
+# 維護邊界: 維持 PID/paper_id 隔離、來源 lineage、segment identity 與可重跑性；fallback 不得冒充高品質完成。
+# 驗證: python -m pytest test/unit tests -q
 #路徑(./app/core_pro/literature/literature_stacka.py) #版本 v1.6 #更版時間 20260430-1414
 import json
 import logging

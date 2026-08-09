@@ -1,3 +1,8 @@
+# Roothinks source maintenance contract
+# 模組定位: Roothinks 自動化驗收層；把對應 production contract 固定成可重跑案例。
+# 主要責任: 重現並驗收 citation ledger 的成功、失敗與回歸邊界。
+# 上下游: pytest/node runner -> fixture/monkeypatch -> 對應 app 模組；測試資料只放 tmp/in-memory。
+# 驗證: python -m pytest tests/test_citation_ledger.py -q
 # 檔案路徑: tests/test_citation_ledger.py
 # 產生時間: 2026-07-19
 # 維護提醒: citation decision sidecar——人確認才記錄、可回溯章節/主張/證據。

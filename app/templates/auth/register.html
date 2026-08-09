@@ -1,10 +1,13 @@
+<!-- Roothinks source maintenance contract
+  上下游: Flask route 注入 session/PID/initial data，模板載入 static CSS/JS，使用者操作再回到後端 API。
+-->
 <!--
   檔案路徑: app/templates/auth/register.html
   產生時間: 2026-07-26 00:40 +08:00
   版本: v2.0
   模組定位:
     使用者註冊頁面，AUTH_MODE=session 下可自行建立帳號。
-  主要責任:
+  主要責任: 宣告可存取的頁面結構、表單/狀態容器與靜態資源接線；不承擔授權判斷。
     1. 顯示 email / password / confirm_password 表單。
     2. 表單含 csrf_token()。
     3. 顯示後端驗證錯誤訊息。

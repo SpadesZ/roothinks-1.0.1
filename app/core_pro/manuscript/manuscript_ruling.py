@@ -1,9 +1,11 @@
+# Roothinks source maintenance contract
+# 驗證: python -m pytest test/unit tests -q
 # 檔案路徑: app/core_pro/manuscript/manuscript_ruling.py
 # 產生時間: 2026-07-04 19:10 +08:00
 # 版本: v0.4
 # 模組定位:
 #   Manuscript 規則引擎與上下文管制中樞。
-# 主要責任:
+# 主要責任: 解析並套用 Manuscript 章節輸入/輸出規則，驗證 editable/hypothetical section 邊界。
 #   1. 攔截缺 title 的生成請求。
 #   2. 以研究筆記優先，彙整 history / upstream / paragraph-level context。
 #   3. 寫入 context audit sidecar 以保留 provenance。

@@ -1,3 +1,11 @@
+/* Roothinks source maintenance contract
+ * 檔案路徑: app/static/css/style.css
+ * 模組定位: Roothinks 前端樣式層；定義對應工作台的版面、捲動與 responsive 行為。
+ * 主要責任: 維護元件視覺層級、可讀性、窄視窗/overflow 與互動狀態樣式。
+ * 上下游: 由對應 Jinja template 載入，選擇器必須與既有 HTML/JS class/id 一致。
+ * 維護邊界: 不得用全域 selector 破壞其他工作台；窄視窗、捲動容器、鍵盤焦點與可讀對比必須保留。
+ * 驗證: python -m pytest test/integration_smoke/test_routes_smoke.py -q；再以登入後瀏覽器檢查對應頁面。
+ */
 /* 路徑(./ROOTHINKS-B/app/static/css/style.css) #版本 v0.4 #更版時間 20260325-1515 */
 
 /* --- Split View Container --- */

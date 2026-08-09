@@ -1,10 +1,13 @@
+# Roothinks source maintenance contract
+# 上下游: 由 Blueprint 或 matching task 呼叫，輸入專案/論文識別與內容，輸出正規化 metadata、segments 或檢索 context。
+# 驗證: python -m pytest test/unit tests -q
 # 檔案路徑: app/services/text_tokenize.py
 # 產生時間: 2026-07-19
 # 版本: v0.1
 # 模組定位:
 #   共用 lexical tokenizer（evidence index 與 context inject 共用同一份，
 #   避免 query 端與 document 端斷詞不一致）。
-# 主要責任:
+# 主要責任: 提供 Evidence Index 共用的 Unicode-aware lexical tokenizer，確保建索引與查詢採相同規則。
 #   1. 拉丁字母/數字詞維持整詞。
 #   2. CJK 連續字串切成 character bigram，讓中文子字串查詢可命中。
 # 維護提醒:

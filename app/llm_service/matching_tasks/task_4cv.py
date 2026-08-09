@@ -1,10 +1,12 @@
+# Roothinks source maintenance contract
+# 上下游: matching task -> dispatcher -> LlmBus -> provider adapter；binding/usage 由 llm_match DB 與 usage store 支援。
 # 檔案路徑: roothinks/app/llm_service/matching_tasks/task_4cv.py
 # 產生時間: 2026-07-05 01:40 +08:00
 # 版本: v1.2
 # 模組定位:
 #   Task 4: CV Semantic Correction。metadata 抽取、術語 guide 生成、
 #   OCR 文字塊批次修正(純文字 LLM,無 vision)。
-# 主要責任:
+# 主要責任: Task 4: CV Semantic Correction。
 #   1. extract_metadata / generate_context_guide。
 #   2. fix_batch():批次修正 OCR 錯字/斷字/空格。
 # 維護提醒:

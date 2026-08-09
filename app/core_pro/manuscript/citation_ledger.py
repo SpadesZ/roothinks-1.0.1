@@ -1,9 +1,12 @@
+# Roothinks source maintenance contract
+# 上下游: manuscript_routes 與前端 workspace 呼叫本層，經 ManuscriptIO/DB 寫入 data/<pid>/manuscript 並回送 HTTP/Socket 事件。
+# 驗證: python -m pytest test/unit tests -q
 # 檔案路徑: app/core_pro/manuscript/citation_ledger.py
 # 產生時間: 2026-07-19
 # 版本: v0.1
 # 模組定位:
 #   Citation decision sidecar：記錄「使用者確認過」的引用決策。
-# 主要責任:
+# 主要責任: 持久化作者對 citation 建議的接受/拒絕決策，保留 paragraph、paper 與理由 lineage。
 #   1. 只在人明確確認（accept/reject）後追加記錄；系統永不自動寫入正文。
 #   2. 回答「某篇論文在何時、哪一章、為了支持什麼主張而被引用」。
 #   3. 整段 read-modify-write 在同一把 FileLock 內＋tmp+os.replace 原子落盤。

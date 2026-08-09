@@ -1,3 +1,7 @@
+# Roothinks source maintenance contract
+# 主要責任: 以 additive migration 建立 evidence_segments 與索引，不改寫既有 Paper 主鍵或研究內容。
+# 上下游: Alembic/啟動 migration runner 讀目前 schema，upgrade/downgrade 轉換 SQLite 後再由 ORM 使用。
+# 驗證: python -m py_compile migrations/versions/0002_create_evidence_segments.py
 # 檔案路徑: migrations/versions/0002_create_evidence_segments.py
 # 產生時間: 2026-07-04 19:20 +08:00
 # 版本: v0.1

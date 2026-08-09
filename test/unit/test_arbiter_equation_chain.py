@@ -1,9 +1,11 @@
+# Roothinks source maintenance contract
+# 上下游: pytest/node runner -> fixture/monkeypatch -> 對應 app 模組；測試資料只放 tmp/in-memory。
 # 檔案路徑: roothinks/test/unit/test_arbiter_equation_chain.py
 # 產生時間: 2026-07-05 01:50 +08:00
 # 版本: v1.0
 # 模組定位:
 #   arbiter IoU 縫隙修復、latex_ocr 重試鏈、task_4cv 公式修正策略的單元測試。
-# 主要責任:
+# 主要責任: 重現並驗收 arbiter equation chain 的成功、失敗與回歸邊界。
 #   1. IoU 縫隙 B block:內容不同 → rescue 撿回;內容重複 → 不重複補入。
 #   2. latex_ocr:重試開啟時首輪失敗會做放大重試;關閉時不重試。
 #   3. task_4cv:Equation 不進純文字修正;低信心公式標 needs_equation_review。

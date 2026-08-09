@@ -1,3 +1,10 @@
+# Roothinks source maintenance contract
+# 檔案路徑: app/services/index_service.py
+# 模組定位: 跨 Blueprint service 層；提供可由 Literature/Study/Manuscript 共用的資料與索引能力。
+# 主要責任: 協調 Evidence Index 的建置、增量更新、查詢與狀態回報，維持 project/paper scope。
+# 上下游: 由 Blueprint 或 matching task 呼叫，輸入專案/論文識別與內容，輸出正規化 metadata、segments 或檢索 context。
+# 維護邊界: 設定與共享狀態只能在既定初始化邊界改動；錯誤不得以表面成功掩蓋資料或授權不完整。
+# 驗證: python -m pytest test/unit tests -q
 #路徑(./app/services/index_service.py) #版本 v0.1 #更版時間 20260131-0245
 from app import db
 from app.models import Project, MetadataIndex

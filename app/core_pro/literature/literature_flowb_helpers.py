@@ -1,10 +1,12 @@
+# Roothinks source maintenance contract
+# 上下游: Literature routes/runner 呼叫本層，讀寫 data/<pid>/literature、EvidenceSegment 與 LLM task，結果回到 Literature UI。
 # 檔案路徑: roothinks/app/core_pro/literature/literature_flowb_helpers.py
 # 產生時間: 2026-07-05 03:10 +08:00
 # 版本: v0.2
 # 模組定位:
 #   Flow B 章節清洗、重排、JSON 解析與品質判斷工具集。
 #   集中 reflow rows 收集與 section merge 純函式,讓 routes 保持輕量。
-# 主要責任:
+# 主要責任: 提供 Flow B route/runner 共用的參數、路徑、狀態與錯誤轉換 helper，避免兩條入口行為漂移。
 #   1. _flowb_collect_reflow_rows():雙語 blocks -> compact rows(LLM 輸入)。
 #   2. heading / section label 判定與雜訊過濾。
 # 維護提醒:

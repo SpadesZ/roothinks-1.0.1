@@ -1,3 +1,10 @@
+# Roothinks source maintenance contract
+# 檔案路徑: app/core_pro/paq/paq_routes.py
+# 模組定位: PAQ 核心層；管理研究題目、分類矩陣與 provisional/formal 專案銜接。
+# 主要責任: 提供 PAQ 狀態、taxonomy、LLM 分析與 provisional-to-formal promotion API，並在每個入口驗證專案權限。
+# 上下游: Dashboard/PAQ 頁面 -> PAQ routes/core -> Project 與 data/<pid>/literature/paq_records。
+# 維護邊界: 設定與共享狀態只能在既定初始化邊界改動；錯誤不得以表面成功掩蓋資料或授權不完整。
+# 驗證: python -m pytest test/unit tests -q
 #路徑(./app/core_pro/paq/paq_routes.py) #版本 v2.6 #更版時間 20260226-0600
 from flask import Blueprint, request, jsonify, current_app
 from app import db

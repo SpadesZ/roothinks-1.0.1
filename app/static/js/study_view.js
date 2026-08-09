@@ -1,10 +1,12 @@
+// Roothinks source maintenance contract
+// 上下游: Jinja template 建立 DOM 與初始 PID；本檔呼叫 /api、Socket.IO 或鄰接前端 controller 後更新可見狀態。
 // 檔案路徑: roothinks/app/static/js/study_view.js
 // 產生時間: 2026-07-05 02:50 +08:00
 // 版本: v3.3
 // 模組定位:
 //   Study View Controller。Sidebar/Tab 切換、Fulltext(Block/Reflow) 渲染、
 //   Matrix 表格渲染與 Cell 點擊事件。MVP/Prototype 定位。
-// 主要責任:
+// 主要責任: 將 Study fulltext、sections、figures/tables 與 LaTeX 安全渲染到閱讀窗格，維持目前 paper selection。
 //   1. _renderBlockCard():依 block type 渲染卡片(雙語對照/公式/圖表)。
 //   2. Reflow 章節視圖與 coverage 警示顯示。
 // 維護提醒:

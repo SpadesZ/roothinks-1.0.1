@@ -1,3 +1,6 @@
+# Roothinks source maintenance contract
+# 上下游: pytest/node runner -> fixture/monkeypatch -> 對應 app 模組；測試資料只放 tmp/in-memory。
+# 維護邊界: 不得讀寫正式 data/.env、送出真實外部請求或以弱化 assertion 配合實作；環境缺件要明確 skip/fail。
 # 檔案路徑: roothinks/test/unit/test_module_access_scope.py
 # 產生時間: 2026-08-04 +08:00
 # 版本: v1.0

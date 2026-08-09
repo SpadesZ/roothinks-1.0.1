@@ -1,9 +1,11 @@
+# Roothinks source maintenance contract
+# 上下游: Literature routes/runner 呼叫本層，讀寫 data/<pid>/literature、EvidenceSegment 與 LLM task，結果回到 Literature UI。
 # 檔案路徑: app/core_pro/literature/literature_bflow.py
 # 產生時間: 2026-07-04 21:10 +08:00
 # 版本: v0.3
 # 模組定位:
 #   Flow B translation/reflow route adapter and runtime helpers.
-# 主要責任:
+# 主要責任: 組裝 Flow B runtime dependencies、翻譯與 job config，讓 route/CLI 共用同一執行路徑。
 #   1. 驗證 Flow A 產物是否可供 Flow B 翻譯。
 #   2. 排程 local/subprocess translation worker。
 #   3. 產生 reflow artifact 並寫入狀態與事件紀錄。

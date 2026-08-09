@@ -1,9 +1,11 @@
+# Roothinks source maintenance contract
+# 上下游: Flask-Login/route decorator -> User/Project/WorkspaceMember/Session -> 各 Blueprint 的授權與序列化。
 # 檔案路徑: app/security.py
 # 產生時間: 2026-07-04 00:00 +08:00
 # 版本: v1.1
 # 模組定位:
 #   Roothinks 安全核心：請求驗證、專案存取控制、工作區角色授權。
-# 主要責任:
+# 主要責任: 集中輸入/路徑驗證、token/session 認證與 workspace/project 授權 decorator，作為所有 Blueprint 的信任邊界。
 #   1. validate_id / safe_join_under — 輸入驗證與路徑安全。
 #   2. require_request_auth / require_socket_auth — Bearer token 守衛。
 #   3. [Batch B] get_workspace_role(user_id, pid) — 查詢成員角色。

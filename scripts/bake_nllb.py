@@ -1,4 +1,10 @@
 #!/usr/bin/env python
+# Roothinks source maintenance contract
+# 檔案路徑: scripts/bake_nllb.py
+# 模組定位: 維運/資料處理 CLI 層；由人工或隔離測試明確執行，不是常駐 request path。
+# 主要責任: 下載並保存 NLLB tokenizer/model 為本地 safetensors 目錄，供 Docker image 離線載入。
+# 上下游: 命令列參數/環境 -> 明確目標檔或 DB -> 可稽核輸出；不由一般 HTTP request 隱式觸發。
+# 維護邊界: 任何資料變更都需明確目標、備份、idempotency 與失敗回滾；預設不得碰正式 data 或輸出秘密。
 # 路徑(./scripts/bake_nllb.py) 版本 v1.0
 # 目的:把 NLLB-200-distilled-600M bake 進 Docker image,產出為「本地 safetensors 模型目錄」。
 #

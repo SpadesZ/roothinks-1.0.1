@@ -1,9 +1,11 @@
+# Roothinks source maintenance contract
+# 上下游: pytest/node runner -> fixture/monkeypatch -> 對應 app 模組；測試資料只放 tmp/in-memory。
 # 檔案路徑: test/unit/test_batch_c.py
 # 產生時間: 2026-07-19 09:00 +08:00
 # 版本: v1.0
 # 模組定位:
 #   Batch C 實作的單元測試：檔案層隔離補強、Socket.IO 協作預留、revision_log。
-# 主要責任:
+# 主要責任: 重現並驗收 batch c 的成功、失敗與回歸邊界。
 #   1. safe path — 對 manuscript 修復點做路徑穿越嘗試，驗證被清理/拒絕。
 #   2. revision log — TESTING 模式下呼叫 save_block route 後，RevisionLog 有一筆；
 #      GET /manuscript/api/revisions/<pid> 回傳它。

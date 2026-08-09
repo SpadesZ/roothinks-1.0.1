@@ -1,9 +1,11 @@
+# Roothinks source maintenance contract
+# 上下游: pytest/node runner -> fixture/monkeypatch -> 對應 app 模組；測試資料只放 tmp/in-memory。
 # 檔案路徑: test/unit/test_auth_basic.py
 # 產生時間: 2026-07-19 00:00 +08:00
 # 版本: v1.0
 # 模組定位:
 #   Batch A 帳號登入系統的基本單元測試。
-# 主要責任:
+# 主要責任: 重現並驗收 auth basic 的成功、失敗與回歸邊界。
 #   1. 驗證 User model 註冊/登入/密碼流程。
 #   2. 驗證 /api/auth/* JSON API 行為。
 #   3. 驗證 AUTH_MODE=session 的路由保護效果。

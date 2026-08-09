@@ -1,9 +1,11 @@
+# Roothinks source maintenance contract
+# 上下游: main/create_app 啟動本層，再註冊 Blueprint、DB、Socket、runtime service 供 HTTP/worker 使用。
 # 檔案路徑: app/mentor/__init__.py
 # 產生時間: 2026-07-26 04:00 +08:00
 # 版本: v1.0
 # 模組定位:
 #   Mentor blueprint 套件初始化。匯出 mentor_bp 與 mentor_api_bp 供 create_app 註冊。
-# 主要責任:
+# 主要責任: 建立 Mentor/Reviewer Blueprint 並註冊關係管理與 2C workbench routes。
 #   1. 建立 mentor_bp（HTML 頁面，url_prefix='/mentor'）。
 #   2. 延遲匯入 routes，讓 routes.py 建立 mentor_api_bp 並掛載路由。
 # 維護提醒:

@@ -1,9 +1,12 @@
+# Roothinks source maintenance contract
+# 上下游: manuscript_routes 與前端 workspace 呼叫本層，經 ManuscriptIO/DB 寫入 data/<pid>/manuscript 並回送 HTTP/Socket 事件。
+# 驗證: python -m pytest test/unit tests -q
 # 檔案路徑: app/core_pro/manuscript/context_audit.py
 # 產生時間: 2026-07-04 19:05 +08:00
 # 版本: v0.1
 # 模組定位:
 #   Manuscript context injection sidecar audit writer。
-# 主要責任:
+# 主要責任: 把生成時實際使用的 context manifest、prompt fingerprint 與來源寫入 append-only audit artifact。
 #   1. 保存每次注入 context 的 source ids / fingerprints / pack fingerprint。
 #   2. 使用 tmp + os.replace 原子寫入。
 # 維護提醒:

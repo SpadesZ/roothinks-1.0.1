@@ -1,3 +1,10 @@
+# Roothinks source maintenance contract
+# 檔案路徑: docker-compose.yml
+# 模組定位: 容器建置與編排層；固定 app/test/Redis 的映像、掛載、健康檢查與啟動順序。
+# 主要責任: 宣告服務、映像、環境鍵、volume 與啟動/驗證命令，保持各環境可重現。
+# 上下游: 開發/測試/GCP 操作者 -> Docker build/Compose -> app 與 Redis；正式 data/.env 由 host volume 提供。
+# 維護邊界: 不得把 .env/data/secrets 打進 image；正式 cutover 只重建 app、保留 Redis 身分、健康檢查與 rollback image。
+# 驗證: docker compose -f docker-compose.yml config
 # 路徑(./docker-compose.yml) #版本 v0.4 #更版時間 20260409
 # Base compose (shared by dev/prod). Keep this file free of source-code bind mount.
 

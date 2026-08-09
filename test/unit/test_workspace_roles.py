@@ -1,9 +1,11 @@
+# Roothinks source maintenance contract
+# 上下游: pytest/node runner -> fixture/monkeypatch -> 對應 app 模組；測試資料只放 tmp/in-memory。
 # 檔案路徑: roothinks/test/unit/test_workspace_roles.py
 # 產生時間: 2026-07-19 00:00 +08:00
 # 版本: v1.0
 # 模組定位:
 #   Batch B 工作區角色授權單元測試。
-# 主要責任:
+# 主要責任: 重現並驗收 workspace roles 的成功、失敗與回歸邊界。
 #   1. 角色矩陣：viewer/editor/owner 對各端點的存取控制。
 #   2. 隔離：不同 user 的 list 只回傳自己有 membership 的專案。
 #   3. 成員管理 API：POST/DELETE/PATCH 的 owner-only 保護與最後 owner 防護。

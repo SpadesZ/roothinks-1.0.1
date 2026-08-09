@@ -1,3 +1,7 @@
+# Roothinks source maintenance contract
+# 主要責任: 列舉 evidence source 類型及其正規值，避免索引、檢索與 context packing 使用漂移字串。
+# 上下游: 由 Blueprint 或 matching task 呼叫，輸入專案/論文識別與內容，輸出正規化 metadata、segments 或檢索 context。
+# 驗證: python -m pytest test/unit tests -q
 # 檔案路徑: app/services/evidence_types.py
 # 產生時間: 2026-07-04 18:55 +08:00
 # 版本: v0.1

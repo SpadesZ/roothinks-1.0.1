@@ -1,3 +1,10 @@
+// Roothinks source maintenance contract
+// 檔案路徑: app/static/js/manuscript_image.js
+// 模組定位: 瀏覽器互動層；把頁面元件、目前 PID 與後端 API/Socket 狀態同步。
+// 主要責任: 處理 Manuscript 圖片上傳、插入與預覽生命週期，將檔案操作綁定目前 PID/section。
+// 上下游: Jinja template 建立 DOM 與初始 PID；本檔呼叫 /api、Socket.IO 或鄰接前端 controller 後更新可見狀態。
+// 維護邊界: 前端狀態不是授權來源；外部文字必須 escape/sanitize，非同步回應須核對目前 PID/使用者後才能套用。
+// 驗證: node --check app/static/js/manuscript_image.js
 //路徑(./app/static/js/manuscript_image.js)
 //版本 v1.8 (ForeignObject Nuclear Removal & Pure SVG Canvas Engine)
 //更版時間 20260318-2200

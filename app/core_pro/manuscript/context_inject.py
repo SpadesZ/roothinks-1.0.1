@@ -1,9 +1,12 @@
+# Roothinks source maintenance contract
+# 上下游: manuscript_routes 與前端 workspace 呼叫本層，經 ManuscriptIO/DB 寫入 data/<pid>/manuscript 並回送 HTTP/Socket 事件。
+# 驗證: python -m pytest test/unit tests -q
 # 檔案路徑: app/core_pro/manuscript/context_inject.py
 # 產生時間: 2026-07-04 19:05 +08:00
 # 版本: v0.2
 # 模組定位:
 #   Manuscript 段落級 context retrieval / packing。
-# 主要責任:
+# 主要責任: 檢索、截斷並封裝 paragraph-level evidence context，記錄 token budget 與可稽核 fingerprint。
 #   1. 優先使用 Evidence Index 檢索。
 #   2. Evidence Index 不可用時 fallback 到 Context Chain L1/L2/L3 keyword baseline。
 #   3. 保留 provenance、fingerprint、token estimate 與 readable context block。

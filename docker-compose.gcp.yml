@@ -1,10 +1,12 @@
+# Roothinks source maintenance contract
+# 上下游: 開發/測試/GCP 操作者 -> Docker build/Compose -> app 與 Redis；正式 data/.env 由 host volume 提供。
 # 檔案路徑: roothinks/docker-compose.gcp.yml
 # 產生時間: 2026-07-20 13:20 +08:00
 # 版本: v1.0
 # 模組定位:
 #   GCP VM(HTTP 直連 IP)部署用的 compose override。疊在 docker-compose.yml
 #   之上,補齊「HTTP + 多人登入」場景所需的環境變數。
-# 主要責任:
+# 主要責任: 宣告服務、映像、環境鍵、volume 與啟動/驗證命令，保持各環境可重現。
 #   1. 開啟帳號登入(AUTH_MODE=session)。
 #   2. HTTP 部署關鍵:SESSION_COOKIE_SECURE=0(否則 cookie 送不出→CSRF 失敗→登不進)。
 #   3. session 模式不需 Bearer,關閉 API_AUTH_ENABLED 免除 token 需求。
@@ -16,6 +18,7 @@
 #   - CORS_ALLOWED_ORIGINS 換成實際對外網址(含 port);多個用逗號分隔。
 #   - 一旦掛上 HTTPS(網域+憑證),把 SESSION_COOKIE_SECURE 改回 1 更安全。
 # 驗證方式:
+#   - docker compose -f docker-compose.yml -f docker-compose.gcp.yml config --quiet
 #   - 部署後開 http://<VM_IP>/ 應導向 /auth/login;登入後可進 Dashboard。
 # ------------------------------------------------------------------------------
 services:

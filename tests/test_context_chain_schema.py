@@ -1,3 +1,8 @@
+# Roothinks source maintenance contract
+# 模組定位: Roothinks 自動化驗收層；把對應 production contract 固定成可重跑案例。
+# 主要責任: 重現並驗收 context chain schema 的成功、失敗與回歸邊界。
+# 上下游: pytest/node runner -> fixture/monkeypatch -> 對應 app 模組；測試資料只放 tmp/in-memory。
+# 驗證: python -m pytest tests/test_context_chain_schema.py -q
 # 檔案路徑: tests/test_context_chain_schema.py
 # 產生時間: 2026-07-04 21:40 +08:00
 # 版本: v0.1

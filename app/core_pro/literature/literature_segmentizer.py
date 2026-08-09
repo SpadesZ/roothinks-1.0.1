@@ -1,10 +1,12 @@
+# Roothinks source maintenance contract
+# 上下游: Literature routes/runner 呼叫本層，讀寫 data/<pid>/literature、EvidenceSegment 與 LLM task，結果回到 Literature UI。
 # 檔案路徑: roothinks/app/core_pro/literature/literature_segmentizer.py
 # 產生時間: 2026-07-05 02:10 +08:00
 # 版本: v2.5(SEGMENTIZER_VERSION v3.17)
 # 模組定位:
 #   Literature Segmentizer:視覺節點系統(VNS)切割引擎。
 #   CV2 形態學抽框 -> 規則評分 -> LLM 補充分類 -> Major/Equation/Body 三階段切割。
-# 主要責任:
+# 主要責任: 執行 CV2 候選抽框與 Major/Equation/Body 三階段分割，輸出含 bbox、type、score、reading_order 的 records。
 #   1. process_image():頁圖 -> 區塊 records(type/bbox/score/reading_order)。
 #   2. Figure/Table+Caption 鎖定(MajorSegmenter)、Equation placeholder 鎖定、
 #      Body 與 heading 判定(BodySegmenter)。

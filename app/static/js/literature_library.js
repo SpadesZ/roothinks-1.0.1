@@ -1,3 +1,10 @@
+// Roothinks source maintenance contract
+// 檔案路徑: app/static/js/literature_library.js
+// 模組定位: 瀏覽器互動層；把頁面元件、目前 PID 與後端 API/Socket 狀態同步。
+// 主要責任: 管理 Literature library 篩選、screening 狀態、資源清單與安全 DOM 更新。
+// 上下游: Jinja template 建立 DOM 與初始 PID；本檔呼叫 /api、Socket.IO 或鄰接前端 controller 後更新可見狀態。
+// 維護邊界: 前端狀態不是授權來源；外部文字必須 escape/sanitize，非同步回應須核對目前 PID/使用者後才能套用。
+// 驗證: node --check app/static/js/literature_library.js
 //路徑(./app/static/js/literature_library.js) #版本 v0.1 #更版時間 20260719
 // 持久文獻庫最小面板：列表/篩選/狀態更新/匯入/匯出/索引重建。
 // 依賴 window.literatureApp.currentPid；所有寫入皆走後端 API，前端不持狀態。

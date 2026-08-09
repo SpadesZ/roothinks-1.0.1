@@ -1,3 +1,8 @@
+# Roothinks source maintenance contract
+# 模組定位: Literature 核心層；位於上傳/解析 API、Flow A/B 處理與 evidence index 之間。
+# 主要責任: 封裝章節 retag、論文狀態、metadata 與 gold bridge 的共用寫入操作，供多個 route 重用。
+# 上下游: Literature routes/runner 呼叫本層，讀寫 data/<pid>/literature、EvidenceSegment 與 LLM task，結果回到 Literature UI。
+# 驗證: python -m pytest test/unit tests -q
 # 檔案路徑: app/core_pro/literature/literature_processing_ops.py
 # 產生時間: 2026-07-04 19:30 +08:00
 # 版本: v0.3

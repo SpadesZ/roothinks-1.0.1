@@ -1,3 +1,10 @@
+# Roothinks source maintenance contract
+# 檔案路徑: app/llm_service/llm_routes.py
+# 模組定位: LLM 控制層；管理 task binding、provider 派送、用量/價格與取消生命週期。
+# 主要責任: 提供 LLM connection 與 task binding 管理 API，驗證秘密輸入並只回傳遮罩後設定。
+# 上下游: matching task -> dispatcher -> LlmBus -> provider adapter；binding/usage 由 llm_match DB 與 usage store 支援。
+# 維護邊界: 不得記錄 API key 或完整 prompt；provider error、usage、cache 與 cancel_event 身分不可在層間遺失或靜默降級。
+# 驗證: python -m pytest test/unit tests -q
 #路徑(./app/llm_service/llm_routes.py) #版本 v0.5 #更版時間 20260806-1500
 # [v0.5] 補上 v0.4 沒堵到的洞：/binding/update 不得把 task 綁到非生成模型，
 #   /connection/list 額外回 is_non_generative 讓前端把該選項關掉。

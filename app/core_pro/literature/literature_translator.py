@@ -1,10 +1,12 @@
+# Roothinks source maintenance contract
+# 上下游: Literature routes/runner 呼叫本層，讀寫 data/<pid>/literature、EvidenceSegment 與 LLM task，結果回到 Literature UI。
 # 檔案路徑: roothinks/app/core_pro/literature/literature_translator.py
 # 產生時間: 2026-07-05 05:50 +08:00
 # 版本: v1.3-NLLB-Primary
 # 模組定位:
 #   智能翻譯調度器 (Hybrid Translation Dispatcher)。依情境在 NLLB(本地)/
 #   Gemini(雲端)/quick-google 間選路,含自動降級。MVP/Prototype 定位。
-# 主要責任:
+# 主要責任: 智能翻譯調度器 (Hybrid Translation Dispatcher)。
 #   1. 依文長與 TranslationContext 決定引擎(_decide_engine)。
 #   2. 長文切段 + 小批量翻譯 + 非語言片段保護(URL/公式等)。
 #   3. LLM 派工逾時保護(_dispatch_with_timeout)。

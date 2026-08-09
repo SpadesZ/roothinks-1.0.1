@@ -1,9 +1,12 @@
+# Roothinks source maintenance contract
+# 上下游: main/create_app 啟動本層，再註冊 Blueprint、DB、Socket、runtime service 供 HTTP/worker 使用。
+# 驗證: python -m pytest test/unit tests -q
 # 檔案路徑: app/evaluation/ocr_metrics.py
 # 產生時間: 2026-07-04 18:50 +08:00
 # 版本: v0.1
 # 模組定位:
 #   OCR evaluation metrics，支援 CER/WER 與 layout IoU。
-# 主要責任:
+# 主要責任: 計算 OCR 的文字正規化、Levenshtein、CER 與 WER，供離線 benchmark 使用。
 #   1. 不依賴外部重型套件。
 #   2. 對空字串與異常 box 輸入保持安全。
 # 維護提醒:

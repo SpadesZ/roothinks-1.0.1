@@ -1,3 +1,7 @@
+# Roothinks source maintenance contract
+# 主要責任: 連接 Flask-Migrate metadata 與 Alembic context，分別執行 offline SQL 產生及 online transaction migration。
+# 上下游: Alembic/啟動 migration runner 讀目前 schema，upgrade/downgrade 轉換 SQLite 後再由 ORM 使用。
+# 驗證: python -m py_compile migrations/env.py
 # 檔案路徑: migrations/env.py
 # 產生時間: 2026-07-04 19:20 +08:00
 # 版本: v0.1

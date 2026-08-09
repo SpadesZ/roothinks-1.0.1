@@ -1,9 +1,12 @@
+# Roothinks source maintenance contract
+# 上下游: manuscript_routes 與前端 workspace 呼叫本層，經 ManuscriptIO/DB 寫入 data/<pid>/manuscript 並回送 HTTP/Socket 事件。
+# 驗證: python -m pytest test/unit tests -q
 # 檔案路徑: app/core_pro/manuscript/citation_suggest.py
 # 產生時間: 2026-07-04 19:18 +08:00
 # 版本: v0.1
 # 模組定位:
 #   Manuscript paragraph citation suggestion baseline。
-# 主要責任:
+# 主要責任: 偵測段落引用需求並從 Evidence Index 排序候選，輸出可核查 citation slots 而非改寫正文。
 #   1. 從 Evidence Index 查找可引用 paper evidence。
 #   2. 合併同一 paper 的多個 segment。
 #   3. 偵測可能需要 citation 的段落。

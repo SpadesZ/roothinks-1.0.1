@@ -1,9 +1,11 @@
+# Roothinks source maintenance contract
+# 上下游: pytest/node runner -> fixture/monkeypatch -> 對應 app 模組；測試資料只放 tmp/in-memory。
 # 檔案路徑: roothinks/test/unit/test_edit_conflict.py
 # 產生時間: 2026-07-19 12:50 +08:00
 # 版本: v1.0
 # 模組定位:
 #   manuscript_io.check_and_save_block(rev 衝突防護純函數)的單元測試。
-# 主要責任:
+# 主要責任: 重現並驗收 edit conflict 的成功、失敗與回歸邊界。
 #   1. 無 base_rev(舊前端相容)→ 直接存,rev 遞增。
 #   2. base_rev 相符 → 存檔成功 rev+1。
 #   3. base_rev 過期 → 回傳 conflict 且檔案內容不變。

@@ -1,3 +1,6 @@
+// Roothinks source maintenance contract
+// 檔案路徑: app/static/js/manuscript_collab.js
+// 驗證: node --check app/static/js/manuscript_collab.js
 //路徑(./app/static/js/manuscript_collab.js)
 //版本 v1.3
 //更版時間 20260727-1400

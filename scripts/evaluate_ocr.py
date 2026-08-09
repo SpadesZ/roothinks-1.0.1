@@ -1,9 +1,12 @@
+# Roothinks source maintenance contract
+# 上下游: 命令列參數/環境 -> 明確目標檔或 DB -> 可稽核輸出；不由一般 HTTP request 隱式觸發。
+# 驗證: python -m py_compile scripts/evaluate_ocr.py
 # 檔案路徑: scripts/evaluate_ocr.py
 # 產生時間: 2026-07-04 19:14 +08:00
 # 版本: v0.1
 # 模組定位:
 #   OCR ground-truth evaluation CLI。
-# 主要責任:
+# 主要責任: 載入 OCR ground truth 與候選文字，計算 CER/WER 並輸出逐檔及彙總 benchmark 報告。
 #   1. 讀取 *.gt.txt annotation。
 #   2. 對應 prediction txt，計算 CER/WER。
 #   3. 輸出 evaluation/ocr_results/summary.json。

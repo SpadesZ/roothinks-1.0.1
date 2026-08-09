@@ -1,10 +1,12 @@
+# Roothinks source maintenance contract
+# 上下游: Literature routes/runner 呼叫本層，讀寫 data/<pid>/literature、EvidenceSegment 與 LLM task，結果回到 Literature UI。
 # 檔案路徑: roothinks/app/core_pro/literature/literature_body_segmenter.py
 # 產生時間: 2026-07-05 02:20 +08:00
 # 版本: v0.6
 # 模組定位:
 #   第三階段切割(BodySegmenter)。處理未被 Equation/Figure/Table+Caption
 #   佔用的候選:Body / heading(MainTitle/Subtitle/SubSubtitle)/ Header 判定。
-# 主要責任:
+# 主要責任: 將未被 major/equation 鎖定的版面區域分類為 heading、paragraph 等 body segments，維持 reading order。
 #   1. 幾何規則 heading 判定(HEADER_ZONE / SECTION_HEADING / SMALL_HEADING_ZONE)。
 #   2. v0.6 新增:消費 llm_heading_hint(LLM 信心 >= 0.70 時升格 heading,
 #      幾何規則未命中也能落地,解決章節結構建不起來的問題)。

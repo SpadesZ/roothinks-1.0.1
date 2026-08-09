@@ -1,10 +1,12 @@
+# Roothinks source maintenance contract
+# 上下游: main/create_app 啟動本層，再註冊 Blueprint、DB、Socket、runtime service 供 HTTP/worker 使用。
 # 檔案路徑: roothinks/app/system_runtime.py
 # 產生時間: 2026-07-05 00:20 +08:00
 # 版本: v1.1
 # 模組定位:
 #   系統執行期支撐:CPU thread 上限套用、系統 logging 初始化、
 #   背景 system monitor(定期輸出 SYSTEM_METRICS 快照)。
-# 主要責任:
+# 主要責任: 偵測容器 CPU quota、限制 worker/thread 數並套用數值運算環境，避免超額並行拖垮主機。
 #   1. apply_cpu_thread_limit_env / apply_torch_thread_limits。
 #   2. setup_system_logging:RotatingFileHandler 掛載(冪等)。
 #   3. start_system_monitor:daemon thread 定期記錄資源快照。

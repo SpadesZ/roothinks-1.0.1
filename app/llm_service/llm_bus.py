@@ -1,3 +1,5 @@
+# Roothinks source maintenance contract
+# 上下游: matching task -> dispatcher -> LlmBus -> provider adapter；binding/usage 由 llm_match DB 與 usage store 支援。
 # 檔案路徑: roothinks/app/llm_service/llm_bus.py
 # 產生時間: 2026-07-04 23:35 +08:00
 # 版本: v0.4（cancel_event passthrough）
@@ -5,7 +7,7 @@
 # 模組定位:
 #   LLM 服務匯流排 (Service Bus)。從 DB 讀取連線設定 -> 動態載入 Adapter ->
 #   建立 Client 實例,對上提供統一 send_message 介面。
-# 主要責任:
+# 主要責任: 從 llm_match DB 載入 connection/model，動態建立 provider adapter 並原樣傳遞 prompt、usage 與 cancel_event。
 #   1. load_from_db():依 connection id 載入 vendor/api_key/model 並初始化 Client。
 #   2. _load_driver():依 vendor 名稱動態匯入 adapter 模組(llm_<vendor>.py)。
 #   3. send_message():統一發送代理。

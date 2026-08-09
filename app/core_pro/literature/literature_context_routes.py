@@ -1,3 +1,10 @@
+# Roothinks source maintenance contract
+# 檔案路徑: app/core_pro/literature/literature_context_routes.py
+# 模組定位: Literature 核心層；位於上傳/解析 API、Flow A/B 處理與 evidence index 之間。
+# 主要責任: 註冊 evidence context 查詢與同步 API，驗證 PID/paper identity 後呼叫共用 service。
+# 上下游: Literature routes/runner 呼叫本層，讀寫 data/<pid>/literature、EvidenceSegment 與 LLM task，結果回到 Literature UI。
+# 維護邊界: 維持 PID/paper_id 隔離、來源 lineage、segment identity 與可重跑性；fallback 不得冒充高品質完成。
+# 驗證: python -m pytest test/unit tests -q
 #路徑(app/core_pro/literature/literature_context_routes.py) #版本 v0.1 #更版時間 20260429
 #功能概要:
 #1. 註冊 bootstrap/context/search/search-results 路由。
