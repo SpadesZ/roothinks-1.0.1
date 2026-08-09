@@ -1,7 +1,14 @@
-// 路徑: app/static/js/mentor.js
-// 版本: v2.0
-// 模組定位: Mentor / Reviewer 的 2C 主論文審閱工作台。
+// 檔案路徑: app/static/js/mentor.js
+// 版本: v2.1；更新時間: 2026-08-10 +08:00
+// 模組定位: Mentor / Reviewer 的 2C 主論文審閱工作台控制器。
+// 主要責任:
+//   1. 載入已授權的 mentee 與可審閱 2C 專案。
+//   2. 在 sandbox iframe 顯示最新 2C，送出意見、建議、網址與 PDF。
+//   3. 以 request sequence + mentee/PID identity 阻止舊回應覆蓋新選擇。
+// 上下游: dashboard.html 建立 MentorDashboard；所有資料由 /api/mentor/* 提供。
 // 安全邊界: 前端只負責呈現；mentee、PID、資源下載都由後端重新授權。
+// 維護提醒: 不得只比較 PID；切換 mentee 時相同 PID 仍可能屬於不同 request。
+// 驗證: node test/js/test_mentor_review_race.cjs；另跑 test/unit/test_mentor_scope.py。
 
 class MentorDashboard {
     constructor() {
@@ -10,6 +17,8 @@ class MentorDashboard {
         this.currentId = null;
         this.currentPid = null;
         this.currentReview = null;
+        this.menteeRequestSeq = 0;
+        this.reviewRequestSeq = 0;
     }
 
     async init() {
@@ -109,6 +118,8 @@ class MentorDashboard {
     async removeMentee(menteeId) {
         if (!confirm('確定解除這位指導對象嗎？不會刪除對方資料。')) return;
         try {
+            this.menteeRequestSeq += 1;
+            this.reviewRequestSeq += 1;
             await this._fetchJson(`/api/mentor/mentees/${menteeId}`, {method: 'DELETE'});
             this.current = null;
             this.currentId = null;
@@ -123,11 +134,13 @@ class MentorDashboard {
     }
 
     async selectMentee(menteeId) {
+        const requestSeq = ++this.menteeRequestSeq;
         const body = document.getElementById('mentorWorkbenchBody');
         body.innerHTML = '<div class="text-muted small">載入 2C 工作台…</div>';
         this.showError('');
         try {
             const detail = await this._fetchJson(`/api/mentor/mentees/${menteeId}?notes=0`);
+            if (requestSeq !== this.menteeRequestSeq) return;
             this.current = detail;
             this.currentId = menteeId;
             document.querySelectorAll('[data-mentee-id]').forEach(row => {
@@ -147,6 +160,7 @@ class MentorDashboard {
             this._renderWorkbenchShell(projects);
             if (projects.length) await this.loadReview(projects[0].pid);
         } catch (err) {
+            if (requestSeq !== this.menteeRequestSeq) return;
             body.innerHTML = '<div class="text-danger small">沒有權限或載入失敗。</div>';
             this.showError(err.message);
         }
@@ -216,16 +230,29 @@ class MentorDashboard {
 
     async loadReview(pid) {
         if (!pid || !this.currentId) return;
+        const requestSeq = ++this.reviewRequestSeq;
+        const menteeId = this.currentId;
         this.currentPid = pid;
         this.showError('');
         try {
             const data = await this._fetchJson(
-                `/api/mentor/mentees/${this.currentId}/reviews/${encodeURIComponent(pid)}`
+                `/api/mentor/mentees/${menteeId}/reviews/${encodeURIComponent(pid)}`
             );
+            // NOTE(NOTE-003): A 晚回不得覆蓋 B，否則畫面與後續寫入 PID 會分裂。
+            if (
+                requestSeq !== this.reviewRequestSeq
+                || this.currentId !== menteeId
+                || this.currentPid !== pid
+            ) return;
             this.currentReview = data;
             this._renderManuscript(data.manuscript);
             this._renderItems(data.items || [], data.legacy_comments || []);
         } catch (err) {
+            if (
+                requestSeq !== this.reviewRequestSeq
+                || this.currentId !== menteeId
+                || this.currentPid !== pid
+            ) return;
             this.showError(err.message);
         }
     }

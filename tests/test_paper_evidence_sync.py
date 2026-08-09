@@ -1,6 +1,12 @@
 # 檔案路徑: tests/test_paper_evidence_sync.py
-# 產生時間: 2026-07-19
-# 維護提醒: Flow A 粗索引 → Flow B 原子取代（stale 清除）契約；in-memory DB。
+# 版本: v1.1；更新時間: 2026-08-10 +08:00
+# 模組定位: Paper evidence index 的 artifact-to-segment 與原子取代回歸測試。
+# 主要責任: 驗證 Flow A title-derived sections、page fallback、Flow B 雙語 sections，
+#   以及重跑時 stale rows 全部刪除而其他 paper 不受影響。
+# 安全邊界: 僅使用 tmp_path 與 in-memory SQLite，不讀寫正式 literature/data。
+# 維護提醒: 有 Title 的 fusion 現行契約是 STAGE_FLOW_A_SECTIONS；只有無 Title 才是
+#   STAGE_FLOW_A page fallback，測試不得再把兩者混為同一 stage。
+# 執行: python -m pytest tests/test_paper_evidence_sync.py -q
 
 import json
 import os
@@ -10,7 +16,7 @@ from flask import Flask
 from app import db
 from app.models import EvidenceSegment
 from app.services.paper_evidence_sync import (
-    STAGE_FLOW_A,
+    STAGE_FLOW_A_SECTIONS,
     STAGE_FLOW_B,
     build_segments_from_fusion,
     build_segments_from_reflow,
@@ -97,16 +103,16 @@ def test_flow_a_then_flow_b_atomic_replacement(tmp_path):
         db.create_all()
         paper_dir = _write_artifacts(tmp_path, with_reflow=False)
 
-        # Flow A 粗索引
+        # Flow A 章節索引（有 Title 時優先於頁級 fallback）
         result_a = sync_paper_evidence("P1", "paper-1", paper_dir, prefer="fusion")
-        assert not result_a["skipped"] and result_a["stage"] == STAGE_FLOW_A
+        assert not result_a["skipped"] and result_a["stage"] == STAGE_FLOW_A_SECTIONS
         rows = EvidenceSegment.query.filter_by(project_id="P1", paper_id="paper-1").all()
-        assert {r.segment_id for r in rows} == {"page-1", "page-2"}
+        assert {r.segment_id for r in rows} == {"fsec-1"}
 
         # Flow B 精索引：舊的頁級 segments 必須全部被清除（不能只靠 content_hash）
         result_b = sync_reflow_evidence("P1", "paper-1", REFLOW)
         assert result_b["stage"] == STAGE_FLOW_B
-        assert result_b["deleted"] == 2, "stale Flow A segments 必須被刪除"
+        assert result_b["deleted"] == 1, "stale Flow A segments 必須被刪除"
         rows = EvidenceSegment.query.filter_by(project_id="P1", paper_id="paper-1").all()
         assert {r.segment_id for r in rows} == {"sec-1", "sec-2"}
         for row in rows:

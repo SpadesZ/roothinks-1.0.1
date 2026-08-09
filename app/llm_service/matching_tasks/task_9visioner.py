@@ -1,6 +1,10 @@
-#路徑(./app/llm_service/matching_tasks/task_9visioner.py) 
-#版本 v0.7 (Attachment Base64/Text Parsing)
-#更版時間 20260319-1045
+# 檔案路徑: app/llm_service/matching_tasks/task_9visioner.py
+# 版本: v0.8；更新時間: 2026-08-10 +08:00
+# 模組定位: Task8Drafter 的圖像／架構圖子任務，輸出 Mermaid 或 image prompt。
+# 主要責任: 將使用者需求、受限 context 與附件摘要組成視覺化 prompt並解析回傳格式。
+# 上下游: Task8Drafter -> Task9Visioner -> dispatch_task(task_9visioner)。
+# 安全邊界: 附件只截取有限內容；取消訊號必須原樣交給 dispatcher。
+# 驗證: python -m pytest test/unit/test_llm_cancellation.py -q
 
 import json
 from app.llm_service.llm_dispatcher import dispatch_task
@@ -13,7 +17,7 @@ class Task9Visioner:
     """
     TASK_ID = "task_9visioner" 
 
-    def generate_image(self, user_prompt, context_text="", attachment=None):
+    def generate_image(self, user_prompt, context_text="", attachment=None, cancel_event=None):
         file_info = ""
         
         # 解析由前端傳入的一體化附件 Payload
@@ -53,7 +57,8 @@ class Task9Visioner:
         Return ONLY valid Mermaid code wrapped in ```mermaid ... ```.
         """
         
-        res = dispatch_task(self.TASK_ID, system_prompt)
+        # NOTE(NOTE-002): 子 task 不能在 parent 已取消後另開不可中止的 provider call。
+        res = dispatch_task(self.TASK_ID, system_prompt, cancel_event=cancel_event)
         
         if not res.get("ok"):
             return {"type": "error", "content": res.get("msg")}

@@ -1,14 +1,22 @@
 # 檔案路徑: app/llm_service/llm_dispatcher.py
 # 產生時間: 2026-07-04 19:10 +08:00
-# 版本: v0.5
+# 版本: v0.6（cancellable provider dispatch）
+# 更新時間: 2026-08-10 +08:00
 # 模組定位:
 #   LLM task dispatcher：Task ID -> binding -> bus -> provider。
 # 主要責任:
 #   1. 保留既有 tuple/dict 回傳格式。
 #   2. 新增結構化 error_code，避免只靠中文訊息判斷 fatal。
 #   3. 以 opt-in file cache 保守快取成功 response。
+#   4. 將 Manuscript cancel_event 傳到 bus，取消時禁止 cache 與 retry；若 provider
+#      已回傳，usage 仍照實記錄已消耗的 token。
+# 上下游:
+#   matching task -> dispatch_task -> LlmDispatcher -> LlmBus -> provider adapter。
 # 維護提醒:
 #   - cache 預設關閉；不可保存 API key 或 connection raw row。
+#   - cancellation 是終止狀態，不得包成一般 provider error 後重試。
+# 驗證方式:
+#   python -m pytest test/unit/test_llm_cancellation.py test/unit/test_llm_usage_and_pricing.py -q
 # -----------------------------------------------------------------------------
 from app.llm_service.llm_model import LLMModel
 from app.llm_service.llm_bus import LlmBus
@@ -21,6 +29,7 @@ from app.services.llm_response_cache import (
 )
 import time
 import logging
+from app.llm_service.llm_cancellation import LLMRequestCancelled, is_cancelled
 
 _LOGGER = logging.getLogger("LLMDispatcher")
 
@@ -31,7 +40,10 @@ class LlmDispatcher:
     流程：Task ID -> 查表(Bindings) -> 取得 Connection ID -> 初始化 Bus -> 執行
     """
     
-    def execute(self, task_id: str, text: str, images: list = None, max_retries: int = 1):
+    def execute(
+        self, task_id: str, text: str, images: list = None, max_retries: int = 1,
+        cancel_event=None,
+    ):
         """
         執行指定的 AI 任務
         :param task_id: 例如 'task_1paqswot'
@@ -41,6 +53,8 @@ class LlmDispatcher:
         :return: (Success: bool, Result: dict, Message: str)
         """
         try:
+            if is_cancelled(cancel_event):
+                return False, {"cancelled": True}, "LLM request cancelled"
             # 1. 查詢綁定表 (Task Bindings)
             # 從資料庫獲取該任務 ID 綁定的 Connection ID
             binding = LLMModel.execute_query(
@@ -80,6 +94,8 @@ class LlmDispatcher:
                 )
                 cached = load_cached_response(cache_key)
                 if cached:
+                    if is_cancelled(cancel_event):
+                        return False, {"cancelled": True}, "LLM request cancelled"
                     response = dict(cached.get("response") or {})
                     response["cache_hit"] = True
                     response["cache_key"] = cache_key
@@ -87,7 +103,7 @@ class LlmDispatcher:
             
             # 3. 執行生成
             # 調用 Bus 的統一介面發送請求
-            ok, res, err = bus.send_message(text, images)
+            ok, res, err = bus.send_message(text, images, cancel_event=cancel_event)
 
             if ok:
                 # [usage] 記在這裡而不是各個 task 類別裡：這是唯一同時知道
@@ -111,6 +127,8 @@ class LlmDispatcher:
                 app_err = AppError(ErrorCode.LLM_PROVIDER_ERROR, f"Provider Error: {err}")
                 return False, {"error_code": app_err.code.value}, str(app_err)
 
+        except LLMRequestCancelled:
+            return False, {"cancelled": True}, "LLM request cancelled"
         except Exception as e:
             app_err = AppError(ErrorCode.LLM_PROVIDER_ERROR, "Dispatcher system error", ErrorSeverity.RECOVERABLE, e)
             return False, {"error_code": app_err.code.value}, str(app_err)
@@ -119,7 +137,9 @@ class LlmDispatcher:
 dispatcher = LlmDispatcher()
 
 
-def dispatch_task(task_id, prompt, priority=5, images=None, max_retries=None):
+def dispatch_task(
+    task_id, prompt, priority=5, images=None, max_retries=None, cancel_event=None
+):
     """
     向後相容函式：回傳舊版 dict 結構，供 task_3~task_7直接使用。
     """
@@ -133,13 +153,21 @@ def dispatch_task(task_id, prompt, priority=5, images=None, max_retries=None):
     attempts = retry_cnt + 1
     last_msg = ""
     for i in range(attempts):
-        ok, res, msg = dispatcher.execute(task_id, prompt, images)
+        # NOTE(NOTE-002): 每次 provider call 與 retry 前都要先看同一個 event。
+        if is_cancelled(cancel_event):
+            return {"ok": False, "cancelled": True, "msg": "LLM request cancelled"}
+        ok, res, msg = dispatcher.execute(
+            task_id, prompt, images, cancel_event=cancel_event
+        )
         if ok:
             out = {"ok": True, "text": res.get("text", "")}
             if res.get("cache_hit"):
                 out["cache_hit"] = True
                 out["cache_key"] = res.get("cache_key")
             return out
+
+        if (res or {}).get("cancelled") or is_cancelled(cancel_event):
+            return {"ok": False, "cancelled": True, "msg": "LLM request cancelled"}
 
         last_msg = msg
         # 避免在安全阻擋或設定錯誤時做無效重試
@@ -149,6 +177,11 @@ def dispatch_task(task_id, prompt, priority=5, images=None, max_retries=None):
             break
 
         if i < attempts - 1:
-            time.sleep(0.6 * (i + 1))
+            delay = 0.6 * (i + 1)
+            if cancel_event is not None:
+                if cancel_event.wait(delay):
+                    return {"ok": False, "cancelled": True, "msg": "LLM request cancelled"}
+            else:
+                time.sleep(delay)
 
     return {"ok": False, "msg": last_msg}

@@ -1,10 +1,23 @@
-#路徑(./app/llm_service/adapter/llm_openrouter.py) #版本 v0.3 #更版時間 20260430-2132
-#inner comment: 融合多模態支援與高速系統指令介面，並升級 get_available_models_detail 以全量拉取模型並支援前端 is_free 辨識。
+# 檔案路徑: app/llm_service/adapter/llm_openrouter.py
+# 版本: v0.4；更新時間: 2026-08-10 +08:00
+# 模組定位: OpenRouter provider adapter，供 LlmBus 統一呼叫文字／多模態模型。
+# 主要責任: 建立模型 payload、編碼本地圖片、解析 usage，並支援模型清單／計價資料。
+# 上下游: LlmBus 傳入 prompt/filepaths/cancel_event；回傳 (ok, result, error)。
+# 安全邊界: API key 只放 Authorization header，不得出現在 log、錯誤截斷或快取。
+# 取消契約: 有 cancel_event 時走 httpx async request，取消會關閉 coroutine；沒有時保留
+#   既有 requests 同步路徑，避免改變其他 task 的 transport 行為。
+# 驗證: python -m pytest test/unit/test_llm_cancellation.py -q
 import base64
 import mimetypes
 import os
 import requests
+import httpx
 from typing import Dict, List, Tuple
+
+from app.llm_service.llm_cancellation import (
+    LLMRequestCancelled,
+    run_cancellable_async,
+)
 
 
 class OpenRouterClient:
@@ -138,7 +151,9 @@ class OpenRouterClient:
         except Exception as e:
             raise RuntimeError(f"OpenRouter API 執行失敗: {str(e)}")
 
-    def send_text_and_optional_images(self, text: str, filepaths: List[str] = None, history=None) -> Tuple[bool, Dict, str]:
+    def send_text_and_optional_images(
+        self, text: str, filepaths: List[str] = None, history=None, cancel_event=None
+    ) -> Tuple[bool, Dict, str]:
         """供常規 Chatbot 節點使用的對話介面 (支援多模態)"""
         messages = []
         if history:
@@ -182,12 +197,26 @@ class OpenRouterClient:
         }
 
         try:
-            resp = requests.post(
-                self.chat_endpoint,
-                headers=self.headers,
-                json=payload,
-                timeout=self.timeout_sec,
-            )
+            if cancel_event is None:
+                resp = requests.post(
+                    self.chat_endpoint,
+                    headers=self.headers,
+                    json=payload,
+                    timeout=self.timeout_sec,
+                )
+            else:
+                # NOTE(NOTE-002): async transport 讓取消能關閉 socket，而非等回應後丟棄。
+                async def _post():
+                    async with httpx.AsyncClient(timeout=self.timeout_sec) as client:
+                        return await client.post(
+                            self.chat_endpoint,
+                            headers=self.headers,
+                            json=payload,
+                        )
+
+                resp = run_cancellable_async(
+                    _post, cancel_event, timeout_sec=self.timeout_sec
+                )
             if resp.status_code != 200:
                 msg = f"OpenRouter Error {resp.status_code}: {resp.text[:400]}"
                 return False, {}, msg
@@ -215,5 +244,7 @@ class OpenRouterClient:
                     "total_tokens": tokens or 0,
                 },
             }, ""
+        except LLMRequestCancelled:
+            raise
         except Exception as e:
             return False, {}, str(e)

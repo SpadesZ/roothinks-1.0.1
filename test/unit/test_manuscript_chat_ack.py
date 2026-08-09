@@ -1,12 +1,13 @@
 # 檔案路徑: test/unit/test_manuscript_chat_ack.py
 # 產生時間: 2026-08-06 01:30 +08:00
-# 版本: v1.0
+# 版本: v1.1；更新時間: 2026-08-10 +08:00
 # 模組定位:
 #   Manuscript chat_message 事件「一定要回話」契約的回歸測試。
 # 主要責任:
 #   1. save_chat_history 失敗時，仍必須先收到 job_queued（不得靜默死亡）。
 #   2. 派送 job 失敗時，必須補一個 job_error 收尾。
 #   3. 驗證失敗（訊息過長）時，必須收到 sys_msg。
+#   4. 驗證 cancel_event 由 Socket job state 傳入 drafter 並釋放 worker。
 # 呼叫來源:
 #   pytest。不被應用程式碼 import。
 # 輸入輸出契約:
@@ -26,6 +27,7 @@
 #   python -m pytest test/unit/test_manuscript_chat_ack.py -q
 # ------------------------------------------------------------------------------
 import sys
+import threading
 from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -132,6 +134,8 @@ def test_job_queued_is_emitted(bundle):
     _send_chat(bundle["sio"])
     assert "job_queued" in _names(bundle["sio"])
     assert len(bundle["executor"].calls) == 1
+    job_id = bundle["executor"].calls[0][1][2]
+    assert isinstance(bundle["routes"]._get_job_state(job_id)["cancel_event"], threading.Event)
 
 
 def test_job_queued_survives_history_failure(bundle):
@@ -234,3 +238,46 @@ def test_worker_does_not_duplicate_cancel_notification(bundle):
     )
 
     assert "job_cancelled" not in emitted
+
+
+def test_worker_passes_cancel_event_into_drafter(bundle):
+    """取消不只改狀態；執行中的 drafter 必須收到同一個 abort event。"""
+    job_id = "job_provider_abort"
+    cancel_event = threading.Event()
+    entered = threading.Event()
+    observed = {}
+
+    class _BlockingDrafter:
+        def process_request(self, **kwargs):
+            observed["event"] = kwargs.get("cancel_event")
+            entered.set()
+            assert kwargs["cancel_event"].wait(2), "provider abort event was never signalled"
+            return {"type": "error", "content": "cancelled"}
+
+    bundle["routes"]._set_job_state(
+        job_id,
+        cancelled=False,
+        cancel_event=cancel_event,
+        sid="sid-provider-abort",
+        pid=FORMAL_PID,
+        section=SECTION,
+    )
+    bundle["monkeypatch"].setattr(bundle["routes"], "ai_drafter", _BlockingDrafter())
+    bundle["monkeypatch"].setattr(bundle["routes"], "_sid_connected", lambda _sid: True)
+
+    worker = threading.Thread(
+        target=bundle["routes"]._process_chat_job,
+        args=(
+            bundle["app"],
+            "sid-provider-abort",
+            job_id,
+            {"pid": FORMAL_PID, "section": SECTION, "user_msg": "draft"},
+        ),
+    )
+    worker.start()
+    assert entered.wait(2)
+    assert bundle["routes"]._cancel_job_for_sid(job_id, "sid-provider-abort") == "cancelled"
+    worker.join(2)
+
+    assert not worker.is_alive(), "cancelled worker kept occupying the chat pool"
+    assert observed["event"] is cancel_event

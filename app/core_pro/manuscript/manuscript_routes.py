@@ -1,6 +1,7 @@
 # 檔案路徑: app/core_pro/manuscript/manuscript_routes.py
 # 產生時間: 2026-07-19 09:00 +08:00
-# 版本: v1.8
+# 版本: v1.9（provider-aware chat cancellation）
+# 更新時間: 2026-08-10 +08:00
 # 模組定位:
 #   Manuscript 模組 Flask Blueprint + Socket.IO namespace /manu_ws 控制層。
 # 主要責任:
@@ -24,6 +25,8 @@
 #        該函式的 FileLock 逾時會讓 handler 死在 ack 之前，前端永久轉圈）。
 #      - save_chat_history 失敗只 log，不中斷生成。
 #      - ack 之後任何例外一律補 emit job_error，確保前端一定收得到終止事件。
+#  10. [v1.9] 每個 chat job 保存 cancel_event；取消／斷線會同步通知實際
+#      provider transport，中止 quota wait、retry 與進行中的網路請求。
 # 呼叫來源:
 #   app/__init__.py register_blueprint；前端 Socket.IO /manu_ws namespace。
 # 輸入輸出契約:
@@ -414,6 +417,10 @@ def _cancel_job_for_sid(job_id, sid):
         if state.get('sid') != sid:
             return 'forbidden'
         state['cancelled'] = True
+        # NOTE(NOTE-002): UI 狀態與 provider abort 共用同一 event，不能只丟棄回傳。
+        cancel_event = state.get('cancel_event')
+        if cancel_event is not None:
+            cancel_event.set()
         return 'cancelled'
 
 
@@ -422,6 +429,9 @@ def _mark_jobs_cancelled_by_sid(sid):
         for k, v in _job_state.items():
             if v.get('sid') == sid:
                 v['cancelled'] = True
+                cancel_event = v.get('cancel_event')
+                if cancel_event is not None:
+                    cancel_event.set()
 
 
 def _sid_connected(sid):
@@ -462,8 +472,7 @@ def _process_chat_job(app_obj, sid, job_id, payload):
                 payload.get('section'),
                 len(str(payload.get('user_msg', '') or '')),
             )
-            # ponytail: provider 呼叫目前沒有 abort token；取消採合作式旗標並丟棄
-            # 回傳結果。若供應商日後提供可中止 API，再把 token 接進 process_request。
+            cancel_event = _get_job_state(job_id).get('cancel_event')
             ai_response = ai_drafter.process_request(
                 user_prompt=payload.get('user_msg', ''),
                 context_text=payload.get('context_text', ''),
@@ -474,6 +483,7 @@ def _process_chat_job(app_obj, sid, job_id, payload):
                 title=payload.get('title', 'Untitled Paper'),
                 section=payload.get('section', 'general'),
                 s_ver=payload.get('s_ver', '0.1'),
+                cancel_event=cancel_event,
             )
 
             if _is_cancelled(job_id):
@@ -1057,7 +1067,14 @@ def handle_chat(data):
 
     job_id = f"job_{uuid4().hex}"
     sid = request.sid
-    _set_job_state(job_id, cancelled=False, sid=sid, pid=pid, section=section)
+    _set_job_state(
+        job_id,
+        cancelled=False,
+        cancel_event=threading.Event(),
+        sid=sid,
+        pid=pid,
+        section=section,
+    )
 
     # [v1.8] ack 必須排在所有會失敗的工作之前。
     # 原本 save_chat_history() 排在這個 emit 之前，而它會走 security.write_json_locked

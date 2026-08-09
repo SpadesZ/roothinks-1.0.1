@@ -1,7 +1,21 @@
-#路徑(./app/llm_service/adapter/llm_google.py) #版本 v0.2 #更版時間 20260411-1450
+# 檔案路徑: app/llm_service/adapter/llm_google.py
+# 版本: v0.3；更新時間: 2026-08-10 +08:00
+# 模組定位: Google Gemini provider adapter，含 quota gate、JSON mode 與多模態支援。
+# 主要責任: 建立 Gemini content、載入／關閉圖片、限制配額、解析安全阻擋與 usage。
+# 上下游: LlmBus 傳入 prompt/filepaths/cancel_event；成功 usage 交 dispatcher 記帳。
+# 安全邊界: API key 僅以 HTTPS query param 送 Google 官方 endpoint，不寫 log/cache。
+# 取消契約: 有 event 時把 SDK request 轉為同 schema REST coroutine以便關閉；無 event
+#   仍走原 SDK 同步路徑，避免影響 Literature 等既有呼叫。
+# 驗證: python -m pytest test/unit/test_llm_cancellation.py test/unit/test_llm_usage_and_pricing.py -q
 import google.generativeai as genai
+from google.ai.generativelanguage_v1beta.types.generative_service import (
+    GenerateContentResponse as RawGenerateContentResponse,
+)
+from google.generativeai.types import generation_types
 from typing import List, Tuple, Dict
+import json
 import os
+import httpx
 from PIL import Image
 from concurrent.futures import ThreadPoolExecutor, TimeoutError as FutureTimeoutError
 import time
@@ -12,6 +26,12 @@ import threading
 import logging
 
 import redis
+
+from app.llm_service.llm_cancellation import (
+    LLMRequestCancelled,
+    is_cancelled,
+    run_cancellable_async,
+)
 
 logger = logging.getLogger("app.llm_service.adapter.llm_google")
 
@@ -248,11 +268,13 @@ return {1, 0}
             logger.warning("[GoogleClient] Redis quota eval failed, fallback local: %s", e)
             return self._consume_quota_local(token_cost, now_ts)
 
-    def _wait_for_quota_slot(self, token_cost: int):
+    def _wait_for_quota_slot(self, token_cost: int, cancel_event=None):
         if not self.rate_limit_enabled:
             return True, ""
         deadline = time.time() + max(0.0, self.quota_wait_max_sec)
         while True:
+            if is_cancelled(cancel_event):
+                raise LLMRequestCancelled("LLM request cancelled")
             now_ts = int(time.time())
             ok, wait_sec, reason = self._consume_quota_redis(token_cost, now_ts)
             if ok:
@@ -269,7 +291,12 @@ return {1, 0}
                 reason,
                 wait_sec,
             )
-            time.sleep(min(wait_sec, self.quota_poll_step_sec))
+            sleep_sec = min(wait_sec, self.quota_poll_step_sec)
+            if cancel_event is not None:
+                if cancel_event.wait(sleep_sec):
+                    raise LLMRequestCancelled("LLM request cancelled")
+            else:
+                time.sleep(sleep_sec)
 
     @staticmethod
     def _extract_retry_after_sec(error_text: str) -> float:
@@ -320,7 +347,43 @@ return {1, 0}
         hits = sum(1 for h in hints if h in low)
         return hits >= 2
 
-    def _generate_with_timeout(self, model, content_parts, generation_config=None):
+    def _generate_with_timeout(
+        self, model, content_parts, generation_config=None, cancel_event=None
+    ):
+        if cancel_event is not None:
+            # NOTE(NOTE-002): SDK 的同步 future 無法由 Socket thread可靠中止，故只在
+            # cancellable job 使用同一 protobuf schema 的官方 REST endpoint。
+            request = model._prepare_request(
+                contents=content_parts,
+                generation_config=generation_config,
+                safety_settings=None,
+                tools=None,
+                tool_config=None,
+            )
+            if request.contents and not request.contents[-1].role:
+                request.contents[-1].role = "user"
+            payload = json.loads(type(request).to_json(request))
+            model_path = payload.pop("model", request.model)
+            endpoint = (
+                f"https://generativelanguage.googleapis.com/v1beta/"
+                f"{model_path}:generateContent"
+            )
+
+            async def _post():
+                async with httpx.AsyncClient(timeout=self.timeout_sec) as client:
+                    response = await client.post(
+                        endpoint,
+                        params={"key": self.api_key},
+                        json=payload,
+                    )
+                    response.raise_for_status()
+                    raw = RawGenerateContentResponse.from_json(response.text)
+                    return generation_types.GenerateContentResponse.from_response(raw)
+
+            return run_cancellable_async(
+                _post, cancel_event, timeout_sec=self.timeout_sec
+            )
+
         # google-generativeai SDK 沒有穩定 timeout 參數，使用工作執行緒做硬性時限保護
         pool = ThreadPoolExecutor(max_workers=1)
         if generation_config:
@@ -361,7 +424,9 @@ return {1, 0}
             logger.error(f"[GoogleClient] List Models Error: {e}")
             return []
 
-    def send_text_and_optional_images(self, text: str, filepaths: List[str] = None) -> Tuple[bool, Dict, str]:
+    def send_text_and_optional_images(
+        self, text: str, filepaths: List[str] = None, cancel_event=None
+    ) -> Tuple[bool, Dict, str]:
         """
         發送圖文請求 (Multimodal Interface)
         return: (Success, ResultDict, ErrorMsg)
@@ -398,20 +463,32 @@ return {1, 0}
         )
         try:
             for attempt in range(1, attempts + 1):
-                ok_to_send, quota_msg = self._wait_for_quota_slot(est_tokens)
+                ok_to_send, quota_msg = self._wait_for_quota_slot(
+                    est_tokens, cancel_event=cancel_event
+                )
                 if not ok_to_send:
                     return False, {}, f"Google quota throttle: {quota_msg}"
 
                 try:
                     try:
-                        response = self._generate_with_timeout(model, content_parts, generation_config=generation_config)
+                        response = self._generate_with_timeout(
+                            model,
+                            content_parts,
+                            generation_config=generation_config,
+                            cancel_event=cancel_event,
+                        )
                     except Exception as cfg_err:
                         # 部分舊版 SDK/模型可能不支援 response_mime_type，回退到一般模式。
                         if generation_config:
                             low_err = str(cfg_err or "").lower()
                             if any(k in low_err for k in ["generation_config", "response_mime_type", "unknown field", "invalid argument"]):
                                 logger.warning("[GoogleClient] JSON mode not supported, fallback normal mode: %s", cfg_err)
-                                response = self._generate_with_timeout(model, content_parts, generation_config=None)
+                                response = self._generate_with_timeout(
+                                    model,
+                                    content_parts,
+                                    generation_config=None,
+                                    cancel_event=cancel_event,
+                                )
                             else:
                                 raise
                         else:
@@ -436,6 +513,8 @@ return {1, 0}
                         feedback = str(getattr(response, "prompt_feedback", "Unknown Block"))
                         return False, {}, f"Blocked by safety filters. Feedback: {feedback}"
 
+                except LLMRequestCancelled:
+                    raise
                 except TimeoutError as te:
                     last_err = str(te)
                 except Exception as e:
@@ -450,9 +529,15 @@ return {1, 0}
                     sleep_sec = min(max(0.0, sleep_sec), self.max_backoff_sec)
                     if sleep_sec <= 0:
                         sleep_sec = self.retry_backoff_sec
-                    time.sleep(sleep_sec)
+                    if cancel_event is not None:
+                        if cancel_event.wait(sleep_sec):
+                            raise LLMRequestCancelled("LLM request cancelled")
+                    else:
+                        time.sleep(sleep_sec)
 
             return False, {}, f"Google request failed after {attempts} attempts: {last_err}"
+        except LLMRequestCancelled:
+            raise
         finally:
             for img in opened_images:
                 try:

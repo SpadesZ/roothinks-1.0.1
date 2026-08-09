@@ -1,6 +1,6 @@
 # 檔案路徑: test/unit/test_mentor_scope.py
 # 產生時間: 2026-07-26 04:40 +08:00
-# 版本: v1.0
+# 版本: v1.1；更新時間: 2026-08-10 +08:00
 # 模組定位:
 #   Mentor 功能的權限邊界與活動統計測試。
 # 主要責任:
@@ -10,6 +10,7 @@
 #   4. 以 email 加入 mentee 的流程與錯誤處理。
 #   5. UserSession：登入建立、heartbeat 累計、登出結算、逾時自動結算。
 #   6. 派工與評論的權限：mentee 只能改狀態，不能竄改工作內容。
+#   7. MentorLink 不等於 2C ACL；雙方共同 workspace、section scope 與 admin bypass。
 # 呼叫來源:
 #   pytest。不被應用程式碼 import。
 # 輸入輸出契約:
@@ -102,6 +103,20 @@ def _link(app, mentor_id, mentee_id):
 
     with app.app_context():
         db.session.add(MentorLink(mentor_id=mentor_id, mentee_id=mentee_id))
+        db.session.commit()
+
+
+def _grant_shared_project(app, mentor_id, mentee_id, pid="SHARED-p"):
+    from app import db
+    from app.models import Project, WorkspaceMember
+
+    with app.app_context():
+        if Project.query.filter_by(project_id=pid).first() is None:
+            db.session.add(Project(project_id=pid, name="Shared Review", status="formal"))
+        db.session.add_all([
+            WorkspaceMember(user_id=mentor_id, pid=pid, role="viewer"),
+            WorkspaceMember(user_id=mentee_id, pid=pid, role="editor"),
+        ])
         db.session.commit()
 
 
@@ -232,14 +247,38 @@ class TestMentorAlsoUser:
 
 class TestAddMentee:
     def test_add_by_email(self, app, make_user):
-        make_user("m8", "mentor")
-        make_user("s8")
+        mentor_id = make_user("m8", "mentor")
+        mentee_id = make_user("s8")
+        _grant_shared_project(app, mentor_id, mentee_id, "ADD8-p")
         client = app.test_client()
         _login(client, "m8")
 
         resp = client.post("/api/mentor/mentees", json={"email": "s8@test.local"})
         assert resp.status_code == 201
         assert resp.get_json()["mentee"]["mentee_email"] == "s8@test.local"
+
+    def test_add_requires_shared_full_2c_project(self, app, make_user):
+        make_user("m8denied", "mentor")
+        make_user("s8denied")
+        client = app.test_client()
+        _login(client, "m8denied")
+
+        resp = client.post(
+            "/api/mentor/mentees", json={"email": "s8denied@test.local"}
+        )
+        assert resp.status_code == 403
+        assert client.get("/api/mentor/mentees").get_json()["mentees"] == []
+
+    def test_admin_can_add_without_shared_project(self, app, make_user):
+        make_user("admin8", "admin")
+        make_user("sadmin8")
+        client = app.test_client()
+        _login(client, "admin8")
+
+        resp = client.post(
+            "/api/mentor/mentees", json={"email": "sadmin8@test.local"}
+        )
+        assert resp.status_code == 201
 
     def test_add_unknown_email_404(self, app, make_user):
         make_user("m9", "mentor")
@@ -257,8 +296,9 @@ class TestAddMentee:
         assert resp.status_code == 400
 
     def test_duplicate_add_is_idempotent(self, app, make_user):
-        make_user("m11", "mentor")
-        make_user("s11")
+        mentor_id = make_user("m11", "mentor")
+        mentee_id = make_user("s11")
+        _grant_shared_project(app, mentor_id, mentee_id, "ADD11-p")
         client = app.test_client()
         _login(client, "m11")
 
@@ -513,7 +553,10 @@ class TestMentorReviewWorkbench:
         pid = f"REV{suffix.upper()}-p"
         with app.app_context():
             db.session.add(Project(project_id=pid, name="Review Paper", status="formal"))
-            db.session.add(WorkspaceMember(user_id=mentee_id, pid=pid, role=role))
+            db.session.add_all([
+                WorkspaceMember(user_id=mentor_id, pid=pid, role="viewer"),
+                WorkspaceMember(user_id=mentee_id, pid=pid, role=role),
+            ])
             db.session.commit()
             if role != "coauthor":
                 ManuscriptIO.save_paper_version(pid, "First", "<p>old</p>", updated_by="author")
@@ -571,6 +614,21 @@ class TestMentorReviewWorkbench:
             app, make_user, "r3", role="coauthor"
         )
         assert client.get(f"/api/mentor/mentees/{mentee_id}/reviews/{pid}").status_code == 403
+
+    def test_mentor_link_alone_does_not_grant_2c(self, app, make_user):
+        client, mentor_id, mentee_id, pid = self._setup(app, make_user, "rdeny")
+        from app import db
+        from app.models import WorkspaceMember
+
+        with app.app_context():
+            WorkspaceMember.query.filter_by(user_id=mentor_id, pid=pid).delete()
+            db.session.commit()
+
+        endpoint = f"/api/mentor/mentees/{mentee_id}/reviews/{pid}"
+        assert client.get(endpoint).status_code == 403
+        assert client.post(
+            endpoint + "/items", json={"kind": "comment", "body": "sneaky"}
+        ).status_code == 403
 
     def test_pdf_magic_size_and_download_authorization(self, app, make_user, monkeypatch):
         client, mentor_id, mentee_id, pid = self._setup(app, make_user, "r4")

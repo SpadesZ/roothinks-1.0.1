@@ -1,8 +1,16 @@
 # 路徑(./app/llm_service/matching_tasks/task_8drafter.py) 
-# 版本 v2.8 (LLM Semantic Intent Routing + Word docx import)
-# 更版時間 20260421-1415
-# inner comment: 導入使用者提案的 LLM 語義路由機制。捨棄死板關鍵字，讓 LLM 獨立回答 1(圖片), 2(表格), 0(草稿) 來精準派發任務。
-# CHANGE_PLAN_STUDY_FLOWB_2026-04-20: MVP prototype - add backend .docx text extraction for manuscript import.
+# 檔案路徑: app/llm_service/matching_tasks/task_8drafter.py
+# 版本: v2.9；更新時間: 2026-08-10 +08:00
+# 模組定位: Manuscript 2A 的寫作協調器；負責 grounding、意圖判斷與文字／圖／表派送。
+# 主要責任:
+#   1. 清洗使用者 prompt、context 與 docx/text attachment，控制 prompt budget。
+#   2. 先由 ManuscriptRuling 建立可追溯 context，再判斷 draft/image/sheet intent。
+#   3. draft 使用雙軌語言與 JSON contract；image/sheet 交給專責 matching task。
+#   4. 將 cancel_event 傳過所有 LLM stage，取消後不得啟動下一個 provider call。
+# 上下游: manuscript_routes -> Task8Drafter -> dispatch_task/Task9/TaskX；回傳 UI dict。
+# 安全邊界: title-only 不得冒充 grounded draft；untrusted context 不得覆寫 system rule。
+# 維護提醒: intent routing 本身也是一次 LLM call，新增 stage 時必須延續取消與來源 metadata。
+# 驗證: python -m pytest test/unit/test_manuscript_grounding.py test/unit/test_llm_cancellation.py -q
 
 import json
 import os
@@ -16,6 +24,7 @@ from app.llm_service.llm_dispatcher import dispatch_task
 from app.llm_service.matching_tasks.task_9visioner import Task9Visioner
 from app.llm_service.matching_tasks.task_xtabulator import TaskXTabulator
 from app.core_pro.manuscript.manuscript_ruling import ManuscriptRuling
+from app.llm_service.llm_cancellation import is_cancelled
 
 import logging
 
@@ -266,8 +275,11 @@ class Task8Drafter:
     def process_request(self, user_prompt, context_text="", target_lang="English", 
                         attachment=None, import_type="other", 
                         pid=None, title=None, section=None, s_ver=None, **kwargs):
-        
+        cancel_event = kwargs.get("cancel_event")
         logger.info(f"[Task8Drafter] Processing for Paper: '{title}' ({section}) | Import: {import_type} | Lang: {target_lang}")
+
+        if is_cancelled(cancel_event):
+            return {"type": "error", "content": "Request cancelled."}
 
         max_user_prompt_chars = self._read_int_env("DRAFTER_MAX_USER_PROMPT_CHARS", 4000)
         user_prompt = self._sanitize_untrusted_text(user_prompt, max_user_prompt_chars)
@@ -285,6 +297,8 @@ class Task8Drafter:
             current_context=context_text, attachment=attachment, import_type=import_type,
             user_prompt=user_prompt,
         )
+        if is_cancelled(cancel_event):
+            return {"type": "error", "content": "Request cancelled."}
         
         if not ruling_result.get("ok"):
             return {
@@ -297,7 +311,10 @@ class Task8Drafter:
         context_sources = ruling_result.get("context_sources", [])
 
         # 1. Intent Detection (使用 v2.7 智能語義路由)
-        intent = self._detect_intent(user_prompt)
+        # NOTE(NOTE-002): router 與正式 drafting 是兩次 call；取消後不得落入第二次。
+        intent = self._detect_intent(user_prompt, cancel_event=cancel_event)
+        if is_cancelled(cancel_event):
+            return {"type": "error", "content": "Request cancelled."}
         
         # 2. Zero-Context Guard (防呆與引導機制)
         has_meaningful_context = bool(ruling_result.get("has_grounding"))
@@ -324,19 +341,23 @@ class Task8Drafter:
                 logger.info("[Task8Drafter] Intent=1. Routing payload to Task9Visioner...")
                 agent = Task9Visioner()
                 # 完整透傳 attachment (含圖片/Excel Base64 數據) 至子節點
-                result = agent.generate_image(user_prompt, context_text, attachment)
+                result = agent.generate_image(
+                    user_prompt, context_text, attachment, cancel_event=cancel_event
+                )
             
             elif intent == "sheet":
                 logger.info("[Task8Drafter] Intent=2. Routing payload to TaskXTabulator...")
                 agent = TaskXTabulator()
                 # 完整透傳 attachment 讓 LLM 將上傳檔案轉成 JSON 數據表
-                result = agent.generate_sheet(user_prompt, context_text, attachment)
+                result = agent.generate_sheet(
+                    user_prompt, context_text, attachment, cancel_event=cancel_event
+                )
             
             else:
                 logger.info("[Task8Drafter] Intent=0. Handling as native Draft generation...")
                 result = self._generate_text_response(
                     user_prompt, context_text, target_lang, attachment, import_type,
-                    title, section, intent
+                    title, section, intent, cancel_event=cancel_event
                 )
             if isinstance(result, dict):
                 result.setdefault("meta", {})["context_sources"] = context_sources
@@ -365,7 +386,7 @@ class Task8Drafter:
         except Exception as e:
             return None
 
-    def _detect_intent(self, prompt):
+    def _detect_intent(self, prompt, cancel_event=None):
         """
         [v2.7 升級] LLM Semantic Intent Routing (語義意圖路由)
         完全依據使用者的提案，獨立詢問 LLM 關於意圖的分類，並回傳數字代碼。
@@ -389,7 +410,14 @@ class Task8Drafter:
         
         try:
             # 呼叫 dispatcher 進行輕量級的意圖判定
-            route_res = dispatch_task(self.TASK_ID, routing_prompt, max_retries=1)
+            route_res = dispatch_task(
+                self.TASK_ID,
+                routing_prompt,
+                max_retries=1,
+                cancel_event=cancel_event,
+            )
+            if route_res.get("cancelled"):
+                return "cancelled"
             if route_res.get("ok"):
                 ans = route_res.get("text", "").strip()
                 if "1" in ans:
@@ -419,7 +447,10 @@ class Task8Drafter:
             
         return "text"
 
-    def _generate_text_response(self, prompt, context, target_lang, attachment, import_type, title, section, intent):
+    def _generate_text_response(
+        self, prompt, context, target_lang, attachment, import_type, title, section,
+        intent, cancel_event=None,
+    ):
         safe_prompt = self._sanitize_untrusted_text(prompt, self._read_int_env("DRAFTER_MAX_USER_PROMPT_CHARS", 4000))
         safe_context = self._sanitize_untrusted_text(context, self._read_int_env("DRAFTER_MAX_CONTEXT_CHARS", 400000))
         
@@ -481,7 +512,12 @@ class Task8Drafter:
         {format_instruction}
         """
         
-        res = dispatch_task(self.TASK_ID, system_instruction, max_retries=2)
+        res = dispatch_task(
+            self.TASK_ID,
+            system_instruction,
+            max_retries=2,
+            cancel_event=cancel_event,
+        )
         
         if res.get("ok"):
             response_text = res.get("text")

@@ -1,6 +1,10 @@
-#路徑(./app/llm_service/matching_tasks/task_xtabulator.py) 
-#版本 v0.6 (Attachment Data to Strict JSON Table)
-#更版時間 20260319-1045
+# 檔案路徑: app/llm_service/matching_tasks/task_xtabulator.py
+# 版本: v0.7；更新時間: 2026-08-10 +08:00
+# 模組定位: Task8Drafter 的資料表子任務，將來源資料轉為嚴格 2D JSON table。
+# 主要責任: 截取 context／attachment、要求 raw JSON schema並驗證 headers/rows。
+# 上下游: Task8Drafter -> TaskXTabulator -> dispatch_task(task_xtabulator)。
+# 安全邊界: 不執行附件內容；取消訊號必須原樣交給 dispatcher。
+# 驗證: python -m pytest test/unit/test_llm_cancellation.py -q
 
 import json
 from app.llm_service.llm_dispatcher import dispatch_task
@@ -13,7 +17,7 @@ class TaskXTabulator:
     """
     TASK_ID = "task_xtabulator" 
 
-    def generate_sheet(self, user_prompt, context_text="", attachment=None):
+    def generate_sheet(self, user_prompt, context_text="", attachment=None, cancel_event=None):
         file_info = ""
         
         # 攔截附件數據，提供給製表專家使用
@@ -51,7 +55,8 @@ class TaskXTabulator:
         }}
         """
         
-        res = dispatch_task(self.TASK_ID, system_prompt)
+        # NOTE(NOTE-002): 子 task 不能在 parent 已取消後另開不可中止的 provider call。
+        res = dispatch_task(self.TASK_ID, system_prompt, cancel_event=cancel_event)
         
         if not res.get("ok"):
             return {"type": "error", "content": res.get("msg")}

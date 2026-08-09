@@ -1,12 +1,13 @@
 # 檔案路徑: test/unit/test_manuscript_grounding.py
 # 產生時間: 2026-08-07 23:20 +08:00
-# 版本: v1.0
+# 版本: v1.1；更新時間: 2026-08-10 +08:00
 # 模組定位:
 #   Manuscript 持久化接線與 Drafter grounding 的最小回歸護欄。
 # 主要責任:
 #   1. 證明自然語言指令會進入論文段落檢索，而非只看 2B 畫布。
 #   2. 證明研究筆記在長草稿下仍保留，Title-only 不能冒充有依據。
 #   3. 守住 Study 最新矩陣、2B 草稿與 2C 最新版本的重新載入入口。
+#   4. 意圖 router 的 test double 必須相容可選 cancel_event。
 # 維護提醒:
 #   - 這些是無外部 LLM 的契約測試；真正 UI 仍須以瀏覽器重新整理驗收。
 # -----------------------------------------------------------------------------
@@ -95,7 +96,7 @@ def test_drafter_blocks_title_only_generation(monkeypatch):
         },
     )
     drafter = Task8Drafter()
-    monkeypatch.setattr(drafter, "_detect_intent", lambda prompt: "draft")
+    monkeypatch.setattr(drafter, "_detect_intent", lambda prompt, **_kwargs: "draft")
 
     result = drafter.process_request(
         "請寫摘要", pid="P1-p", title="Title Only", section="abstract",

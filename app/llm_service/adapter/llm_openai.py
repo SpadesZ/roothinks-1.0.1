@@ -1,4 +1,12 @@
-#路徑(./app/llm_service/adapter/llm_openai.py) #版本 v0.2 #更版時間 20260419-1606
+# 檔案路徑: app/llm_service/adapter/llm_openai.py
+# 版本: v0.3；更新時間: 2026-08-10 +08:00
+# 模組定位: OpenAI provider adapter，含跨 worker quota gate 與 usage 正規化前置資料。
+# 主要責任: 組合文字／圖片 message、Redis 優先節流、有限重試及 provider 錯誤分類。
+# 上下游: LlmBus 傳入 prompt/filepaths/cancel_event；成功 usage 交 dispatcher 記帳。
+# 安全邊界: API key 不得寫入 log/cache；quota backend 失效才退回 process-local counters。
+# 取消契約: Manuscript job 使用 AsyncOpenAI，event 必須中止 quota wait、HTTP request 與
+#   retry backoff；無 event 的既有 task 保持同步 OpenAI client。
+# 驗證: python -m pytest test/unit/test_llm_cancellation.py test/unit/test_llm_usage_and_pricing.py -q
 import os
 import time
 import re
@@ -12,7 +20,13 @@ from concurrent.futures import ThreadPoolExecutor, TimeoutError as FutureTimeout
 
 import redis
 import openai
-from openai import OpenAI
+from openai import AsyncOpenAI, OpenAI
+
+from app.llm_service.llm_cancellation import (
+    LLMRequestCancelled,
+    is_cancelled,
+    run_cancellable_async,
+)
 
 logger = logging.getLogger("app.llm_service.adapter.llm_openai")
 
@@ -248,11 +262,13 @@ return {1, 0}
             logger.warning("[OpenAIClient] Redis quota eval failed, fallback local: %s", e)
             return self._consume_quota_local(token_cost, now_ts)
 
-    def _wait_for_quota_slot(self, token_cost: int):
+    def _wait_for_quota_slot(self, token_cost: int, cancel_event=None):
         if not self.rate_limit_enabled:
             return True, ""
         deadline = time.time() + max(0.0, self.quota_wait_max_sec)
         while True:
+            if is_cancelled(cancel_event):
+                raise LLMRequestCancelled("LLM request cancelled")
             now_ts = int(time.time())
             ok, wait_sec, reason = self._consume_quota_redis(token_cost, now_ts)
             if ok:
@@ -269,7 +285,12 @@ return {1, 0}
                 reason,
                 wait_sec,
             )
-            time.sleep(min(wait_sec, self.quota_poll_step_sec))
+            sleep_sec = min(wait_sec, self.quota_poll_step_sec)
+            if cancel_event is not None:
+                if cancel_event.wait(sleep_sec):
+                    raise LLMRequestCancelled("LLM request cancelled")
+            else:
+                time.sleep(sleep_sec)
 
     @staticmethod
     def _extract_retry_after_sec(error_text: str) -> float:
@@ -351,7 +372,9 @@ return {1, 0}
             logger.error(f"[OpenAIClient] List Models Error: {e}")
             return []
 
-    def send_text_and_optional_images(self, text: str, filepaths: List[str] = None) -> Tuple[bool, Dict, str]:
+    def send_text_and_optional_images(
+        self, text: str, filepaths: List[str] = None, cancel_event=None
+    ) -> Tuple[bool, Dict, str]:
         """
         發送圖文請求 (Multimodal Interface)
         return: (Success, ResultDict, ErrorMsg)
@@ -397,17 +420,36 @@ return {1, 0}
         
         try:
             for attempt in range(1, attempts + 1):
-                ok_to_send, quota_msg = self._wait_for_quota_slot(est_tokens)
+                ok_to_send, quota_msg = self._wait_for_quota_slot(
+                    est_tokens, cancel_event=cancel_event
+                )
                 if not ok_to_send:
                     return False, {}, f"OpenAI quota throttle: {quota_msg}"
 
                 try:
-                    # 使用 timeout 進行呼叫
-                    response = self.client.chat.completions.create(
-                        model=self.model_name,
-                        messages=messages,
-                        timeout=self.timeout_sec
-                    )
+                    if cancel_event is None:
+                        response = self.client.chat.completions.create(
+                            model=self.model_name,
+                            messages=messages,
+                            timeout=self.timeout_sec,
+                        )
+                    else:
+                        # NOTE(NOTE-002): provider call 必須是可 cancel 的 coroutine。
+                        async def _create():
+                            async with AsyncOpenAI(
+                                api_key=self.api_key,
+                                timeout=self.timeout_sec,
+                                max_retries=0,
+                            ) as client:
+                                return await client.chat.completions.create(
+                                    model=self.model_name,
+                                    messages=messages,
+                                    timeout=self.timeout_sec,
+                                )
+
+                        response = run_cancellable_async(
+                            _create, cancel_event, timeout_sec=self.timeout_sec
+                        )
 
                     # 解析回應
                     if response.choices and len(response.choices) > 0:
@@ -443,6 +485,8 @@ return {1, 0}
                     else:
                         return False, {}, "Empty response from OpenAI."
 
+                except LLMRequestCancelled:
+                    raise
                 except openai.RateLimitError as rle:
                     last_err = str(rle)
                 except openai.APIConnectionError as ace:
@@ -468,9 +512,15 @@ return {1, 0}
                     sleep_sec = min(max(0.0, sleep_sec), self.max_backoff_sec)
                     if sleep_sec <= 0:
                         sleep_sec = self.retry_backoff_sec
-                    time.sleep(sleep_sec)
+                    if cancel_event is not None:
+                        if cancel_event.wait(sleep_sec):
+                            raise LLMRequestCancelled("LLM request cancelled")
+                    else:
+                        time.sleep(sleep_sec)
 
             return False, {}, f"OpenAI request failed after {attempts} attempts: {last_err}"
             
+        except LLMRequestCancelled:
+            raise
         except Exception as system_err:
             return False, {}, f"OpenAI client system error: {str(system_err)}"

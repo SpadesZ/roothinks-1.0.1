@@ -1,6 +1,7 @@
 # 檔案路徑: roothinks/app/llm_service/llm_bus.py
 # 產生時間: 2026-07-04 23:35 +08:00
-# 版本: v0.3
+# 版本: v0.4（cancel_event passthrough）
+# 更新時間: 2026-08-10 +08:00
 # 模組定位:
 #   LLM 服務匯流排 (Service Bus)。從 DB 讀取連線設定 -> 動態載入 Adapter ->
 #   建立 Client 實例,對上提供統一 send_message 介面。
@@ -8,11 +9,13 @@
 #   1. load_from_db():依 connection id 載入 vendor/api_key/model 並初始化 Client。
 #   2. _load_driver():依 vendor 名稱動態匯入 adapter 模組(llm_<vendor>.py)。
 #   3. send_message():統一發送代理。
+#   4. 原樣轉交可選 cancel_event；bus 不自行建立或取代 job cancellation identity。
 # 維護提醒:
 #   - adapter 模組必須恰好有一個以 Client 結尾、且類名含 vendor 前綴的類別,
 #     否則 _load_driver 會載錯或載不到——新增 adapter 時務必遵守命名慣例。
 #   - v0.3 起 load_from_db 會區分「API Key 未設定」與「解密失敗」兩種錯誤,
 #     解密失敗多半是 FERNET_KEY 與加密當時不一致,錯誤訊息已註明。
+#   - 新增 adapter 的 send_text_and_optional_images 必須接受 cancel_event=None。
 # 驗證方式:
 #   - .venv/Scripts/python -m pytest test/unit/test_llm_dispatcher.py -q 應全綠。
 # ------------------------------------------------------------------------------
@@ -117,7 +120,9 @@ class LlmBus:
         except Exception as e:
             return False, f"DB Load Error: {e}"
 
-    def send_message(self, text: str, images: List[str] = None) -> Tuple[bool, Dict, str]:
+    def send_message(
+        self, text: str, images: List[str] = None, cancel_event=None
+    ) -> Tuple[bool, Dict, str]:
         """
         統一發送介面，代理至底層 Client
         """
@@ -125,7 +130,10 @@ class LlmBus:
             return False, {}, "Bus not initialized (No Provider)"
         
         if hasattr(self._client, 'send_text_and_optional_images'):
-            return self._client.send_text_and_optional_images(text=text, filepaths=images)
+            # NOTE(NOTE-002): event identity 必須從 Socket job 一路保持到 adapter。
+            return self._client.send_text_and_optional_images(
+                text=text, filepaths=images, cancel_event=cancel_event
+            )
         else:
             return False, {}, "Driver missing 'send_text_and_optional_images' method"
 

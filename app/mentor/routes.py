@@ -1,6 +1,7 @@
 # 檔案路徑: app/mentor/routes.py
 # 產生時間: 2026-07-26 04:05 +08:00
-# 版本: v1.0
+# 版本: v1.1（2C reviewer workspace 授權）
+# 更新時間: 2026-08-10 +08:00
 # 模組定位:
 #   Mentor 視角的資料彙整與派工 API，以及 mentor 儀表板頁面。
 # 主要責任:
@@ -16,6 +17,7 @@
 #   GET    /api/mentor/mentees/<uid>/comments — 評論清單
 #   POST   /api/mentor/mentees/<uid>/comments — 新增評論
 #   GET    /api/mentor/my-tasks              — 我（身為 mentee）收到的工作
+#   GET/POST /api/mentor/mentees/<uid>/reviews/<pid>[/items] — 2C 審閱與資源
 # 呼叫來源:
 #   app/templates/mentor/dashboard.html + app/static/js/mentor.js；
 #   test/unit/test_mentor_scope.py
@@ -31,6 +33,7 @@
 #     少一次檢查就是一個跨租戶越權漏洞（參見 commit 36fc14b 修過的同類問題）。
 #   - mentor 對 mentee 資料一律唯讀；寫入僅限自己建立的 task / comment。
 #   - 不是 mentor 的使用者存取任何 /api/mentor/mentees* 一律 403。
+#   - MentorLink 只表達關係；2C 內容權限仍由雙方 WorkspaceMember 決定。
 # 維護提醒:
 #   - Study 筆記與對話存在 data/<pid>/study/ 之下，只掛 pid 沒有 user_id，
 #     因此 mentee 的「筆記」只能經其所屬專案反查；同專案多人時內容是共用的，
@@ -60,6 +63,7 @@ from app.models import (
     Project,
     RevisionLog,
     SESSION_IDLE_TIMEOUT_SEC,
+    SYSTEM_ROLE_ADMIN,
     User,
     UserSession,
     WorkspaceMember,
@@ -123,7 +127,8 @@ def _require_mentee(mentee_id: int):
 
 
 def _require_review_project(mentee_id: int, pid: str):
-    """確認 mentor→mentee 歸屬，且 mentee 本身有權讀該專案 2C 全篇。"""
+    """確認歸屬，且雙方都獲授權讀該專案 2C 全篇；admin 可跨專案審閱。"""
+    # NOTE(NOTE-001): MentorLink 不是內容 ACL；目標專案必須再次驗雙方 membership。
     guard, mentee = _require_mentee(mentee_id)
     if guard is not None:
         return guard, None
@@ -135,7 +140,26 @@ def _require_review_project(mentee_id: int, pid: str):
     role = get_workspace_role(mentee_id, clean_pid)
     if role is None or is_section_scoped_role(role, clean_pid):
         return _forbidden(), None
+    if current_user.system_role != SYSTEM_ROLE_ADMIN:
+        reviewer_role = get_workspace_role(current_user.id, clean_pid)
+        if reviewer_role is None or is_section_scoped_role(reviewer_role, clean_pid):
+            return _forbidden(), None
     return None, (mentee, clean_pid)
+
+
+def _has_shared_review_project(mentor_id: int, mentee_id: int) -> bool:
+    """MentorLink 只表達關係；真正的 2C 授權必須來自共同 workspace。"""
+    mentor_rows = WorkspaceMember.query.filter_by(user_id=mentor_id).all()
+    mentor_pids = {
+        row.pid for row in mentor_rows
+        if not is_section_scoped_role(row.role, row.pid)
+    }
+    if not mentor_pids:
+        return False
+    return any(
+        row.pid in mentor_pids and not is_section_scoped_role(row.role, row.pid)
+        for row in WorkspaceMember.query.filter_by(user_id=mentee_id).all()
+    )
 
 
 def _review_item_dict(row: MentorReviewItem) -> dict:
@@ -202,10 +226,21 @@ def _mentee_projects(user_id: int) -> list:
     out = []
     for row in rows:
         project = Project.query.filter_by(project_id=row.pid).first()
+        reviewer_role = get_workspace_role(current_user.id, row.pid)
+        reviewer_can_read_2c = (
+            current_user.system_role == SYSTEM_ROLE_ADMIN
+            or (
+                reviewer_role is not None
+                and not is_section_scoped_role(reviewer_role, row.pid)
+            )
+        )
         out.append({
             "pid": row.pid,
             "role": row.role,
-            "reviewable_2c": not is_section_scoped_role(row.role, row.pid),
+            "reviewable_2c": (
+                reviewer_can_read_2c
+                and not is_section_scoped_role(row.role, row.pid)
+            ),
             "name": project.name if project else None,
             "status": project.status if project else None,
         })
@@ -306,7 +341,7 @@ def list_mentees():
 @mentor_api_bp.route("/mentees", methods=["POST"])
 @login_required
 def add_mentee():
-    """以 email 加入 mentee（依產品決策，不做 admin 介面）。"""
+    """以 email 加入 mentee；一般 mentor 必須先由 owner 授予共同專案權限。"""
     guard = _require_mentor()
     if guard is not None:
         return guard
@@ -321,6 +356,12 @@ def add_mentee():
         return jsonify({"success": False, "message": f"找不到 Email 為「{email}」的帳號"}), 404
     if target.id == current_user.id:
         return jsonify({"success": False, "message": "不能把自己加為 mentee"}), 400
+
+    if (
+        current_user.system_role != SYSTEM_ROLE_ADMIN
+        and not _has_shared_review_project(current_user.id, target.id)
+    ):
+        return _forbidden()
 
     existing = MentorLink.query.filter_by(
         mentor_id=current_user.id, mentee_id=target.id
