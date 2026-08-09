@@ -40,7 +40,11 @@ if str(PROJECT_ROOT) not in sys.path:
 
 import pytest
 
-from app.services.evidence_index_service import _snippet, is_non_evidence_segment
+from app.services.evidence_index_service import (
+    _apply_per_paper_quota,
+    _snippet,
+    is_non_evidence_segment,
+)
 
 
 QUERY_TOKENS = ["error", "rate", "mer", "資料集"]
@@ -145,3 +149,87 @@ def test_non_evidence_titles_are_excluded(title):
 ])
 def test_real_evidence_titles_are_kept(title):
     assert is_non_evidence_segment(title) is False
+
+
+# --- 多篇論文的名額分配 -------------------------------------------------------
+#
+# 背景（正式站 DGVRYV-p 實測，12 個名額）：純按分數取 top_k 時
+#   只指名 SEBASR        12 : 0
+#   同時指名兩篇         10 : 2   <- 第二篇形同沒被讀到
+# 使用者說「用 a+b+c+d 這幾篇寫這一段」時，偏食比 token 不夠更致命：
+# 產出看起來有引用，實際上只讀了一篇。
+
+def _mk(paper_id, score, named=False, idx=0):
+    return {
+        "paper_id": paper_id,
+        "segment_id": f"{paper_id}-{idx}",
+        "source_id": f"{paper_id}-{idx}",
+        "score": score,
+        "named_match": named,
+    }
+
+
+def _dist(items):
+    from collections import Counter
+    return Counter(i["paper_id"] for i in items)
+
+
+def test_named_multiple_papers_share_slots_evenly():
+    """兩篇都被點名時，名額要輪流分配，而不是分數高的整碗端走。"""
+    scored = (
+        [_mk("A", 9.0 - i * 0.1, named=True, idx=i) for i in range(30)]
+        + [_mk("B", 3.0 - i * 0.1, named=True, idx=i) for i in range(30)]
+    )
+    scored.sort(key=lambda x: -x["score"])
+
+    out = _apply_per_paper_quota(scored, top_k=12)
+
+    d = _dist(out)
+    assert len(out) == 12
+    assert d["A"] == 6 and d["B"] == 6, f"名額沒有平分：{dict(d)}"
+
+
+def test_single_named_paper_is_not_diluted():
+    """只點名一篇時不得硬拉別篇進來稀釋 —— 否則單篇查詢會變差。
+
+    這是能分辨的性質：如果實作無條件輪流分配，這個測試就會紅。
+    """
+    scored = (
+        [_mk("A", 9.0 - i * 0.1, named=True, idx=i) for i in range(30)]
+        + [_mk("B", 0.5, named=False, idx=i) for i in range(30)]
+    )
+    scored.sort(key=lambda x: -x["score"])
+
+    out = _apply_per_paper_quota(scored, top_k=12)
+
+    assert _dist(out)["A"] == 12, "只點名一篇時被別篇稀釋了"
+
+
+def test_unnamed_query_still_gives_others_a_floor():
+    """沒有點名任何一篇時，仍給最相關的幾篇一個保底，避免單篇壟斷。"""
+    scored = (
+        [_mk("A", 9.0 - i * 0.1, idx=i) for i in range(30)]
+        + [_mk("B", 2.0 - i * 0.01, idx=i) for i in range(30)]
+    )
+    scored.sort(key=lambda x: -x["score"])
+
+    out = _apply_per_paper_quota(scored, top_k=12)
+
+    d = _dist(out)
+    assert d["B"] >= 3, f"完全沒有保底：{dict(d)}"
+    assert d["A"] > d["B"], "沒點名時仍應以分數為主"
+
+
+def test_quota_is_noop_when_candidates_fit():
+    scored = [_mk("A", 5.0, idx=0), _mk("B", 4.0, idx=0)]
+    assert _apply_per_paper_quota(scored, top_k=12) == scored
+
+
+def test_quota_never_exceeds_top_k():
+    scored = [_mk(p, 5.0 - i * 0.01, named=True, idx=i)
+              for p in ("A", "B", "C", "D") for i in range(20)]
+    scored.sort(key=lambda x: -x["score"])
+    out = _apply_per_paper_quota(scored, top_k=20)
+    assert len(out) == 20
+    # a+b+c+d 的情境：四篇都要真的被讀到
+    assert set(_dist(out)) == {"A", "B", "C", "D"}, f"有論文完全沒被取到：{dict(_dist(out))}"

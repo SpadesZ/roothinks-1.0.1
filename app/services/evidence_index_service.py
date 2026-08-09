@@ -379,11 +379,12 @@ def search_evidence(
         # ponytail: identifier substring matching is the smallest bridge for named-paper NL
         # queries; if fuzzy aliases become necessary, replace only this boost with a resolver.
         compact_aliases = _identifier_variants(row.paper_id) | _identifier_variants(paper_title)
-        if any(
+        named_match = any(
             len(alias) >= 4 and (alias in compact_query or compact_query in alias)
             for alias in compact_aliases
             if compact_query
-        ):
+        )
+        if named_match:
             score += 1.0
         if score <= 0:
             continue
@@ -398,10 +399,104 @@ def search_evidence(
                 "title": row.title or "",
                 "snippet": _snippet(row.text, qtokens),
                 "score": score,
+                # 使用者在指令裡點名了這篇（例如「以 SEBASR 為主」）。
+                # 配額分配要靠這個訊號，見 _apply_per_paper_quota。
+                "named_match": named_match,
                 "fingerprint": row.content_hash,
                 "metadata": metadata,
                 "estimated_tokens": max(1, len(row.text or "") // 4),
             }
         )
     scored.sort(key=lambda item: (-float(item.get("score") or 0.0), str(item.get("source_id") or "")))
-    return scored[: max(1, min(int(top_k or 8), 50))]
+    limit = max(1, min(int(top_k or 8), 50))
+    return _apply_per_paper_quota(scored, limit)
+
+
+def _min_segments_per_paper() -> int:
+    try:
+        val = int(str(os.environ.get("EVIDENCE_MIN_SEGMENTS_PER_PAPER", 3)).strip())
+        return val if val >= 0 else 3
+    except Exception:
+        return 3
+
+
+def _apply_per_paper_quota(scored: list[dict], top_k: int) -> list[dict]:
+    """讓「同時指名多篇」時每篇都真的被讀到，而不是分數最高那篇整碗端走。
+
+    純按分數取 top_k 的實測結果（正式站 DGVRYV-p，12 個名額）：
+
+        只指名 SEBASR          12 : 0
+        同時指名兩篇           10 : 2      <- 第二篇形同沒被讀到
+        指名兩篇並要求「比較」   8 : 4
+
+    使用者說「用 a+b+c+d 這幾篇寫這一段」時，偏食比 token 不夠更致命 ——
+    產出看起來有引用，實際上只讀了一篇。
+
+    配額只發給「最相關的前幾篇」（依各篇最佳段落分數排序），名額數量由
+    top_k // min_per_paper 決定。不這樣限制的話，專案裡幾十篇沾到一點邊的
+    論文都會來分名額，反而把真正相關的段落擠掉。
+    """
+    min_per_paper = _min_segments_per_paper()
+    if min_per_paper <= 0 or len(scored) <= top_k:
+        return scored[:top_k]
+
+    # scored 已依分數排序，所以每篇第一次出現的位置就是它的最佳分數名次。
+    by_paper: dict[str, list[dict]] = {}
+    for item in scored:
+        by_paper.setdefault(str(item.get("paper_id") or ""), []).append(item)
+    if len(by_paper) <= 1:
+        return scored[:top_k]
+
+    # 使用者明確點名的論文（`named_match` 來自查詢字串與 paper_id／標題的比對）。
+    named_papers = [
+        paper_id for paper_id, items in by_paper.items()
+        if any(item.get("named_match") for item in items)
+    ]
+
+    picked: list[dict] = []
+    taken: set[int] = set()
+
+    if len(named_papers) >= 2:
+        # 「請用 a+b+c+d 寫這一段」：名額在被點名的論文之間**輪流**分配。
+        # 只給地板值是不夠的 —— 剩餘名額仍會被分數最高那篇整碗端走
+        # （實測 top_k=20、地板 3 時會變成 17:3，比不做還明顯）。
+        cursors = {paper_id: 0 for paper_id in named_papers}
+        progressed = True
+        while len(picked) < top_k and progressed:
+            progressed = False
+            for paper_id in named_papers:
+                if len(picked) >= top_k:
+                    break
+                idx = cursors[paper_id]
+                items = by_paper[paper_id]
+                if idx < len(items):
+                    picked.append(items[idx])
+                    taken.add(id(items[idx]))
+                    cursors[paper_id] = idx + 1
+                    progressed = True
+    elif len(named_papers) == 1:
+        # 「以 SEBASR 為主寫這一段」：使用者已經指定了範圍，不要硬拉別篇進來稀釋。
+        # 交給下面的純分數競爭即可（被點名那篇本來就有 +1.0 加成）。
+        pass
+    else:
+        # 完全沒有點名（例如「幫我寫 Method」）：這時廣度是有價值的，
+        # 給最相關的幾篇一個保底，避免單篇壟斷整個 top_k。
+        quota_papers = list(by_paper)[: max(1, top_k // min_per_paper)]
+        for paper_id in quota_papers:
+            for item in by_paper[paper_id][:min_per_paper]:
+                if len(picked) >= top_k:
+                    break
+                picked.append(item)
+                taken.add(id(item))
+
+    # 名額還有剩就回歸純分數競爭。
+    for item in scored:
+        if len(picked) >= top_k:
+            break
+        if id(item) in taken:
+            continue
+        picked.append(item)
+        taken.add(id(item))
+
+    picked.sort(key=lambda item: (-float(item.get("score") or 0.0), str(item.get("source_id") or "")))
+    return picked[:top_k]

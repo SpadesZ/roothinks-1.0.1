@@ -122,8 +122,12 @@ class ManuscriptRuling:
                     # 檢索是唯一能隨論文數量擴展的路（整包倒語料在
                     # GOOGLE_LLM_GLOBAL_TPM_LIMIT=25000 之下超過兩篇就必死），
                     # 所以這裡要給得起真正有用的量。
-                    max_tokens=_read_int_env("MANUSCRIPT_RETRIEVAL_MAX_TOKENS", 12000),
-                    top_k=_read_int_env("MANUSCRIPT_RETRIEVAL_TOP_K", 12),
+                    # 2026-08-09：整包倒語料停用後空出約 11000 tokens
+                    # （原本 corpus 16000 上限 + 檢索 9000 ≈ 25000，剛好撞 TPM）。
+                    # 把預算給檢索才划算：檢索的注入量不隨論文數成長，
+                    # 而整包倒是「每篇取開頭 N 字元」，論文一多就只剩前言。
+                    max_tokens=_read_int_env("MANUSCRIPT_RETRIEVAL_MAX_TOKENS", 18000),
+                    top_k=_read_int_env("MANUSCRIPT_RETRIEVAL_TOP_K", 20),
                 )
                 injected_block = build_injected_context_block(injected_context_items)
                 if injected_block:

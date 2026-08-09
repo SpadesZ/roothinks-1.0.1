@@ -505,6 +505,16 @@ def _process_chat_job(app_obj, sid, job_id, payload):
         _delete_job_state(job_id)
 
 
+def _drafter_corpus_enabled() -> bool:
+    """整包倒語料是否啟用（預設關閉，理由見 handle_chat 內的說明）。
+
+    保留成環境變數是為了出事能立刻回退：VM 上設 DRAFTER_CORPUS_ENABLED=1
+    再 `docker compose up -d` 即可，不必改碼重新部署。
+    """
+    raw = str(os.environ.get("DRAFTER_CORPUS_ENABLED", "")).strip().lower()
+    return raw in {"1", "true", "yes", "on"}
+
+
 def _base_pid(pid):
     return pid[:-2] if str(pid).endswith('-p') else str(pid)
 
@@ -1072,28 +1082,50 @@ def handle_chat(data):
 
         app_obj = current_app._get_current_object()
 
-        # 伺服器端語料建構：讀取研究筆記與論文全文，合併進 context_text。
-        # 瀏覽器傳來的 context_text（目前 2B 編輯器文字）是「使用者正在寫的草稿」，
-        # 與語料庫是互補而非替代關係——草稿非空時仍保留，放在語料之後作為即時脈絡。
-        # 任何語料建構失敗只 log，不中斷生成。
-        try:
-            corpus_result = build_drafter_corpus(pid=pid, title=title)
-            corpus_text = corpus_result.get("corpus", "")
-            if corpus_result.get("skipped_papers"):
-                logger.info(
-                    "[manu_chat] 語料略過論文（缺 full_text.json）: %s",
-                    corpus_result["skipped_papers"],
+        # [2026-08-09] 整包倒語料**預設停用**，改由檢索供給論文依據。
+        #
+        # 為什麼停用（都是實測數字，不是推測）：
+        #   1. 它固定吃滿 DRAFTER_CORPUS_MAX_TOKENS=16000，不管幾篇論文；
+        #      加上檢索約 9000，合計 25000 剛好撞 GOOGLE_LLM_GLOBAL_TPM_LIMIT。
+        #      補齊目前缺 full_text.json 的兩篇之後必定被節流擋死。
+        #   2. 預算是 (16000 - 筆記) // 篇數 再「取開頭」。論文越多每篇越淺：
+        #      4 篇剩 16000 字元、16 篇剩 4000 字元 —— 而論文的具體數據幾乎都在
+        #      章節尾巴（實測 SEBASR 的 7.56% 在 6865 字元段落的第 6824 字元）。
+        #      也就是說它花最貴的預算，買到的是每篇的前言。
+        #   3. 檢索的注入量不隨論文數成長，且已證明帶得出 7.56%。
+        #
+        # 研究筆記不會因此遺失：ManuscriptRuling._load_upstream_context 另外會讀，
+        # 實測 source_manifest 仍有 study_note / project_background。
+        #
+        # 保留開關而非刪除程式碼，是為了不必重新部署就能回退。
+        if _drafter_corpus_enabled():
+            # 伺服器端語料建構：讀取研究筆記與論文全文，合併進 context_text。
+            # 瀏覽器傳來的 context_text（目前 2B 編輯器文字）是「使用者正在寫的草稿」，
+            # 與語料庫是互補而非替代關係——草稿非空時仍保留，放在語料之後作為即時脈絡。
+            # 任何語料建構失敗只 log，不中斷生成。
+            try:
+                corpus_result = build_drafter_corpus(pid=pid, title=title)
+                corpus_text = corpus_result.get("corpus", "")
+                if corpus_result.get("skipped_papers"):
+                    logger.info(
+                        "[manu_chat] 語料略過論文（缺 full_text.json）: %s",
+                        corpus_result["skipped_papers"],
+                    )
+                if corpus_text:
+                    # 語料放前面（研究筆記 > 論文全文），草稿放後面作補充
+                    if context_text.strip():
+                        context_text = corpus_text + "\n\n[目前草稿 / Current Draft]\n" + context_text
+                    else:
+                        context_text = corpus_text
+            except Exception:
+                logger.warning(
+                    "[manu_chat] build_drafter_corpus 失敗（已忽略，用原始 context） id=%s pid=%s",
+                    job_id, pid, exc_info=True,
                 )
-            if corpus_text:
-                # 語料放前面（研究筆記 > 論文全文），草稿放後面作補充
-                if context_text.strip():
-                    context_text = corpus_text + "\n\n[目前草稿 / Current Draft]\n" + context_text
-                else:
-                    context_text = corpus_text
-        except Exception:
-            logger.warning(
-                "[manu_chat] build_drafter_corpus 失敗（已忽略，用原始 context） id=%s pid=%s",
-                job_id, pid, exc_info=True,
+        else:
+            logger.info(
+                "[manu_chat] 整包倒語料已停用，論文依據改由檢索供給 id=%s pid=%s",
+                job_id, pid,
             )
 
         payload = {
