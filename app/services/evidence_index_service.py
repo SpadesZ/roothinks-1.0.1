@@ -264,15 +264,79 @@ def _default_snippet_size() -> int:
         return 3000
 
 
+# 單一查詢詞最多採計幾個出現位置。References 這種超長段落一個詞可能命中上千次，
+# 不設上限會讓下面的窗口挑選退化成 O(n^2) 的大 n。
+_MAX_TOKEN_HITS = 50
+
+
+# 書目與 OCR 殘渣不是「證據」，但它們是全篇最長的段落，幾乎命中任何查詢詞。
+# 實測正式站：`References` 段落 143482 字元，在指名 SEBASR 的查詢裡被排到第 1 名，
+# 白白吃掉一個 top_k 名額與 3000 字元預算，內容全是別人的論文標題
+# —— 拿它當依據寫作，等於鼓勵模型去引用它根本沒讀過的東西。
+#
+# 刻意在**檢索時**排除而不是不建索引：引用建議（citation_suggestion）等功能
+# 仍需要書目，索引保持完整才不會把別人的功能弄壞。
+_NON_EVIDENCE_TITLE_RE = re.compile(
+    r"^\s*(?:\d+[.\s]*)*\s*("
+    r"references?|bibliography|acknowledge?ments?|acknowledgments?"
+    r")\s*$",
+    re.IGNORECASE,
+)
+# 這個管線自己產的垃圾桶區塊，名稱固定。
+_OCR_JUNK_TITLE_RE = re.compile(r"uncovered\s+ocr", re.IGNORECASE)
+
+
+def is_non_evidence_segment(title: str) -> bool:
+    """該段落是否為書目／致謝／OCR 殘渣（不得作為寫作依據）。"""
+    text = str(title or "").strip()
+    if not text:
+        return False
+    return bool(_NON_EVIDENCE_TITLE_RE.match(text) or _OCR_JUNK_TITLE_RE.search(text))
+
+
 def _snippet(text: str, query_tokens: list[str], size: int | None = None) -> str:
+    """從段落中挖出「查詢命中最密集」的一段。
+
+    為什麼不是錨在最早命中處（原本的作法）：
+    每個查詢詞只取 `lower.find(token)`（第一次出現）再取 min()，等於窗口永遠貼著
+    段落開頭。但論文的具體數據幾乎都在章節尾巴 —— 實測 SEBASR 的
+    `5.2 Performance Evaluation`（6865 字元）17 個命中有 13 個落在最後 3000 字元，
+    舊窗口錨在 494，把「平均MER從52.08%下降到7.56%」整句留在窗外。
+    症狀是草稿看起來有引用該章節、卻寫不出任何具體數字。
+
+    這是檢索管線上第四道會把證據吃掉的機制（前三道見 _default_snippet_size）。
+    """
     size = _default_snippet_size() if size is None else size
     body = str(text or "").strip()
     if len(body) <= size:
         return body
+
     lower = body.lower()
-    positions = [lower.find(token) for token in query_tokens if lower.find(token) >= 0]
-    start = max(0, min(positions) - 80) if positions else 0
-    return body[start : start + size].strip()
+    positions: list[int] = []
+    for token in query_tokens:
+        if not token:
+            continue
+        start, found = 0, 0
+        while found < _MAX_TOKEN_HITS:
+            idx = lower.find(token, start)
+            if idx < 0:
+                break
+            positions.append(idx)
+            start = idx + len(token)
+            found += 1
+    if not positions:
+        return body[:size].strip()
+
+    positions.sort()
+    # 最佳窗口必定以某個命中點為左界，所以只需試這些起點。
+    best_start, best_hits = max(0, positions[0] - 80), -1
+    for pos in positions:
+        window_start = max(0, pos - 80)
+        window_end = window_start + size
+        hits = sum(1 for other in positions if window_start <= other < window_end)
+        if hits > best_hits:
+            best_start, best_hits = window_start, hits
+    return body[best_start : best_start + size].strip()
 
 
 def search_evidence(
@@ -306,6 +370,9 @@ def search_evidence(
     scored = []
     compact_query = _compact_identifier(query)
     for row in rows:
+        # 書目／致謝／OCR 殘渣不得作為寫作依據，見 _NON_EVIDENCE_TITLE_RE。
+        if is_non_evidence_segment(row.title):
+            continue
         paper_title = paper_titles.get(str(row.paper_id or ""), "")
         aliases = f"{row.paper_id or ''} {paper_title}"
         score = _score(qtokens, row, aliases)

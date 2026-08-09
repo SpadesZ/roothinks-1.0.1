@@ -23,6 +23,7 @@ import json
 import logging
 import os
 import sqlite3
+import sys
 import tempfile
 import time
 from datetime import datetime, timedelta, timezone
@@ -258,7 +259,36 @@ def _reset_stale_papers():
         LOGGER.warning("Reset %s stale running paper jobs on startup.", changed)
 
 
+def _configure_logging():
+    """讓 logger.info() 真的輸出到 stdout。
+
+    這個 repo 從來沒有設定過 root logger。Python 的預設是 level=WARNING 且只有
+    lastResort handler，於是**所有 logger.info() 都被無聲丟棄**，只有 warning
+    以上出得來。
+
+    後果比「少了一些日誌」嚴重得多：診斷 drafter 無聲卡死時，前一輪是以
+    「容器日誌裡 `manu_chat` 出現 0 次」推論 handler 從未被呼叫 —— 但那 0 次
+    只是因為 `[manu_chat] job_queued` 那幾行全是 logger.info。**觀察是對的，
+    訊號本身是壞的**，於是推論必然錯。看起來像證據的空值比完全沒有日誌更危險。
+
+    等級由 LOG_LEVEL 控制（預設 INFO）；gunicorn 會把 stdout 收進容器日誌。
+    """
+    level_name = str(os.environ.get("LOG_LEVEL", "INFO")).strip().upper()
+    root = logging.getLogger()
+    root.setLevel(getattr(logging, level_name, logging.INFO))
+    # 只掛一次。create_app 在測試裡會被呼叫很多次，重複 addHandler 會讓
+    # 每一行日誌印很多份。
+    if not any(getattr(h, "_roothinks_stdout", False) for h in root.handlers):
+        handler = logging.StreamHandler(sys.stdout)
+        handler.setFormatter(
+            logging.Formatter("[%(asctime)s] %(levelname)s %(name)s: %(message)s")
+        )
+        handler._roothinks_stdout = True
+        root.addHandler(handler)
+
+
 def create_app(test_config=None):
+    _configure_logging()
     app = Flask(__name__, instance_relative_config=True)
     is_dev = _is_development()
     root_dir = os.path.abspath(os.path.join(app.root_path, ".."))

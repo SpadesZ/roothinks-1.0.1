@@ -603,6 +603,39 @@ class ManuSoed {
         el.title = detail ? `${defaultTitle}：${detail}` : defaultTitle;
     }
 
+    /**
+     * 重新連線後把聊天紀錄重抓一次。
+     *
+     * 為什麼需要：草稿結果是 `socketio.emit(..., to=sid)` 送的，綁在單一 sid 上。
+     * 中途只要斷線重連（sid 就換人了），那個結果就永遠送不到畫面 ——
+     * 而伺服器端其實**已經成功**：`save_chat_history()` 在 emit 之前就跑完，
+     * 日誌也有 `job_done`。正式站實測過這個落差：伺服器 4 個 job 全部
+     * job_done（6～10 秒），使用者畫面卻停在「processing 25%」。
+     *
+     * 結論：不能只靠一次性的 live 事件。重連後重抓一次，草稿就會出現。
+     * 第一次 connect 不做（switchChatSection 已經會載），只處理「重」連。
+     */
+    _resyncAfterReconnect() {
+        if (!this._hasConnectedOnce) {
+            this._hasConnectedOnce = true;
+            return;
+        }
+        const section = this.app.drafterTargetSection
+            ? this.app.drafterTargetSection.value
+            : Array.from(this.app.selectedSections || [])[0];
+        if (!section || !this.app.pid) return;
+
+        // 轉圈是綁在舊 sid 的那個請求留下的，重連後不會再有人來收，先收掉。
+        if (document.getElementById('typingIndicator')) {
+            this._clearAckTimeout();
+            this._clearTypingTimeout();
+            this.activeJobId = null;
+            this.removeTypingIndicator();
+            this.addSystemMessage('連線中斷過，正在重新同步這一章的紀錄；先前的草稿若已產生會出現在下方。');
+        }
+        this.app.socket.emit('cmd_load_chat', { pid: this.app.pid, section: section });
+    }
+
     setupSocketEvents() {
         // socket 在 manuscript_ws.js 就建立了，往往在本函式註冊 handler **之前**
         // 就已經連上 —— 那個 'connect' 事件不會再補送一次，徽章於是永遠停在
@@ -610,11 +643,16 @@ class ManuSoed {
         // [Socket] Connection established，徽章仍是灰的）。
         // 事件只負責「之後的變化」，當下狀態必須自己讀。
         this._setConnectionBadge(this.app.socket.connected ? 'online' : 'connecting');
+        // 同一個理由：socket 可能在這裡之前就連上了，那個 'connect' 不會再來。
+        // 若不用當下狀態初始化，第一次真正的「重連」會被 _resyncAfterReconnect
+        // 誤認成初次連線而跳過 —— 實測就是這樣，重連後完全沒有重抓紀錄。
+        this._hasConnectedOnce = this.app.socket.connected;
 
         this.app.socket.on('connect', () => {
             console.log("[Socket] Connection established successfully.");
             this._setConnectionBadge('online');
             this.addSystemMessage("Drafter Server Connection: Active.");
+            this._resyncAfterReconnect();
         });
 
         // 連不上（CORS 被拒、伺服器沒起來）時 socket.io 只會不斷重試，

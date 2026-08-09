@@ -113,6 +113,10 @@ class StudyChat {
                 const safeConvId = this.escapeJs(conv.conv_id);
                 const safeCount = this.escapeHtml(conv.message_count);
                 const safeUpdatedAt = this.escapeHtml(this.formatDate(conv.updated_at));
+                // 相對時間（「4 分鐘前」）在回頭找某一次討論時沒有用 ——
+                // 補上對話「開始」的絕對時間。API 本來就回 created_at，只是沒人用。
+                const safeStartedAt = this.escapeHtml(this.formatStartStamp(conv.created_at));
+                const safeStartedFull = this.escapeHtml(conv.created_at || '');
                 
                 html += `
                     <div class="list-group-item ${activeClass} ${hoverClass} border-0 px-2 py-2 mb-1 rounded cursor-pointer position-relative" 
@@ -121,8 +125,13 @@ class StudyChat {
                         <div class="d-flex justify-content-between align-items-start">
                             <div class="flex-grow-1" style="min-width: 0;">
                                 <h6 class="mb-1 small fw-bold text-truncate">${this.escapeHtml(conv.title)}</h6>
-                                <p class="mb-0 text-truncate" style="font-size: 0.75rem; opacity: 0.7;">
+                                <p class="mb-0 text-truncate" style="font-size: 0.75rem; opacity: 0.7;"
+                                   title="開始於 ${safeStartedFull}">
                                     ${safeCount} 則訊息 • ${safeUpdatedAt}
+                                </p>
+                                <p class="mb-0 text-truncate" style="font-size: 0.7rem; opacity: 0.55;"
+                                   title="開始於 ${safeStartedFull}">
+                                    起 ${safeStartedAt}
                                 </p>
                             </div>
                             <div class="dropdown" onclick="event.stopPropagation();">
@@ -146,7 +155,9 @@ class StudyChat {
             
             html += '</div>';
             container.innerHTML = html;
-            
+
+            this._restoreLastConversation(conversations);
+
         } catch (error) {
             console.error('[StudyChat] Error loading conversations:', error);
             container.innerHTML = `<div class="text-danger small p-2">載入錯誤: ${this.escapeHtml(error.message)}</div>`;
@@ -229,9 +240,45 @@ class StudyChat {
     /**
      * 載入指定對話
      */
+    /** localStorage 的鍵。每個專案各自記住自己最後開的那則對話。 */
+    _lastConvKey() {
+        return `studyLastConv:${this.pid || 'nopid'}`;
+    }
+
+    /**
+     * 進頁時自動還原上一次看的對話。
+     *
+     * 原本進 Study 一律是空的（Context: None），要自己再點一次才看得到內容；
+     * 而使用者幾乎總是想接續上一次。優先用 localStorage 記住的那則，
+     * 它若已被刪除就退回最新的一則（清單是依 updated_at 由新到舊）。
+     *
+     * loadConversation() 結尾會再呼叫 loadConversations() 重畫清單，
+     * 所以這裡必須有 _autoRestored 旗標擋住遞迴。
+     */
+    _restoreLastConversation(conversations) {
+        if (this._autoRestored) return;
+        if (this.currentConversation) return;
+        if (!Array.isArray(conversations) || conversations.length === 0) return;
+        this._autoRestored = true;
+
+        let target = null;
+        try {
+            const remembered = localStorage.getItem(this._lastConvKey());
+            if (remembered) {
+                target = conversations.find((c) => c.conv_id === remembered) || null;
+            }
+        } catch (e) {
+            // localStorage 在某些隱私模式下會丟例外；退回最新一則即可，不影響功能。
+        }
+        if (!target) target = conversations[0];
+        if (target && target.conv_id) {
+            this.loadConversation(target.conv_id);
+        }
+    }
+
     async loadConversation(convId) {
         console.log('[StudyChat] Loading conversation:', convId);
-        
+
         try {
             const response = await fetch(`/api/study/conversation/${convId}?pid=${this.pid}`);
             const data = await response.json();
@@ -242,7 +289,13 @@ class StudyChat {
             }
             
             this.currentConversation = data.conversation;
-            
+            this._autoRestored = true;   // 使用者已經有選擇，不要再自動蓋掉
+            try {
+                localStorage.setItem(this._lastConvKey(), convId);
+            } catch (e) {
+                // 隱私模式寫不進去；只是下次不會自動還原，不算故障。
+            }
+
             // 渲染歷史訊息
             if (this.historyContainer) {
                 this.historyContainer.innerHTML = '';
@@ -579,10 +632,24 @@ class StudyChat {
         if (diffDays < 7) return `${diffDays} 天前`;
         
         // 超過一週顯示完整日期
-        return date.toLocaleDateString('zh-TW', { 
-            year: 'numeric', 
-            month: 'short', 
-            day: 'numeric' 
+        return date.toLocaleDateString('zh-TW', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric'
         });
+    }
+
+    /**
+     * 對話「開始」時間，格式 DD:HH:MM（日:時:分，本地時區）。
+     *
+     * 為什麼要絕對時間：清單原本只有「4 分鐘前 / 1 天前」，要回頭找「上週三下午
+     * 討論資料集的那一次」時完全沒有用。完整時間戳放在 title 屬性給游標停留看。
+     */
+    formatStartStamp(dateStr) {
+        if (!dateStr) return '—';
+        const d = new Date(dateStr);
+        if (isNaN(d.getTime())) return '—';
+        const p = (n) => String(n).padStart(2, '0');
+        return `${p(d.getDate())}:${p(d.getHours())}:${p(d.getMinutes())}`;
     }
 }
