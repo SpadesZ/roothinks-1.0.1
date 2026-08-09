@@ -114,4 +114,18 @@ def test_study_and_manuscript_rehydrate_from_server():
     assert "this.app.socket.emit('cmd_list_blocks'" in manu_js
     assert "this.app.socket.emit('cmd_load_paper'" in manu_js
     assert "study_core.js') }}?v=2.5" in study_html
-    assert "manuscript_soed.js') }}?v=2.0" in manu_html
+    assert "manuscript_soed.js') }}?v=2.1" in manu_html
+
+
+def test_drafter_multiline_and_cancel_controls_contract():
+    manu_js = (ROOT / "app/static/js/manuscript_soed.js").read_text(encoding="utf-8")
+    ws_js = (ROOT / "app/static/js/manuscript_ws.js").read_text(encoding="utf-8")
+    manu_html = (ROOT / "app/templates/manuscript_workspace.html").read_text(encoding="utf-8")
+
+    assert '<textarea class="form-control" rows="1"' in manu_html
+    assert 'id="btnCancelJob"' in manu_html
+    assert "addEventListener('keydown'" in manu_js
+    assert "!e.shiftKey && !e.isComposing" in manu_js
+    assert "e.preventDefault()" in manu_js
+    assert "this.activeJobId || this.requestPending" in manu_js
+    assert "this.btnCancelJob = document.getElementById('btnCancelJob')" in ws_js

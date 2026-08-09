@@ -430,6 +430,61 @@ class MentorComment(db.Model):
         }
 
 
+class MentorReviewItem(db.Model):
+    """Mentor 對 mentee 某份 2C 主論文提供的意見、建議或資源。"""
+
+    __tablename__ = "mentor_review_items"
+
+    KIND_COMMENT = "comment"
+    KIND_SUGGESTION = "suggestion"
+    KIND_RESOURCE_URL = "resource_url"
+    KIND_RESOURCE_PDF = "resource_pdf"
+    KINDS = {
+        KIND_COMMENT,
+        KIND_SUGGESTION,
+        KIND_RESOURCE_URL,
+        KIND_RESOURCE_PDF,
+    }
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    mentor_id = db.Column(
+        db.Integer, db.ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    mentee_id = db.Column(
+        db.Integer, db.ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    pid = db.Column(db.String(20), nullable=False, index=True)
+    paper_version = db.Column(db.String(20), nullable=True)
+    kind = db.Column(db.String(20), nullable=False, index=True)
+    body = db.Column(db.Text, nullable=True)
+    title = db.Column(db.String(200), nullable=True)
+    url = db.Column(db.Text, nullable=True)
+    file_path = db.Column(db.String(500), nullable=True)
+    file_name = db.Column(db.String(255), nullable=True)
+    size_bytes = db.Column(db.Integer, nullable=True)
+    created_at = db.Column(
+        db.DateTime, nullable=False, default=lambda: datetime.now(timezone.utc), index=True
+    )
+
+    mentor = db.relationship("User", foreign_keys=[mentor_id])
+
+    def to_dict(self) -> dict:
+        return {
+            "id": self.id,
+            "mentor": self.mentor.username if self.mentor else None,
+            "mentee_id": self.mentee_id,
+            "pid": self.pid,
+            "paper_version": self.paper_version,
+            "kind": self.kind,
+            "body": self.body,
+            "title": self.title,
+            "url": self.url,
+            "file_name": self.file_name,
+            "size_bytes": self.size_bytes,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+        }
+
+
 def _as_utc(value: datetime) -> datetime:
     """
     把 DB 讀回的 naive datetime 視為 UTC。

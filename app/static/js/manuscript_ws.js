@@ -98,6 +98,7 @@ class ManuscriptWorkspace {
         this.chatContainer = document.getElementById('chatCanvas');
         this.chatInput = document.getElementById('chatInput');
         this.btnSend = document.getElementById('btnSend');
+        this.btnCancelJob = document.getElementById('btnCancelJob');
         this.targetLangSelect = document.getElementById('targetLang');
         this.importTypeSelect = document.getElementById('importType');
         this.fileInput = document.getElementById('fileInput');

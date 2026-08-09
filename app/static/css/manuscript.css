@@ -1,5 +1,5 @@
 /* #路徑(./app/static/css/manuscript.css) */
-/* #版本 v1.2 (Layout Overflow & Toolbar Wrap Fix) */
+/* #版本 v1.3 (Drafter multiline input + cancel control) */
 /* #更版時間 20260411-1735 */
 
 html,
@@ -188,6 +188,14 @@ body.manuscript-page {
     outline: none;
     padding: 1.5rem 3rem !important; 
     background-color: #fff;
+}
+
+#chatInput {
+    min-height: 42px;
+    max-height: 132px;
+    resize: none;
+    overflow-y: auto;
+    line-height: 1.4;
 }
 
 .manus-editor-canvas {

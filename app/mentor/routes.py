@@ -43,15 +43,19 @@ import json
 import logging
 import os
 from datetime import datetime, timedelta, timezone
+from urllib.parse import urlsplit
+from uuid import uuid4
 
-from flask import Blueprint, jsonify, render_template, request
+from flask import Blueprint, jsonify, render_template, request, send_file
 from flask_login import current_user, login_required
+from werkzeug.exceptions import BadRequest
 
 from app import db
 from app.mentor import mentor_bp
 from app.models import (
     MentorComment,
     MentorLink,
+    MentorReviewItem,
     MentorTask,
     Project,
     RevisionLog,
@@ -61,7 +65,12 @@ from app.models import (
     WorkspaceMember,
     _as_utc,
 )
-from app.security import safe_join_under
+from app.security import (
+    get_workspace_role,
+    is_section_scoped_role,
+    safe_join_under,
+    validate_id,
+)
 
 logger = logging.getLogger("mentor_routes")
 
@@ -69,6 +78,8 @@ mentor_api_bp = Blueprint("mentor_api", __name__, url_prefix="/api/mentor")
 
 _MAX_COMMENT_LEN = 4000
 _MAX_TITLE_LEN = 200
+_MAX_RESOURCE_URL_LEN = 2048
+_MAX_RESOURCE_PDF_BYTES = 20 * 1024 * 1024
 
 
 # ---------------------------------------------------------------------------
@@ -109,6 +120,29 @@ def _require_mentee(mentee_id: int):
     if mentee is None:
         return _forbidden(), None
     return None, mentee
+
+
+def _require_review_project(mentee_id: int, pid: str):
+    """確認 mentor→mentee 歸屬，且 mentee 本身有權讀該專案 2C 全篇。"""
+    guard, mentee = _require_mentee(mentee_id)
+    if guard is not None:
+        return guard, None
+    try:
+        clean_pid = validate_id(pid, "project_id")
+    except BadRequest:
+        return (jsonify({"success": False, "message": "Invalid project id"}), 400), None
+
+    role = get_workspace_role(mentee_id, clean_pid)
+    if role is None or is_section_scoped_role(role, clean_pid):
+        return _forbidden(), None
+    return None, (mentee, clean_pid)
+
+
+def _review_item_dict(row: MentorReviewItem) -> dict:
+    payload = row.to_dict()
+    if row.kind == MentorReviewItem.KIND_RESOURCE_PDF:
+        payload["download_url"] = f"/api/mentor/review-items/{row.id}/download"
+    return payload
 
 
 # ---------------------------------------------------------------------------
@@ -171,6 +205,7 @@ def _mentee_projects(user_id: int) -> list:
         out.append({
             "pid": row.pid,
             "role": row.role,
+            "reviewable_2c": not is_section_scoped_role(row.role, row.pid),
             "name": project.name if project else None,
             "status": project.status if project else None,
         })
@@ -524,3 +559,174 @@ def create_mentor_comment(mentee_id):
     db.session.add(row)
     db.session.commit()
     return jsonify({"success": True, "comment": row.to_dict()}), 201
+
+
+# ---------------------------------------------------------------------------
+# 2C review workbench
+# ---------------------------------------------------------------------------
+
+
+@mentor_api_bp.route("/mentees/<int:mentee_id>/reviews/<pid>", methods=["GET"])
+@login_required
+def get_review_workbench(mentee_id, pid):
+    guard, target = _require_review_project(mentee_id, pid)
+    if guard is not None:
+        return guard
+    _mentee, clean_pid = target
+
+    from app.core_pro.manuscript.manuscript_io import ManuscriptIO
+
+    versions = ManuscriptIO.list_paper_versions(clean_pid)
+    latest_meta = versions[0] if versions else None
+    manuscript = None
+    if latest_meta:
+        loaded = ManuscriptIO.load_paper_version(clean_pid, latest_meta.get("g_ver"))
+        if loaded:
+            manuscript = {
+                "title": loaded.get("title") or latest_meta.get("title") or "Untitled Paper",
+                "content": str(loaded.get("content") or ""),
+                "version": loaded.get("g_ver") or loaded.get("version") or latest_meta.get("g_ver"),
+                "updated_at": loaded.get("_updated_at") or loaded.get("timestamp"),
+                "updated_by": loaded.get("_updated_by"),
+            }
+
+    rows = (
+        MentorReviewItem.query.filter_by(
+            mentor_id=current_user.id,
+            mentee_id=mentee_id,
+            pid=clean_pid,
+        )
+        .order_by(MentorReviewItem.created_at.asc())
+        .all()
+    )
+    legacy = (
+        MentorComment.query.filter_by(mentor_id=current_user.id, mentee_id=mentee_id)
+        .order_by(MentorComment.created_at.asc())
+        .all()
+    )
+    return jsonify({
+        "success": True,
+        "pid": clean_pid,
+        "manuscript": manuscript,
+        "versions": versions,
+        "items": [_review_item_dict(row) for row in rows],
+        "legacy_comments": [row.to_dict() for row in legacy],
+    })
+
+
+@mentor_api_bp.route("/mentees/<int:mentee_id>/reviews/<pid>/items", methods=["POST"])
+@login_required
+def create_review_item(mentee_id, pid):
+    guard, target = _require_review_project(mentee_id, pid)
+    if guard is not None:
+        return guard
+    _mentee, clean_pid = target
+
+    is_multipart = request.mimetype == "multipart/form-data"
+    data = request.form if is_multipart else (request.get_json(silent=True) or {})
+    kind = str(data.get("kind") or "").strip()
+    paper_version = str(data.get("paper_version") or "").strip()[:20] or None
+
+    if kind not in MentorReviewItem.KINDS:
+        return jsonify({"success": False, "message": "Unsupported review item type"}), 400
+
+    row = MentorReviewItem(
+        mentor_id=current_user.id,
+        mentee_id=mentee_id,
+        pid=clean_pid,
+        paper_version=paper_version,
+        kind=kind,
+    )
+    saved_path = None
+
+    if kind in {MentorReviewItem.KIND_COMMENT, MentorReviewItem.KIND_SUGGESTION}:
+        body = str(data.get("body") or "").strip()
+        if not body:
+            return jsonify({"success": False, "message": "內容不可為空"}), 400
+        if len(body) > _MAX_COMMENT_LEN:
+            return jsonify({"success": False, "message": f"內容上限 {_MAX_COMMENT_LEN} 字"}), 400
+        row.body = body
+
+    elif kind == MentorReviewItem.KIND_RESOURCE_URL:
+        raw_url = str(data.get("url") or "").strip()
+        if not raw_url or len(raw_url) > _MAX_RESOURCE_URL_LEN:
+            return jsonify({"success": False, "message": "網址不可為空或超過上限"}), 400
+        parsed = urlsplit(raw_url)
+        if parsed.scheme.lower() not in {"http", "https"} or not parsed.hostname:
+            return jsonify({"success": False, "message": "網址僅接受 http 或 https"}), 400
+        row.url = raw_url
+        row.title = str(data.get("title") or raw_url).strip()[:_MAX_TITLE_LEN]
+
+    else:
+        upload = request.files.get("file")
+        original_name = os.path.basename(str(upload.filename or "")).strip() if upload else ""
+        if not upload or not original_name.lower().endswith(".pdf"):
+            return jsonify({"success": False, "message": "請上傳 PDF 檔案"}), 400
+        raw = upload.stream.read(_MAX_RESOURCE_PDF_BYTES + 1)
+        if len(raw) > _MAX_RESOURCE_PDF_BYTES:
+            return jsonify({"success": False, "message": "PDF 上限 20 MB"}), 413
+        if not raw.startswith(b"%PDF-"):
+            return jsonify({"success": False, "message": "檔案內容不是有效的 PDF"}), 400
+
+        from app.core_pro.manuscript.manuscript_io import _get_data_root
+
+        root = _get_data_root()
+        relative_dir = os.path.join(
+            "mentor_resources", str(current_user.id), str(mentee_id), clean_pid
+        )
+        target_dir = safe_join_under(root, relative_dir)
+        os.makedirs(target_dir, exist_ok=True)
+        generated_name = f"{uuid4().hex}.pdf"
+        saved_path = safe_join_under(target_dir, generated_name)
+        temp_path = f"{saved_path}.tmp"
+        with open(temp_path, "wb") as handle:
+            handle.write(raw)
+        os.replace(temp_path, saved_path)
+
+        row.title = str(data.get("title") or original_name).strip()[:_MAX_TITLE_LEN]
+        row.file_name = original_name[:255]
+        row.file_path = os.path.relpath(saved_path, root).replace(os.sep, "/")
+        row.size_bytes = len(raw)
+
+    try:
+        db.session.add(row)
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+        if saved_path:
+            try:
+                os.remove(saved_path)
+            except OSError:
+                pass
+        raise
+
+    return jsonify({"success": True, "item": _review_item_dict(row)}), 201
+
+
+@mentor_api_bp.route("/review-items/<int:item_id>/download", methods=["GET"])
+@login_required
+def download_review_pdf(item_id):
+    row = db.session.get(MentorReviewItem, item_id)
+    if row is None or row.kind != MentorReviewItem.KIND_RESOURCE_PDF:
+        return jsonify({"success": False, "message": "Resource not found"}), 404
+    guard, _target = _require_review_project(row.mentee_id, row.pid)
+    if guard is not None:
+        return guard
+    if row.mentor_id != current_user.id:
+        return _forbidden()
+
+    from app.core_pro.manuscript.manuscript_io import _get_data_root
+
+    root = _get_data_root()
+    file_path = safe_join_under(root, *str(row.file_path or "").split("/"))
+    if not os.path.isfile(file_path):
+        return jsonify({"success": False, "message": "Resource not found"}), 404
+    response = send_file(
+        file_path,
+        mimetype="application/pdf",
+        as_attachment=True,
+        download_name=row.file_name or "review-resource.pdf",
+        conditional=True,
+    )
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    return response

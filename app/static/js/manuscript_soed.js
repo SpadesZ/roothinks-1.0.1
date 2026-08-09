@@ -1,5 +1,5 @@
 //路徑(./app/static/js/manuscript_soed.js)
-//版本 v1.1 (Drafter request never hangs silently)
+//版本 v1.2 (Drafter multiline input + visible cancellation lifecycle)
 //更版時間 20260806-0130
 // inner comment: 保留 v1.0 全量代碼與防呆邏輯。本版變更：
 //   [v1.1] 修掉「送出後永久轉圈」：新增 _armAckTimeout / _failPendingRequest。
@@ -24,6 +24,7 @@ class ManuSoed {
     constructor(app) {
         this.app = app;
         this.activeJobId = null;
+        this.requestPending = false;
         this.typingTimeoutHandle = null;
         this.typingWarnMs = 120000;
         // [v1.1] 送出後等待 job_queued 的硬性時限。
@@ -685,9 +686,7 @@ class ManuSoed {
             // pid 解析失敗、無專案權限）。此時若還在等 ack，這就是最終結果，
             // 轉圈必須立刻收掉，否則使用者會以為還在生成。
             if (!this.activeJobId && document.getElementById('typingIndicator')) {
-                this._clearAckTimeout();
-                this._clearTypingTimeout();
-                this.removeTypingIndicator();
+                this._failPendingRequest('Drafter rejected the request. Please revise and retry.', false);
             }
             // [collab] 權限是別人（owner）可以隨時改的，前端的 permissions 是快取。
             // 一旦伺服器以權限為由拒絕，立刻重抓權限並重新上鎖 ——
@@ -699,7 +698,9 @@ class ManuSoed {
         this.app.socket.on('ai_response', (data) => this.handleAIResponse(data));
         this.app.socket.on('job_queued', (data) => {
             this._clearAckTimeout();
+            this.requestPending = false;
             this.activeJobId = data.job_id;
+            this._setJobControls(true, true);
             this.updateTypingIndicator(`Job queued (${data.job_id}). Waiting worker...`);
             this._armTypingTimeout();
         });
@@ -713,7 +714,9 @@ class ManuSoed {
             if (this.activeJobId && data.job_id !== this.activeJobId) return;
             this._clearAckTimeout();
             this._clearTypingTimeout();
+            this.requestPending = false;
             this.activeJobId = null;
+            this._setJobControls(false);
             this.removeTypingIndicator();
             if (data && typeof data.latency_ms === 'number') {
                 this.addSystemMessage(`Job completed in ${(data.latency_ms / 1000).toFixed(1)}s`);
@@ -723,7 +726,9 @@ class ManuSoed {
             if (this.activeJobId && data.job_id !== this.activeJobId) return;
             this._clearAckTimeout();
             this._clearTypingTimeout();
+            this.requestPending = false;
             this.activeJobId = null;
+            this._setJobControls(false);
             this.removeTypingIndicator();
             this.addSystemMessage(`Job error: ${data.message || 'unknown error'}`);
         });
@@ -731,7 +736,9 @@ class ManuSoed {
             if (this.activeJobId && data.job_id !== this.activeJobId) return;
             this._clearAckTimeout();
             this._clearTypingTimeout();
+            this.requestPending = false;
             this.activeJobId = null;
+            this._setJobControls(false);
             this.removeTypingIndicator();
             this.addSystemMessage(`Job cancelled: ${data.job_id}`);
         });
@@ -1056,9 +1063,17 @@ class ManuSoed {
     // =========================================================================
     setupUIEvents() {
         this.app.btnSend.onclick = () => this.sendUserMessage();
-        this.app.chatInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') this.sendUserMessage();
+        if (this.app.btnCancelJob) {
+            this.app.btnCancelJob.onclick = () => this.cancelActiveJob();
+        }
+        this.app.chatInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) {
+                e.preventDefault();
+                this.sendUserMessage();
+            }
         });
+        this.app.chatInput.addEventListener('input', () => this._resizeChatInput());
+        this._setJobControls(false);
         this.app.fileInput.addEventListener('change', (e) => this.app.ui.handleFileSelect(e));
         if (this.app.wordImportInput) {
             this.app.wordImportInput.addEventListener('change', (e) => this.app.ui.handleWordImportFileSelect(e));
@@ -1144,7 +1159,7 @@ class ManuSoed {
     sendUserMessage() {
         const txt = this.app.chatInput.value.trim();
         if(!txt && !this.app.currentAttachment) return;
-        if (this.activeJobId) {
+        if (this.activeJobId || this.requestPending) {
             this.addSystemMessage('A job is still running. Please wait or cancel it first.');
             return;
         }
@@ -1155,7 +1170,10 @@ class ManuSoed {
         this.addBubble('user', displayPrompt);
         const payload = { msg: txt, context: this.app.editorCanvas.innerText.substring(0,3000), target_lang: targetLang, attachment: this.app.currentAttachment, import_type: this.app.currentImportType, pid: this.app.pid, title: this.app.paperTitleInput.value.trim(), section: targetSection, s_ver: '0.1' };
         this.app.socket.emit('chat_message', payload);
-        this.app.chatInput.value = ''; 
+        this.requestPending = true;
+        this._setJobControls(true, false);
+        this.app.chatInput.value = '';
+        this._resizeChatInput();
         this.app.ui.clearFile(); 
         this.showTypingIndicator();
         this._armTypingTimeout();
@@ -1163,7 +1181,7 @@ class ManuSoed {
     }
 
     triggerAutoDraft() {
-        if (this.activeJobId) {
+        if (this.activeJobId || this.requestPending) {
             this.addSystemMessage('A job is still running. Please wait or cancel it first.');
             return;
         }
@@ -1174,6 +1192,8 @@ class ManuSoed {
         const refineMsg = `請撰寫草稿：一篇論文 ${targetLabel}，title是『${currentTitle}』，${targetLabel}字數300字`;
         this.addBubble('user', `[Auto Draft Command] <br><span class="text-info">${refineMsg}</span>`);
         this.app.socket.emit('chat_message', { msg: refineMsg, context: this.app.editorCanvas.innerText.substring(0,3000), target_lang: targetLang, pid: this.app.pid, title: currentTitle, section: targetSection, s_ver: '0.1' });
+        this.requestPending = true;
+        this._setJobControls(true, false);
         this.showTypingIndicator();
         this._armTypingTimeout();
         this._armAckTimeout();
@@ -1207,7 +1227,9 @@ class ManuSoed {
         } finally {
             this._clearAckTimeout();
             this._clearTypingTimeout();
+            this.requestPending = false;
             this.activeJobId = null;
+            this._setJobControls(false);
             this.removeTypingIndicator();
         }
     }
@@ -1218,6 +1240,8 @@ class ManuSoed {
             return;
         }
         this.app.socket.emit('cmd_cancel_job', { job_id: this.activeJobId });
+        this._setJobControls(true, false);
+        this.updateTypingIndicator('正在中止 Drafter 工作…');
     }
     
     addBubble(role, text) {
@@ -1324,11 +1348,31 @@ class ManuSoed {
 
     // 收掉轉圈並回到可再送出的狀態。任何「請求已經死了」的路徑都要走這裡，
     // 否則 activeJobId 會卡住，sendUserMessage 會一直擋在 'A job is still running'。
-    _failPendingRequest(msg) {
+    _failPendingRequest(msg, addMessage = true) {
         this._clearAckTimeout();
         this._clearTypingTimeout();
+        this.requestPending = false;
         this.activeJobId = null;
+        this._setJobControls(false);
         this.removeTypingIndicator();
-        this.addSystemMessage(msg);
+        if (addMessage) this.addSystemMessage(msg);
+    }
+
+    _setJobControls(running, canCancel = false) {
+        if (this.app.btnSend) {
+            this.app.btnSend.disabled = running;
+            this.app.btnSend.classList.toggle('d-none', running);
+        }
+        if (this.app.btnCancelJob) {
+            this.app.btnCancelJob.classList.toggle('d-none', !running);
+            this.app.btnCancelJob.disabled = !canCancel;
+        }
+    }
+
+    _resizeChatInput() {
+        const input = this.app.chatInput;
+        if (!input) return;
+        input.style.height = 'auto';
+        input.style.height = `${Math.min(input.scrollHeight, 132)}px`;
     }
 }

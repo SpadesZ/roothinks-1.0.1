@@ -177,3 +177,60 @@ def test_validation_failure_emits_sys_msg(bundle):
     assert "sys_msg" in names
     assert "job_queued" not in names
     assert not bundle["executor"].calls
+
+
+def test_only_job_owner_socket_can_cancel(bundle):
+    """可猜到／取得 job id 的另一條 Socket 仍不得中止別人的工作。"""
+    from app import socketio
+
+    _send_chat(bundle["sio"])
+    queued = bundle["sio"].get_received("/manu_ws")
+    job_id = next(
+        event["args"][0]["job_id"]
+        for event in queued
+        if event["name"] == "job_queued"
+    )
+
+    other_client = bundle["app"].test_client()
+    other = socketio.test_client(
+        bundle["app"], flask_test_client=other_client, namespace="/manu_ws"
+    )
+    try:
+        other.get_received("/manu_ws")
+        other.emit("cmd_cancel_job", {"job_id": job_id}, namespace="/manu_ws")
+        denied = other.get_received("/manu_ws")
+        assert any(
+            event["name"] == "sys_msg" and "another connection" in event["args"][0]["msg"]
+            for event in denied
+        )
+        assert bundle["routes"]._is_cancelled(job_id) is False
+
+        bundle["sio"].emit("cmd_cancel_job", {"job_id": job_id}, namespace="/manu_ws")
+        owner_events = bundle["sio"].get_received("/manu_ws")
+        assert any(event["name"] == "job_cancelled" for event in owner_events)
+        assert bundle["routes"]._is_cancelled(job_id) is True
+    finally:
+        bundle["routes"]._delete_job_state(job_id)
+        if other.is_connected("/manu_ws"):
+            other.disconnect(namespace="/manu_ws")
+
+
+def test_worker_does_not_duplicate_cancel_notification(bundle):
+    """取消 handler 已同步回覆；worker 看見旗標後不得再發第二次。"""
+    job_id = "job_cancel_dedup"
+    emitted = []
+    bundle["routes"]._set_job_state(
+        job_id, cancelled=True, sid="sid-cancel", pid=FORMAL_PID, section=SECTION
+    )
+    bundle["monkeypatch"].setattr(bundle["routes"], "_sid_connected", lambda _sid: True)
+    bundle["monkeypatch"].setattr(
+        bundle["routes"].socketio,
+        "emit",
+        lambda name, *args, **kwargs: emitted.append(name),
+    )
+
+    bundle["routes"]._process_chat_job(
+        bundle["app"], "sid-cancel", job_id, {"pid": FORMAL_PID, "section": SECTION}
+    )
+
+    assert "job_cancelled" not in emitted

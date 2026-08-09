@@ -1,39 +1,20 @@
-//路徑(./app/static/js/mentor.js)
-//版本 v1.0
-//更版時間 20260726-0425
-// 模組定位:
-//   Mentor 儀表板前端：mentee 清單、活動統計、專案／手稿／筆記檢視、派工與評論。
-// 主要責任:
-//   1. 載入 /api/mentor/mentees 與單一 mentee 詳情。
-//   2. 分頁切換與各分頁的渲染。
-//   3. 建立／更新／刪除交付工作，新增評論。
-// 呼叫來源:
-//   app/templates/mentor/dashboard.html
-// 輸入輸出契約:
-//   全部走 /api/mentor/* JSON API，帶 session cookie。
-// 安全邊界:
-//   - 所有 mentee 資料為唯讀呈現；越權由後端 _require_mentee 擋，
-//     前端不做也不能做權限判斷。
-//   - 所有來自後端的文字一律以 escape() 輸出，避免 mentee 的筆記或留言
-//     內容中的 HTML 被當標籤執行。
-// 維護提醒:
-//   - Study 筆記按專案歸戶（檔案沒有作者欄位），UI 上必須保留該提示文字。
-// ---------------------------------------------------------------------------
+// 路徑: app/static/js/mentor.js
+// 版本: v2.0
+// 模組定位: Mentor / Reviewer 的 2C 主論文審閱工作台。
+// 安全邊界: 前端只負責呈現；mentee、PID、資源下載都由後端重新授權。
 
 class MentorDashboard {
     constructor() {
         this.mentees = [];
-        this.current = null;      // 目前選取的 mentee 詳情
+        this.current = null;
         this.currentId = null;
-        this.tab = 'overview';
+        this.currentPid = null;
+        this.currentReview = null;
     }
 
     async init() {
-        this._bindTabs();
         await this.loadMentees();
     }
-
-    // -- 工具 ---------------------------------------------------------------
 
     escape(text) {
         const div = document.createElement('div');
@@ -41,82 +22,70 @@ class MentorDashboard {
         return div.innerHTML;
     }
 
-    showError(msg) {
+    showError(message) {
         const el = document.getElementById('mentorError');
         if (!el) return;
-        el.textContent = msg;
-        el.style.display = msg ? '' : 'none';
-    }
-
-    fmtMinutes(minutes) {
-        const m = Number(minutes || 0);
-        if (m < 60) return m.toFixed(1) + ' 分鐘';
-        return (m / 60).toFixed(1) + ' 小時';
+        el.textContent = message || '';
+        el.style.display = message ? '' : 'none';
     }
 
     fmtDate(iso) {
         if (!iso) return '—';
-        try { return new Date(iso).toLocaleString(); } catch (e) { return iso; }
+        try { return new Date(iso).toLocaleString(); } catch (_err) { return iso; }
     }
 
-    _bindTabs() {
-        const tabs = document.getElementById('mentorTabs');
-        if (!tabs) return;
-        tabs.addEventListener('click', (e) => {
-            const link = e.target.closest('[data-tab]');
-            if (!link) return;
-            e.preventDefault();
-            tabs.querySelectorAll('.nav-link').forEach(a => a.classList.remove('active'));
-            link.classList.add('active');
-            this.tab = link.getAttribute('data-tab');
-            this.renderTab();
-        });
+    fmtSize(bytes) {
+        const value = Number(bytes || 0);
+        if (value < 1024) return `${value} B`;
+        if (value < 1024 * 1024) return `${(value / 1024).toFixed(1)} KB`;
+        return `${(value / 1024 / 1024).toFixed(1)} MB`;
     }
 
-    // -- mentee 清單 --------------------------------------------------------
+    async _fetchJson(url, options) {
+        const response = await fetch(url, options);
+        let data = {};
+        try { data = await response.json(); } catch (_err) { /* non-JSON error */ }
+        if (!response.ok || !data.success) {
+            throw new Error(data.message || data.error || `Request failed (${response.status})`);
+        }
+        return data;
+    }
 
     async loadMentees() {
         const list = document.getElementById('menteeList');
         try {
-            const res = await fetch('/api/mentor/mentees');
-            const data = await res.json();
-            if (!data.success) { this.showError(data.message || '載入失敗'); return; }
+            const data = await this._fetchJson('/api/mentor/mentees');
             this.mentees = data.mentees || [];
             document.getElementById('menteeCount').textContent = this.mentees.length;
-
             if (!this.mentees.length) {
-                list.innerHTML = '<div class="text-muted small p-3">'
-                    + '尚未加入任何指導對象。用右上角的欄位輸入對方的 Email 加入。</div>';
+                list.innerHTML = '<div class="text-muted small p-3">尚未加入指導對象。</div>';
                 return;
             }
             list.innerHTML = '';
-            this.mentees.forEach(m => list.appendChild(this._menteeRow(m)));
+            this.mentees.forEach(item => list.appendChild(this._menteeRow(item)));
+            if (!this.currentId) await this.selectMentee(this.mentees[0].mentee_id);
         } catch (err) {
             list.innerHTML = '<div class="text-danger small p-3">載入失敗</div>';
+            this.showError(err.message);
         }
     }
 
-    _menteeRow(m) {
-        const a = document.createElement('a');
-        a.href = '#';
-        a.className = 'list-group-item list-group-item-action';
-        const online = m.stats && m.stats.online_now
+    _menteeRow(item) {
+        const row = document.createElement('a');
+        row.href = '#';
+        row.dataset.menteeId = String(item.mentee_id);
+        row.className = 'list-group-item list-group-item-action';
+        const online = item.stats && item.stats.online_now
             ? '<span class="badge bg-success ms-1">在線</span>' : '';
-        a.innerHTML = `
-            <div class="d-flex justify-content-between align-items-start">
-                <div>
-                    <div class="fw-bold small">${this.escape(m.mentee_username)}${online}</div>
-                    <div class="text-muted" style="font-size:.72rem;">${this.escape(m.mentee_email)}</div>
-                </div>
-                ${m.open_tasks ? `<span class="badge bg-warning text-dark">${m.open_tasks}</span>` : ''}
-            </div>
-            <div class="text-muted mt-1" style="font-size:.72rem;">
-                上線 ${m.stats ? m.stats.login_count : 0} 次 ·
-                ${this.fmtMinutes(m.stats ? m.stats.total_minutes : 0)} ·
-                ${m.project_count} 個專案
-            </div>`;
-        a.onclick = (e) => { e.preventDefault(); this.selectMentee(m.mentee_id); };
-        return a;
+        row.innerHTML = `
+            <div class="fw-bold small">${this.escape(item.mentee_username)}${online}</div>
+            <div class="text-muted" style="font-size:.72rem;">${this.escape(item.mentee_email)}</div>
+            <div class="text-muted mt-1" style="font-size:.72rem;">${item.project_count} 個專案</div>`;
+        row.onclick = event => {
+            event.preventDefault();
+            this.selectMentee(item.mentee_id);
+        };
+        return row;
     }
 
     async addMentee() {
@@ -124,305 +93,293 @@ class MentorDashboard {
         const email = (input.value || '').trim();
         if (!email) return;
         this.showError('');
-
-        const res = await fetch('/api/mentor/mentees', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email: email }),
-        });
-        const data = await res.json();
-        if (!data.success) { this.showError(data.message || '加入失敗'); return; }
-        input.value = '';
-        await this.loadMentees();
+        try {
+            await this._fetchJson('/api/mentor/mentees', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({email}),
+            });
+            input.value = '';
+            await this.loadMentees();
+        } catch (err) {
+            this.showError(err.message);
+        }
     }
 
     async removeMentee(menteeId) {
-        if (!confirm('確定要解除這位指導對象的歸屬嗎？（不會刪除對方的資料）')) return;
-        await fetch(`/api/mentor/mentees/${menteeId}`, { method: 'DELETE' });
-        this.current = null;
-        this.currentId = null;
-        document.getElementById('mentorTabs').style.display = 'none';
-        document.getElementById('menteeTitle').textContent = '請從左側選擇一位指導對象';
-        document.getElementById('mentorTabBody').innerHTML =
-            '<div class="text-muted small">尚未選擇指導對象。</div>';
-        await this.loadMentees();
+        if (!confirm('確定解除這位指導對象嗎？不會刪除對方資料。')) return;
+        try {
+            await this._fetchJson(`/api/mentor/mentees/${menteeId}`, {method: 'DELETE'});
+            this.current = null;
+            this.currentId = null;
+            this.currentPid = null;
+            document.getElementById('menteeTitle').textContent = '請從左側選擇一位指導對象';
+            document.getElementById('mentorWorkbenchBody').innerHTML =
+                '<div class="text-muted small">尚未選擇指導對象。</div>';
+            await this.loadMentees();
+        } catch (err) {
+            this.showError(err.message);
+        }
     }
-
-    // -- 詳情 ---------------------------------------------------------------
 
     async selectMentee(menteeId) {
-        this.currentId = menteeId;
-        const body = document.getElementById('mentorTabBody');
-        body.innerHTML = '<div class="text-muted small">載入中…</div>';
+        const body = document.getElementById('mentorWorkbenchBody');
+        body.innerHTML = '<div class="text-muted small">載入 2C 工作台…</div>';
+        this.showError('');
+        try {
+            const detail = await this._fetchJson(`/api/mentor/mentees/${menteeId}?notes=0`);
+            this.current = detail;
+            this.currentId = menteeId;
+            document.querySelectorAll('[data-mentee-id]').forEach(row => {
+                row.classList.toggle('active', row.dataset.menteeId === String(menteeId));
+            });
 
-        const res = await fetch(`/api/mentor/mentees/${menteeId}`);
-        if (!res.ok) {
-            body.innerHTML = '<div class="text-danger small">沒有權限檢視這位使用者。</div>';
+            const mentee = detail.mentee;
+            document.getElementById('menteeTitle').innerHTML = `
+                <span class="fw-bold">${this.escape(mentee.username)}</span>
+                <span class="text-muted small ms-2">${this.escape(mentee.email)}</span>
+                <button class="btn btn-sm btn-outline-danger float-end"
+                        onclick="mentorApp.removeMentee(${mentee.id})">解除歸屬</button>`;
+
+            const projects = (detail.projects || []).filter(item =>
+                item.reviewable_2c !== false && (item.status === 'formal' || String(item.pid).endsWith('-p'))
+            );
+            this._renderWorkbenchShell(projects);
+            if (projects.length) await this.loadReview(projects[0].pid);
+        } catch (err) {
+            body.innerHTML = '<div class="text-danger small">沒有權限或載入失敗。</div>';
+            this.showError(err.message);
+        }
+    }
+
+    _renderWorkbenchShell(projects) {
+        const body = document.getElementById('mentorWorkbenchBody');
+        if (!projects.length) {
+            body.innerHTML = '<div class="alert alert-info small mb-0">這位指導對象目前沒有可檢視 2C 全篇的專案。</div>';
             return;
         }
-        this.current = await res.json();
+        const options = projects.map(project => `
+            <option value="${this.escape(project.pid)}">
+                ${this.escape(project.name || project.pid)} · ${this.escape(project.pid)}
+            </option>`).join('');
 
-        document.getElementById('mentorTabs').style.display = '';
-        const m = this.current.mentee;
-        document.getElementById('menteeTitle').innerHTML =
-            `<span class="fw-bold">${this.escape(m.username)}</span>
-             <span class="text-muted small ms-2">${this.escape(m.email)}</span>
-             <button class="btn btn-sm btn-outline-danger float-end"
-                     onclick="mentorApp.removeMentee(${m.id})">解除歸屬</button>`;
-        this.renderTab();
-    }
-
-    renderTab() {
-        if (!this.current) return;
-        const body = document.getElementById('mentorTabBody');
-        const render = {
-            overview: () => this._renderOverview(),
-            projects: () => this._renderProjects(),
-            notes: () => this._renderNotes(),
-            tasks: () => this._renderTasks(body),
-            comments: () => this._renderComments(body),
-        }[this.tab];
-        const html = render ? render() : '';
-        if (typeof html === 'string') body.innerHTML = html;
-    }
-
-    _renderOverview() {
-        const s = this.current.stats || {};
-        const sessions = this.current.sessions || [];
-        const rows = sessions.map(x => `
-            <tr>
-                <td class="small">${this.fmtDate(x.login_at)}</td>
-                <td class="small">${this.fmtDate(x.last_seen_at)}</td>
-                <td class="small">${(x.duration_sec / 60).toFixed(1)} 分</td>
-                <td class="small">${x.active ? '<span class="badge bg-success">在線</span>' : '已結束'}</td>
-            </tr>`).join('');
-
-        return `
-            <div class="row g-3 mb-3">
-                ${this._statCard('上線次數', s.login_count || 0, 'bi-box-arrow-in-right')}
-                ${this._statCard('累計停留', this.fmtMinutes(s.total_minutes), 'bi-clock-history')}
-                ${this._statCard('平均每次', this.fmtMinutes(s.avg_minutes), 'bi-hourglass-split')}
-                ${this._statCard('最近上線', this.fmtDate(s.last_login), 'bi-calendar-check')}
+        body.innerHTML = `
+            <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+                <label class="small fw-bold text-muted" for="reviewProjectSelect">2C 專案</label>
+                <select class="form-select form-select-sm" id="reviewProjectSelect" style="max-width:420px;">
+                    ${options}
+                </select>
+                <span class="text-muted small" id="reviewVersionMeta"></span>
             </div>
-            <h6 class="fw-bold small mt-4">最近的登入紀錄</h6>
-            <table class="table table-sm table-hover">
-                <thead><tr>
-                    <th class="small">登入時間</th><th class="small">最後活動</th>
-                    <th class="small">停留</th><th class="small">狀態</th>
-                </tr></thead>
-                <tbody>${rows || '<tr><td colspan="4" class="text-muted small">尚無紀錄。</td></tr>'}</tbody>
-            </table>`;
-    }
-
-    _statCard(label, value, icon) {
-        return `
-            <div class="col-6 col-md-3">
-                <div class="border rounded p-3 h-100">
-                    <div class="text-muted small"><i class="bi ${icon} me-1"></i>${label}</div>
-                    <div class="fw-bold fs-5 mt-1">${this.escape(value)}</div>
+            <div class="row g-3">
+                <div class="col-xl-8">
+                    <div class="border rounded bg-light overflow-hidden">
+                        <div class="bg-white border-bottom px-3 py-2 fw-bold" id="reviewPaperTitle">2C 主論文</div>
+                        <iframe id="reviewManuscriptFrame" title="2C 主論文唯讀內容" sandbox=""
+                                referrerpolicy="no-referrer" style="width:100%;height:68vh;border:0;background:#fff;"></iframe>
+                        <div class="p-4 text-muted small" id="reviewManuscriptEmpty" style="display:none;">
+                            此專案尚未儲存任何 2C 主論文版本。
+                        </div>
+                    </div>
+                </div>
+                <div class="col-xl-4">
+                    <div class="border rounded p-3 mb-3">
+                        <h6 class="fw-bold">提供意見／建議</h6>
+                        <select class="form-select form-select-sm mb-2" id="reviewFeedbackKind">
+                            <option value="comment">意見</option>
+                            <option value="suggestion">建議</option>
+                        </select>
+                        <textarea class="form-control form-control-sm mb-2" id="reviewFeedbackBody" rows="4"
+                                  placeholder="針對目前 2C 版本留下具體回饋…"></textarea>
+                        <button class="btn btn-primary btn-sm w-100" onclick="mentorApp.postFeedback()">送出</button>
+                    </div>
+                    <div class="border rounded p-3 mb-3">
+                        <h6 class="fw-bold">提供資源</h6>
+                        <input class="form-control form-control-sm mb-2" id="reviewResourceTitle" placeholder="資源名稱（選填）">
+                        <div class="input-group input-group-sm mb-2">
+                            <input type="url" class="form-control" id="reviewResourceUrl" placeholder="https://…">
+                            <button class="btn btn-outline-primary" onclick="mentorApp.addUrlResource()">加入網址</button>
+                        </div>
+                        <div class="input-group input-group-sm">
+                            <input type="file" class="form-control" id="reviewResourcePdf" accept=".pdf,application/pdf">
+                            <button class="btn btn-outline-danger" onclick="mentorApp.uploadPdfResource()">上傳 PDF</button>
+                        </div>
+                        <div class="form-text">只接受 PDF，單檔上限 20 MB。</div>
+                    </div>
+                    <div id="reviewItems"><div class="text-muted small">載入回饋與資源…</div></div>
                 </div>
             </div>`;
+        document.getElementById('reviewProjectSelect').addEventListener('change', event => {
+            this.loadReview(event.target.value);
+        });
     }
 
-    _renderProjects() {
-        const projects = this.current.projects || [];
-        const revisions = this.current.revisions || [];
-
-        const projectRows = projects.map(p => `
-            <tr>
-                <td class="small"><code>${this.escape(p.pid)}</code></td>
-                <td class="small">${this.escape(p.name || '—')}</td>
-                <td class="small"><span class="badge bg-secondary">${this.escape(p.role)}</span></td>
-                <td class="small">${this.escape(p.status || '—')}</td>
-            </tr>`).join('');
-
-        const revRows = revisions.map(r => `
-            <tr>
-                <td class="small">${this.fmtDate(r.created_at)}</td>
-                <td class="small"><code>${this.escape(r.pid)}</code></td>
-                <td class="small">${this.escape(r.entity_ref)}</td>
-                <td class="small">${this.escape(r.summary || '')}</td>
-            </tr>`).join('');
-
-        return `
-            <h6 class="fw-bold small">參與的專案</h6>
-            <table class="table table-sm">
-                <thead><tr><th class="small">PID</th><th class="small">名稱</th>
-                <th class="small">角色</th><th class="small">狀態</th></tr></thead>
-                <tbody>${projectRows || '<tr><td colspan="4" class="text-muted small">尚未參與任何專案。</td></tr>'}</tbody>
-            </table>
-
-            <h6 class="fw-bold small mt-4">手稿異動紀錄（最近 50 筆）</h6>
-            <table class="table table-sm table-hover">
-                <thead><tr><th class="small">時間</th><th class="small">專案</th>
-                <th class="small">對象</th><th class="small">摘要</th></tr></thead>
-                <tbody>${revRows || '<tr><td colspan="4" class="text-muted small">尚無手稿異動。</td></tr>'}</tbody>
-            </table>`;
-    }
-
-    _renderNotes() {
-        const notes = this.current.study_notes || [];
-        if (!notes.length) {
-            return '<div class="text-muted small">沒有可檢視的 Study 筆記。</div>';
+    async loadReview(pid) {
+        if (!pid || !this.currentId) return;
+        this.currentPid = pid;
+        this.showError('');
+        try {
+            const data = await this._fetchJson(
+                `/api/mentor/mentees/${this.currentId}/reviews/${encodeURIComponent(pid)}`
+            );
+            this.currentReview = data;
+            this._renderManuscript(data.manuscript);
+            this._renderItems(data.items || [], data.legacy_comments || []);
+        } catch (err) {
+            this.showError(err.message);
         }
-        const blocks = notes.map(n => {
-            const noteText = n.note && n.note.text
-                ? `<pre class="small bg-light p-2 rounded" style="white-space:pre-wrap;">${this.escape(n.note.text)}</pre>`
-                : '<div class="text-muted small">（此專案沒有筆記內容）</div>';
-            const convs = (n.conversations || []).map(c => `
-                <details class="mb-2">
-                    <summary class="small">
-                        ${this.escape(c.title || c.conv_id)}
-                        <span class="text-muted">· ${c.message_count} 則 · ${this.fmtDate(c.updated_at)}</span>
-                    </summary>
-                    <div class="ps-3 pt-2">
-                        ${(c.messages || []).map(msg => `
-                            <div class="mb-2">
-                                <span class="badge ${msg.role === 'user' ? 'bg-primary' : 'bg-secondary'}">${this.escape(msg.role)}</span>
-                                <div class="small mt-1" style="white-space:pre-wrap;">${this.escape(msg.content)}</div>
-                            </div>`).join('')}
-                    </div>
-                </details>`).join('');
-
-            return `
-                <div class="border rounded p-3 mb-3">
-                    <div class="fw-bold small mb-2"><code>${this.escape(n.pid)}</code></div>
-                    ${noteText}
-                    <div class="fw-bold small mt-3 mb-1">學習對話</div>
-                    ${convs || '<div class="text-muted small">（沒有對話紀錄）</div>'}
-                </div>`;
-        }).join('');
-
-        return `
-            <div class="alert alert-info py-2 small">
-                <i class="bi bi-info-circle me-1"></i>
-                Study 筆記與對話是<strong>按專案</strong>儲存的，檔案本身沒有作者欄位，
-                因此同一專案若有多位成員，內容無法分辨是誰所寫。
-            </div>
-            ${blocks}`;
     }
 
-    // -- 交付工作 -----------------------------------------------------------
+    _renderManuscript(manuscript) {
+        const frame = document.getElementById('reviewManuscriptFrame');
+        const empty = document.getElementById('reviewManuscriptEmpty');
+        const meta = document.getElementById('reviewVersionMeta');
+        const title = document.getElementById('reviewPaperTitle');
+        if (!frame || !empty) return;
+        if (!manuscript) {
+            frame.style.display = 'none';
+            empty.style.display = '';
+            title.textContent = '2C 主論文';
+            meta.textContent = '尚無版本';
+            return;
+        }
 
-    async _renderTasks(body) {
-        body.innerHTML = '<div class="text-muted small">載入中…</div>';
-        const res = await fetch(`/api/mentor/mentees/${this.currentId}/tasks`);
-        const data = await res.json();
-        const tasks = data.tasks || [];
-
-        const rows = tasks.map(t => `
-            <tr>
-                <td class="small">${this.escape(t.title)}
-                    ${t.body ? `<div class="text-muted" style="font-size:.72rem;">${this.escape(t.body)}</div>` : ''}</td>
-                <td class="small">${this.escape(t.due_date || '—')}</td>
-                <td class="small">
-                    <select class="form-select form-select-sm" onchange="mentorApp.setTaskStatus(${t.id}, this.value)">
-                        <option value="open" ${t.status === 'open' ? 'selected' : ''}>未開始</option>
-                        <option value="in_progress" ${t.status === 'in_progress' ? 'selected' : ''}>進行中</option>
-                        <option value="done" ${t.status === 'done' ? 'selected' : ''}>已完成</option>
-                    </select>
-                </td>
-                <td><button class="btn btn-sm btn-outline-danger"
-                            onclick="mentorApp.deleteTask(${t.id})"><i class="bi bi-trash"></i></button></td>
-            </tr>`).join('');
-
-        body.innerHTML = `
-            <div class="row g-2 align-items-end mb-3">
-                <div class="col-md-4">
-                    <label class="form-label small fw-bold text-muted">工作標題</label>
-                    <input type="text" class="form-control form-control-sm" id="taskTitle">
-                </div>
-                <div class="col-md-4">
-                    <label class="form-label small fw-bold text-muted">說明（選填）</label>
-                    <input type="text" class="form-control form-control-sm" id="taskBody">
-                </div>
-                <div class="col-md-2">
-                    <label class="form-label small fw-bold text-muted">期限（選填）</label>
-                    <input type="date" class="form-control form-control-sm" id="taskDue">
-                </div>
-                <div class="col-md-2">
-                    <button class="btn btn-sm btn-primary w-100" onclick="mentorApp.createTask()">指派工作</button>
-                </div>
-            </div>
-            <table class="table table-sm table-hover">
-                <thead><tr><th class="small">工作</th><th class="small">期限</th>
-                <th class="small" style="width:140px;">狀態</th><th style="width:50px;"></th></tr></thead>
-                <tbody>${rows || '<tr><td colspan="4" class="text-muted small">尚未指派任何工作。</td></tr>'}</tbody>
-            </table>`;
-    }
-
-    async createTask() {
-        const title = (document.getElementById('taskTitle').value || '').trim();
-        if (!title) { alert('請輸入工作標題'); return; }
-        const res = await fetch(`/api/mentor/mentees/${this.currentId}/tasks`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                title: title,
-                body: document.getElementById('taskBody').value,
-                due_date: document.getElementById('taskDue').value,
-            }),
+        const parsed = new DOMParser().parseFromString(manuscript.content || '', 'text/html');
+        parsed.querySelectorAll('script,iframe,object,embed,form,input,button,textarea,select,link,meta,base')
+            .forEach(node => node.remove());
+        parsed.querySelectorAll('*').forEach(node => {
+            Array.from(node.attributes).forEach(attr => {
+                const name = attr.name.toLowerCase();
+                if (name.startsWith('on') || ['href', 'srcset', 'action', 'formaction', 'srcdoc', 'xlink:href'].includes(name)) {
+                    node.removeAttribute(attr.name);
+                }
+                if (name === 'src' && !(node.tagName === 'IMG' && /^data:image\//i.test(attr.value))) {
+                    node.removeAttribute(attr.name);
+                }
+            });
         });
-        const data = await res.json();
-        if (!data.success) { alert(data.message || '指派失敗'); return; }
-        this.renderTab();
-        this.loadMentees();
+        const safeBody = parsed.body.innerHTML;
+        const shell = `<!doctype html><html><head>
+            <meta charset="utf-8">
+            <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src data:; style-src 'unsafe-inline'">
+            <style>body{font-family:system-ui,-apple-system,sans-serif;line-height:1.75;color:#212529;padding:28px;max-width:900px;margin:auto}img{max-width:100%;height:auto}table{border-collapse:collapse;width:100%}td,th{border:1px solid #ccc;padding:6px}</style>
+            </head><body>${safeBody}</body></html>`;
+        frame.srcdoc = shell;
+        frame.style.display = '';
+        empty.style.display = 'none';
+        title.textContent = manuscript.title || '2C 主論文';
+        meta.textContent = `${manuscript.version || '—'} · ${this.fmtDate(manuscript.updated_at)}${manuscript.updated_by ? ` · ${manuscript.updated_by}` : ''}`;
     }
 
-    async setTaskStatus(taskId, status) {
-        await fetch(`/api/mentor/tasks/${taskId}`, {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ status: status }),
-        });
-        this.loadMentees();
-    }
-
-    async deleteTask(taskId) {
-        if (!confirm('確定要刪除這項工作嗎？')) return;
-        await fetch(`/api/mentor/tasks/${taskId}`, { method: 'DELETE' });
-        this.renderTab();
-        this.loadMentees();
-    }
-
-    // -- 評論 ---------------------------------------------------------------
-
-    async _renderComments(body) {
-        body.innerHTML = '<div class="text-muted small">載入中…</div>';
-        const res = await fetch(`/api/mentor/mentees/${this.currentId}/comments`);
-        const data = await res.json();
-        const comments = data.comments || [];
-
-        const items = comments.map(c => `
+    _renderItems(items, legacyComments) {
+        const target = document.getElementById('reviewItems');
+        if (!target) return;
+        const feedback = items.filter(item => ['comment', 'suggestion'].includes(item.kind));
+        const resources = items.filter(item => ['resource_url', 'resource_pdf'].includes(item.kind));
+        const feedbackHtml = feedback.map(item => `
             <div class="border rounded p-2 mb-2">
-                <div class="d-flex justify-content-between">
-                    <span class="fw-bold small">${this.escape(c.mentor || '—')}</span>
-                    <span class="text-muted" style="font-size:.72rem;">${this.fmtDate(c.created_at)}</span>
+                <div class="d-flex justify-content-between gap-2">
+                    <span class="badge ${item.kind === 'suggestion' ? 'bg-success' : 'bg-primary'}">
+                        ${item.kind === 'suggestion' ? '建議' : '意見'}${item.paper_version ? ` · ${this.escape(item.paper_version)}` : ''}
+                    </span>
+                    <span class="text-muted" style="font-size:.72rem;">${this.fmtDate(item.created_at)}</span>
                 </div>
-                <div class="small mt-1" style="white-space:pre-wrap;">${this.escape(c.body)}</div>
+                <div class="small mt-2" style="white-space:pre-wrap;">${this.escape(item.body)}</div>
             </div>`).join('');
-
-        body.innerHTML = `
-            <div class="mb-3">
-                <textarea class="form-control form-control-sm mb-2" id="mentorCommentInput" rows="3"
-                          placeholder="對這位指導對象的整體回饋…"></textarea>
-                <button class="btn btn-sm btn-primary" onclick="mentorApp.postComment()">送出評論</button>
-            </div>
-            ${items || '<div class="text-muted small">尚無評論。</div>'}`;
+        const legacyHtml = legacyComments.map(item => `
+            <div class="border rounded p-2 mb-2 bg-light">
+                <div class="text-muted" style="font-size:.72rem;">既有整體評論 · ${this.fmtDate(item.created_at)}</div>
+                <div class="small mt-1" style="white-space:pre-wrap;">${this.escape(item.body)}</div>
+            </div>`).join('');
+        const resourceHtml = resources.map(item => {
+            const label = this.escape(item.title || item.file_name || item.url || '資源');
+            const href = item.kind === 'resource_pdf' ? item.download_url : item.url;
+            const detail = item.kind === 'resource_pdf'
+                ? `${this.escape(item.file_name || 'PDF')} · ${this.fmtSize(item.size_bytes)}`
+                : this.escape(item.url || '');
+            return `<a class="list-group-item list-group-item-action" href="${this.escape(href)}"
+                       ${item.kind === 'resource_url' ? 'target="_blank" rel="noopener noreferrer"' : ''}>
+                    <div class="fw-bold small"><i class="bi ${item.kind === 'resource_pdf' ? 'bi-file-earmark-pdf text-danger' : 'bi-link-45deg text-primary'} me-1"></i>${label}</div>
+                    <div class="text-muted text-truncate" style="font-size:.72rem;">${detail}</div>
+                </a>`;
+        }).join('');
+        target.innerHTML = `
+            <h6 class="fw-bold small mt-4">本稿回饋</h6>
+            ${feedbackHtml || '<div class="text-muted small mb-3">尚無意見或建議。</div>'}
+            ${legacyHtml}
+            <h6 class="fw-bold small mt-4">提供的資源</h6>
+            <div class="list-group">${resourceHtml || '<div class="text-muted small">尚無資源。</div>'}</div>`;
     }
 
-    async postComment() {
-        const input = document.getElementById('mentorCommentInput');
-        const body = (input.value || '').trim();
+    _itemUrl() {
+        return `/api/mentor/mentees/${this.currentId}/reviews/${encodeURIComponent(this.currentPid)}/items`;
+    }
+
+    _paperVersion() {
+        return this.currentReview && this.currentReview.manuscript
+            ? this.currentReview.manuscript.version : '';
+    }
+
+    async postFeedback() {
+        const bodyEl = document.getElementById('reviewFeedbackBody');
+        const body = (bodyEl.value || '').trim();
         if (!body) return;
-        const res = await fetch(`/api/mentor/mentees/${this.currentId}/comments`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ body: body }),
-        });
-        const data = await res.json();
-        if (!data.success) { alert(data.message || '送出失敗'); return; }
-        this.renderTab();
+        try {
+            await this._fetchJson(this._itemUrl(), {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    kind: document.getElementById('reviewFeedbackKind').value,
+                    body,
+                    paper_version: this._paperVersion(),
+                }),
+            });
+            bodyEl.value = '';
+            await this.loadReview(this.currentPid);
+        } catch (err) {
+            this.showError(err.message);
+        }
+    }
+
+    async addUrlResource() {
+        const urlEl = document.getElementById('reviewResourceUrl');
+        const url = (urlEl.value || '').trim();
+        if (!url) return;
+        try {
+            await this._fetchJson(this._itemUrl(), {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    kind: 'resource_url',
+                    title: document.getElementById('reviewResourceTitle').value,
+                    url,
+                    paper_version: this._paperVersion(),
+                }),
+            });
+            urlEl.value = '';
+            document.getElementById('reviewResourceTitle').value = '';
+            await this.loadReview(this.currentPid);
+        } catch (err) {
+            this.showError(err.message);
+        }
+    }
+
+    async uploadPdfResource() {
+        const input = document.getElementById('reviewResourcePdf');
+        if (!input.files || !input.files[0]) return;
+        const form = new FormData();
+        form.append('kind', 'resource_pdf');
+        form.append('title', document.getElementById('reviewResourceTitle').value);
+        form.append('paper_version', this._paperVersion());
+        form.append('file', input.files[0]);
+        try {
+            await this._fetchJson(this._itemUrl(), {method: 'POST', body: form});
+            input.value = '';
+            document.getElementById('reviewResourceTitle').value = '';
+            await this.loadReview(this.currentPid);
+        } catch (err) {
+            this.showError(err.message);
+        }
     }
 }
 

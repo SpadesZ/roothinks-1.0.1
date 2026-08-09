@@ -25,6 +25,7 @@
 #   python -m pytest test/unit/test_mentor_scope.py -q
 # ------------------------------------------------------------------------------
 import sys
+from io import BytesIO
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
@@ -492,3 +493,126 @@ class TestMenteeDetail:
         raw = client.get(f"/api/mentor/mentees/{mentee_id}").get_data(as_text=True)
         assert "password_hash" not in raw
         assert "scrypt" not in raw
+
+
+# ---------------------------------------------------------------------------
+# 2C review workbench
+# ---------------------------------------------------------------------------
+
+
+class TestMentorReviewWorkbench:
+    def _setup(self, app, make_user, suffix="review", role="editor"):
+        mentor_id = make_user(f"m{suffix}", "mentor")
+        mentee_id = make_user(f"s{suffix}")
+        _link(app, mentor_id, mentee_id)
+
+        from app import db
+        from app.core_pro.manuscript.manuscript_io import ManuscriptIO
+        from app.models import Project, WorkspaceMember
+
+        pid = f"REV{suffix.upper()}-p"
+        with app.app_context():
+            db.session.add(Project(project_id=pid, name="Review Paper", status="formal"))
+            db.session.add(WorkspaceMember(user_id=mentee_id, pid=pid, role=role))
+            db.session.commit()
+            if role != "coauthor":
+                ManuscriptIO.save_paper_version(pid, "First", "<p>old</p>", updated_by="author")
+                ManuscriptIO.save_paper_version(pid, "Latest", "<p>latest 2C</p>", updated_by="author")
+
+        client = app.test_client()
+        _login(client, f"m{suffix}")
+        return client, mentor_id, mentee_id, pid
+
+    def test_latest_2c_and_feedback_items(self, app, make_user):
+        client, _mentor_id, mentee_id, pid = self._setup(app, make_user, "r1")
+        endpoint = f"/api/mentor/mentees/{mentee_id}/reviews/{pid}"
+
+        review = client.get(endpoint)
+        assert review.status_code == 200
+        assert review.get_json()["manuscript"]["version"] == "V2"
+        assert "latest 2C" in review.get_json()["manuscript"]["content"]
+
+        assert client.post(
+            endpoint + "/items",
+            json={"kind": "comment", "body": "Method 需要補充樣本來源", "paper_version": "V2"},
+        ).status_code == 201
+        assert client.post(
+            endpoint + "/items",
+            json={"kind": "suggestion", "body": "建議移動圖二", "paper_version": "V2"},
+        ).status_code == 201
+        assert client.post(
+            endpoint + "/items",
+            json={"kind": "resource_url", "title": "Reporting guide", "url": "https://example.org/guide"},
+        ).status_code == 201
+
+        data = client.get(endpoint).get_json()
+        assert [item["kind"] for item in data["items"]] == [
+            "comment", "suggestion", "resource_url",
+        ]
+
+    def test_url_scheme_and_project_scope_are_enforced(self, app, make_user):
+        client, _mentor_id, mentee_id, pid = self._setup(app, make_user, "r2")
+        endpoint = f"/api/mentor/mentees/{mentee_id}/reviews/{pid}"
+        assert client.post(
+            endpoint + "/items",
+            json={"kind": "resource_url", "url": "javascript:alert(1)"},
+        ).status_code == 400
+
+        make_user("outsidementor", "mentor")
+        outsider = app.test_client()
+        _login(outsider, "outsidementor")
+        assert outsider.get(endpoint).status_code == 403
+        assert outsider.post(
+            endpoint + "/items", json={"kind": "comment", "body": "sneaky"}
+        ).status_code == 403
+
+    def test_section_scoped_mentee_does_not_expose_full_2c(self, app, make_user):
+        client, _mentor_id, mentee_id, pid = self._setup(
+            app, make_user, "r3", role="coauthor"
+        )
+        assert client.get(f"/api/mentor/mentees/{mentee_id}/reviews/{pid}").status_code == 403
+
+    def test_pdf_magic_size_and_download_authorization(self, app, make_user, monkeypatch):
+        client, mentor_id, mentee_id, pid = self._setup(app, make_user, "r4")
+        endpoint = f"/api/mentor/mentees/{mentee_id}/reviews/{pid}/items"
+
+        fake = client.post(
+            endpoint,
+            data={"kind": "resource_pdf", "file": (BytesIO(b"not a pdf"), "fake.pdf")},
+            content_type="multipart/form-data",
+        )
+        assert fake.status_code == 400
+
+        valid = client.post(
+            endpoint,
+            data={
+                "kind": "resource_pdf",
+                "title": "Reviewer attachment",
+                "paper_version": "V2",
+                "file": (BytesIO(b"%PDF-1.4\n%%EOF\n"), "review.pdf"),
+            },
+            content_type="multipart/form-data",
+        )
+        assert valid.status_code == 201
+        item = valid.get_json()["item"]
+        assert "file_path" not in item
+
+        download = client.get(item["download_url"])
+        assert download.status_code == 200
+        assert download.data.startswith(b"%PDF-")
+        assert download.headers["X-Content-Type-Options"] == "nosniff"
+
+        other_id = make_user("mreviewr4b", "mentor")
+        _link(app, other_id, mentee_id)
+        other = app.test_client()
+        _login(other, "mreviewr4b")
+        assert other.get(item["download_url"]).status_code == 403
+
+        from app.mentor import routes as mentor_routes
+        monkeypatch.setattr(mentor_routes, "_MAX_RESOURCE_PDF_BYTES", 8)
+        oversized = client.post(
+            endpoint,
+            data={"kind": "resource_pdf", "file": (BytesIO(b"%PDF-1234"), "large.pdf")},
+            content_type="multipart/form-data",
+        )
+        assert oversized.status_code == 413

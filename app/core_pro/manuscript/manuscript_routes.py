@@ -53,6 +53,7 @@ import logging
 import atexit
 from concurrent.futures import ThreadPoolExecutor
 from typing import Optional
+from uuid import uuid4
 
 from flask import Blueprint, render_template, request, send_from_directory, jsonify, current_app, g
 from app import socketio, db
@@ -404,6 +405,18 @@ def _is_cancelled(job_id):
     return bool(st.get('cancelled', False))
 
 
+def _cancel_job_for_sid(job_id, sid):
+    """原子地限制取消權限在建立該工作的 Socket。"""
+    with _job_lock:
+        state = _job_state.get(job_id)
+        if not state:
+            return 'missing'
+        if state.get('sid') != sid:
+            return 'forbidden'
+        state['cancelled'] = True
+        return 'cancelled'
+
+
 def _mark_jobs_cancelled_by_sid(sid):
     with _job_lock:
         for k, v in _job_state.items():
@@ -438,8 +451,7 @@ def _process_chat_job(app_obj, sid, job_id, payload):
                 return
             _emit_job_progress(sid, job_id, 'processing', 'Drafter is processing request.', 25)
             if _is_cancelled(job_id):
-                if _sid_connected(sid):
-                    socketio.emit('job_cancelled', {'job_id': job_id}, to=sid, namespace='/manu_ws')
+                # cmd_cancel_job 已同步通知原 Socket；worker 只需停止，避免 UI 顯示兩次。
                 return
 
             logger.info(
@@ -450,6 +462,8 @@ def _process_chat_job(app_obj, sid, job_id, payload):
                 payload.get('section'),
                 len(str(payload.get('user_msg', '') or '')),
             )
+            # ponytail: provider 呼叫目前沒有 abort token；取消採合作式旗標並丟棄
+            # 回傳結果。若供應商日後提供可中止 API，再把 token 接進 process_request。
             ai_response = ai_drafter.process_request(
                 user_prompt=payload.get('user_msg', ''),
                 context_text=payload.get('context_text', ''),
@@ -463,8 +477,6 @@ def _process_chat_job(app_obj, sid, job_id, payload):
             )
 
             if _is_cancelled(job_id):
-                if _sid_connected(sid):
-                    socketio.emit('job_cancelled', {'job_id': job_id}, to=sid, namespace='/manu_ws')
                 return
 
             _emit_job_progress(sid, job_id, 'finalizing', 'Persisting response.', 85)
@@ -1043,7 +1055,7 @@ def handle_chat(data):
     section = data.get('section', 'general')
     s_ver = data.get('s_ver', '0.1')
 
-    job_id = f"job_{int(time.time() * 1000)}_{os.getpid()}"
+    job_id = f"job_{uuid4().hex}"
     sid = request.sid
     _set_job_state(job_id, cancelled=False, sid=sid, pid=pid, section=section)
 
@@ -1158,11 +1170,13 @@ def handle_cancel_job(data):
     if not job_id:
         emit('sys_msg', {'msg': 'Cancel failed: missing job_id'})
         return
-    st = _get_job_state(job_id)
-    if not st:
+    result = _cancel_job_for_sid(job_id, request.sid)
+    if result == 'missing':
         emit('job_cancelled', {'job_id': job_id, 'note': 'Job already completed or missing.'})
         return
-    _set_job_state(job_id, cancelled=True)
+    if result == 'forbidden':
+        emit('sys_msg', {'msg': 'Cancel failed: job belongs to another connection.'})
+        return
     emit('job_cancelled', {'job_id': job_id})
 
 @socketio.on('cmd_save_block', namespace='/manu_ws')

@@ -1,22 +1,19 @@
 <!--
   檔案路徑: app/templates/mentor/dashboard.html
   產生時間: 2026-07-26 04:20 +08:00
-  版本: v1.0
+  版本: v2.0
   模組定位:
-    Mentor 儀表板：mentee 清單、活動統計、手稿與筆記檢視、派工與評論。
+    Mentor / Reviewer 的 2C 主論文審閱工作台。
   主要責任:
-    1. 左側 mentee 清單（含上線次數、停留時間、未完成工作數）。
-    2. 右側分頁：總覽 / 專案與手稿 / Study 筆記 / 交付工作 / 評論。
-    3. 以 email 新增 mentee。
+    1. 左側選擇 mentee，右側直接顯示其可審閱專案的最新 2C 全篇。
+    2. 在同一頁提供意見、建議、PDF 與網址資源。
+    3. 以 email 新增 mentee；不再要求 reviewer 在其他模組分頁間切換。
   輸入輸出契約:
     全部資料來自 /api/mentor/* JSON API，由 mentor.js 取得。
   安全邊界:
     - 非 mentor 身分開啟本頁會看到說明區塊而非資料；真正的把關在後端
       _require_mentor / _require_mentee，前端隱藏僅為體驗。
-    - mentee 的內容一律唯讀呈現。
-  維護提醒:
-    - Study 筆記按專案歸戶而非按人，因為 study 檔案沒有作者欄位；
-      頁面上已明白標示這件事，避免 mentor 誤判內容作者。
+    - mentee 的 2C 內容一律唯讀，並以 sandbox iframe 顯示。
   驗證方式:
     python -m pytest test/unit/test_mentor_scope.py -q
 -->
@@ -34,7 +31,7 @@
 
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h4 class="fw-bold mb-0">
-            <i class="bi bi-mortarboard text-info me-2"></i>指導者儀表板
+            <i class="bi bi-file-earmark-text text-info me-2"></i>2C Review 工作台
         </h4>
         <div class="input-group input-group-sm" style="width: 380px;">
             <span class="input-group-text">新增指導對象</span>
@@ -61,16 +58,9 @@
             <div class="card shadow-sm">
                 <div class="card-header bg-white">
                     <div class="fw-bold" id="menteeTitle">請從左側選擇一位指導對象</div>
-                    <ul class="nav nav-tabs card-header-tabs mt-2" id="mentorTabs" style="display:none;">
-                        <li class="nav-item"><a class="nav-link active" href="#" data-tab="overview">總覽</a></li>
-                        <li class="nav-item"><a class="nav-link" href="#" data-tab="projects">專案與手稿</a></li>
-                        <li class="nav-item"><a class="nav-link" href="#" data-tab="notes">Study 筆記</a></li>
-                        <li class="nav-item"><a class="nav-link" href="#" data-tab="tasks">交付工作</a></li>
-                        <li class="nav-item"><a class="nav-link" href="#" data-tab="comments">評論</a></li>
-                    </ul>
                 </div>
-                <div class="card-body" id="mentorTabBody" style="min-height: 60vh;">
-                    <div class="text-muted small">尚未選擇指導對象。</div>
+                <div class="card-body" id="mentorWorkbenchBody" style="min-height: 70vh;">
+                    <div class="text-muted small">尚未選擇指導對象；選擇後會直接開啟最新 2C 主論文。</div>
                 </div>
             </div>
         </div>
@@ -83,7 +73,7 @@
         integrity="sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz"
         crossorigin="anonymous"></script>
 {% if current_user.is_mentor %}
-<script src="{{ url_for('static', filename='js/mentor.js') }}?v=1.0"></script>
+<script src="{{ url_for('static', filename='js/mentor.js') }}?v=2.0"></script>
 <script>
     const mentorApp = new MentorDashboard();
     mentorApp.init();
