@@ -5,14 +5,14 @@
 #   「人員組織 email 授予系統權限」的行為測試。
 # 主要責任:
 #   1. access_role 有填且 email 對得到帳號 → 建立/更新 WorkspaceMember。
-#   2. access_role 空白 → 僅列名，不動既有權限。
+#   2. 一般成員 access_role 空白 → 僅列名；PI／Co-PI 最低為 editor。
 #   3. email 未註冊 → 略過並回報，不中斷存檔。
 #   4. 絕不在此移除既有 membership（移除只走「成員管理」）。
 # 呼叫來源:
 #   pytest。不被應用程式碼 import。
 # 安全邊界:
-#   - 這條路徑會發放專案權限，等同邀請功能，必須確保只依「明確填寫的
-#     access_role」授權，不得從論文署名角色（主持人等）推導。
+#   - 這條路徑會發放專案權限，等同邀請功能；除產品明定的 PI／Co-PI
+#     最低 editor 外，其餘角色只依明確填寫的 access_role 授權。
 # 維護提醒:
 #   - 人員組織與成員管理是兩套並存介面；此同步刻意「只增不減」，
 #     避免有人編輯人員組織就無聲踢掉協作者。
@@ -73,9 +73,9 @@ def _mkuser(app, name):
         return u.id
 
 
-def _member(email, access_role, name="X"):
+def _member(email, access_role, name="X", academic_role="合作人員 (Collaborator)"):
     return {
-        "role": "主持人 (Principal Investigator)",
+        "role": academic_role,
         "access_role": access_role,
         "name": {"en": {"surname": name, "given": name}},
         "emails": [email] if email else [],
@@ -162,3 +162,49 @@ class TestMembersAccessSync:
     def test_no_email_is_skipped(self, app):
         granted, skipped = _sync(app, [_member("", "editor")])
         assert granted == 0 and skipped == []
+
+    @pytest.mark.parametrize("academic_role", [
+        "主持人 (Principal Investigator)",
+        "共同主持人 (Co-PI)",
+    ])
+    def test_pi_and_copi_get_full_section_editing(self, app, academic_role):
+        uid = _mkuser(app, "lead_" + ("pi" if academic_role.startswith("主持人") else "copi"))
+        email = "lead_pi@test.local" if academic_role.startswith("主持人") else "lead_copi@test.local"
+        granted, skipped = _sync(app, [
+            _member(email, "coauthor", academic_role=academic_role),
+        ])
+        from app.security import get_workspace_role
+        with app.app_context():
+            assert granted == 1 and skipped == []
+            assert get_workspace_role(uid, PID) == "editor"
+
+    def test_pi_minimum_does_not_downgrade_owner(self, app):
+        uid = _mkuser(app, "leadowner")
+        _sync(app, [_member("leadowner@test.local", "owner")])
+        _sync(app, [_member(
+            "leadowner@test.local",
+            "",
+            academic_role="主持人 (Principal Investigator)",
+        )])
+        from app.security import get_workspace_role
+        with app.app_context():
+            assert get_workspace_role(uid, PID) == "owner"
+
+    def test_existing_projects_can_be_backfilled_idempotently(self, app):
+        uid = _mkuser(app, "oldcopi")
+        member = _member(
+            "oldcopi@test.local",
+            "",
+            academic_role="共同主持人 (Co-PI)",
+        )
+        from app import db
+        from app.models import Project
+        from app.project_portfolio.project_service import ProjectService
+        with app.app_context():
+            project = Project.query.filter_by(project_id=PID).one()
+            project.members = [member]
+            db.session.commit()
+            assert ProjectService.ensure_academic_lead_access() == (1, [])
+            assert ProjectService.ensure_academic_lead_access() == (0, [])
+            from app.security import get_workspace_role
+            assert get_workspace_role(uid, PID) == "editor"

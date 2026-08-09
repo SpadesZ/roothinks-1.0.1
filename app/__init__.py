@@ -608,6 +608,19 @@ def create_app(test_config=None):
             _enable_sqlite_wal(app.config["SQLALCHEMY_BINDS"]["manuscript"])
             LLMModel.init_db()
 
+            # PI／Co-PI 是內容決策者，既有專案也要立即補到 editor；同步函式
+            # 只升不降且可重入，owner 仍保留成員管理權。
+            try:
+                from app.project_portfolio.project_service import ProjectService
+                lead_granted, lead_skipped = ProjectService.ensure_academic_lead_access()
+                LOGGER.info(
+                    "[members-access] academic leads ensured: granted=%s skipped=%s",
+                    lead_granted, len(lead_skipped),
+                )
+            except Exception:
+                db.session.rollback()
+                LOGGER.warning("[members-access] academic lead startup sync failed", exc_info=True)
+
             # Re-apply persisted runtime settings from ConfigKV.
             try:
                 saved_cpu = str(models._get_kv("LECTURE_CPU_CORES", "") or "").strip().lower()

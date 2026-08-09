@@ -572,12 +572,41 @@ class ManuSoed {
 
     switchChatSection(sectionId) {
         if(!sectionId) return;
+        this.rememberChatSection(sectionId);
         this.app.chatContainer.innerHTML = ''; 
         this.addSystemMessage(`Synchronizing context for section: [${sectionId}]...`);
         this.app.socket.emit('cmd_load_chat', { pid: this.app.pid, section: sectionId });
         // 同一個切章入口一併要求版本與自己的 autosave 草稿；舊版只載聊天，
         // 因而後端雖有 _draft__<user>.json，重新進頁仍永遠看不到。
         this.app.socket.emit('cmd_list_blocks', { pid: this.app.pid, section: sectionId });
+    }
+
+    _chatSectionStorageKey() {
+        const userId = document.getElementById('currentUserId')?.value || 'anonymous';
+        return `roothinks:manuscript:2a:last-section:${userId}:${this.app.pid}`;
+    }
+
+    rememberChatSection(sectionId) {
+        try {
+            window.localStorage.setItem(this._chatSectionStorageKey(), sectionId);
+        } catch (_) {
+            // localStorage 不可用時仍可由伺服器載入目前章節，不中斷 Manuscript。
+        }
+    }
+
+    restoreChatSection(fallbackSection) {
+        try {
+            const cached = window.localStorage.getItem(this._chatSectionStorageKey());
+            const exists = cached && Array.from(this.app.drafterTargetSection.options)
+                .some((option) => option.value === cached);
+            if (exists) {
+                this.app.drafterTargetSection.value = cached;
+                return cached;
+            }
+        } catch (_) {
+            // ponytail: cache 只是定位提示；聊天正文仍以伺服器 JSON 為準。
+        }
+        return fallbackSection;
     }
 
     // =========================================================================
@@ -813,6 +842,9 @@ class ManuSoed {
         });
 
         this.app.socket.on('chat_history', (data) => {
+            // 快速切章時舊請求可能晚到；不得讓舊章回應清空目前章節的紀錄。
+            if (this.app.drafterTargetSection
+                && data.section !== this.app.drafterTargetSection.value) return;
             this.app.chatContainer.innerHTML = '';
             this.addSystemMessage(`Syncing history for section: ${data.section}`);
             if(data.history && data.history.length > 0) {

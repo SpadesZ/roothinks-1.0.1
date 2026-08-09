@@ -193,7 +193,10 @@ class ManuscriptWorkspace {
             }
 
             setTimeout(() => {
-                if (this.drafterTargetSection) this.soed.switchChatSection(this.drafterTargetSection.value);
+                if (this.drafterTargetSection) {
+                    const section = this.soed.restoreChatSection(this.drafterTargetSection.value);
+                    this.soed.switchChatSection(section);
+                }
             }, 500);
         };
 

@@ -114,7 +114,7 @@ def test_study_and_manuscript_rehydrate_from_server():
     assert "this.app.socket.emit('cmd_list_blocks'" in manu_js
     assert "this.app.socket.emit('cmd_load_paper'" in manu_js
     assert "study_core.js') }}?v=2.5" in study_html
-    assert "manuscript_soed.js') }}?v=2.1" in manu_html
+    assert "manuscript_soed.js') }}?v=2.2" in manu_html
 
 
 def test_drafter_multiline_and_cancel_controls_contract():
@@ -129,3 +129,16 @@ def test_drafter_multiline_and_cancel_controls_contract():
     assert "e.preventDefault()" in manu_js
     assert "this.activeJobId || this.requestPending" in manu_js
     assert "this.btnCancelJob = document.getElementById('btnCancelJob')" in ws_js
+
+
+def test_drafter_restores_last_section_and_ignores_stale_history():
+    manu_js = (ROOT / "app/static/js/manuscript_soed.js").read_text(encoding="utf-8")
+    ws_js = (ROOT / "app/static/js/manuscript_ws.js").read_text(encoding="utf-8")
+    manu_html = (ROOT / "app/templates/manuscript_workspace.html").read_text(encoding="utf-8")
+
+    assert "roothinks:manuscript:2a:last-section:${userId}:${this.app.pid}" in manu_js
+    assert "window.localStorage.setItem(this._chatSectionStorageKey(), sectionId)" in manu_js
+    assert "const section = this.soed.restoreChatSection" in ws_js
+    assert "data.section !== this.app.drafterTargetSection.value" in manu_js
+    assert "manuscript_soed.js') }}?v=2.2" in manu_html
+    assert "manuscript_ws.js') }}?v=5.0" in manu_html

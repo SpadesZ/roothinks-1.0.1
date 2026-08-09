@@ -57,6 +57,13 @@ function isPrincipalInvestigator(role) {
     return String(role || '').startsWith('主持人');
 }
 
+function isAcademicLead(role) {
+    const value = String(role || '');
+    return isPrincipalInvestigator(value)
+        || value.startsWith('共同主持人')
+        || value.toLowerCase().includes('co-pi');
+}
+
 // [workflow] 五模組進度改在 dashboard 一覽。
 //
 // 原本這條狀態列出現在 PAQ/Literature/Study/Manuscript/Submit 五個模組頁，
@@ -577,7 +584,8 @@ function addMemberRow(data = null) {
 
     const role = data ? data.role : '主持人 (Principal Investigator)';
     // 系統權限與論文署名角色是兩回事，分開儲存於 access_role。
-    const accessRole = (data && data.access_role) ? data.access_role : '';
+    const storedAccessRole = (data && data.access_role) ? data.access_role : '';
+    const accessRole = storedAccessRole || (isAcademicLead(role) ? 'editor' : '');
     const title = data ? data.title : '';
     const enSurname = data ? safeGet(data, 'name.en.surname') : '';
     const enGiven = data ? safeGet(data, 'name.en.given') : '';
@@ -648,9 +656,8 @@ function addMemberRow(data = null) {
                 </div>
             </div>
 
-            <!-- [collab] 人員組織的 email 可直接授予系統權限。
-                 上面的「角色」是論文署名身分，這裡的才是實際的系統存取權；
-                 兩者刻意分開，因為掛名者未必需要進系統。 -->
+            <!-- [collab] 一般署名角色與系統權限分開；PI／Co-PI 例外，
+                 依產品規則最低為 editor（全章節讀寫）。 -->
             <div class="row g-2 mb-2 border rounded p-2" style="background:#f1f8ff;">
                 <div class="col-md-6">
                     <label class="small fw-bold text-primary">
@@ -667,7 +674,7 @@ function addMemberRow(data = null) {
                 <div class="col-md-6 d-flex align-items-end">
                     <div class="text-muted" style="font-size:.72rem;">
                         依下方第一個 Email 對應已註冊帳號授權。<br>
-                        該 Email 尚未註冊時會略過，可改用「成員管理」邀請。
+                        PI／Co-PI 最低為總編輯；未註冊 Email 會略過。
                     </div>
                 </div>
             </div>
@@ -738,6 +745,20 @@ function addMemberRow(data = null) {
         </div>
     `;
     container.appendChild(div);
+
+    const roleSelect = div.querySelector('.role-select');
+    const accessSelect = div.querySelector('.access-select');
+    const enforceLeadAccess = () => {
+        const lead = isAcademicLead(roleSelect.value);
+        Array.from(accessSelect.options).forEach((option) => {
+            option.disabled = lead && ['', 'viewer', 'coauthor'].includes(option.value);
+        });
+        if (lead && !['editor', 'owner'].includes(accessSelect.value)) {
+            accessSelect.value = 'editor';
+        }
+    };
+    roleSelect.addEventListener('change', enforceLeadAccess);
+    enforceLeadAccess();
 }
 
 function addEmailField(btn) {

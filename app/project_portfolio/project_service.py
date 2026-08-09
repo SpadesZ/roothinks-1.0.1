@@ -97,6 +97,16 @@ class ProjectService:
 
 
     @staticmethod
+    def _is_academic_lead(member):
+        """PI／Co-PI 是論文領導角色，系統權限最低必須能編輯全部章節。"""
+        role = str((member or {}).get('role') or '').strip()
+        return (
+            role.startswith('主持人')
+            or role.startswith('共同主持人')
+            or 'co-pi' in role.casefold()
+        )
+
+    @staticmethod
     def _sync_members_access(pid, members):
         """
         [collab] 依人員組織的 email 同步系統權限（WorkspaceMember）。
@@ -107,7 +117,8 @@ class ProjectService:
         並在此把它落實到真正的權限表。
 
         規則：
-        - access_role 空白 → 僅列名，不動該使用者的既有權限（也不移除）。
+        - 一般成員 access_role 空白 → 僅列名，不動既有權限（也不移除）。
+        - PI／Co-PI → 最低 editor（全章節讀寫）；既有 owner 不得被降級。
         - email 找不到已註冊帳號 → 略過並記錄，不中斷存檔
           （對方可能還沒註冊，之後可用「成員管理」邀請）。
         - 已存在的 membership 只更新角色，不重複建立。
@@ -116,7 +127,7 @@ class ProjectService:
 
         回傳 (授權筆數, 略過的 email 清單) 供呼叫端提示使用者。
         """
-        from app.models import User, WorkspaceMember, ROLE_ORDER
+        from app.models import User, WorkspaceMember, ROLE_EDITOR, ROLE_ORDER
 
         granted, skipped = 0, []
         if not isinstance(members, list):
@@ -126,10 +137,13 @@ class ProjectService:
             if not isinstance(m, dict):
                 continue
             access_role = str(m.get('access_role') or '').strip().lower()
-            if not access_role:
-                continue
-            if access_role not in ROLE_ORDER:
+            is_lead = ProjectService._is_academic_lead(m)
+            if access_role and access_role not in ROLE_ORDER:
                 logger.warning("[members-access] 未知角色 %s，略過", access_role)
+                access_role = ''
+            if is_lead and ROLE_ORDER.get(access_role, 0) < ROLE_ORDER[ROLE_EDITOR]:
+                access_role = ROLE_EDITOR
+            if not access_role:
                 continue
 
             emails = m.get('emails') or []
@@ -146,8 +160,11 @@ class ProjectService:
 
             existing = WorkspaceMember.query.filter_by(user_id=user.id, pid=pid).first()
             if existing:
-                if existing.role != access_role:
-                    existing.role = access_role
+                desired_role = access_role
+                if is_lead and ROLE_ORDER.get(existing.role or '', 0) > ROLE_ORDER[desired_role]:
+                    desired_role = existing.role
+                if existing.role != desired_role:
+                    existing.role = desired_role
                     granted += 1
             else:
                 db.session.add(
@@ -158,6 +175,23 @@ class ProjectService:
         if granted or skipped:
             db.session.commit()
         return granted, skipped
+
+    @staticmethod
+    def ensure_academic_lead_access():
+        """補齊既有專案的 PI／Co-PI 全內容編輯權；可安全重複執行。"""
+        granted = 0
+        skipped = set()
+        for project in Project.query.all():
+            leads = [
+                m for m in (project.members or [])
+                if isinstance(m, dict) and ProjectService._is_academic_lead(m)
+            ]
+            if not leads:
+                continue
+            count, missing = ProjectService._sync_members_access(project.project_id, leads)
+            granted += count
+            skipped.update(missing)
+        return granted, sorted(skipped)
 
     @staticmethod
     def _validate_members(members):
