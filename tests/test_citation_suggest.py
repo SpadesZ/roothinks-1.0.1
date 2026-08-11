@@ -30,7 +30,16 @@ def test_detect_citation_needed():
     assert not detect_citation_needed("This paragraph is only a transition.")
 
 
-def test_suggest_citations_uses_real_evidence_only():
+def test_suggest_citations_uses_real_evidence_only(tmp_path, monkeypatch):
+    # _resolve_data_root() 是從 SQLALCHEMY_DATABASE_URI 的目錄推導的，而
+    # "sqlite:///:memory:" 的 dirname 是空字串（不是絕對路徑），於是它會 fallback
+    # 到 os.getcwd()/data —— 也就是 repo 的**真實**資料目錄。
+    # 實測後果：跑這個測試會在 data/ 底下長出 P1/literature（NOTE-013 的
+    # _screening_sets 光是讀取就會 makedirs），違反本檔第 4 行「測試資料只放
+    # tmp/in-memory」的宣告。in-memory DB 保留，另外把 data root 釘到 tmp。
+    import app.services.evidence_index_service as eis
+    monkeypatch.setattr(eis, "_resolve_data_root", lambda: str(tmp_path))
+
     app = _app()
     with app.app_context():
         db.create_all()

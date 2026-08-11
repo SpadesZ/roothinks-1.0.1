@@ -43,6 +43,17 @@ class PaqCore:
         """
         執行 PAQ 任務主流程
         Flow: Call LLM Task -> Get Result -> Save to DB/File -> Register Index
+
+        ⚠️ **這個方法是死碼：全 repo（app／test／tests／js）沒有任何呼叫端。**
+        前端打的是 `paq_routes.run_paq_task`，那是另一份平行實作。
+
+        NOTE(NOTE-022): v0.5 的對話存檔與 v0.6 的 taxonomy/cube 傳遞**兩次都改在這裡**，
+        所以兩次都從未執行過。硬證據：下面 task_2a_chat 分支把 `execute_paq_chat`
+        的回傳當字串傳給 `_save_chat_record`，但它實際回傳 `{"reply": ...}` dict ——
+        真的跑過一次，磁碟上就會有 `"ai": {"reply": ...}` 的紀錄，一筆都沒有。
+
+        **要改 PAQ 行為請改 `paq_routes.py`，不要改這裡。**
+        保留未刪是擁有者的裁量；刪除與否見 NOTE-022 的否決方案段。
         """
         try:
             # 1. 取得專案 Context
@@ -212,19 +223,72 @@ class PaqCore:
         return full_path
 
     @staticmethod
-    def _save_chat_record(pid, user_msg, ai_reply):
+    def _chat_dir(pid, *, create: bool = True):
+        """chat 紀錄目錄。讀取端要能在目錄不存在時安靜地回空，不得順手建目錄。"""
+        safe_pid = validate_id(pid, "project_id")
+        base_data_path = os.path.dirname(current_app.config['SQLALCHEMY_DATABASE_URI'].replace('sqlite:///', ''))
+        if not os.path.isabs(base_data_path):
+            base_data_path = os.path.join(current_app.root_path, '../data')
+
+        chat_dir = safe_join_under(base_data_path, safe_pid, 'paq', 'chat')
+        if create:
+            os.makedirs(chat_dir, exist_ok=True)
+        return chat_dir
+
+    @staticmethod
+    def load_chat_records(pid, limit=40):
+        """
+        讀回 PAQ 2A 對話紀錄，最舊在前，最多 `limit` 筆。
+
+        NOTE(NOTE-022): 這個讀取端與 `_save_chat_record` 是一組，不得只留其中一半。
+        `IndexService` 就是「只寫沒讀」的現成教訓（見該檔 header）：資料一路寫進去、
+        沒有任何呼叫端讀出來，於是沒有人發現它壞掉。
+
+        壞掉或不是 list 的檔案一律跳過而不是整個失敗 —— 單一 session 檔損毀
+        不應該讓使用者看不到其餘所有歷史；但**必須留下 warning**，
+        否則就變成用靜默掩蓋資料遺失。
+        """
+        try:
+            chat_dir = PaqCore._chat_dir(pid, create=False)
+        except Exception as e:
+            logger.warning("[Chat Load] 無法解析 chat 目錄 pid=%s: %s", pid, e)
+            return []
+
+        if not os.path.isdir(chat_dir):
+            return []
+
+        records = []
+        # 檔名是 paq-chat_yymmdd-HHMMSS.json，字典序即時間序。
+        for path in sorted(glob.glob(os.path.join(chat_dir, 'paq-chat_*.json'))):
+            try:
+                with open(path, 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+            except Exception as e:
+                logger.warning("[Chat Load] 略過損毀的 chat 檔 %s: %s", os.path.basename(path), e)
+                continue
+            if not isinstance(data, list):
+                logger.warning("[Chat Load] 略過非 list 的 chat 檔 %s", os.path.basename(path))
+                continue
+            for item in data:
+                if isinstance(item, dict):
+                    records.append(item)
+
+        if limit and len(records) > limit:
+            records = records[-limit:]
+        return records
+
+    @staticmethod
+    def _save_chat_record(pid, user_msg, ai_reply, actor=""):
         """
         [v0.5 New] 輔助: 將 Chat 對話紀錄實體寫入檔案系統
         邏輯：若距離最新一份 chat 檔案修改時間小於 10 分鐘，則 Append 該檔；
               否則以當前時間 (UTC+8) 建立新檔 (paq-chat_yymmdd-hhmmss.json)。
+
+        `actor` 是「誰講的」，`user` 是「講了什麼」—— 舊 record 只有後者，
+        事後無法歸屬到人。理由同 NOTE-020：沒有主體的紀錄稽核不回來。
+        舊檔沒有這個鍵，讀取端一律當空字串，**不回填**（回填等於偽造）。
         """
-        safe_pid = validate_id(pid, "project_id")
-        base_data_path = os.path.dirname(current_app.config['SQLALCHEMY_DATABASE_URI'].replace('sqlite:///', ''))
-        if not os.path.isabs(base_data_path):
-             base_data_path = os.path.join(current_app.root_path, '../data')
-             
-        chat_dir = safe_join_under(base_data_path, safe_pid, 'paq', 'chat')
-        os.makedirs(chat_dir, exist_ok=True)
+        chat_dir = PaqCore._chat_dir(pid, create=True)
         
         # 換算台灣當地時間 (UTC+8) 作為紀錄與檔名依據
         tw_time = datetime.utcnow() + timedelta(hours=8)
@@ -241,6 +305,7 @@ class PaqCore:
         # 準備要寫入的單次對話紀錄結構
         record = {
             "time": time_str,
+            "actor": str(actor or ""),
             "user": user_msg,
             "ai": ai_reply
         }

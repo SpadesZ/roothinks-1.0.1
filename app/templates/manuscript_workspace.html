@@ -35,7 +35,7 @@
     <title>Roothinks - Manuscript (Collab)</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-9ndCyUaIbzAi2FUVXJi0CjmCapSmO7SnpJef0486qhLnuZ2cdeRhO02iuK6FUUVM" crossorigin="anonymous">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" integrity="sha384-4LISF5TTJX/fLmGSxO53rV4miRxdg84mZsxmO8Rx5jGtp/LbrixFETvWa5a6sESd" crossorigin="anonymous">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/manuscript.css') }}?v=1.3">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/manuscript.css') }}?v=1.4">
     <script>
         (function () {
             const savedSize = localStorage.getItem('globalFontSize');
@@ -261,7 +261,15 @@
                     <div class="btn-group btn-group-sm ms-1">
                         <button type="button" class="btn btn-light border" title="Heading 1" onmousedown="event.preventDefault();" onclick="wsApp.soed.formatText('h1', null, 'editor')">H1</button>
                         <button type="button" class="btn btn-light border" title="Heading 2" onmousedown="event.preventDefault();" onclick="wsApp.soed.formatText('h2', null, 'editor')">H2</button>
-                        <button type="button" class="btn btn-light border" title="List" onmousedown="event.preventDefault();" onclick="wsApp.soed.formatText('insertUnorderedList', null, 'editor')"><i class="bi bi-list-ul"></i></button>
+                        <button type="button" class="btn btn-light border" title="項目符號清單" onmousedown="event.preventDefault();" onclick="wsApp.soed.formatText('insertUnorderedList', null, 'editor')"><i class="bi bi-list-ul"></i></button>
+                        <button type="button" class="btn btn-light border" title="編號清單" onmousedown="event.preventDefault();" onclick="wsApp.soed.formatText('orderedList', null, 'editor')"><i class="bi bi-list-ol"></i></button>
+                    </div>
+
+                    <!-- 清單層級：indent/outdent 只在 <li> 內生效（見 manuscript_soed.js formatText），
+                         否則 execCommand('indent') 會把段落包成 blockquote 而不是降一層。 -->
+                    <div class="btn-group btn-group-sm ms-1">
+                        <button type="button" class="btn btn-light border" title="清單降一層（第 2／3 層）" onmousedown="event.preventDefault();" onclick="wsApp.soed.formatText('indent', null, 'editor')"><i class="bi bi-text-indent-left"></i></button>
+                        <button type="button" class="btn btn-light border" title="清單升一層" onmousedown="event.preventDefault();" onclick="wsApp.soed.formatText('outdent', null, 'editor')"><i class="bi bi-text-indent-right"></i></button>
                     </div>
                 </div>
 
@@ -593,11 +601,11 @@
     
     <script src="{{ url_for('static', filename='js/manuscript_ioruling.js') }}?v=0.1"></script>
     
-    <script src="{{ url_for('static', filename='js/manuscript_wsui.js') }}?v=1.4"></script>
+    <script src="{{ url_for('static', filename='js/manuscript_wsui.js') }}?v=1.5"></script>
     <script src="{{ url_for('static', filename='js/manuscript_image.js') }}?v=1.8"></script>
-    <script src="{{ url_for('static', filename='js/manuscript_soed.js') }}?v=2.2"></script>
-    <script src="{{ url_for('static', filename='js/manuscript_collab.js') }}?v=1.6"></script>
-    <script src="{{ url_for('static', filename='js/manuscript_ws.js') }}?v=5.0"></script>
+    <script src="{{ url_for('static', filename='js/manuscript_soed.js') }}?v=2.9"></script>
+    <script src="{{ url_for('static', filename='js/manuscript_collab.js') }}?v=1.7"></script>
+    <script src="{{ url_for('static', filename='js/manuscript_ws.js') }}?v=5.1"></script>
     <script src="{{ url_for('static', filename='js/manuscript_citation.js') }}?v=0.1"></script>
 
 </body>

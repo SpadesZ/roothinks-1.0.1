@@ -290,18 +290,15 @@ class ManuUI {
                 const sectionId = item.getAttribute('data-section-id');
                 if (!sectionId) return;
 
-                this.app.selectedSections = new Set([sectionId]);
-                // [v1.8] sectionVersion 現在是版本選單，選項屬於「上一個章節」。
-                // 直接塞舊值會落空（select 找不到對應 option 就變成空字串），
-                // 所以改為向伺服器要這個章節的版本清單，由 block_list 事件重畫選單。
-                if (this.app.sectionVersion) {
-                    this.app.sectionVersion.innerHTML = '<option value="">載入中…</option>';
-                }
-                if (this.app.socket && this.app.pid) {
-                    this.app.socket.emit('cmd_list_blocks', {
-                        pid: this.app.pid,
-                        section: sectionId,
-                    });
+                // [v2.0] 切章一律走 soed.requestSectionSwitch()：它負責配發請求
+                // token、先把畫布隔離成 loading，再依版本清單載入目標章內容。
+                // 舊版在這裡自己 emit cmd_list_blocks，然後呼叫
+                // loadMultiSectionContent() —— 但那支只在畫布近乎空白時才畫佔位，
+                // 所以切到有內容的章節時，上一章的正文與 badge 會原封不動留著。
+                if (this.app.soed && this.app.soed.requestSectionSwitch) {
+                    this.app.soed.requestSectionSwitch(sectionId);
+                } else {
+                    this.app.selectedSections = new Set([sectionId]);
                 }
                 if (this.app.drafterTargetSection) {
                     this.app.drafterTargetSection.value = sectionId;
@@ -317,9 +314,6 @@ class ManuUI {
                     if (panel && panel.style.display === 'flex') {
                         this.app.collab.refreshComments();
                     }
-                }
-                if (this.app.soed && this.app.soed.loadMultiSectionContent) {
-                    this.app.soed.loadMultiSectionContent();
                 }
 
                 if (this.app.soed && this.app.soed.addSystemMessage) {
@@ -704,6 +698,11 @@ class ManuUI {
                 throw new Error('2B 畫布不存在。');
             }
             const sectionId = this.app.drafterTargetSection?.value || Array.from(this.app.selectedSections || [])[0] || 'abstract';
+            // [v2.0] Word 匯入會整個換掉畫布，必須作廢在途的切章回應，
+            // 否則遲到的 block_loaded 會把剛匯入的內容蓋成該章舊版本。
+            if (this.app.soed && this.app.soed._cancelPendingSectionSwitch) {
+                this.app.soed._cancelPendingSectionSwitch();
+            }
             this.app.selectedSections = new Set([sectionId]);
             this.updateDropdownLabel();
             this.app.editorCanvas.innerHTML = '';

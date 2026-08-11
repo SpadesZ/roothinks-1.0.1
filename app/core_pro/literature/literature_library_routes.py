@@ -10,8 +10,16 @@
 #   2. 外部 normalized / CSL JSON 批次匯入。
 #   3. Reference export（BibTeX/RIS/CSL JSON，缺欄位省略、不捏造）。
 #   4. Evidence index backfill / 重建（冪等）。
+# 安全邊界:
+#   - 改動 `screening_status` 需 workspace 角色 >= editor（owner=PI、editor=Co-PI；
+#     coauthor 是章節限定編輯，一律不得改）。這道門原本**完全不存在** ——
+#     任何打得到 API 的人都能把論文標成 included，而 included 直接決定
+#     Drafter 的寫作依據（NOTE-013 / NOTE-020）。
+#   - actor 由 deps.current_screening_actor() 從登入身分取，不得由請求體帶入。
 # 維護提醒:
 #   - deps 為 literature_routes module（與其他 register_* 相同慣例）。
+#   - require_workspace_role 在 AUTH_MODE != session 時一律放行（全站慣例）；
+#     service 層的 actor 必填是第二道，兩層各擋各的，缺一都會留下缺口。
 # -----------------------------------------------------------------------------
 
 from flask import Response, jsonify, request
@@ -61,8 +69,33 @@ def register_library_routes(literature_bp, deps):
                     return jsonify({"status": "error", "message": f"Paper not found: {link_target}"}), 404
             patch['paper_id'] = link_target
 
+        # NOTE(NOTE-020): 納入／排除是 PI/Co-PI 的學術判斷。
+        #
+        # **這道檢查目前是重複的，而且我知道它是重複的**：`enforce_project_ownership`
+        # 這個 before_request 守衛已經依 HTTP method 推 min_role，POST/PUT/PATCH
+        # 一律要 editor（security.py 約 L620），所以 viewer 與 coauthor 本來就
+        # 打不進來。實測拿掉本段之後 viewer 仍是 403。
+        # 保留的理由只有一個：那道守衛的門檻是**從 method 推導**的，
+        # 一旦有人加了 GET 帶參數的變更路徑、或改了 method 對應表，
+        # 保護就會無聲消失；而 screening 決定的是稿件引用哪些文獻，
+        # 屬於學術誠信控制，值得在真正做決定的那一行再確認一次。
+        # 不要把它當成「原本沒有角色檢查所以補上」—— 那個描述是錯的。
+        actor = ""
+        if 'screening_status' in patch:
+            from app.models import ROLE_EDITOR
+            from app.security import require_workspace_role
+
+            denied = require_workspace_role(pid, ROLE_EDITOR)
+            if denied is not None:
+                return denied
+            actor = deps.current_screening_actor()
+
         try:
-            entry = deps.get_literature_library().update_entry(pid, entry_id, patch)
+            entry = deps.get_literature_library().update_entry(
+                pid, entry_id, patch,
+                actor=actor,
+                batch_id=str(data.get('batch_id') or '').strip(),
+            )
             return jsonify({"status": "success", "entry": entry})
         except KeyError:
             return jsonify({"status": "error", "message": "Entry not found"}), 404

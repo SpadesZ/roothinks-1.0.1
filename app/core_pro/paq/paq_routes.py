@@ -39,6 +39,28 @@ def _safe_pid(raw_pid: str) -> str:
     enforce_project_ownership(p)
     return p
 
+
+def _current_actor() -> str:
+    """
+    誰在跟 PAQ Co-Pilot 對話。寫進 chat record 的 `actor` 欄。
+
+    與 `literature_routes.current_screening_actor()` 同語意（刻意不跨 core_pro
+    模組 import，那會讓 PAQ 依賴 Literature）：非 session 模式記成 `local:<AUTH_MODE>`，
+    讓稽核一眼看出這筆不是線上使用者留下的，而不是假裝成某個真實帳號。
+    """
+    try:
+        from flask_login import current_user
+
+        if getattr(current_user, "is_authenticated", False):
+            return (
+                str(getattr(current_user, "email", "") or "").strip()
+                or f"user:{getattr(current_user, 'id', '')}"
+            )
+    except Exception:
+        pass
+
+    return f"local:{os.environ.get('AUTH_MODE', 'unknown')}"
+
 #V2.3修改起點 ===========================================================================
 @bp.route('/status/<pid>', methods=['GET'])
 def get_paq_status(pid):
@@ -168,6 +190,45 @@ def save_taxonomy():
         logger.error("[Save Taxonomy Error] %s", e, exc_info=True)
         return jsonify({'success': False, 'message': "Internal server error"}), 500
 
+@bp.route('/chat_history/<pid>', methods=['GET'])
+def get_paq_chat_history(pid):
+    """
+    讀回這個專案的 PAQ 2A 對話紀錄。
+
+    NOTE(NOTE-022): 存檔沒有讀取端就等於沒存 —— 前端的 `chatSessionHistory`
+    原本純粹是瀏覽器變數，重新整理就沒了，伺服器上也一筆都沒有。
+    這支端點是那一半。
+
+    權限：`_safe_pid` 會過 `enforce_project_ownership`，GET 的門檻是 viewer；
+    coauthor 另由 `app/__init__.py` 的模組守衛擋在 PAQ 之外。
+    對話內容屬專案內容，不另設更嚴的門檻。
+    """
+    try:
+        safe_pid = _safe_pid(pid)
+        project = Project.query.filter_by(project_id=safe_pid).first()
+        if not project:
+            return jsonify({'success': False, 'message': 'Project not found'}), 404
+
+        try:
+            limit = int(request.args.get('limit', 40))
+        except (TypeError, ValueError):
+            limit = 40
+        limit = max(1, min(limit, 200))
+
+        records = PaqCore.load_chat_records(safe_pid, limit=limit)
+        return jsonify({'success': True, 'data': {'records': records}}), 200
+
+    except Exception as e:
+        if isinstance(e, BadRequest):
+            return jsonify({'success': False, 'message': 'Invalid request'}), 400
+        if isinstance(e, Forbidden):
+            return jsonify({'success': False, 'message': 'Forbidden'}), 403
+        if isinstance(e, Unauthorized):
+            return jsonify({'success': False, 'message': 'Unauthorized'}), 401
+        logger.error("[PAQ Chat History Error] %s", e, exc_info=True)
+        return jsonify({'success': False, 'message': 'Internal server error'}), 500
+
+
 @bp.route('/run_task', methods=['POST'])
 def run_paq_task():
     """ 執行 PAQ AI 任務 """
@@ -222,12 +283,51 @@ def run_paq_task():
         elif task_id == 'task_2a_chat':
             user_msg = input_data.get('user_input')
             chat_history = input_data.get('chat_history', [])
-            
-            success, result = task2A_paqchat.execute_paq_chat(context, chat_history, user_msg)
-            
+
+            # NOTE(NOTE-022): 這三件事（帶 taxonomy/cube、存檔、註冊索引）原本只寫在
+            # PaqCore.run_paq_task 裡，而那個方法**全 repo 沒有任何呼叫端** ——
+            # 前端打的一直是本函式。所以 v0.5 的存檔與 v0.6 的 taxonomy 傳遞
+            # 從來沒有執行過一次。
+            survey = PaqSurvey.query.filter_by(project_ref_id=project.id).first()
+            taxonomy_data = {}
+            cube_data = []
+            if survey:
+                taxonomy_data = {
+                    'axis_labels': survey.axis_labels or {},
+                    'axis_tags': survey.axis_tags or {},
+                }
+                cube_data = survey.cube_data or []
+
+            success, result = task2A_paqchat.execute_paq_chat(
+                context, chat_history, user_msg, taxonomy_data, cube_data
+            )
+
             if success:
                 reply_content = result.get('reply') if isinstance(result, dict) else str(result)
-                return jsonify({'success': True, 'data': {'reply': reply_content}})
+                # 持久化失敗不得讓使用者的這一輪對話整個消失（回覆已經產生了），
+                # 但也不得靜默：記 error 並在回應裡明示這一輪沒有存下來。
+                persisted = True
+                try:
+                    saved_path = PaqCore._save_chat_record(
+                        pid, user_msg, reply_content, actor=_current_actor()
+                    )
+                    IndexService.register_index(
+                        pid=pid,
+                        module='paq',
+                        folder='paq_chat',
+                        path=f"paq/chat/{os.path.basename(saved_path or '')}",
+                        content=(user_msg or '')[:200],
+                    )
+                except Exception as persist_error:
+                    persisted = False
+                    logger.error(
+                        "[PAQ Chat Persist] pid=%s 對話未能存檔: %s",
+                        pid, persist_error, exc_info=True,
+                    )
+                return jsonify({
+                    'success': True,
+                    'data': {'reply': reply_content, 'persisted': persisted},
+                })
             else:
                 return jsonify({'success': False, 'message': result}), 500
 

@@ -117,7 +117,10 @@ def test_study_and_manuscript_rehydrate_from_server():
     assert "this.app.socket.emit('cmd_list_blocks'" in manu_js
     assert "this.app.socket.emit('cmd_load_paper'" in manu_js
     assert "study_core.js') }}?v=2.5" in study_html
-    assert "manuscript_soed.js') }}?v=2.2" in manu_html
+    # 版號與 manuscript_workspace.html 綁死是刻意的：Jinja 會把編譯後的模板留在
+    # 記憶體，改了 JS 卻沒動 ?v= 時，瀏覽器與正式站都會續用舊檔（本輪實測：容器
+    # 內模板已是新版，伺服器仍吐舊版號，重啟後才生效）。改 JS 就必須一起改這裡。
+    assert "manuscript_soed.js') }}?v=2.9" in manu_html
 
 
 def test_drafter_multiline_and_cancel_controls_contract():
@@ -143,5 +146,5 @@ def test_drafter_restores_last_section_and_ignores_stale_history():
     assert "window.localStorage.setItem(this._chatSectionStorageKey(), sectionId)" in manu_js
     assert "const section = this.soed.restoreChatSection" in ws_js
     assert "data.section !== this.app.drafterTargetSection.value" in manu_js
-    assert "manuscript_soed.js') }}?v=2.2" in manu_html
-    assert "manuscript_ws.js') }}?v=5.0" in manu_html
+    assert "manuscript_soed.js') }}?v=2.9" in manu_html
+    assert "manuscript_ws.js') }}?v=5.1" in manu_html

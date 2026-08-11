@@ -395,6 +395,19 @@ class ManuCollab {
         return Array.from(this.app.selectedSections || [])[0] || 'general';
     }
 
+    /**
+     * 2B 目前檢視的段落版本（S.Ver），如 "0.5"；沒有正式版本時回 null。
+     *
+     * 讀 S.Ver 選單而不是自己記狀態：選單本身就是「目前正在看哪一版」的
+     * 唯一事實來源，切章與載入舊版都會更新它（見 manuscript_soed.js 的
+     * block_loaded 處理）。
+     */
+    currentSVer() {
+        const sel = this.app.sectionVersion;
+        const value = sel && sel.value ? String(sel.value).trim() : '';
+        return value || null;
+    }
+
     async openComments() {
         const panel = document.getElementById('chapterCommentPanel');
         if (!panel) return;
@@ -475,9 +488,15 @@ class ManuCollab {
 
         list.innerHTML = '<div class="text-muted small">載入中…</div>';
         try {
+            // NOTE(NOTE-010) 依「章節 + 目前檢視版本」取留言，切版本就換一組。
+            // include_legacy 讓本次改動之前、沒有版本定位的舊留言仍看得到；
+            // 它們在清單上會標成「未標版本」，不會被誤讀成針對現版的意見。
+            const sVer = this.currentSVer();
             const res = await fetch(
                 `/manuscript/api/chapter/${encodeURIComponent(this.app.pid)}/comments`
                 + `?section=${encodeURIComponent(section)}`
+                + (sVer ? `&s_ver=${encodeURIComponent(sVer)}` : '')
+                + `&include_legacy=1`
             );
             const data = await res.json();
             if (!data.success) {
@@ -500,11 +519,19 @@ class ManuCollab {
         const wrap = document.createElement('div');
         wrap.className = 'border rounded p-2 mb-2' + (c.resolved ? ' bg-light opacity-75' : '');
         const when = c.created_at ? new Date(c.created_at).toLocaleString() : '';
+        // 版本標籤必須顯示：同一章不同版的意見會並存，看不到版本就無從判斷
+        // 這句話在講哪一版。舊留言沒有版本定位，明講「未標版本」而不是留白，
+        // 留白會被讀成「針對現在這一版」。
+        const verLabel = c.legacy_unversioned
+            ? '未標版本'
+            : (c.scope === 'paper' ? `G.Ver ${c.g_ver}` : `S.Ver ${c.s_ver}`);
+        const verClass = c.legacy_unversioned ? 'bg-warning-subtle text-warning-emphasis' : 'bg-light text-secondary';
         wrap.innerHTML = `
             <div class="d-flex justify-content-between align-items-start">
                 <div class="small fw-bold">${c.author || '（已移除的帳號）'}</div>
                 <div class="text-muted" style="font-size:0.72rem;">${when}</div>
             </div>
+            <div><span class="badge ${verClass} fw-normal" style="font-size:0.66rem;">${this._escape(verLabel)}</span></div>
             <div class="small mt-1" style="white-space:pre-wrap;">${this._escape(c.body)}</div>`;
 
         const actions = document.createElement('div');
@@ -544,7 +571,13 @@ class ManuCollab {
             {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ section_key: this.currentSection(), body: body }),
+                // NOTE(NOTE-010) 送出目前檢視的 S.Ver：留言在建立當下就綁死版本，
+                // 之後 2B 存成新版也不會把這句意見帶過去。
+                body: JSON.stringify({
+                    section_key: this.currentSection(),
+                    s_ver: this.currentSVer(),
+                    body: body,
+                }),
             }
         );
         const data = await res.json();

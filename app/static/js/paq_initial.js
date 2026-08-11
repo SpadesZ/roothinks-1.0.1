@@ -152,6 +152,8 @@ document.addEventListener('DOMContentLoaded', () => {
     initPlotlyResizeHandler(); // 綁定 3D 圖表 RWD
     initDockSystem();        // 初始化最小化工作列
 
+    loadChatHistory();       // 讀回伺服器上的 PAQ 2A 對話 [paq_interact.js]
+
     // [v0.3 New] 執行唯讀模式檢查與介面鎖定
     enforceReadOnlyMode();
 

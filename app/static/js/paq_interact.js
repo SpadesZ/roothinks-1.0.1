@@ -412,7 +412,12 @@ async function sendChat() {
 
         if (result.success && result.data && result.data.reply) {
             appendChatBubble('ai', result.data.reply);
-            
+
+            // 伺服器明說這一輪沒存下來時要講出來，不要讓使用者以為留著了。
+            if (result.data.persisted === false) {
+                appendChatBubble('ai', '（提醒：這一輪對話未能存檔，重新整理後會消失）');
+            }
+
             chatSessionHistory.push({role: 'user', content: text});
             chatSessionHistory.push({role: 'assistant', content: result.data.reply});
             
@@ -431,6 +436,46 @@ async function sendChat() {
 
 function handleChatKey(e) {
     if (e.key === 'Enter') sendChat();
+}
+
+/**
+ * 開啟頁面時把伺服器上的 PAQ 2A 對話讀回來。
+ *
+ * 在這之前 chatSessionHistory 純粹是瀏覽器變數：重新整理就沒了，
+ * 而且伺服器上一筆都沒有（存檔那段程式寫在沒有呼叫端的 PaqCore.run_paq_task 裡）。
+ * 見 docs/NOTES.md NOTE-021 隔壁的 NOTE-022。
+ */
+async function loadChatHistory() {
+    if (!currentPid) return;
+    const container = document.getElementById('chat-history');
+    if (!container) return;
+
+    try {
+        const res = await fetch(`/api/paq/chat_history/${currentPid}?limit=40`);
+        const result = await res.json();
+        if (!result.success || !result.data || !Array.isArray(result.data.records)) return;
+
+        chatSessionHistory = [];
+        result.data.records.forEach(rec => {
+            // 只認字串。舊格式若曾把 dict 寫進 ai 欄，寧可不顯示也不要印出 [object Object]。
+            const userText = typeof rec.user === 'string' ? rec.user : '';
+            const aiText = typeof rec.ai === 'string' ? rec.ai : '';
+            if (userText) {
+                appendChatBubble('user', userText);
+                chatSessionHistory.push({role: 'user', content: userText});
+            }
+            if (aiText) {
+                appendChatBubble('ai', aiText);
+                chatSessionHistory.push({role: 'assistant', content: aiText});
+            }
+        });
+
+        if (chatSessionHistory.length > 20) {
+            chatSessionHistory = chatSessionHistory.slice(-20);
+        }
+    } catch (e) {
+        console.warn('[Chat] 載入歷史對話失敗:', e);
+    }
 }
 
 function appendChatBubble(role, text, isLoading=false) {

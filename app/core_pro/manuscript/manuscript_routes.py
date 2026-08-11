@@ -68,6 +68,7 @@ from app.core_pro.manuscript.manuscript_image import ManuscriptImage
 from app.core_pro.manuscript import presence
 from app.core_pro.manuscript.model_section import ManuSectionConfig
 from app.core_pro.manuscript.source_context import build_drafter_corpus
+from app.core_pro.manuscript.coc_bundle import build_coc_bundle, resolve_section_version
 from app.models import Project
 from app.security import (
     check_ownership,
@@ -260,6 +261,17 @@ def _read_positive_int_env(key, default_val):
 _CHAT_EXECUTOR = ThreadPoolExecutor(max_workers=_read_positive_int_env("MANUSCRIPT_CHAT_MAX_WORKERS", 4))
 _MAX_CHAT_USER_MSG_CHARS = _read_positive_int_env("MANUSCRIPT_CHAT_MAX_INPUT_CHARS", 4000)
 _MAX_CHAT_CONTEXT_CHARS = _read_positive_int_env("MANUSCRIPT_CHAT_MAX_CONTEXT_CHARS", 24000)
+
+# 全域 prompt token 預算（任務 1）
+# 計算方式：
+#   - Google Gemini TPM 上限 25,000 tokens
+#   - 扣除 system prompt 估算值約 2,000 tokens
+#   - 再扣除 user_msg 上限（4,000 chars ≈ 1,400 tokens）
+#   - 留 1,600 tokens 的安全餘裕（防止估算偏差與 prompt 格式開銷）
+#   → 25,000 - 2,000 - 1,400 - 1,600 = 20,000 tokens 給 context
+# 之所以不用 25,000：估算函式用 CJK×1.5 + 其他×0.35，英文學術文字實際上
+# 約是 chars/4，估算偏低，因此要留足夠的安全餘裕。
+_PROMPT_MAX_TOKENS = _read_positive_int_env("MANUSCRIPT_PROMPT_MAX_TOKENS", 20000)
 
 
 @atexit.register
@@ -484,6 +496,10 @@ def _process_chat_job(app_obj, sid, job_id, payload):
                 section=payload.get('section', 'general'),
                 s_ver=payload.get('s_ver', '0.1'),
                 cancel_event=cancel_event,
+                # 任務 1：全域預算管控，retrieval 用剩餘量而非寫死的 18000
+                coc_items=payload.get('coc_items', []),
+                coc_notes=payload.get('coc_notes', []),
+                remaining_budget=payload.get('remaining_budget'),
             )
 
             if _is_cancelled(job_id):
@@ -1031,6 +1047,279 @@ def handle_load_chat(data):
 
     emit('chat_history', {'section': section, 'history': history})
 
+def _build_coc_for_request(pid: str, section: str) -> dict:
+    """
+    在 request context 內組出人類決策鏈（COC）。
+
+    NOTE(NOTE-012): 權限與版本都必須在這裡定案。生成工作跑在 _CHAT_EXECUTOR 的
+    worker thread，那裡沒有 flask request 也沒有 current_user；把可讀章節的判斷
+    留到下游，等於在沒有身分的情境下決定要餵哪些章節給 LLM —— 限定編輯看不到的
+    章節會經由 prompt 外流。
+
+    任何一段讀取失敗都只降級不中斷：少一段脈絡可以事後補，
+    讓整個草稿請求消失不行（與本檔既有的 fail-soft 慣例一致）。
+    """
+    try:
+        uid = _session_uid()
+        readable = []
+        for row in _get_or_init_sections(pid):
+            key = row.section_key
+            if uid is None or _socket_can_read_section(uid, pid, key):
+                readable.append(key)
+
+        # 目前章節不從 readable 推導。'general' 這種預設值、以及剛新增還沒進
+        # sections 資料表的章節都不會出現在清單裡，用「不在清單裡就是不可讀」
+        # 會把合法請求的正文靜默丟掉 —— 而正文丟失沒有任何外顯症狀。
+        can_read_current = uid is None or _socket_can_read_section(uid, pid, section)
+
+        # 2C 是所有章節組裝出來的成品，內含限定編輯看不到的章節。
+        # 這裡若不判定，章節層的讀取限制會被 prompt 這條管道整篇繞過。
+        include_paper = uid is None or _socket_can_read_paper(uid, pid)
+
+        # 只帶「綁在目前版本」的章節留言：換版後舊意見不該再被當成待處理事項，
+        # 這與留言版本化的篩選語意一致（NOTE-010）。
+        #
+        # NOTE(NOTE-010, 任務 3): 有給 s_ver 就嚴格篩選。
+        # 舊邏輯：`if s_ver and row.s_ver and str(row.s_ver) != str(s_ver): continue`
+        # 問題：row.s_ver 為 NULL 的留言不滿足 `row.s_ver` 的真值，
+        #       於是完全跳過篩選、穿透進 comments，然後被注入 prompt。
+        #       這破壞了「有給版本就嚴格篩選」的語意，而且作者無從得知
+        #       那些留言是針對未知版本的（可能是整個月前的 V0.1 意見）。
+        # 修法：`row.s_ver` 為 NULL（未標版本）的留言一律排除；
+        #       除非呼叫端明確傳 `include_legacy=True`（目前不開放，與 chapter_routes 一致）。
+        comments: list[dict] = []
+        comment_notes: list[str] = []
+        if can_read_current:
+            try:
+                from app.models import ChapterComment
+                s_ver, _fn = resolve_section_version(pid, section)
+                rows = (ChapterComment.query
+                        .filter_by(pid=pid, section_key=section, resolved=False)
+                        .order_by(ChapterComment.created_at.asc())
+                        .all())
+                excluded_count = 0
+                for row in rows:
+                    if s_ver:
+                        # 有目前版本的情況：嚴格篩選
+                        # NULL s_ver 的舊留言也排除（不混入未知版本的意見）
+                        if not row.s_ver or str(row.s_ver) != str(s_ver):
+                            excluded_count += 1
+                            continue
+                    # 沒有目前版本（章節從未存檔）：接受所有留言（沒有版本可以比對）
+                    comments.append(row.to_dict())
+                if excluded_count:
+                    # 不靜默丟掉：作者需要知道有多少留言因版本不符而被排除，
+                    # 否則他會以為「今天的審閱意見消失了」。
+                    comment_notes.append(
+                        f"excluded_comments={excluded_count} "
+                        f"(s_ver=NULL 或版本不符，目前 s_ver={s_ver}；"
+                        f"未標版本留言須由作者手動確認)"
+                    )
+                    logger.info(
+                        "[coc] 排除未標版本或版本不符留言 pid=%s section=%s "
+                        "excluded=%d current_s_ver=%s",
+                        pid, section, excluded_count, s_ver,
+                    )
+            except Exception:
+                logger.warning("[coc] 讀取章節留言失敗 pid=%s section=%s", pid, section, exc_info=True)
+
+        bundle = build_coc_bundle(
+            pid,
+            section,
+            readable_sections=readable,
+            can_read_current_section=can_read_current,
+            include_paper=include_paper,
+            formal_pid=_formal_pid(pid) or "",
+            review_comments=comments,
+            budget_tokens=_read_coc_budget(),
+        )
+        # 任務 3：把留言排除紀錄合併進 bundle["notes"]，讓它一路跟進 audit。
+        if comment_notes:
+            bundle["notes"] = list(bundle.get("notes") or []) + comment_notes
+        return bundle
+    except Exception:
+        logger.warning("[coc] COC 組裝失敗（降級為無 COC） pid=%s section=%s", pid, section, exc_info=True)
+        return {"text": "", "s_ver": None, "g_ver": None, "items": [], "notes": ["coc_build_failed"]}
+
+
+def _read_coc_budget() -> int:
+    """COC 的 token 預算。壞值回預設，理由同 ManuscriptRuling._read_int_env。"""
+    try:
+        val = int(str(os.environ.get("MANUSCRIPT_COC_MAX_TOKENS", 12000)).strip())
+        return val if val > 0 else 12000
+    except Exception:
+        return 12000
+
+
+def _normalize_context_text(text: str) -> str:
+    """
+    正規化 context 文字，用於去重比較。
+    前端送來的是 HTML；COC 載入版本經 html_to_text() 轉換。
+    必須把兩者都壓平到同一個空白標準才能比較。
+    只用於去重判斷，不用於輸出。
+    """
+    import re as _re
+    # 剝 HTML 標籤（前端送來的 context 可能含標籤）
+    text = _re.sub(r"<[^>]+>", " ", str(text or ""))
+    # 壓縮所有空白成單個空格
+    text = _re.sub(r"\s+", " ", text)
+    return text.strip().lower()
+
+
+def _pack_prompt_context(
+    *,
+    frontend_context: str,
+    coc_bundle: dict,
+    total_budget: int,
+    section: str,
+    job_id: str,
+) -> tuple[str, int, list[str], list[dict]]:
+    """
+    全域 token 預算 packer（NOTE-012）。
+
+    這裡只負責 handler 側的兩段；**預算邊界的最後一段在
+    ManuscriptRuling.validate_and_prepare**（upstream context 與檢索共用回傳的
+    剩餘額度）。兩邊合起來才是「全域」—— 只看這個函式會誤以為預算已經收斂。
+
+    優先序（由高到低）：
+      1. 本輪指令（user_msg）— 由 handle_chat 獨立發送，不在這裡
+      2. 前端未存草稿（frontend_context）
+      3. COC 組裝的伺服器脈絡（coc_bundle["text"]）
+      4. upstream context（在 ManuscriptRuling 內另外讀，此函式只管 route 層）
+
+    去重邏輯：
+      - 前端送來的目前章節文字（含在 frontend_context 最前面）與 COC 伺服器版本比較。
+      - 比較前正規化（剝標籤、壓縮空白）。
+      - 實質相同 → 只保留前端版本（未存草稿優先），從 coc_bundle 的 text 中移除
+        伺服器章節正文。
+      - 不同 → 前端版本標明「未存草稿」，COC 版本（伺服器讀到的）標明「伺服器已存版本」；
+        只保留前端版本，捨棄 COC 的目前章節（因為前端是更新的）。
+      - 「只保留一份」的理由：同時送兩個版本讓 LLM 看到衝突正文，它無從判斷哪個優先；
+        而前端的未存修改一定比伺服器已存版本更新，前端優先是正確的語意。
+
+    回傳：(packed_context_text, remaining_budget_tokens, packer_notes, effective_coc_items)
+
+    remaining_budget_tokens 是**扣掉這兩段之後的剩餘全域額度**，不是「檢索的預算」。
+    下游還要先安置 upstream context（研究筆記）才輪到檢索。
+    **0 是有效值**，意思是用盡；不得在任何一層被當成「沒給」而放大成預設值。
+    packer_notes 是被裁切的紀錄，要進 audit。
+    effective_coc_items 是**去重後真正留在 prompt 裡**的 COC 來源清單 ——
+    呼叫端必須用這一份寫 audit，不能用原始 bundle 的 items：目前章節被前端未存
+    草稿取代後，原始清單仍宣稱伺服器版本是來源，那份 provenance 是假的。
+    """
+    from app.core_pro.manuscript.source_context import _estimate_tokens, _truncate_to_budget
+    from app.core_pro.manuscript.coc_bundle import html_to_text
+
+    packer_notes: list[str] = []
+    parts: list[str] = []
+    used_tokens = 0
+
+    # ── 1. 前端未存草稿（優先） ──
+    # _MAX_CHAT_CONTEXT_CHARS 的靜默截斷已在 handle_chat 發生，這裡補紀錄。
+    frontend_text = str(frontend_context or "").strip()
+    if frontend_text:
+        # frontend_context 可能已被 _MAX_CHAT_CONTEXT_CHARS 截斷（chars 不等於 tokens），
+        # 但我們要用 token 計算以維持全域預算一致性。
+        fe_tokens = _estimate_tokens(frontend_text)
+        # 跟 COC 伺服器正文去重
+        coc_server_section = _extract_coc_section_text(coc_bundle, section)
+        if coc_server_section:
+            norm_fe = _normalize_context_text(frontend_text)
+            norm_srv = _normalize_context_text(coc_server_section)
+            if norm_fe == norm_srv:
+                # 完全相同：COC 版本移除，只留前端
+                packer_notes.append(
+                    f"dedup:current_section={section}:identical → 只保留前端版本"
+                )
+            else:
+                # 不同（前端有未存修改）：標記前端版本，並從 COC text 移除該章節
+                frontend_text = f"[作者目前未存草稿（覆蓋伺服器版本）]\n{frontend_text}"
+                packer_notes.append(
+                    f"dedup:current_section={section}:diverged → 前端未存版本優先，"
+                    f"伺服器版本({coc_bundle.get('s_ver')})已捨棄"
+                )
+            # 不論哪條路，COC 的目前章節正文都不再放入輸出
+            coc_bundle = _strip_coc_section(coc_bundle, section)
+
+        # 依全域預算截斷前端草稿
+        available = total_budget - used_tokens
+        clipped_fe = _truncate_to_budget(frontend_text, available)
+        if len(clipped_fe) < len(frontend_text):
+            packer_notes.append(
+                f"truncated:frontend_context:chars={len(frontend_text)}→"
+                f"{len(clipped_fe)} by global token budget"
+            )
+            logger.info(
+                "[manu_chat][packer] 前端草稿依全域預算截斷 id=%s before=%d after=%d",
+                job_id, len(frontend_text), len(clipped_fe),
+            )
+        parts.append(clipped_fe)
+        used_tokens += _estimate_tokens(clipped_fe)
+
+    # ── 2. COC 伺服器脈絡（已去重的版本） ──
+    coc_text = str(coc_bundle.get("text") or "").strip()
+    if coc_text:
+        available = total_budget - used_tokens
+        clipped_coc = _truncate_to_budget(coc_text, available)
+        if len(clipped_coc) < len(coc_text):
+            packer_notes.append(
+                f"truncated:coc_context:tokens_available={available}"
+            )
+            logger.info(
+                "[manu_chat][packer] COC 依全域預算截斷 id=%s available=%d",
+                job_id, available,
+            )
+        parts.append(clipped_coc)
+        used_tokens += _estimate_tokens(clipped_coc)
+
+    # ── 3. 結算剩餘的全域額度 ──
+    # upstream context 與 retrieval 都在 ManuscriptRuling 內才加入，
+    # 剩餘額度在這裡算好傳過去，由那一層做最後的收斂。
+    remaining_budget = max(0, total_budget - used_tokens)
+
+    packed = "\n\n".join(p for p in parts if p)
+    return packed, remaining_budget, packer_notes, list(coc_bundle.get("items") or [])
+
+
+_COC_CURRENT_SECTION_TIER = "current_section"
+
+
+def _extract_coc_section_text(coc_bundle: dict, section: str) -> str:
+    """
+    取出 COC 裡「目前章節伺服器版本」的純內容，供去重比對。
+
+    從 bundle["blocks"] 的結構化欄位取，**不從 bundle["text"] 用正規表示式撈標頭**。
+    先前的作法是比對 "[目前章節 {section} · S.Ver ...]" 這個顯示字串，於是
+    coc_bundle.py 只要改一個標籤文字，去重就會靜默失效、目前章節被送兩份 ——
+    而測試是手工組同樣格式的字串，永遠不會紅。這是「改了常數但行為沒變」那一類
+    的無聲故障，所以改成依賴結構而非文字。
+    """
+    for block in (coc_bundle.get("blocks") or []):
+        if block.get("tier") == _COC_CURRENT_SECTION_TIER:
+            return str(block.get("body") or "").strip()
+    return ""
+
+
+def _strip_coc_section(coc_bundle: dict, section: str) -> dict:
+    """
+    去重後把「目前章節伺服器版本」整段從 bundle 移除。回傳淺拷貝，不改原物件。
+
+    items 必須一起移除：那份清單是寫進 context_audit 的來源證據，
+    留著會讓 audit 宣稱伺服器版本進了 prompt，但它其實已被前端未存草稿取代 ——
+    provenance 說謊比沒有 provenance 更糟。
+    """
+    kept = [b for b in (coc_bundle.get("blocks") or [])
+            if b.get("tier") != _COC_CURRENT_SECTION_TIER]
+    result = dict(coc_bundle)
+    result["blocks"] = kept
+    result["text"] = "\n\n".join(b["text"] for b in kept)
+    # 從 blocks 的 `items`（複數）攤平。舊版讀 `b["item"]` 單數，
+    # 而「已納入文獻」那種一段對應 N 篇的 block 只放得下一筆 —— 去重一觸發，
+    # 逐篇 provenance 就整批消失，audit 只剩一筆合成的彙總來源。
+    result["items"] = [i for b in kept for i in (b.get("items") or [])]
+    return result
+
+
 @socketio.on('chat_message', namespace='/manu_ws')
 def handle_chat(data):
     data = data or {}
@@ -1042,7 +1331,20 @@ def handle_chat(data):
     if len(user_msg) > _MAX_CHAT_USER_MSG_CHARS:
         emit('sys_msg', {'msg': f'Message too long. Max {_MAX_CHAT_USER_MSG_CHARS} chars.'})
         return
+    # 這裡的截斷是 chars 層面，為的是避免超大 payload 炸記憶體，不是 token 預算控制。
+    # **但它必須留下紀錄**：被砍掉的是作者剛寫、還沒存檔的尾端內容，
+    # 而 packer 收到的已經是截斷後的字串，它無從得知這件事發生過
+    # ——先前這裡的註解宣稱「packer 會補進 packer_notes」，那是錯的，實測 notes 是空的。
+    pre_pack_notes: list[str] = []
     if len(context_text) > _MAX_CHAT_CONTEXT_CHARS:
+        pre_pack_notes.append(
+            f"truncated:frontend_context_chars:{len(context_text)}->{_MAX_CHAT_CONTEXT_CHARS} "
+            f"(MANUSCRIPT_CHAT_MAX_CONTEXT_CHARS；被截掉的是草稿尾端)"
+        )
+        logger.info(
+            "[manu_chat] 前端 context 超過字元上限，依字元截斷 before=%d max=%d",
+            len(context_text), _MAX_CHAT_CONTEXT_CHARS,
+        )
         context_text = context_text[:_MAX_CHAT_CONTEXT_CHARS]
     target_lang = data.get('target_lang', 'Academic English')
     attachment = data.get('attachment')
@@ -1063,7 +1365,42 @@ def handle_chat(data):
         return
     title = data.get('title', 'Untitled Paper')
     section = data.get('section', 'general')
-    s_ver = data.get('s_ver', '0.1')
+
+    # NOTE(NOTE-015): 章節層授權。_ensure_socket_project_access 只驗到「是不是這個專案的成員」，
+    # 但 section 完全來自請求體 —— 限定編輯只要偽造 payload 指定未被指派的章節，
+    # 就能拿到該章的生成結果，並把聊天紀錄寫進他無權編輯的章節。
+    # 用「寫入」而非「讀取」當門檻，與 cmd_save_block 同一條線：這個事件會
+    # save_chat_history() 到該章、產出的草稿也是要寫進該章的。
+    #
+    # 刻意不在這裡把 section 做 _safe_component 清洗：ManuscriptIO._block_dir 對
+    # 非 ASCII 章節另有對應邏輯，在這層先清洗會讓中文章節指到錯的目錄。
+    # 清洗留在各自的儲存層，這裡只負責授權。
+    try:
+        chat_uid = _session_uid()
+        if chat_uid is not None and not _socket_can_write_section(chat_uid, pid, section):
+            emit('sys_msg', {
+                'msg': f'權限不足：你沒有「{section}」章節的撰寫權限，'
+                       '可改用留言功能提供意見。',
+            })
+            return
+    except Exception:
+        # ACL 判定本身失敗一律當作不通過。這裡 fail-open 的代價是把別人的章節
+        # 內容送進 LLM，比讓使用者重試一次嚴重得多。
+        logger.error("[manu_chat] 章節權限檢查失敗（已拒絕） pid=%s section=%s", pid, section, exc_info=True)
+        emit('sys_msg', {'msg': 'Server error while checking section permission. Please retry.'})
+        return
+
+    # NOTE(NOTE-012): 版本真相由伺服器解析，不採用請求體帶來的 s_ver。
+    # 前端長期送死值 '0.1'（manuscript_soed.js 兩處），連這裡的舊預設也是 '0.1'，
+    # 於是 ManuscriptRuling 讀歷史永遠讀 V0.1、audit 也綁到錯的版本。
+    # 仍保留呼叫端送來的值，只為了在 audit 裡比對「前端說的」與「實際的」。
+    client_s_ver = data.get('s_ver')
+    s_ver, _s_ver_filename = resolve_section_version(pid, section)
+    if client_s_ver and s_ver and str(client_s_ver) != str(s_ver):
+        logger.info(
+            "[manu_chat] 忽略前端宣告的版本 client=%s server=%s pid=%s section=%s",
+            client_s_ver, s_ver, pid, section,
+        )
 
     job_id = f"job_{uuid4().hex}"
     sid = request.sid
@@ -1096,6 +1433,13 @@ def handle_chat(data):
     )
 
     try:
+        # NOTE(NOTE-012): COC bundle 必須在「本輪訊息寫進歷史之前」組好，
+        # 否則剛送出的這句話會同時出現在 user_msg 與歷史裡，白白吃掉預算。
+        # 也必須在這裡（socket handler 仍有 request context）算可讀章節 ——
+        # 實際生成跑在 _CHAT_EXECUTOR 的 worker thread，那裡沒有 current_user，
+        # 在下游才判權限會拿不到身分而預設放行。
+        coc_bundle = _build_coc_for_request(pid, section)
+
         # 使用者訊息寫不進聊天歷史，不該連帶讓整個草稿請求消失：
         # 使用者要的是草稿，歷史少一筆可以事後補，靜默吞掉請求不行。
         try:
@@ -1157,9 +1501,36 @@ def handle_chat(data):
                 job_id, pid,
             )
 
+        # NOTE(任務 1): 全域 token 預算 packer。
+        # 取代舊版「COC text 直接前置到 context_text」的做法。
+        # 舊版：COC(12K) + context(6K) + upstream(1.5K) + retrieval(18K) ≈ 37.5K，超過 TPM。
+        # 新版：共用一份 _PROMPT_MAX_TOKENS(20K) 預算，retrieval 只能拿剩餘量。
+        # 去重邏輯見 _pack_prompt_context 的 docstring。
+        if coc_bundle.get("notes"):
+            logger.info("[manu_chat] COC 降級紀錄 id=%s notes=%s", job_id, coc_bundle["notes"])
+
+        context_text, remaining_budget, packer_notes, coc_items = _pack_prompt_context(
+            frontend_context=context_text,
+            coc_bundle=coc_bundle,
+            total_budget=_PROMPT_MAX_TOKENS,
+            section=section,
+            job_id=job_id,
+        )
+        # 字元層截斷發生在 packer 之前，packer 看不到，必須在這裡併回來，
+        # 否則作者尾端的內容會靜默消失且 audit 上沒有任何痕跡。
+        packer_notes = pre_pack_notes + packer_notes
+        if packer_notes:
+            logger.info("[manu_chat] Packer 裁切紀錄 id=%s notes=%s", job_id, packer_notes)
+
         payload = {
             'user_msg': user_msg,
             'context_text': context_text,
+            # 去重後的來源清單，不是原始 bundle 的 —— 見 _pack_prompt_context 的回傳說明。
+            'coc_items': coc_items,
+            'coc_notes': (coc_bundle.get("notes") or []) + packer_notes,
+            # 「剩餘的全域預算」，不是「檢索的預算」—— 下游還要在同一個額度內
+            # 容納 upstream context（研究筆記）才輪到檢索。0 是有效值。
+            'remaining_budget': remaining_budget,
             'target_lang': target_lang,
             'attachment': attachment,
             'import_type': import_type,
@@ -1618,35 +1989,61 @@ def handle_load_paper(data):
     else:
         emit('sys_msg', {'msg': 'Failed to load paper JSON.'})
 
+def _req_echo(data: dict) -> dict:
+    """
+    [v2.0] 把前端的切章請求識別碼原樣回送。
+
+    2B 切章是「先問版本清單、再載入版本」的兩段式非同步流程，而 block_list /
+    block_loaded 同時服務四種來源（切章、2A 章節同步、開啟舊版 modal、衝突列
+    重新載入）。少了識別碼，前端無法分辨「這份回應屬於哪一次切章」，快速
+    A→B→C 時遲到的 A 回應就會覆蓋 C 的畫布。
+
+    req_token 只回送給發問的那條連線，不做跨連線廣播，因此不是注入面；
+    仍截斷長度，避免前端塞入超大字串佔用回應體積。
+    """
+    echo = {}
+    token = data.get('req_token')
+    if token is not None:
+        echo['req_token'] = str(token)[:64]
+    intent = data.get('intent')
+    if intent is not None:
+        echo['intent'] = str(intent)[:32]
+    return echo
+
+
 @socketio.on('cmd_list_blocks', namespace='/manu_ws')
 def handle_list_blocks(data):
     data = data or {}
     section = data.get('section', 'general')
+    # 每一條 return 路徑都必須帶上 echo：前端切章時會先把畫布切成 loading，
+    # 只有在收到「符合目前 token」的回應後才會離開該狀態。任何一條沒帶
+    # req_token 的失敗回應，都會讓使用者的畫布永久卡在載入中。
+    echo = _req_echo(data)
     pid = _resolve_socket_pid_or_emit(
         data,
         missing_msg='',
         missing_event='block_list',
-        missing_payload={'files': [], 'section': section},
+        missing_payload=dict({'files': [], 'section': section}, **echo),
     )
     if not pid:
         return
     if not _ensure_socket_project_access(
         pid,
         forbidden_event='block_list',
-        forbidden_payload={'files': [], 'section': section},
+        forbidden_payload=dict({'files': [], 'section': section}, **echo),
     ):
         return
 
     # [collab] 章節層讀取過濾：限定編輯看不到未被指派的章節，連版本清單都不給。
     uid = _session_uid()
     if uid is not None and not _socket_can_read_section(uid, pid, section):
-        emit('block_list', {'files': [], 'section': section, 'versions': [],
-                            'draft': None, 'next_ver': None, 'forbidden': True})
+        emit('block_list', dict({'files': [], 'section': section, 'versions': [],
+                                 'draft': None, 'next_ver': None, 'forbidden': True}, **echo))
         return
 
     # files 保留舊契約（前端與 e2e 測試以檔名載入舊版）；
     # versions 是 v1.8 新增的結構化清單，供版本選單顯示 from_ver / 時間 / 作者。
-    emit('block_list', {
+    emit('block_list', dict({
         'files': ManuscriptIO.list_blocks(pid, section),
         'section': section,
         'versions': ManuscriptIO.list_block_versions(pid, section),
@@ -1654,7 +2051,7 @@ def handle_list_blocks(data):
                                          owner_key=uid,
                                          owner_name=_session_username()),
         'next_ver': ManuscriptIO.next_block_version(pid, section),
-    })
+    }, **echo))
 
 @socketio.on('cmd_load_block', namespace='/manu_ws')
 def handle_load_block(data):
@@ -1666,25 +2063,33 @@ def handle_load_block(data):
         return
     section = data.get('section')
     filename = data.get('filename')
+    echo = _req_echo(data)
 
     # [collab] 讀取過濾：限定編輯不得載入未被指派章節的任何版本內容。
     uid = _session_uid()
     if uid is not None and not _socket_can_read_section(uid, pid, section):
         emit('sys_msg', {'msg': f'權限不足：你沒有「{section}」章節的存取權限。'})
+        # [v2.0] 失敗也要回 block_loaded：切章的自動載入正等這個事件才離開
+        # loading 狀態，只送 sys_msg 會讓畫布永遠停在「載入中」。
+        # 舊前端讀 data.ok，收到 ok=False 會自然忽略，契約相容。
+        emit('block_loaded', dict({'ok': False, 'section': section,
+                                   'filename': filename, 'reason': 'forbidden'}, **echo))
         return
 
     content = ManuscriptIO.load_block(pid, section, filename)
     if content:
         # [v1.7] 帶 _rev 給前端，前端記住作為下次存檔的 base_rev
-        emit('block_loaded', {
+        emit('block_loaded', dict({
             'ok': True,
             'content': content,
             'section': section,
             'filename': filename,
             '_rev': content.get('_rev', 0),
-        })
+        }, **echo))
     else:
         emit('sys_msg', {'msg': 'Failed to load block JSON.'})
+        emit('block_loaded', dict({'ok': False, 'section': section,
+                                   'filename': filename, 'reason': 'not_found'}, **echo))
 
 # =========================================================================
 # Image & Asset Management Socket Routes

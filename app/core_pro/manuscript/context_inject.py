@@ -18,12 +18,15 @@ from __future__ import annotations
 
 import hashlib
 import json
+import logging
 import os
 from typing import Any
 
 from app.errors import AppError
 from app.services.context_chain_service import ContextChainService
 from app.services.text_tokenize import tokenize
+
+logger = logging.getLogger("app.manuscript.context_inject")
 
 
 def estimate_tokens(text: str) -> int:
@@ -94,13 +97,35 @@ def _item_from_context_chain_packet(packet: dict, score: float, mode: str) -> di
     return item
 
 
-def _collect_context_chain_candidates(chain: dict) -> list[dict]:
+def _collect_context_chain_candidates(
+    chain: dict, *, skip_stale: bool = True
+) -> tuple[list[dict], list[str]]:
+    """
+    從 ContextChain 取出可用的候選片段，回傳 (candidates, skipped_layers)。
+
+    NOTE(NOTE-014): 標為 stale 的層級不得供寫作路徑使用。
+    人工改過 L1 的某個 claim 後（manual_override），L2/L3/KG 會被標 stale 而 L1
+    保持新鮮 —— 那正是「作者已經修正、但衍生內容還沒重算」的狀態。
+    舊版無條件收集所有層級，於是作者的修正被舊摘要蓋過去，人類的更正傳不下去，
+    而這正是 COC 要解決的問題本身。
+
+    L1 刻意**不**受 skip_stale 影響：它裝的是人類剛改過的內容，跳過它等於把
+    作者的修正也丟掉，方向剛好相反。
+    """
     layers = chain.get("layers", {}) if isinstance(chain, dict) else {}
     out: list[dict] = []
+    skipped: list[str] = []
 
-    for packet in (layers.get("L2", {}) or {}).get("summary_packets", []) or []:
-        if isinstance(packet, dict):
-            out.append(packet)
+    def _is_stale(name: str) -> bool:
+        layer = layers.get(name, {}) or {}
+        return bool(isinstance(layer, dict) and layer.get("stale"))
+
+    if skip_stale and _is_stale("L2"):
+        skipped.append("L2")
+    else:
+        for packet in (layers.get("L2", {}) or {}).get("summary_packets", []) or []:
+            if isinstance(packet, dict):
+                out.append(packet)
 
     for claim in (layers.get("L1", {}) or {}).get("claims", []) or []:
         if isinstance(claim, dict):
@@ -112,17 +137,20 @@ def _collect_context_chain_candidates(chain: dict) -> list[dict]:
             packet.setdefault("text", text)
             out.append(packet)
 
-    l3 = layers.get("L3", {}) or {}
-    if isinstance(l3, dict) and str(l3.get("project_brief") or "").strip():
-        out.append(
-            {
-                "packet_id": "l3-project-brief",
-                "kind": "project_brief",
-                "text": str(l3.get("project_brief") or ""),
-                "project_id": chain.get("project_id"),
-            }
-        )
-    return out
+    if skip_stale and _is_stale("L3"):
+        skipped.append("L3")
+    else:
+        l3 = layers.get("L3", {}) or {}
+        if isinstance(l3, dict) and str(l3.get("project_brief") or "").strip():
+            out.append(
+                {
+                    "packet_id": "l3-project-brief",
+                    "kind": "project_brief",
+                    "text": str(l3.get("project_brief") or ""),
+                    "project_id": chain.get("project_id"),
+                }
+            )
+    return out, skipped
 
 
 def _fallback_context_chain_search(
@@ -137,13 +165,22 @@ def _fallback_context_chain_search(
     service = context_chain_service or ContextChainService(data_root=data_root)
     chain = service.load_chain(project_id)
     query_tokens = tokenize(query)
+    candidates, skipped_layers = _collect_context_chain_candidates(chain)
     scored = []
-    for packet in _collect_context_chain_candidates(chain):
+    for packet in candidates:
         text = str(packet.get("text") or packet.get("title") or "")
         score = _score_text(query_tokens, text, source_priority=0.9)
         if score <= 0:
             continue
         scored.append(_item_from_context_chain_packet(packet, score, "fallback_context_chain"))
+
+    # NOTE(NOTE-014): 降級必須留痕。少了這行，「作者改過 L1 之後草稿突然變空」
+    # 只能從結果反推，而 stale 是靜默的，日誌不寫就沒有任何線索。
+    if skipped_layers:
+        logger.info(
+            "[context_inject] 跳過 stale 層級 pid=%s layers=%s（重新生成前不供寫作使用）",
+            project_id, skipped_layers,
+        )
 
     scored.sort(key=lambda item: (-float(item.get("score") or 0.0), str(item.get("source_id") or "")))
     return _apply_limits(scored, top_k=top_k, max_tokens=max_tokens)
@@ -151,7 +188,12 @@ def _fallback_context_chain_search(
 
 def _apply_limits(items: list[dict], *, top_k: int, max_tokens: int) -> list[dict]:
     out = []
-    budget = max(1, int(max_tokens or 1200))
+    # `max_tokens or 1200` 會把**明確傳入的 0** 當成「沒給」而放大成 1200。
+    # 上游改成全域預算之後，0 的語意是「預算已用盡，一個 token 都不能再加」，
+    # 那正是最需要被遵守的一次。只有 None 才代表「沒給」。
+    budget = 1200 if max_tokens is None else max(0, int(max_tokens))
+    if budget <= 0:
+        return []
     used = 0
     for item in items[: max(1, int(top_k or 8))]:
         snippet = str(item.get("snippet") or "")
@@ -191,7 +233,12 @@ def retrieve_paragraph_context(
     try:
         from app.services.evidence_index_service import search_evidence
 
-        evidence_items = search_evidence(project_id=project_id, query=query, top_k=top_k)
+        # NOTE(NOTE-013): 這是「正式寫作依據」的檢索路徑，必須用 writing scope ——
+        # excluded 硬阻擋，unknown（尚未人工篩選）也不得作為寫作依據。
+        # Literature 的探索介面走別的入口，不受這裡影響，資料不會從系統消失。
+        evidence_items = search_evidence(
+            project_id=project_id, query=query, top_k=top_k, inclusion_scope="writing",
+        )
         if evidence_items:
             normalized = []
             for item in evidence_items:

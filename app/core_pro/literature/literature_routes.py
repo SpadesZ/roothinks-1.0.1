@@ -353,6 +353,33 @@ def get_literature_library():
     return literature_library_service
 
 
+def current_screening_actor() -> str:
+    """
+    誰做了這次納入／排除決定。
+
+    NOTE(NOTE-020): 回傳值會被寫進 library entry 當成永久的決策 provenance。
+    `update_entry` 對空 actor 直接 ValueError，那是刻意的 ——
+    沒有主體的決策紀錄事後無法歸屬，等於沒有紀錄。
+
+    AUTH_MODE 不是 session（本機預覽容器、CLI）時沒有 current_user，
+    此時記成 `local:<AUTH_MODE>`，讓稽核一眼看出「這筆不是線上使用者做的」，
+    而不是假裝成某個真實帳號。
+    """
+    try:
+        from flask_login import current_user
+
+        if getattr(current_user, "is_authenticated", False):
+            # email 是這個系統的登入帳號，比顯示名穩定。
+            return (
+                str(getattr(current_user, "email", "") or "").strip()
+                or f"user:{getattr(current_user, 'id', '')}"
+            )
+    except Exception:
+        pass
+
+    return f"local:{os.environ.get('AUTH_MODE', 'unknown')}"
+
+
 def get_context_chain_service():
     """Lazy-load Context Chain Service"""
     global context_chain_service

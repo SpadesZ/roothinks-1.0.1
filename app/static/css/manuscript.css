@@ -272,6 +272,25 @@ body.manuscript-page {
     min-height: 24px;
 }
 
+/* 2B/2C 內文清單的三層樣式。
+   為什麼要明寫：巢狀清單若每層都用同一個 list-style，第 1／2／3 層看起來
+   全是「1. 1. 1.」或整排實心圓點，使用者從畫面上分不出自己在第幾層，
+   投稿稿件的條列層級也對不上期刊格式。padding-left 一併釘住，避免日後
+   有人在上層加 list-unstyled 之類的規則後，縮排連帶消失。 */
+.manus-editor-canvas ol,
+.manus-editor-canvas ul {
+    padding-left: 2rem;
+    margin-bottom: 0.5rem;
+}
+
+.manus-editor-canvas ol { list-style-type: decimal; }
+.manus-editor-canvas ol ol { list-style-type: lower-alpha; }
+.manus-editor-canvas ol ol ol { list-style-type: lower-roman; }
+
+.manus-editor-canvas ul { list-style-type: disc; }
+.manus-editor-canvas ul ul { list-style-type: circle; }
+.manus-editor-canvas ul ul ul { list-style-type: square; }
+
 /* Resizer */
 .resizer {
     width: 8px;

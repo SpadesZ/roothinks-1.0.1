@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import logging
 import math
 import os
 import re
@@ -30,6 +31,8 @@ from app import db
 from app.errors import AppError, ErrorCode, ErrorSeverity
 from app.models import EvidenceSegment, Paper
 from app.services.evidence_types import SOURCE_PRIORITY, EvidenceSourceType
+
+logger = logging.getLogger("app.services.evidence_index_service")
 from app.services.text_tokenize import tokenize
 
 
@@ -342,12 +345,76 @@ def _snippet(text: str, query_tokens: list[str], size: int | None = None) -> str
     return body[best_start : best_start + size].strip()
 
 
+def _resolve_data_root() -> str:
+    """
+    取得絕對 data 根目錄。
+
+    刻意在這裡重做一次而不是 import manuscript_io._get_data_root：
+    service 層反向依賴 core_pro 會造成層次倒置，而 literature_routes 的
+    模組常數 DATA_ROOT 是啟動時算死的絕對路徑，測試把 DB 指到 tmp_path 時
+    它仍指向真實 data/ —— 用它會讓測試讀到（甚至寫到）使用者的實際資料。
+    規則與 manuscript_io._get_data_root 相同：以 SQLAlchemy URI 所在目錄為準。
+    """
+    try:
+        from flask import current_app
+
+        db_uri = current_app.config.get("SQLALCHEMY_DATABASE_URI", "")
+        base = os.path.dirname(str(db_uri).replace("sqlite:///", ""))
+        if os.path.isabs(base):
+            return os.path.abspath(base)
+    except Exception:
+        pass
+    return os.path.abspath(os.path.join(os.getcwd(), "data"))
+
+
+def _screening_sets(project_id: str) -> tuple[set[str], set[str]]:
+    """
+    讀出人類的文獻篩選決策，回傳 (included_paper_ids, excluded_paper_ids)。
+
+    NOTE(NOTE-013): 沿用既有的 LiteratureLibrary（`screening_status` 已定義
+    candidate / included / excluded），不另建一套納入狀態 —— 平行來源會立刻
+    產生「兩邊說法不一致時聽誰的」問題。
+
+    讀不到 library（檔案不存在、解析失敗）時回傳兩個空集合：
+    在 writing scope 下這等於「全部視為 unknown 而不可用於寫作」，
+    也就是 fail-closed。這是刻意的，不要改成例外時放行。
+    """
+    try:
+        from app.services.literature_library import LiteratureLibrary
+
+        entries = LiteratureLibrary(_resolve_data_root()).list_entries(str(project_id))
+    except Exception:
+        logger.warning("[evidence] 讀取文獻篩選狀態失敗，視為全部 unknown pid=%s",
+                       project_id, exc_info=True)
+        return set(), set()
+
+    included: set[str] = set()
+    excluded: set[str] = set()
+    for entry in entries or []:
+        paper_id = str((entry or {}).get("paper_id") or "").strip()
+        if not paper_id:
+            continue
+        status = str((entry or {}).get("screening_status") or "").strip()
+        if status == "included":
+            included.add(paper_id)
+        elif status == "excluded":
+            excluded.add(paper_id)
+    return included, excluded
+
+
 def search_evidence(
     project_id: str,
     query: str,
     top_k: int = 8,
     source_types: list[str] | None = None,
+    *,
+    inclusion_scope: str = "any",
 ) -> list[dict]:
+    """
+    inclusion_scope:
+      "any"     — 探索用途。excluded 仍硬阻擋，其餘照常回傳。
+      "writing" — 正式寫作依據（Drafter）。只接受 included 的論文來源（NOTE-013）。
+    """
     try:
         qtokens = tokenize(query)
         q = EvidenceSegment.query.filter_by(project_id=str(project_id))
@@ -370,12 +437,29 @@ def search_evidence(
     except Exception as exc:
         raise AppError(ErrorCode.UNKNOWN, "Evidence search failed", ErrorSeverity.RECOVERABLE, exc) from exc
 
+    included_ids, excluded_ids = _screening_sets(project_id)
+    dropped_excluded = 0
+    dropped_unknown = 0
+
     scored = []
     compact_query = _compact_identifier(query)
     for row in rows:
         # 書目／致謝／OCR 殘渣不得作為寫作依據，見 _NON_EVIDENCE_TITLE_RE。
         if is_non_evidence_segment(row.title):
             continue
+
+        # NOTE(NOTE-013): 人工篩選只約束論文來源。
+        # study_note / paq_note / manuscript_note / context_chain_item 是人類自己的
+        # 內容，不是被篩選的文獻；一起濾掉等於把 COC 要保住的東西刪掉。
+        if row.source_type == EvidenceSourceType.PAPER_SEGMENT.value:
+            paper_key = str(row.paper_id or "")
+            if paper_key and paper_key in excluded_ids:
+                dropped_excluded += 1
+                continue
+            if inclusion_scope == "writing" and paper_key not in included_ids:
+                # fail-closed：狀態不明一律不得作為正式寫作依據。
+                dropped_unknown += 1
+                continue
         paper_title = paper_titles.get(str(row.paper_id or ""), "")
         aliases = f"{row.paper_id or ''} {paper_title}"
         score = _score(qtokens, row, aliases)
@@ -410,6 +494,14 @@ def search_evidence(
                 "estimated_tokens": max(1, len(row.text or "") // 4),
             }
         )
+    # NOTE(NOTE-013): 被篩掉的量必須留痕。writing scope 下如果整批論文都是 unknown，
+    # 症狀會是「草稿突然沒有依據」，沒有這行日誌就只能從結果反推，非常難查。
+    if dropped_excluded or dropped_unknown:
+        logger.info(
+            "[evidence] 篩選過濾 pid=%s scope=%s excluded=%d unknown=%d 保留=%d",
+            project_id, inclusion_scope, dropped_excluded, dropped_unknown, len(scored),
+        )
+
     scored.sort(key=lambda item: (-float(item.get("score") or 0.0), str(item.get("source_id") or "")))
     limit = max(1, min(int(top_k or 8), 50))
     return _apply_per_paper_quota(scored, limit)

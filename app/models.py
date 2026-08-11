@@ -613,6 +613,19 @@ class ChapterComment(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     pid = db.Column(db.String(20), nullable=False, index=True)
     section_key = db.Column(db.String(50), nullable=False, index=True)
+
+    # NOTE(NOTE-008) 留言必須綁在「當時被評論的那一版」上。
+    # 沒有這三個欄位時，留言只綁 pid + section_key，於是 2B 存成新版本後，
+    # 針對舊版寫的意見會原封不動出現在新版旁邊，看起來像是在說新版的問題；
+    # 2C 也一樣，換一個 G.Ver 就整批漂移過去。
+    #   scope='section' → 2B 章節留言，版本定位看 s_ver（如 "0.5"）
+    #   scope='paper'   → 2C 全文留言，版本定位看 g_ver（如 "V3"）
+    # 兩個版本欄位都可為 NULL：那代表本次改動之前留下的舊留言，我們無從得知
+    # 它當時針對哪一版，因此一律標為「未標版本」另外呈現，不可假裝它屬於現版。
+    scope = db.Column(db.String(10), nullable=False, default="section", index=True)
+    s_ver = db.Column(db.String(20), nullable=True, index=True)
+    g_ver = db.Column(db.String(20), nullable=True, index=True)
+
     author_id = db.Column(
         db.Integer,
         db.ForeignKey("users.id", ondelete="SET NULL"),
@@ -642,6 +655,11 @@ class ChapterComment(db.Model):
             "id": self.id,
             "pid": self.pid,
             "section_key": self.section_key,
+            "scope": self.scope or "section",
+            "s_ver": self.s_ver,
+            "g_ver": self.g_ver,
+            # 前端據此把舊留言歸到「未標版本」區塊，而不是混進目前版本。
+            "legacy_unversioned": (self.s_ver is None and self.g_ver is None),
             "author_id": self.author_id,
             "author": self.author.username if self.author else None,
             "body": self.body,

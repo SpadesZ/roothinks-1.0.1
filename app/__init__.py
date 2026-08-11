@@ -174,6 +174,43 @@ def _build_engine_options(db_uri: str) -> dict:
     }
 
 
+def _configured_sqlite_path(app) -> str | None:
+    """這個 app 實際要用的 sqlite 檔案絕對路徑；不是 sqlite 就回 None。"""
+    uri = str(app.config.get("SQLALCHEMY_DATABASE_URI") or "")
+    prefix = "sqlite:///"
+    if not uri.startswith(prefix):
+        return None
+    return os.path.abspath(uri[len(prefix):])
+
+
+def _should_run_schema_fix(app) -> bool:
+    """
+    只有在「migration 要改的那顆 DB」就是「這個 app 要用的那顆 DB」時才跑。
+
+    NOTE(NOTE-016)：含未解決的範圍限制 —— test/integration_smoke/* 沒有覆寫
+    DB 設定，它們「設定的」就是正式 DB，本判斷會正確地放行 migration。
+
+    為什麼需要這道判斷：fix_db_schema.target_db_path() 是相對該檔位置寫死的
+    repo/data/roothinks.db，**完全不看 SQLALCHEMY_DATABASE_URI**。於是每一個
+    把 DB 指到 tmp 的測試，在 create_app() 時仍然會對正式資料庫跑一次 migration
+    ——而那支 migration 自己的檔頭寫著「安全邊界：破壞性操作（DROP TABLE／重建表）」。
+    跑一次完整測試套件就是 700 多次。這不是效能問題，是資料安全問題。
+
+    兩種情況維持原行為（回 True）：
+      - 不是 sqlite（未來換 DB 時不該被這道判斷擋住）。
+      - target_db_path() 抛例外（找不到檔案）——交給 _run_schema_fix 走既有的
+        「開不起來也不要帶著壞 schema 跑」路徑，不要在這裡吞掉。
+    """
+    configured = _configured_sqlite_path(app)
+    if configured is None:
+        return True
+    try:
+        target = os.path.abspath(fix_db_schema.target_db_path())
+    except Exception:
+        return True
+    return os.path.normcase(configured) == os.path.normcase(target)
+
+
 def _run_schema_fix(max_retries: int = 3):
     if not fix_db_schema or not hasattr(fix_db_schema, "fix_schema"):
         raise RuntimeError("fix_db_schema.fix_schema is required but unavailable")
@@ -392,8 +429,15 @@ def create_app(test_config=None):
         Image.MAX_IMAGE_PIXELS = 89478485
 
     # Block startup when schema fix fails.
+    # 但先確認要修的就是這次要用的那顆 DB —— 見 _should_run_schema_fix。
     with app.app_context():
-        _run_schema_fix()
+        if _should_run_schema_fix(app):
+            _run_schema_fix()
+        else:
+            LOGGER.info(
+                "[schema] 跳過 migration：設定的 DB (%s) 不是 migration 的目標",
+                _configured_sqlite_path(app),
+            )
 
     db.init_app(app)
     limiter.init_app(app)

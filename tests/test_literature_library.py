@@ -56,7 +56,8 @@ def test_user_statuses_survive_re_merge(tmp_path):
     lib = _lib(tmp_path)
     lib.merge_candidates("P1", ROUND1, topic="t")
     entry_id = entry_key({"doi": "10.1/aaa"})
-    lib.update_entry("P1", entry_id, {"screening_status": "included", "reading_status": "reading"})
+    lib.update_entry("P1", entry_id, {"screening_status": "included", "reading_status": "reading"},
+                     actor="pi@example.org")
 
     lib.merge_candidates("P1", ROUND2, topic="t2")
     entry = next(e for e in lib.list_entries("P1") if e["entry_id"] == entry_id)
@@ -74,7 +75,7 @@ def test_screening_and_reading_validated_separately(tmp_path):
     with pytest.raises(ValueError):
         lib.update_entry("P1", entry_id, {"reading_status": "included"})
 
-    updated = lib.update_entry("P1", entry_id, {"screening_status": "excluded"})
+    updated = lib.update_entry("P1", entry_id, {"screening_status": "excluded"}, actor="pi@example.org")
     assert updated["screening_status"] == "excluded"
     assert updated["reading_status"] == "unread", "screening 更新不得影響 reading"
 
@@ -120,7 +121,7 @@ def test_export_scope_and_no_fabrication(tmp_path):
     lib = _lib(tmp_path)
     lib.merge_candidates("P1", ROUND1, topic="t")
     entry_id = entry_key({"doi": "10.1/aaa"})
-    lib.update_entry("P1", entry_id, {"screening_status": "included"})
+    lib.update_entry("P1", entry_id, {"screening_status": "included"}, actor="pi@example.org")
 
     included = lib.entries_for_export("P1", scope="included")
     assert len(included) == 1

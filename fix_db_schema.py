@@ -8,6 +8,8 @@
 #   1. projects 表補上數值主鍵與缺漏欄位（legacy schema 相容）。
 #   2. papers 表升級為 (paper_id, pid) 複合主鍵。
 #   3. [email-auth] users.email 升級為 NOT NULL UNIQUE 並新增 system_role。
+#   4. [comment-versioning] chapter_comments 補上 scope / s_ver / g_ver，
+#      讓留言綁定「當時被評論的版本」（見 docs/NOTES.md NOTE-008、NOTE-009）。
 # 呼叫來源:
 #   app/__init__.py 的 _run_schema_fix()；亦可人工執行 python fix_db_schema.py。
 # 輸入輸出契約:
@@ -26,6 +28,10 @@
 #     因此所有欄位變更都必須寫在這裡。
 # 驗證方式:
 #   python -m pytest test/unit/test_email_auth.py -q   （含 schema 升級測試）
+#   python -m pytest test/unit/test_comment_versioning.py -q  （留言版本欄位）
+#   注意：_resolve_db_path() 不看 SQLALCHEMY_DATABASE_URI，永遠解析到
+#   <repo>/data/roothinks.db；因此任何會 create_app() 的測試都會對真實 dev DB
+#   套用本檔的升級。新增欄位前務必確認該升級是純增量且可回退。
 # ------------------------------------------------------------------------------
 import contextlib
 import logging
@@ -34,6 +40,18 @@ import sqlite3
 import time
 
 LOGGER = logging.getLogger("fix_db_schema")
+
+
+def target_db_path() -> str:
+    """
+    這支 migration 會動到的那一顆 DB。
+
+    公開它，是為了讓 create_app 在跑之前能先問一句「我要改的，是不是這次 ORM
+    真的要用的那一顆」。路徑相對本檔位置寫死，**完全不看 SQLALCHEMY_DATABASE_URI**
+    —— 不論呼叫端把 DB 指到哪，這裡永遠回傳 repo 的 data/roothinks.db。
+    那道比對見 app/__init__.py 的 _should_run_schema_fix()。
+    """
+    return _resolve_db_path()
 
 
 def _resolve_db_path() -> str:
@@ -356,9 +374,53 @@ def upgrade_database():
         # [email-auth] users.email 升級為 NOT NULL UNIQUE + 新增 system_role。
         _upgrade_users_table(cursor)
 
+        # [comment-versioning] 留言綁定版本。
+        _upgrade_chapter_comments_table(cursor)
+
         conn.commit()
 
     LOGGER.info("Schema upgrade finished.")
+
+
+def _upgrade_chapter_comments_table(cursor):
+    """
+    [comment-versioning] 讓留言帶上「當時被評論的版本」。
+
+    NOTE(NOTE-009) 純增量：只 ADD COLUMN，不重建資料表，因此既有留言一列都不會動。
+    舊留言的 s_ver / g_ver 保持 NULL —— 我們無從得知它當時針對哪一版，硬把它
+    回填成目前版本等於偽造證據，讓使用者以為那句意見是在說現在這一版。
+    NULL 由 API 標成 legacy_unversioned，前端另立「未標版本」區塊呈現。
+
+    scope 有 DEFAULT 'section'：既有留言全部來自 2B 章節留言側欄，這個預設值
+    對它們是正確的，不是隨便填的佔位。
+
+    型別必須與 app/models.py 的 ChapterComment 宣告一致（同 projects 的三方一致
+    要求，見上方 column_defs 附近的說明）。
+    """
+    cursor.execute("PRAGMA table_info(chapter_comments)")
+    existing = {row[1] for row in cursor.fetchall()}
+    if not existing:
+        # 資料表還沒建立（全新環境）；db.create_all() 會依 models.py 直接建出新結構。
+        return
+
+    column_defs = {
+        "scope": "VARCHAR(10) NOT NULL DEFAULT 'section'",
+        "s_ver": "VARCHAR(20)",
+        "g_ver": "VARCHAR(20)",
+    }
+    for column_name, column_type in column_defs.items():
+        if column_name not in existing:
+            LOGGER.info("Adding missing chapter_comments column: %s", column_name)
+            cursor.execute(
+                f"ALTER TABLE chapter_comments ADD COLUMN {column_name} {column_type}"
+            )
+
+    for index_sql in (
+        "CREATE INDEX IF NOT EXISTS ix_chapter_comments_scope ON chapter_comments (scope)",
+        "CREATE INDEX IF NOT EXISTS ix_chapter_comments_s_ver ON chapter_comments (s_ver)",
+        "CREATE INDEX IF NOT EXISTS ix_chapter_comments_g_ver ON chapter_comments (g_ver)",
+    ):
+        cursor.execute(index_sql)
 
 
 def fix_schema():

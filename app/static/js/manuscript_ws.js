@@ -199,7 +199,12 @@ class ManuscriptWorkspace {
                 this.socket.emit('cmd_list_papers', { pid: this.pid, title: title });
             }
 
+            // NOTE(NOTE-005) 這個延遲還原只負責「使用者還沒動作」時的初次定位。
+            // 使用者在這 500ms 內自己切了章（甚至已開始打字）時再還原，會把畫布
+            // 換成快取章節的已存版本，未存內容無聲消失。_sectionReqSeq > 0 代表
+            // 已經有人正式切過章，此時還原沒有任何該做的事。
             setTimeout(() => {
+                if (this.soed && this.soed._sectionReqSeq > 0) return;
                 if (this.drafterTargetSection) {
                     const section = this.soed.restoreChatSection(this.drafterTargetSection.value);
                     this.soed.switchChatSection(section);

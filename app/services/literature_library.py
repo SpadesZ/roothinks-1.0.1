@@ -14,6 +14,15 @@
 #   3. merge 永不覆寫使用者狀態（screening_*/reading_*/paper_id/notes），
 #      metadata 只補空缺，不打架。
 #   4. 不捏造欄位：沒有 title 也沒有 doi 的項目直接拒收。
+#   5. screening 決策一定可歸屬：改 screening_status 沒帶 actor 直接 ValueError，
+#      決策 provenance 由本層寫入，不接受呼叫端從 patch 帶（NOTE-020）。
+# 安全邊界:
+#   - `merge_candidates` **永遠只產生 candidate**，任何情況下都不得自動 included ——
+#     批次標成 included 等於偽造「作者已審核」，而 included 直接決定 Drafter
+#     的寫作依據（NOTE-013）。角色門檻（>= editor）在 route 層，見
+#     literature_library_routes；本層擋的是「沒有主體的決策」。
+#   - 讀取路徑不得有副作用：`_library_path(create_dir=False)` 專為此存在，
+#     連 FileLock 都不取（取鎖會建檔）。
 # 維護提醒:
 #   - 鎖內只能用 raw open/json，不可呼叫 load_json_locked/write_json_locked
 #     （它們各自再拿同一把鎖，Windows msvcrt 下會自我死鎖）。
@@ -40,6 +49,9 @@ READING_STATUSES = ("unread", "reading", "read")
 # merge 時只補空缺的 metadata 欄位；使用者欄位永不由 merge 寫入。
 _METADATA_FIELDS = ("title", "authors", "year", "venue", "doi", "url", "abstract", "citations")
 _USER_FIELDS = ("screening_status", "screening_note", "reading_status", "reading_note", "paper_id")
+# 決策 provenance：由 update_entry 依 actor 自行寫入，**不接受呼叫端從 patch 帶進來**。
+# 若開放 patch 直接設定，任何人都能宣稱某個 PI 做過這個決定。
+_DECISION_FIELDS = ("screening_decided_by", "screening_decided_at", "screening_batch_id")
 _ABSTRACT_MAX_CHARS = 4000
 
 
@@ -149,10 +161,20 @@ class LiteratureLibrary:
     def __init__(self, data_root: str):
         self.data_root = data_root
 
-    def _library_path(self, pid: str) -> str:
+    def _library_path(self, pid: str, *, create_dir: bool = True) -> str:
+        """
+        library.json 的位置。
+
+        create_dir=False 給唯讀路徑用。原本這裡無條件 makedirs，於是**光是查詢
+        就會在 data root 底下長出 `<pid>/literature/`** —— NOTE-013 的
+        `_screening_sets()` 每次檢索都會呼叫 load()，包括那些根本沒有文獻庫的專案。
+        實測後果：跑測試時在真實 data/ 長出測試 pid 的目錄（測試的 in-memory DB
+        會讓 data root 解析退回 cwd/data）。**讀取不應該有副作用**，寫入才需要建目錄。
+        """
         safe_pid = validate_id(pid, "project_id")
         lit_dir = os.path.join(self.data_root, safe_pid, "literature")
-        os.makedirs(lit_dir, exist_ok=True)
+        if create_dir:
+            os.makedirs(lit_dir, exist_ok=True)
         return os.path.join(lit_dir, "library.json")
 
     def _empty(self, pid: str) -> dict:
@@ -181,7 +203,11 @@ class LiteratureLibrary:
         os.replace(tmp_path, path)
 
     def load(self, pid: str) -> dict:
-        path = self._library_path(pid)
+        path = self._library_path(pid, create_dir=False)
+        if not os.path.exists(path):
+            # 檔案不存在就直接回空，連鎖都不用取 —— 取鎖會建立 lock 檔，
+            # 那同樣是「讀取產生副作用」。
+            return self._empty(pid)
         with FileLock(build_lock_path(path), timeout=10):
             return self._read_unlocked(path, pid)
 
@@ -265,17 +291,34 @@ class LiteratureLibrary:
             total = len(entries)
         return {"added": added, "updated": updated, "skipped": skipped, "total": total}
 
-    def update_entry(self, pid: str, entry_id: str, patch: dict) -> dict:
+    def update_entry(
+        self,
+        pid: str,
+        entry_id: str,
+        patch: dict,
+        *,
+        actor: str = "",
+        batch_id: str = "",
+    ) -> dict:
         """
         使用者主導的欄位更新（狀態、備註、paper_id 連結、metadata 補正）。
         screening 與 reading 狀態各自驗證，互不影響。
+
+        NOTE(NOTE-020): 改動 `screening_status` **一定要帶 actor**，否則直接
+        ValueError。納入／排除是作者的學術判斷，稽核時必須答得出「誰、什麼時候、
+        依哪一批決策」。把 actor 做成選填會讓忘記帶的呼叫端靜默寫出一筆
+        沒有主體的決策 —— 那筆紀錄事後無法歸屬，等於沒有紀錄。
+        呼叫端另外要負責角色檢查（只有 PI/Co-PI 能改），見 literature_library_routes。
         """
         path = self._library_path(pid)
         patch = patch or {}
 
         screening = patch.get("screening_status")
-        if screening is not None and screening not in SCREENING_STATUSES:
-            raise ValueError(f"Invalid screening_status: {screening}")
+        if screening is not None:
+            if screening not in SCREENING_STATUSES:
+                raise ValueError(f"Invalid screening_status: {screening}")
+            if not str(actor or "").strip():
+                raise ValueError("screening_status change requires an actor (audit trail)")
         reading = patch.get("reading_status")
         if reading is not None and reading not in READING_STATUSES:
             raise ValueError(f"Invalid reading_status: {reading}")
@@ -298,6 +341,13 @@ class LiteratureLibrary:
                 elif isinstance(value, str):
                     value = value.strip()
                 entry[key] = value
+            if screening is not None:
+                # 決策 provenance 與狀態同一次寫入：分兩次寫會出現
+                # 「狀態已改、決策者還沒寫」的中間狀態，而那個中間狀態
+                # 正好是稽核最想查的那一筆。
+                entry["screening_decided_by"] = str(actor).strip()
+                entry["screening_decided_at"] = _now_iso()
+                entry["screening_batch_id"] = str(batch_id or "").strip()
             entry["updated_at"] = _now_iso()
             self._write_unlocked(path, data)
             return dict(entry)

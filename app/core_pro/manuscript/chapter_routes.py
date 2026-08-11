@@ -110,6 +110,52 @@ def _safe_section(raw: str) -> str:
     return value
 
 
+# 2C 全文留言沒有章節，但 chapter_comments.section_key 是 NOT NULL（既有結構，
+# 改成可空要重建整張表，風險遠大於收益）。用一個保留鍵值填欄位，真正的判別依據
+# 是 scope 欄位，不是這個字串。
+_PAPER_SCOPE_KEY = "__paper__"
+_SCOPE_SECTION = "section"
+_SCOPE_PAPER = "paper"
+
+
+def _safe_scope(raw) -> str:
+    value = str(raw or _SCOPE_SECTION).strip().lower()
+    if value not in (_SCOPE_SECTION, _SCOPE_PAPER):
+        raise BadRequest("Invalid scope")
+    return value
+
+
+def _safe_ver(raw):
+    """版本字串清洗。允許 None（未指定），其餘限長度，避免塞入超長字串。"""
+    if raw is None:
+        return None
+    value = str(raw).strip()
+    if not value:
+        return None
+    if len(value) > 20:
+        raise BadRequest("Invalid version")
+    return value
+
+
+def _can_read_paper(user_id, pid: str) -> bool:
+    """
+    是否可讀 2C 全篇（連帶決定能否讀寫 2C 全文留言）。
+
+    與 manuscript_routes._socket_can_read_paper 同一條規則：主論文是所有章節組
+    裝出來的成品，限定編輯若能讀整篇，章節層的讀取限制就被整篇繞過了；全文留言
+    會引用全篇內容，因此適用同一道門檻。
+    """
+    try:
+        from app.security import is_section_scoped_role
+        role = get_workspace_role(user_id, pid)
+        if role is None:
+            return False
+        return not is_section_scoped_role(role, pid)
+    except Exception:
+        logger.warning("[perm] _can_read_paper 失敗 user=%s pid=%s", user_id, pid, exc_info=True)
+        return False
+
+
 def _resolve_pid(raw_pid: str) -> str:
     """驗證並正規化為正式專案 pid。"""
     validate_id(raw_pid, "project_id")
@@ -230,25 +276,68 @@ def delete_assignment(pid, assignment_id):
 
 @bp.route("/api/chapter/<pid>/comments", methods=["GET"])
 def list_comments(pid):
-    """列出留言。可用 ?section= 篩選單一章節。"""
+    """
+    列出留言。
+
+    篩選參數：
+      ?section=<key>   2B 章節留言，限定該章
+      ?s_ver=<ver>     限定該章的某一版（scope=section）
+      ?scope=paper     2C 全文留言
+      ?g_ver=<ver>     限定某一個 G.Ver（scope=paper）
+      ?include_legacy=1  一併回傳本次改動前留下的、沒有版本定位的舊留言
+
+    NOTE(NOTE-010) 有給版本就「嚴格」篩選：切版本後只會看到綁在該版的留言。
+    舊留言（s_ver/g_ver 皆 NULL）不會混進來，除非呼叫端明確要求 include_legacy
+    ——把來歷不明的留言預設顯示在每一版旁邊，正是「留言漂移」本身。
+    """
     try:
         pid = _resolve_pid(pid)
         user = _session_user()
         if user is not None and not can_comment(user.id, pid):
             return _forbidden()
 
+        scope = _safe_scope(request.args.get("scope"))
+        include_legacy = str(request.args.get("include_legacy") or "").strip() in ("1", "true", "yes")
         query = ChapterComment.query.filter_by(pid=pid)
-        section = request.args.get("section")
-        if section:
-            section = _safe_section(section)
-            if user is not None and not can_read_section(user.id, pid, section):
+
+        if scope == _SCOPE_PAPER:
+            # 2C 全文留言：門檻是「能不能讀整篇」，不是任一章節。
+            if user is not None and not _can_read_paper(user.id, pid):
                 return _forbidden()
-            query = query.filter_by(section_key=section)
+            query = query.filter(ChapterComment.scope == _SCOPE_PAPER)
+            g_ver = _safe_ver(request.args.get("g_ver"))
+            if g_ver:
+                query = query.filter(
+                    db.or_(ChapterComment.g_ver == g_ver,
+                           ChapterComment.g_ver.is_(None)) if include_legacy
+                    else ChapterComment.g_ver == g_ver
+                )
+        else:
+            query = query.filter(
+                db.or_(ChapterComment.scope == _SCOPE_SECTION, ChapterComment.scope.is_(None))
+            )
+            section = request.args.get("section")
+            if section:
+                section = _safe_section(section)
+                if user is not None and not can_read_section(user.id, pid, section):
+                    return _forbidden()
+                query = query.filter_by(section_key=section)
+            s_ver = _safe_ver(request.args.get("s_ver"))
+            if s_ver:
+                query = query.filter(
+                    db.or_(ChapterComment.s_ver == s_ver,
+                           ChapterComment.s_ver.is_(None)) if include_legacy
+                    else ChapterComment.s_ver == s_ver
+                )
 
         rows = query.order_by(ChapterComment.created_at.asc()).all()
         # [collab] 未指定章節時逐筆過濾，避免限定編輯讀到別章的留言內容。
+        # 全文留言沒有真正的章節，改以「能否讀整篇」把關（上面已擋過）。
         if user is not None:
-            rows = [r for r in rows if can_read_section(user.id, pid, r.section_key)]
+            rows = [
+                r for r in rows
+                if (r.scope == _SCOPE_PAPER) or can_read_section(user.id, pid, r.section_key)
+            ]
         return jsonify({"success": True, "comments": [r.to_dict() for r in rows]}), 200
     except BadRequest as e:
         return jsonify({"success": False, "message": e.description or "Bad request"}), 400
@@ -270,10 +359,25 @@ def create_comment(pid):
             return _forbidden()
 
         data = request.get_json(silent=True) or {}
-        section_key = _safe_section(data.get("section_key"))
-        # [collab] 留言權限跟著讀取範圍走：看不到的章節不能留言。
-        if user is not None and not can_comment_on_section(user.id, pid, section_key):
-            return _forbidden()
+        scope = _safe_scope(data.get("scope"))
+
+        # NOTE(NOTE-010) 版本定位在「新增當下」就寫死，之後不再更動：留言要能永遠
+        # 指回它當初評論的那一版。前端送出目前檢視的 S.Ver / G.Ver。
+        if scope == _SCOPE_PAPER:
+            # 2C 全文留言：與讀整篇同一道門檻。
+            if user is not None and not _can_read_paper(user.id, pid):
+                return _forbidden()
+            section_key = _PAPER_SCOPE_KEY
+            s_ver = None
+            g_ver = _safe_ver(data.get("g_ver"))
+        else:
+            section_key = _safe_section(data.get("section_key"))
+            # [collab] 留言權限跟著讀取範圍走：看不到的章節不能留言。
+            if user is not None and not can_comment_on_section(user.id, pid, section_key):
+                return _forbidden()
+            s_ver = _safe_ver(data.get("s_ver"))
+            g_ver = None
+
         body = str(data.get("body") or "").strip()
         if not body:
             return jsonify({"success": False, "message": "留言內容不可為空"}), 400
@@ -286,6 +390,9 @@ def create_comment(pid):
         row = ChapterComment(
             pid=pid,
             section_key=section_key,
+            scope=scope,
+            s_ver=s_ver,
+            g_ver=g_ver,
             author_id=user.id if user is not None else None,
             body=body,
         )

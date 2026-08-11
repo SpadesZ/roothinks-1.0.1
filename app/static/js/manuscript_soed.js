@@ -41,6 +41,11 @@ class ManuSoed {
         this.ackWaitMs = 20000;
         // [v0.9] 衝突防護：記錄目前開啟段落的版本號 { sectionId: rev }
         this._blockRevMap = {};
+        // [v2.0] 切章請求序號與目前生效的請求 { token, section }。
+        // 切章是「先要版本清單、再載入版本」的兩段式非同步流程，中途使用者
+        // 可以再切好幾次；沒有序號就無法辨識遲到的回應屬於哪一次切換。
+        this._sectionReqSeq = 0;
+        this._activeSectionReq = null;
     }
 
     // =========================================================================
@@ -198,6 +203,9 @@ class ManuSoed {
             return;
         }
         const currentSection = this.app.drafterTargetSection.value;
+        // [v2.0] 使用者主動把 2A 草稿放進畫布：作廢在途切章回應，
+        // 否則稍晚到達的 block_loaded 會把剛複製過來的草稿換成舊版本。
+        this._cancelPendingSectionSwitch();
         this.app.selectedSections = new Set([currentSection]);
         this.app.ui.updateDropdownLabel();
 
@@ -266,6 +274,22 @@ class ManuSoed {
         if (this.app.collab) this.app.collab.refreshLock();
     }
 
+    /**
+     * 插入點是否落在畫布內的 <li> 中（含巢狀清單）。
+     * 用來把 indent/outdent 限制在清單情境，理由見 formatText。
+     */
+    _selectionInListItem(canvas) {
+        const selection = window.getSelection();
+        if (!canvas || !selection || selection.rangeCount === 0) return false;
+        let node = selection.getRangeAt(0).commonAncestorContainer;
+        if (node && node.nodeType === 3) node = node.parentNode;   // TEXT_NODE
+        while (node && node !== canvas) {
+            if (node.nodeName === 'LI') return true;
+            node = node.parentNode;
+        }
+        return false;
+    }
+
     formatText(command, val = null, target = 'editor') {
         const canvas = target === 'fusion' ? this.app.fusionCanvas : this.app.editorCanvas;
         if (!canvas) return;
@@ -297,6 +321,18 @@ class ManuSoed {
             cmdVal = '<h2>';
         } else if (command === 'list') {
             cmd = 'insertUnorderedList';
+        } else if (command === 'orderedList') {
+            cmd = 'insertOrderedList';
+        } else if (command === 'indent' || command === 'outdent') {
+            // [v2.0] 清單層級：execCommand('indent') 在清單項目上會產生巢狀
+            // <ol>/<ul>（正是「第 2、3 層」），但在一般段落上產生的是
+            // <blockquote> —— 整段內縮加一條左邊界線，完全不是使用者要的東西，
+            // 而且退不回去（outdent 對 blockquote 的行為各瀏覽器不一致）。
+            // 所以插入點不在 <li> 內時直接拒絕並說明原因，不要靜靜做錯的事。
+            if (!this._selectionInListItem(canvas)) {
+                this.addSystemMessage('請先把游標放在清單項目內，再調整清單層級。');
+                return;
+            }
         }
 
         try {
@@ -318,6 +354,10 @@ class ManuSoed {
         if(cards.length === 0) return;
 
         cards.forEach(card => {
+            // [v2.0] 空卡不存。空白新章也是一張正常的卡片，不濾掉的話
+            // 「切章前強制備份」會替沒寫過半個字的章節生出一個空版本。
+            const body = card.querySelector('.card-content');
+            if (!body || String(body.innerText || '').trim().length === 0) return;
             const btn = card.querySelector('button[title="Save Block"]');
             if (btn) this.cardActionSave(btn);
         });
@@ -337,6 +377,19 @@ class ManuSoed {
         // [v0.6 修正] 改為 innerHTML，確保包含 <img> 標籤的內容能完整存檔
         const content = card.querySelector('.card-content').innerHTML;
         const section = card.getAttribute('data-section') || 'general';
+
+        // [v2.0] 禁止跨章存檔。存檔目標一律取自卡片本身的 data-section，
+        // 所以只要畫布上殘留別章的卡片，按存檔就會替「那一章」建立新版本，
+        // 而使用者看到的章節選單卻是另一章 —— 存進去的東西與他以為的不同。
+        // 切章隔離修好後這種卡片不該存在，這裡是最後一道防線。
+        const current = this._currentSectionId();
+        if (current && section !== current) {
+            this.addSystemMessage(
+                `已阻止跨章存檔：卡片屬於「${this._sectionLabel(section)}」，目前章節是「${this._sectionLabel(current)}」。請重新切換章節後再試。`
+            );
+            return;
+        }
+
         const icon = btn.querySelector('i');
         const originalClass = icon.className;
         icon.className = 'spinner-border spinner-border-sm text-primary';
@@ -478,14 +531,81 @@ class ManuSoed {
             return;
         }
 
+        // NOTE(NOTE-011) 這裡不能用原生 confirm()：它會凍結整個分頁。
+        // 改用與 conflict-bar / peer-update-bar 同一套的非阻塞提示條。
+        this._showDraftRestoreBar(section, draft, restore);
+    }
+
+    /**
+     * 未存草稿的復原提示條（非阻塞）。
+     *
+     * NOTE(NOTE-011) 原本這裡是 `confirm()`。它有兩個問題：
+     *   1. 阻塞：對話框開著時整個分頁停擺，socket 回應全部排隊等待，
+     *      使用者連捲動看一眼「目前內容是什麼」都做不到，卻要當場決定要不要覆蓋它。
+     *   2. 無法自動化驗證：原生對話框不在 DOM 裡，preview_eval 會直接逾時
+     *      （實測連 `1+1` 都不回應），只能重啟瀏覽器才能繼續。
+     * 語意完全不變：復原＝載入草稿；忽略／不理它＝保留目前內容，草稿在下次存檔時被覆蓋。
+     * 不自動消失 —— 這是一個需要使用者決定的提示，不是通知；
+     * 但「不理它」本身就是安全的那一邊（目前內容不動），所以不強迫互動。
+     */
+    _showDraftRestoreBar(section, draft, restore) {
+        const canvas = this.app.editorCanvas;
+        if (!canvas) return;
+        const card = canvas.querySelector(`.editor-card[data-section="${CSS.escape(section)}"]`)
+            || canvas.querySelector('.editor-card');
+        if (!card) return;
+
+        const old = card.querySelector('.draft-restore-bar');
+        if (old) old.remove();
+
         const when = draft._updated_at
             ? new Date(draft._updated_at).toLocaleString()
             : '稍早';
-        if (!confirm(`章節「${section}」有未存檔的自動儲存草稿（${when}）。要復原嗎？\n\n按取消則保留目前內容，草稿會在下次存檔時被覆蓋。`)) {
-            return;
-        }
 
-        restore();
+        const bar = document.createElement('div');
+        bar.className = 'draft-restore-bar';
+        bar.setAttribute('data-section', section);
+        bar.style.cssText = [
+            'background:#e0f2fe',
+            'border:1.5px solid #0284c7',
+            'border-radius:6px',
+            'padding:8px 12px',
+            'margin-bottom:8px',
+            'font-size:0.85em',
+            'display:flex',
+            'align-items:center',
+            'gap:10px',
+            'flex-wrap:wrap',
+        ].join(';');
+
+        const msg = document.createElement('span');
+        // flex-basis 給一個可讀的下限，不用 `flex:1`：2B 欄位可以被拖到很窄，
+        // `flex:1` 允許訊息一路縮，於是一行字被擠成七、八行、整條變成直條
+        // （實測 1440px 視窗下訊息高 147px、整條 166px），按鈕反而不換行。
+        // 空間不夠時該讓按鈕掉到下一行，而不是把文字壓成一條。
+        msg.style.cssText = 'flex:1 1 14rem;min-width:0';
+        msg.innerHTML = `<i class="bi bi-clock-history me-1"></i>`
+            + `「${this._esc(this._sectionLabel(section))}」有未存檔的自動儲存草稿`
+            + `（${this._esc(when)}）。`;
+
+        const btnRestore = document.createElement('button');
+        btnRestore.className = 'btn btn-sm btn-primary fw-bold';
+        btnRestore.textContent = '復原草稿';
+        btnRestore.onclick = () => {
+            bar.remove();
+            restore();
+        };
+
+        const btnKeep = document.createElement('button');
+        btnKeep.className = 'btn btn-sm btn-outline-secondary fw-bold';
+        btnKeep.textContent = '保留目前內容';
+        btnKeep.title = '草稿會在下次存檔時被覆蓋';
+        btnKeep.onclick = () => bar.remove();
+
+        bar.appendChild(msg);
+        bar.appendChild(btnRestore);
+        bar.appendChild(btnKeep);
+        card.insertBefore(bar, card.firstChild);
     }
 
     _flushAutosave() {
@@ -510,27 +630,40 @@ class ManuSoed {
         });
     }
 
+    /**
+     * 把 2B 目前卡片的內容推進 2C 全文畫布。
+     *
+     * NOTE(NOTE-007) 這裡必須是「以章節為鍵的原位 upsert」，不是 append。
+     * 舊版直接 `fusionCanvas.innerHTML += ...`：每修一次 Introduction 再推一次，
+     * 2C 就多長出一段 Introduction，累積成多份重複章節；而且排列順序取決於推送
+     * 先後，與論文真正的章節順序無關。
+     *
+     * 章節身分寫在 data-section。2C 存檔存的就是 fusionCanvas.innerHTML，載入時
+     * 原樣回填（cmd_save_paper / paper_loaded），所以這個屬性會隨 G.Ver 一起往返
+     * ——重整後再推同一章仍然是取代，冪等性不因重新整理而失效。
+     *
+     * 排列以 app.sections 的宣告順序為準，與 2B 章節選單同源。
+     * 沒有 data-section 的既有內容（舊版存下來的裸段落、Word 匯入原文）一律原地
+     * 保留：它們本來就沒有章節身分，靠標題文字猜歸屬只會把使用者的舊稿搬錯位置。
+     */
     cardActionPushToFusion(btn) {
         const card = btn.closest('.editor-card');
         // [v0.6 修正] 改為 innerHTML，確保推入 2C 時圖片不會消失
         const content = card.querySelector('.card-content').innerHTML;
         const section = card.getAttribute('data-section') || 'general';
-        const sectionLabel = this.app.sections.find(s => s.id === section)?.label || section;
-        
-        if(this.app.fusionCanvas) {
-            // [v0.5 修正] 當推入實質內容時，自動打掃掉預設的佔位文字，保持畫面乾淨
-            if (this.app.fusionCanvas.innerHTML.includes('來自 2B 的段落將會依序插入於此處')) {
-                this.app.fusionCanvas.innerHTML = this.app.fusionCanvas.innerHTML.replace(/<p[^>]*>來自 2B 的段落將會依序插入於此處\.\.\.<\/p>/g, '');
-                this.app.fusionCanvas.innerHTML = this.app.fusionCanvas.innerHTML.replace('來自 2B 的段落將會依序插入於此處...', '');
-            }
 
-            const fusionHtml = `
-                <div class="fusion-block mb-4 border-start border-4 border-success ps-3 animate__animated animate__fadeInLeft">
-                    <h5 class="text-success fw-bold"><i class="bi bi-check2-circle me-1"></i>${sectionLabel}</h5>
-                    <div class="fusion-body">${content.replace(/\n/g, '<br>')}</div>
-                </div>
-            `;
-            this.app.fusionCanvas.innerHTML += fusionHtml;
+        if (this.app.fusionCanvas) {
+            this._clearFusionPlaceholder();
+
+            const block = this._ensureFusionBlock(section);
+            const body = block.querySelector('.fusion-body');
+            if (body) body.innerHTML = content.replace(/\n/g, '<br>');
+
+            // 標記這一章對應 2B 的哪一版，讓「2C 這段是從哪來的」可追。
+            const srcVer = this._currentSectionVer(section) || '';
+            block.setAttribute('data-src-ver', srcVer);
+            const verTag = block.querySelector('.fusion-src-ver');
+            if (verTag) verTag.textContent = srcVer ? `S.Ver ${srcVer}` : '未存檔';
         }
 
         const icon = btn.querySelector('i');
@@ -540,6 +673,62 @@ class ManuSoed {
             icon.classList.replace('bi-check-circle-fill', 'bi-arrow-left-circle-fill');
             icon.classList.replace('text-success', 'text-primary');
         }, 1200);
+    }
+
+    /**
+     * 移除 2C 的預設提示段落。
+     *
+     * 用節點比對而不是 innerHTML 字串取代：整片重寫 innerHTML 會把畫布上所有節點
+     * 重建，使用者停在 2C 的插入點會跳掉，既有 fusion-block 的參照也會失效。
+     */
+    _clearFusionPlaceholder() {
+        const canvas = this.app.fusionCanvas;
+        if (!canvas) return;
+        Array.from(canvas.children).forEach((el) => {
+            if (el.classList.contains('fusion-block')) return;
+            if (String(el.textContent || '').includes('來自 2B 的段落將會依序插入於此處')) {
+                el.remove();
+            }
+        });
+    }
+
+    /** 2C 裡代表該章節的區塊；用逐一比對避免章節 id 直接進 CSS 選擇器。 */
+    _findFusionBlock(sectionId) {
+        const canvas = this.app.fusionCanvas;
+        if (!canvas) return null;
+        return Array.from(canvas.querySelectorAll('.fusion-block[data-section]'))
+            .find(b => b.getAttribute('data-section') === sectionId) || null;
+    }
+
+    /**
+     * 取得該章節在 2C 的區塊，沒有就依 canonical 順序插入一個新的。
+     *
+     * 插入位置取「第一個章節序在它之後的區塊」之前，因此無論使用者以什麼順序推送，
+     * 2C 的章節排列永遠等同 app.sections 的宣告順序。找不到後繼者才附加到最後。
+     */
+    _ensureFusionBlock(sectionId) {
+        const existing = this._findFusionBlock(sectionId);
+        if (existing) return existing;
+
+        const canvas = this.app.fusionCanvas;
+        const block = document.createElement('div');
+        block.className = 'fusion-block mb-4 border-start border-4 border-success ps-3';
+        block.setAttribute('data-section', sectionId);
+        block.innerHTML =
+            `<h5 class="text-success fw-bold"><i class="bi bi-check2-circle me-1"></i>`
+            + `${this._esc(this._sectionLabel(sectionId))}`
+            + `<span class="badge bg-light text-secondary fw-normal ms-2 fusion-src-ver"></span></h5>`
+            + `<div class="fusion-body"></div>`;
+
+        const order = (this.app.sections || []).map(s => s.id);
+        const idx = order.indexOf(sectionId);
+        const successor = idx < 0 ? null : Array
+            .from(canvas.querySelectorAll('.fusion-block[data-section]'))
+            .find(b => order.indexOf(b.getAttribute('data-section')) > idx);
+
+        if (successor) canvas.insertBefore(block, successor);
+        else canvas.appendChild(block);
+        return block;
     }
 
     cardActionContext(btn) {
@@ -556,12 +745,170 @@ class ManuSoed {
     }
 
     // =========================================================================
+    // [v2.0] 2B 切章協調器
+    //
+    // 為什麼要有這一層：切章是兩段式非同步流程（cmd_list_blocks → 版本清單 →
+    // cmd_load_block → 內文），而 block_list / block_loaded 同時服務四種來源：
+    // 章節下拉、2A 章節同步、「開啟舊版」modal、以及衝突提示條的重新載入。
+    // 舊版沒有任何請求識別，於是：
+    //   1. 切章後沒人去載入目標章內容 —— 選單與 S.Ver 換了，畫布還是上一章
+    //      （loadMultiSectionContent 只在畫布近乎空白時才畫佔位，舊內容原封不動）。
+    //   2. 快速 A→B→C 時，遲到的 A/B 回應會蓋掉 C。
+    // 這裡用單調遞增的 token 綁定「一次切章」，所有回應都必須核對 token 與
+    // section 才准動畫布。
+    // =========================================================================
+
+    /**
+     * 切換 2B 目前章節的唯一入口。回傳本次請求的 token。
+     *
+     * 呼叫端不要自己 emit cmd_list_blocks，否則就繞過了 stale 防護。
+     */
+    requestSectionSwitch(sectionId) {
+        if (!sectionId) return null;
+
+        const token = `s${++this._sectionReqSeq}`;
+        this._activeSectionReq = { token, section: sectionId };
+
+        // NOTE(NOTE-004) 記住章節必須綁在「唯一入口」，不能留給各呼叫端自己做。
+        // 章節下拉（manuscript_wsui.js 的 sectionDropdownMenu）當初直接呼叫本函式
+        // 而沒有經過 switchChatSection，於是 localStorage 永遠停在上一次 2A 同步
+        // 的章節。實測：切到 results → 重整 → 回到 abstract，使用者的所在位置遺失。
+        // 放在這裡才能同時涵蓋下拉、2A 同步、重連後 resync 三條路徑。
+        this.rememberChatSection(sectionId);
+
+        this.app.selectedSections = new Set([sectionId]);
+        if (this.app.ui && this.app.ui.updateDropdownLabel) {
+            this.app.ui.updateDropdownLabel();
+        }
+
+        // 先隔離再載入：舊章內容必須立刻離開畫布。若等回應到了才清，
+        // 中間這段時間畫面上是「Reference 的標題 + Introduction 的正文」，
+        // 使用者一旦此時按存檔就會把上一章的內容存進來。
+        this._renderSectionLoading(sectionId);
+        if (this.app.sectionVersion) {
+            this.app.sectionVersion.innerHTML = '<option value="">載入中…</option>';
+        }
+
+        if (this.app.socket && this.app.pid) {
+            this.app.socket.emit('cmd_list_blocks', {
+                pid: this.app.pid,
+                section: sectionId,
+                intent: 'section_switch',
+                req_token: token,
+            });
+        }
+        return token;
+    }
+
+    /**
+     * 作廢所有在途的切章回應。
+     *
+     * 給「使用者用別的方式改寫了畫布」的路徑用（建立空白新章、從 2A 複製草稿、
+     * Word 匯入）。少了這一步，先前切章的 block_loaded 晚一步到達時，會把使用者
+     * 剛放進畫布的內容換成該章的舊版本。
+     */
+    _cancelPendingSectionSwitch() {
+        this._activeSectionReq = null;
+    }
+
+    /** 回應是否屬於「目前這一次」切章；不是就必須整份丟棄。 */
+    _isStaleSectionReq(data) {
+        const req = this._activeSectionReq;
+        if (!req || !data) return true;
+        return data.req_token !== req.token || data.section !== req.section;
+    }
+
+    /** 目前 2B 正在檢視的章節 id。 */
+    _currentSectionId() {
+        return Array.from(this.app.selectedSections || [])[0] || null;
+    }
+
+    _sectionLabel(sectionId) {
+        return this.app.sections.find(s => s.id === sectionId)?.label || sectionId;
+    }
+
+    /** 切章進行中的過渡畫面：非 contenteditable，避免使用者對著暫時內容打字。 */
+    _renderSectionLoading(sectionId) {
+        if (!this.app.editorCanvas) return;
+        const label = this._esc(this._sectionLabel(sectionId));
+        this.app.editorCanvas.innerHTML = `
+            <div class="section-loading text-center text-muted p-5" data-section="${this._esc(sectionId)}">
+                <div class="spinner-border spinner-border-sm me-2"></div>正在載入 ${label} …
+            </div>`;
+        this.updateWordCount();
+    }
+
+    /**
+     * 從未存檔的章節：給一張真正空白、可編輯、可存檔的卡片。
+     *
+     * 舊版在這裡畫的是 .section-block 佔位（「Awaiting content draft for …」），
+     * 那不是 .editor-card —— cardActionSave 與 saveAllBlocks 都只認 .editor-card，
+     * 所以全新章節打完字根本存不了，而且佔位文字會被當成正文一起算進字數。
+     */
+    _renderBlankSection(sectionId) {
+        if (!this.app.editorCanvas) return;
+        this.app.editorCanvas.innerHTML = '';
+        if (this.app.sectionVersion) this.app.sectionVersion.value = '';
+        this.app.lastSavedSVer[sectionId] = '';
+        this.insertEditorCard('<p><br></p>', sectionId);
+    }
+
+    /**
+     * 收到屬於目前切章請求的版本清單後決定畫什麼。
+     *   有正式版本 → 載入最新版（清單新版在前，見 ManuscriptIO.list_block_versions）
+     *   沒有版本   → 空白新章畫布
+     * 個人 autosave 草稿一律走既有的詢問復原機制，不直接覆蓋畫布。
+     */
+    _applySectionSwitch(data) {
+        const section = data.section;
+        const versions = Array.isArray(data.versions) ? data.versions : [];
+        const latest = versions.find(v => v && v.filename);
+
+        if (latest) {
+            // 草稿的詢問必須延到 block_loaded 之後。此刻畫布還停在 loading，
+            // _offerDraftRestore 會判定「畫布是空的」而直接復原草稿，接著
+            // 稍晚到達的 block_loaded 又把它蓋成已存檔版本 —— 使用者的未存檔
+            // 內容就這樣無聲消失。
+            if (this._activeSectionReq) {
+                this._activeSectionReq.pendingDraft = data.draft || null;
+            }
+            // 內容要等 block_loaded 才會到；畫布維持 loading，不先畫空白卡，
+            // 否則會先閃一下「空白新章」再跳出正文，看起來像內容被清掉了。
+            this.app.socket.emit('cmd_load_block', {
+                pid: this.app.pid,
+                section: section,
+                filename: latest.filename,
+                intent: 'section_switch',
+                req_token: data.req_token,
+            });
+        } else {
+            // 沒有正式版本：空白畫布是同步畫好的，此時詢問草稿才有正確的
+            // 「畫布是否已有內容」判斷依據。
+            this._renderBlankSection(section);
+            if (data.draft && data.draft.content) {
+                this._offerDraftRestore(section, data.draft);
+            }
+        }
+    }
+
+    /** 切章載入完成後，才處理該章的未存檔草稿（時序理由見 _applySectionSwitch）。 */
+    _consumePendingDraft(section) {
+        const req = this._activeSectionReq;
+        if (!req || req.section !== section) return;
+        const draft = req.pendingDraft;
+        req.pendingDraft = null;
+        if (draft && draft.content) {
+            this._offerDraftRestore(section, draft);
+        }
+    }
+
+    // =========================================================================
     // 畫布內容與字數統計
     // =========================================================================
     loadMultiSectionContent() {
         if (this.app.editorCanvas.innerText.trim().length < 10) {
-            const activeId = Array.from(this.app.selectedSections)[0] || 'abstract';
-            const label = this.app.sections.find(s => s.id === activeId)?.label || activeId;
+            const activeId = this._currentSectionId() || 'abstract';
+            const label = this._sectionLabel(activeId);
             this.app.editorCanvas.innerHTML = `
                 <div class="section-block mb-4" data-section="${activeId}">
                     <h2 class="text-primary border-bottom pb-2 h4">${label}</h2>
@@ -571,8 +918,43 @@ class ManuSoed {
         this.updateWordCount();
     }
 
+    /**
+     * 統計 2B 目前草稿字數。
+     *
+     * NOTE(NOTE-006) 只能數 .card-content，不能數整個畫布的 innerText。
+     * 每張 editor-card 都帶一個章節標籤 badge（見 insertEditorCard），整片數會把
+     * 這些 UI 文字算進去——實測切到從未存檔的 Reference 時，空白畫布顯示
+     * 「1 字」，那個 1 就是標籤本身。存檔取的也是 .card-content，統計口徑
+     * 必須跟儲存口徑一致，否則使用者看到的字數永遠對不上實際存進去的內容。
+     *
+     * 已知限制：以空白切分，中日韓文整段會被算成 1 字。這是既有行為，
+     * 本次不改動，以免所有章節顯示的數字一次全變。
+     */
+    /**
+     * 送給 Drafter 的「目前未存草稿」文字。
+     *
+     * NOTE(NOTE-012) 只取 .card-content，且不再自行截斷、不再宣告版本。
+     * 舊版送的是 `editorCanvas.innerText.substring(0, 3000)`，有三個問題：
+     *   1. innerText 含每張卡片的章節標籤 badge —— UI 文字被當成論文正文送進 LLM
+     *      （同一個取法讓空白畫布顯示「1 字」，見 NOTE-006）。
+     *   2. 3000 字硬截斷，長章節後半段永遠到不了模型。
+     *   3. 同時帶 `s_ver: '0.1'` 死值，讓伺服器讀錯版本。
+     * 已存檔的內容改由伺服器依真實版本讀取（COC bundle），這裡只補「還沒存檔的」
+     * 那一段；預算與截斷都交給伺服器統一處理。
+     */
+    _draftTextForPrompt() {
+        const bodies = this.app.editorCanvas
+            ? this.app.editorCanvas.querySelectorAll('.card-content')
+            : [];
+        return Array.from(bodies).map(el => (el.innerText || '').trim())
+            .filter(Boolean).join('\n\n');
+    }
+
     updateWordCount() {
-        const text = this.app.editorCanvas.innerText || "";
+        const bodies = this.app.editorCanvas
+            ? this.app.editorCanvas.querySelectorAll('.card-content')
+            : [];
+        const text = Array.from(bodies).map(el => el.innerText || '').join('\n');
         const count = text.trim().length === 0 ? 0 : text.trim().split(/\s+/).length;
         if(this.app.wordCountDisplay) this.app.wordCountDisplay.innerText = `Current Draft Words: ${count}`;
     }
@@ -585,7 +967,10 @@ class ManuSoed {
         this.app.socket.emit('cmd_load_chat', { pid: this.app.pid, section: sectionId });
         // 同一個切章入口一併要求版本與自己的 autosave 草稿；舊版只載聊天，
         // 因而後端雖有 _draft__<user>.json，重新進頁仍永遠看不到。
-        this.app.socket.emit('cmd_list_blocks', { pid: this.app.pid, section: sectionId });
+        // [v2.0] 改走 requestSectionSwitch：這條路徑同時是「重整／離頁返回」的
+        // 進入點（init 會在啟動時呼叫一次），必須真的把該章最新版載回畫布，
+        // 只送 cmd_list_blocks 只會填好版本選單而正文永遠空著。
+        this.requestSectionSwitch(sectionId);
     }
 
     _chatSectionStorageKey() {
@@ -927,20 +1312,35 @@ class ManuSoed {
         });
 
         this.app.socket.on('block_list', (data) => {
+            data = data || {};
             // [collab] 伺服器判定這一章不可讀時會帶 forbidden；
             // 代表權限在本次工作階段中被改動過，重抓權限讓 UI 跟上。
-            if (data && data.forbidden && this.app.collab) {
+            if (data.forbidden && this.app.collab) {
                 this.app.collab.loadPermissions();
             }
-            // [v1.8] 同步版本選單（結構化清單，含 from_ver / 作者）。
-            this.renderSectionVersions(data.versions, null);
 
-            // [v1.8] 有草稿代表上次離開時有未存檔內容，主動詢問是否復原。
-            if (data.draft && data.draft.content) {
+            // [v2.0] 只有「切章」這個 intent 才准動畫布。開啟舊版 modal 與衝突列
+            // 的重新載入也走同一個 block_list 事件，若不分辨，光是打開版本清單
+            // 就會把使用者正在編輯的內容洗掉。
+            const isSwitch = data.intent === 'section_switch';
+            const stale = isSwitch && this._isStaleSectionReq(data);
+
+            // [v1.8] 同步版本選單（結構化清單，含 from_ver / 作者）。
+            // [v2.0] 只在回應屬於目前章節時重畫：modal 可以查別章的版本，
+            // 無條件重畫會把 S.Ver 換成別章的版本號。
+            if (!stale && data.section === this._currentSectionId()) {
+                this.renderSectionVersions(data.versions, null);
+            }
+
+            if (isSwitch && !stale) {
+                this._applySectionSwitch(data);
+            } else if (!isSwitch && data.draft && data.draft.content) {
+                // [v1.8] 非切章來源仍保留原本的草稿復原提示。
                 this._offerDraftRestore(data.section, data.draft);
             }
 
             const container = document.getElementById('oldBlockListContainer');
+            if (!container) return;
             container.innerHTML = '';
             if (data.files && data.files.length > 0) {
                 data.files.forEach(file => {
@@ -969,6 +1369,23 @@ class ManuSoed {
         });
 
         this.app.socket.on('block_loaded', (data) => {
+            data = data || {};
+            // [v2.0] 帶 req_token 的是切章自動載入，必須核對是不是「這一次」切章；
+            // 沒帶的是使用者自己點版本清單（含跨章開啟舊版），維持原本行為。
+            const fromSwitch = data.req_token != null;
+            if (fromSwitch && this._isStaleSectionReq(data)) return;
+
+            if (!data.ok) {
+                // 自動載入失敗（權限剛被撤、版本檔被刪）時不能停在 loading，
+                // 否則畫布永遠轉圈且無法編輯。退回空白新章讓使用者還能作業。
+                if (fromSwitch) {
+                    this.addSystemMessage(`無法載入 ${this._sectionLabel(data.section)} 的最新版本，已開啟空白畫布。`);
+                    this._renderBlankSection(data.section);
+                    this._consumePendingDraft(data.section);
+                }
+                return;
+            }
+
             if(data.ok && this.app.editorCanvas) {
                 this.app.selectedSections = new Set([data.section]);
                 this.app.ui.updateDropdownLabel();
@@ -981,19 +1398,33 @@ class ManuSoed {
                 if (this.app.sectionVersion) this.app.sectionVersion.value = vStr;
                 this.app.lastSavedSVer[data.section] = vStr;
                 this.addSystemMessage(`已載入 2B 段落版本 V${vStr}。存檔會建立新版，此版保留不動。`);
+
+                // NOTE(NOTE-010) 版本換了，留言也要跟著換。留言綁 section + S.Ver，
+                // 這裡是「目前檢視版本」真正改變的唯一時點（切章與手動選版本都會
+                // 走到這）；不在這裡刷新，側欄就會繼續顯示上一版的意見。
+                if (this.app.collab) {
+                    this.app.collab.refreshCommentBadge();
+                    const panel = document.getElementById('chapterCommentPanel');
+                    if (panel && panel.style.display === 'flex') {
+                        this.app.collab.refreshComments();
+                    }
+                }
+
+                // [v2.0] 正文就位後才問草稿，讓「畫布已有內容」的判斷成立而走詢問路徑。
+                if (fromSwitch) this._consumePendingDraft(data.section);
             }
         });
     }
 
     createNewSection(secId) {
+        this._cancelPendingSectionSwitch();
         this.app.selectedSections = new Set([secId]);
         this.app.ui.updateDropdownLabel();
-        this.app.editorCanvas.innerHTML = '';
         // 新草稿沒有來源版本；存檔時 from_ver 送 null，伺服器指派 max+0.1。
-        if (this.app.sectionVersion) this.app.sectionVersion.value = '';
-        this.app.lastSavedSVer[secId] = '';
-        this.loadMultiSectionContent();
-        
+        // [v2.0] 改用 _renderBlankSection：舊做法畫的是唯讀佔位區塊，
+        // 不是 .editor-card，所以「建立空白新草稿」後打的字根本存不了。
+        this._renderBlankSection(secId);
+
         const modalEl = document.getElementById('oldBlockModal');
         if (modalEl) {
             const instance = bootstrap.Modal.getOrCreateInstance(modalEl);
@@ -1022,11 +1453,23 @@ class ManuSoed {
         }
     }
 
+    /**
+     * 畫布上是否有「使用者真的寫了東西」的卡片。
+     *
+     * 不能只看 .editor-card 的數量：空白新章現在也是一張正常的（空）卡片，
+     * 只數張數會把它當成有內容，於是切章前先「強制備份」，替空章生出一個
+     * 沒有任何內容的版本號。也不能只比對佔位字串 —— 那份清單每加一種佔位
+     * 畫面就要跟著改，漏一個就退回舊行為。
+     */
+    _editorHasContent() {
+        const canvas = this.app.editorCanvas;
+        if (!canvas) return false;
+        return Array.from(canvas.querySelectorAll('.editor-card .card-content'))
+            .some(el => String(el.innerText || '').trim().length > 0);
+    }
+
     openOldBlockFlow() {
-        const cards = this.app.editorCanvas.querySelectorAll('.editor-card');
-        const rawText = this.app.editorCanvas.innerText.trim();
-        
-        if (cards.length === 0 || rawText.includes("Awaiting content draft for") || rawText.includes("Select a section above")) {
+        if (!this._editorHasContent()) {
             this.renderOldBlockSelect();
             this.fetchOldBlocks();
             bootstrap.Modal.getOrCreateInstance(document.getElementById('oldBlockModal')).show();
@@ -1207,7 +1650,7 @@ class ManuSoed {
         let displayPrompt = txt;
         if (this.app.currentAttachment) { displayPrompt += `<br><small class="text-warning"><i class="bi bi-paperclip"></i> 附加檔案: ${this.app.currentAttachment.name}</small>`; }
         this.addBubble('user', displayPrompt);
-        const payload = { msg: txt, context: this.app.editorCanvas.innerText.substring(0,3000), target_lang: targetLang, attachment: this.app.currentAttachment, import_type: this.app.currentImportType, pid: this.app.pid, title: this.app.paperTitleInput.value.trim(), section: targetSection, s_ver: '0.1' };
+        const payload = { msg: txt, context: this._draftTextForPrompt(), target_lang: targetLang, attachment: this.app.currentAttachment, import_type: this.app.currentImportType, pid: this.app.pid, title: this.app.paperTitleInput.value.trim(), section: targetSection };
         this.app.socket.emit('chat_message', payload);
         this.requestPending = true;
         this._setJobControls(true, false);
@@ -1230,7 +1673,7 @@ class ManuSoed {
         const currentTitle = this.app.paperTitleInput.value.trim() || 'Untitled';
         const refineMsg = `請撰寫草稿：一篇論文 ${targetLabel}，title是『${currentTitle}』，${targetLabel}字數300字`;
         this.addBubble('user', `[Auto Draft Command] <br><span class="text-info">${refineMsg}</span>`);
-        this.app.socket.emit('chat_message', { msg: refineMsg, context: this.app.editorCanvas.innerText.substring(0,3000), target_lang: targetLang, pid: this.app.pid, title: currentTitle, section: targetSection, s_ver: '0.1' });
+        this.app.socket.emit('chat_message', { msg: refineMsg, context: this._draftTextForPrompt(), target_lang: targetLang, pid: this.app.pid, title: currentTitle, section: targetSection });
         this.requestPending = true;
         this._setJobControls(true, false);
         this.showTypingIndicator();

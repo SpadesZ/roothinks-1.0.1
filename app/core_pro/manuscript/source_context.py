@@ -109,10 +109,19 @@ def _estimate_tokens(text: str) -> int:
     return int(cjk * 1.5 + non_cjk * 0.35)
 
 
+_TRUNCATION_MARKER = "\n...[context truncated by token budget]"
+
+
 def _truncate_to_budget(text: str, budget_tokens: int) -> str:
     """
-    二分搜尋截斷文字至 budget_tokens 以內。
-    與 Task8Drafter._truncate_to_budget 邏輯相同。
+    二分搜尋截斷文字至 budget_tokens 以內。**回傳值含提示字串在內都不得超過預算。**
+
+    原本是先用整個 budget 做二分搜尋、**再把提示字串接上去**，於是回傳值必然超標
+    （實測：budget=500 的中文輸入回 513 tokens、英文回 514）。當呼叫端拿這個函式
+    當預算邊界用時，每一段都會固定溢出十幾個 token，段數一多就足以撞破上限。
+    修法是把提示字串的成本先扣掉再搜尋 —— 提示字串本身也要占預算。
+
+    同樣的缺陷在 Task8Drafter._truncate_to_budget 有一份複製，已一併修正。
     """
     src = str(text or "")
     if budget_tokens <= 0:
@@ -120,17 +129,27 @@ def _truncate_to_budget(text: str, budget_tokens: int) -> str:
     if _estimate_tokens(src) <= budget_tokens:
         return src
 
+    # 預算連提示字串都放不下時，寧可不加提示也不能超標：
+    # 超標會讓上游的總量結算失準，而那正是這個函式存在的理由。
+    marker = _TRUNCATION_MARKER
+    if _estimate_tokens(marker) >= budget_tokens:
+        marker = ""
+
+    # 二分搜尋的判斷式必須套在**最終回傳的字串**上（cand + marker），
+    # 不能只搜尋 cand 再事後扣掉 marker 的估算成本：_estimate_tokens 以 int()
+    # 取整，int(a) + int(b) 可能比 int(a+b) 小 1，於是「扣掉成本」的寫法會固定
+    # 差一個 token（實測 budget=500 回 501）。對最終字串搜尋才是恆真的。
     lo, hi = 0, len(src)
     ans = ""
     while lo <= hi:
         mid = (lo + hi) // 2
-        cand = src[:mid]
+        cand = src[:mid] + marker
         if _estimate_tokens(cand) <= budget_tokens:
             ans = cand
             lo = mid + 1
         else:
             hi = mid - 1
-    return ans + "\n...[context truncated by token budget]"
+    return ans
 
 
 def _extract_paper_text(full_text_path: str) -> str:
