@@ -493,11 +493,38 @@ class ManuSoed {
      */
     scheduleAutosave() {
         if (!this.app.pid) return;
+        // NOTE(NOTE-023) 程式化渲染畫布不是「使用者在編輯」，不得寫草稿。
+        if (this._programmaticRender) return;
         clearTimeout(this._autosaveTimer);
         this._autosaveTimer = setTimeout(() => this._flushAutosave(), 1500);
 
         const statusEl = document.getElementById('autosaveStatus');
         if (statusEl) statusEl.textContent = '編輯中…';
+    }
+
+    /**
+     * 在「程式把內容畫進畫布」期間讓 autosave 靜音。
+     *
+     * NOTE(NOTE-023): `insertEditorCard()` 用 `document.execCommand('insertHTML')`，
+     * 而 execCommand 在 contenteditable 上會派發 **isTrusted 的 input 事件**
+     * （瀏覽器標準行為，不是本專案的 bug）。autosave 綁在 editorCanvas 的 input 上，
+     * 於是每一次切章渲染都被當成使用者編輯，寫出一份 `_draft__1.json`。
+     * 實機證據見 docs/HANDOFF.md §3.18。
+     *
+     * **只包切章的渲染路徑，不包 `insertEditorCard()` 本身**：插入素材、
+     * Word 匯入、2A 複製草稿、使用者按「復原草稿」也走那個函式，
+     * 那些是真的使用者動作，草稿該存。包錯層會讓真正的編輯存不進去。
+     *
+     * execCommand 的 input 事件是同步派發的（實機堆疊裡 insertEditorCard
+     * 就在 listener 的呼叫堆疊上），所以 try/finally 這個視窗蓋得到它。
+     */
+    _renderWithoutAutosave(render) {
+        this._programmaticRender = true;
+        try {
+            return render();
+        } finally {
+            this._programmaticRender = false;
+        }
     }
 
     /**
@@ -850,7 +877,8 @@ class ManuSoed {
         this.app.editorCanvas.innerHTML = '';
         if (this.app.sectionVersion) this.app.sectionVersion.value = '';
         this.app.lastSavedSVer[sectionId] = '';
-        this.insertEditorCard('<p><br></p>', sectionId);
+        // NOTE(NOTE-023): 空白新章是程式畫的，不是使用者打的字。
+        this._renderWithoutAutosave(() => this.insertEditorCard('<p><br></p>', sectionId));
     }
 
     /**
@@ -1391,7 +1419,10 @@ class ManuSoed {
                 this.app.ui.updateDropdownLabel();
                 this.app.editorCanvas.innerHTML = '';
 
-                this.insertEditorCard(data.content.content, data.section);
+                // NOTE(NOTE-023): 載入既有版本同樣是程式化渲染，不得寫草稿。
+                this._renderWithoutAutosave(
+                    () => this.insertEditorCard(data.content.content, data.section)
+                );
                 // [v1.8] 版號優先讀 ver 欄位；舊檔沒有時退回 version（帶 V 前綴）。
                 const vStr = data.content.ver
                     || String(data.content.version || '').replace(/^[Vv]/, '');

@@ -452,7 +452,8 @@ class TestCacheBusting:
     def test_changed_assets_are_cache_busted(self):
         """?v= 沒 bump 的話瀏覽器吃舊檔：測試全綠，使用者看到的還是舊行為。"""
         html = MANU_HTML.read_text(encoding="utf-8")
-        for asset, minimum in (("manuscript_soed.js", 2.3), ("manuscript_wsui.js", 1.5),
+        # manuscript_soed.js 3.0：NOTE-023 的 autosave 靜音（切章不再產生假草稿）。
+        for asset, minimum in (("manuscript_soed.js", 3.0), ("manuscript_wsui.js", 1.5),
                                ("manuscript.css", 1.4)):
             # 必須錨定在 url_for(...) 標籤上。寬鬆的 `{asset}[^?]*\?v=` 會從註解裡
             # 提到的檔名一路吃到後面某個不相干的 ?v=，比出來的版本號是別的資產的。
@@ -498,3 +499,52 @@ class TestDraftRestoreIsNonBlocking:
         body = _method_body(_soed(), "_showDraftRestoreBar")
         assert "this._esc(when)" in body
         assert "this._esc(this._sectionLabel(section))" in body
+
+
+class TestSwitchingDoesNotFabricateDrafts:
+    """
+    NOTE-023：切章渲染不得產生自動存檔草稿。
+
+    實機根因（瀏覽器 runtime 堆疊，非推測）：
+      _applySectionSwitch → _renderBlankSection → insertEditorCard
+        → document.execCommand('insertHTML') 派發 **isTrusted 的 input 事件**
+        → manuscript_ws.js 的 editorCanvas input listener → scheduleAutosave()
+        → 1.5s 後 _flushAutosave() → 寫出 _draft__1.json
+
+    症狀：只切過去看一眼、一個字都沒打，下次進來就被提示
+    「本章有未存檔的自動儲存草稿」；空白章甚至會自動復原一份空草稿並
+    邀請使用者「建立為正式版本」（會產生一個空版本）。
+    """
+
+    def test_autosave_is_muted_during_programmatic_render(self):
+        body = _method_body(_soed(), "scheduleAutosave")
+        assert "this._programmaticRender" in body, \
+            "scheduleAutosave 沒有檢查程式化渲染旗標，切章仍會寫草稿"
+
+    def test_flag_is_always_cleared(self):
+        """少了 finally，任何一次渲染拋例外就會讓 autosave 從此永久靜音 —— 那比原本的 bug 更糟。"""
+        body = _method_body(_soed(), "_renderWithoutAutosave")
+        assert "finally" in body, "_renderWithoutAutosave 沒有 finally，例外會讓旗標卡在 true"
+        assert "this._programmaticRender = false" in body
+
+    def test_section_render_paths_are_wrapped(self):
+        """空白新章與載入既有版本，兩條切章渲染路徑都要包住。"""
+        blank = _method_body(_soed(), "_renderBlankSection")
+        assert "_renderWithoutAutosave" in blank, "空白新章的渲染沒有靜音 autosave"
+        src = _code_only(_soed())
+        assert "_renderWithoutAutosave(\n                    () => this.insertEditorCard(data.content.content" in src \
+            or "_renderWithoutAutosave(() => this.insertEditorCard(data.content.content" in src, \
+            "block_loaded 載入既有版本的渲染沒有靜音 autosave"
+
+    def test_user_initiated_inserts_are_not_muted(self):
+        """
+        對照組：把 insertEditorCard 整個封鎖是**錯的**修法。
+        插入素材、Word 匯入、2A 複製草稿、使用者按「復原草稿」都走同一個函式，
+        那些是真的使用者動作，草稿必須照存。包錯層會讓真正的編輯存不進去。
+        """
+        insert_body = _method_body(_soed(), "insertEditorCard")
+        assert "_programmaticRender = true" not in insert_body, \
+            "旗標被設在 insertEditorCard 內部，使用者主動插入的內容也會失去 autosave"
+        restore = _method_body(_soed(), "_offerDraftRestore")
+        assert "_renderWithoutAutosave" not in restore, \
+            "使用者按下『復原草稿』之後的內容應該可以被 autosave 接手"

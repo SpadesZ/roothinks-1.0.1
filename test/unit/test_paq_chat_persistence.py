@@ -32,6 +32,7 @@
 #   python -m pytest test/unit/test_paq_chat_persistence.py -q
 # ---------------------------------------------------------------------------
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -226,6 +227,33 @@ def test_corrupt_session_file_does_not_hide_the_rest(app, tmp_path, fake_chat):
     assert resp.status_code == 200
     records = resp.get_json()["data"]["records"]
     assert [r["user"] for r in records] == ["好的那一句"]
+
+
+class TestPaqCacheBusting:
+    """
+    改了 paq_*.js 卻沒 bump paq.html 的 `?v=`，瀏覽器會吃舊檔：
+    測試全綠、使用者看到的還是舊行為。本輪實際踩到（見 HANDOFF §3.15）。
+
+    既有的 `test_manuscript_section_switch.py::TestCacheBusting` 只涵蓋
+    manuscript_workspace.html，而且它比對的是 `url_for(...)` 形式；
+    paq.html 用的是純路徑 `/static/js/...`，那支測試看不到這裡。
+    """
+
+    PAQ_HTML = PROJECT_ROOT / "app" / "templates" / "paq.html"
+
+    @pytest.mark.parametrize("asset,minimum", [
+        ("paq_initial.js", 0.3),   # 本輪加入 loadChatHistory() 呼叫
+        ("paq_interact.js", 0.2),  # 本輪新增 loadChatHistory() 與 persisted 提示
+    ])
+    def test_changed_paq_assets_are_cache_busted(self, asset, minimum):
+        html = self.PAQ_HTML.read_text(encoding="utf-8")
+        # 錨定在 script src 上。寬鬆的 `{asset}.*\?v=` 會從別處的檔名一路吃到
+        # 後面某個不相干資產的版本號（manuscript 那支測試已經踩過這個坑）。
+        m = re.search(rf'src="/static/js/{re.escape(asset)}\?v=([\d.]+)"', html)
+        assert m, f"paq.html 找不到 {asset} 的 ?v= 標記"
+        assert float(m.group(1)) >= minimum, (
+            f"{asset} 的 ?v={m.group(1)} 低於本次變更的 {minimum}，瀏覽器會吃到舊檔"
+        )
 
 
 def test_viewer_cannot_chat_but_can_read_history(app, tmp_path, fake_chat):

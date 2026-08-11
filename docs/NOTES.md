@@ -546,3 +546,44 @@
   taxonomy/cube 到位、存檔失敗回 persisted=false、損毀檔不吃掉其餘歷史、
   viewer 不能發話但讀得到）。前端 `loadChatHistory()` 的 DOM 行為**未經瀏覽器實測**，
   見 docs/HANDOFF.md §3.15。
+
+## NOTE-023：程式化渲染畫布不得觸發 autosave
+
+- 決策日期：2026-08-11
+- 適用範圍：`manuscript_soed.js` 的 `scheduleAutosave()`、
+  `_renderWithoutAutosave()`、`_renderBlankSection()`、`block_loaded` 處理。
+- 問題背景（**瀏覽器 runtime 堆疊實測，不是推測**）：
+  只切章、一個字都沒打，磁碟上就會出現 `_draft__1.json`。呼叫鏈是
+  ```
+  _applySectionSwitch → _renderBlankSection → insertEditorCard
+    → document.execCommand('insertHTML')
+    → 派發 isTrusted 的 input 事件（瀏覽器標準行為，不是本專案的 bug）
+    → manuscript_ws.js 的 editorCanvas input listener
+    → scheduleAutosave() → 1.5s → _flushAutosave() → 寫檔
+  ```
+  使用者看得到的後果：下次進該章會被提示「本章有未存檔的自動儲存草稿，
+  要復原嗎」，而那份草稿與已存版本**逐字相同**、且他從沒編輯過；
+  空白章甚至會**自動復原**一份空草稿並邀請「按存檔可將它建立為正式版本」——
+  照做就產生一個空的正式版本。
+- 決策：新增 `_renderWithoutAutosave(render)`，在程式化渲染期間設旗標，
+  `scheduleAutosave()` 見到旗標直接 return。只套用在**切章的兩條渲染路徑**：
+  `_renderBlankSection()` 與 `block_loaded` 載入既有版本。
+- 原因：
+  - `execCommand` 的 input 事件是**同步**派發的（實機堆疊裡 `insertEditorCard`
+    就在 listener 的呼叫堆疊上），所以 try/finally 這個視窗蓋得到它。
+  - `finally` 是必要的，不是防禦性寫法：少了它，任一次渲染拋例外就會讓旗標
+    卡在 true、autosave **從此永久靜音** —— 那比原本的 bug 嚴重得多。
+- **否決方案：直接在 `insertEditorCard()` 內部封鎖。**
+  否決理由：插入素材、Word 匯入、2A 複製草稿、使用者按「復原草稿」
+  都走同一個函式，那些是真的使用者動作，草稿必須照存。
+  包錯層會讓真正的編輯存不進去 —— 用「沒有草稿」換「沒有草稿」。
+- 不變量：
+  1. 旗標一定要在 `finally` 清掉。
+  2. 判斷依據是「這段渲染是誰發動的」，不是「內容有沒有變」。
+     用內容比對當判準的話，使用者把內容改回原狀時就無法清掉舊草稿。
+  3. 使用者主動觸發的插入路徑不得靜音。
+- 驗證：`test/unit/test_manuscript_section_switch.py::TestSwitchingDoesNotFabricateDrafts`
+  （含「不得包在 insertEditorCard 內」與「復原草稿後仍可 autosave」兩個對照組）。
+  實機 A/B（隔離實例）：切兩章不打字 → 草稿檔 **0 個**（修前為 2 個）；
+  接著用 `execCommand('insertText')`（同樣是 isTrusted input）真的打字 →
+  草稿**照常產生**且含打進去的字，UI 顯示「已自動儲存」。

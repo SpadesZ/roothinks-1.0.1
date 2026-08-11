@@ -1610,3 +1610,252 @@ A/B 殘留（rg）                           →  無
 - 對話**沒有**接進 COC／Drafter，這是刻意的（NOTE-022）。
 - candidate migration 仍未做，`library.json` 仍是 0 個，**部署仍封鎖**。
 - P1 全部未動；VM（34.80.240.29）本輪一次都沒碰；未 push。
+
+## 3.16 乾淨 worktree 驗證與瀏覽器實測（2026-08-11，同輪最後）
+
+### 我上一個 commit 是回歸，已重做
+
+`2c93808` 在**乾淨 worktree** 驗證 `FAIL (0 header, 18 NOTE)`，而它的 parent
+`193393a` 是 `ok` —— **是我造成的**。真因：我把 ledger（`docs/NOTES.md`）commit 在
+它所描述的程式碼之前，於是 NOTE-004~020 全部「defined but never referenced」；
+再加上我自己在 HANDOFF 內文寫了一次完整的 NOTE 引用字面，多一條
+`NOTE-042: referenced but not defined`。
+
+**這裡要記的是流程，不是 bug**：我 commit 前只跑了 worktree 模式的 audit（會看到
+未追蹤檔，所以是綠的），**沒有跑 `--cached`**，而 `--cached` 正是為了問
+「即將發布的那棵樹」而存在的、我自己在同一輪寫的東西。
+**擁有 gate 不等於用了 gate。commit 前跑 `--cached`，commit 後在
+detached worktree 實際 checkout 再跑一次。**
+
+處置：`git reset --soft 193393a` 後重做成單一自洽 commit `328105f`（未 push）。
+乾淨 worktree checkout 實測：`source contract: ok, 261 files`、`--self-test ok`。
+
+### 乾淨 worktree **跑不了測試**（既有缺陷，非本輪）
+
+```
+cd <detached worktree at 328105f> && pytest test/unit tests -q
+  → 6 failed, 532 passed, 306 errors
+  → FileNotFoundError: Database file not found in: [<wt>/data/roothinks.db, ...]
+     fix_db_schema.py:66
+```
+
+`data/` 是 gitignored 且零 tracked 檔，所以新 checkout 沒有它；而
+`create_app()` 一開機就呼叫 `fix_db_schema`，後者在 DB 檔不存在時直接 raise。
+**在 193393a 上實測同樣失敗**，所以是既有缺陷。
+
+第二段：把空 DB 檔生出來之後，`fix_schema()` 又在 `projects` 表不存在時
+`RuntimeError("Missing 'projects' table")`。合起來就是
+**全新資料庫既跑不了測試、也開不了機**，必須先用裸 Flask app 跑一次
+`db.create_all()` 才能 bootstrap（本輪的 seed 腳本就是這樣繞的）。
+**這對「部署到新機器」是直接風險**，VM 目前能跑只是因為它的 `data/` 早就存在。
+
+### 瀏覽器驗收的隔離作法（可重複）
+
+不要用正式 repo 起 server：`fix_db_schema` 的路徑相對它自己的檔案解析，
+會動到正式 `data/roothinks.db`。作法是 **`git worktree` 出一份 detached checkout，
+讓它有自己的 `data/`**，`app.root_path` 與 migration 路徑就都落在那份裡面。
+帳號是腳本自建的測試帳號（`*@preview.local`），與擁有者真實帳密無關；
+`AUTH_MODE=session` 是必要的，否則角色守衛直接放行、ACL 驗收會假綠。
+
+### PAQ 2A 實機結果
+
+`loadChatHistory()` **確實有效**，瀏覽器 A/B：
+
+| | `#chat-history` 氣泡 | `chatSessionHistory` |
+|---|---|---|
+| 有 `loadChatHistory()` | 5（1 靜態 + 4 還原） | 4 |
+| 拿掉該行 | 1（只剩靜態 System） | 0 |
+
+UTF-8 正確、`<script>alert(1)</script>` 被轉義成 `&lt;script&gt;` 未執行、
+瀏覽器實際載入的是 `paq_initial.js?v=0.3` 與 `paq_interact.js?v=0.2`。
+使用者實打實送出一句時：訊息進 user 氣泡、伺服器回 `LLM_NOT_BOUND`、
+UI 顯示錯誤而非假成功或卡住，失敗那輪也沒被塞進 `chatSessionHistory`。
+
+**寫入→重整→讀回的「寫入」半段在瀏覽器沒有走完**：這個隔離實例沒有綁模型。
+契約層有 `test_chat_turn_is_written_to_disk`（走真實 HTTP、斷言檔案落地與 actor），
+但那不等於瀏覽器實測。要補完必須綁一個 stub provider。
+
+### **實機才抓得到的三個既有缺陷**（都不是本輪造成）
+
+1. **`/paq/<pid>` 對含連字號的 pid 全部失效。**
+   `paq_initial.js` 的 `path.match(/\/([A-Za-z0-9]{6,20})\/?$/)` 不含 `-`，
+   而真實 pid 就長成 `ULQ8F6-p`、`DSPWVD-p`。比對結果三個全 false，
+   `currentPid` 為 null ⇒ alert 後 `location.href='/'`，**被靜默踢回 Dashboard**。
+   目前是潛在缺陷：UI 一律用 `/paq?pid=...`（`dashboard.js:282-283`、
+   `_navbar.html:37`、`_header.html:125`），但書籤或分享 RESTful 網址就會踩到。
+
+2. **一顆格式不對的 voxel 會讓整個頁面顯示「Project Name: Load Failed」。**
+   `cube_renderer.js:220` 是 `v.val.toFixed(2)`；voxel 缺 `val` 就拋例外，
+   而 `renderVoxels` 是在 `loadPaqStatus()`（`paq_project.js:237`）裡呼叫的，
+   例外一路冒到該函式的 catch，於是 `header-pname` 被寫成 Load Failed。
+   **壞的是 3D renderer，畫面卻說專案名稱載入失敗** —— API 實測回 200 且有 name。
+   這是錯誤歸因，會讓下一個人往完全錯的方向查。
+
+3. **formal 專案的 PAQ 2A 對話在 UI 上完全不能用。**
+   `lockInterfaceForFormal()`（`paq_project.js:276`）做
+   `querySelectorAll('input').forEach(el => el.disabled = true)`，
+   **連 `#chat-input` 一起停用**。該函式的意圖是鎖 taxonomy 編輯。
+   是否要放行 chat 是產品決策，本輪不擅自改。
+   （驗收因此改在 provisional 專案做。）
+
+### 方法論：我第一次看漏了，是擁有者指出來的
+
+我第一輪只查了 `document.getElementById('chat-history')` 就宣告 PAQ 驗收通過，
+**畫面上同時寫著「Project Name ⚠ Load Failed」與「Principal Investigator Unknown」，
+我完全沒看到**，是擁有者截圖指出來的。
+
+教訓：**用 DOM 查詢做「實機驗收」，等於把視野縮成自己預設要看的那一個元素，
+和只看 gate 綠燈是同一種錯誤。** 至少要做一次整頁掃描
+（`document.body.innerText`、`preview_snapshot`、或截圖），
+而且要主動找「有沒有哪裡寫著失敗／未知／空白」。
+`#chat-input` 當時回報 `disabled: true`，我查到了卻沒解讀 —— 拿到反常數值就要當場追。
+
+## 3.17 Reference 切章實機驗收（2026-08-11，同輪最後）
+
+### 環境設定的坑：少一個 env，整條切章路徑根本沒送出去
+
+第一次開手稿工作檯，連線徽章停在 **Offline**、S.Ver 卡在「載入中…」。
+console 只有 `[Socket] connect_error: xhr post error`，network 是
+`POST /socket.io/... → 400`，**兩者都看不出原因**。真因在伺服器 log：
+
+```
+ERROR engineio.server: http://127.0.0.1:5601 is not an accepted origin.
+```
+
+`CORS_ALLOWED_ORIGINS` 沒設。這是驗收環境設定，不是產品缺陷，但要記：
+**socket 類問題不要只看瀏覽器端**，`connect_error` 與 400 都不帶原因，
+真因只在 server log。launcher 已補該 env。
+
+（另一個小坑：`preview_click` 對下拉項目失敗那一次，頁面被帶回 Dashboard。
+改用元素自身的 `.click()` 就穩定 —— 仍走選單的真實 handler，不是直接呼叫函式。）
+
+### 驗收結果：要求的六項一致性 ＋ 五個邊界，全部通過
+
+種的形狀：`introduction` 兩版、`results` 一版、`reference` **零版**。
+用 `ManuscriptIO.save_block_version()`（app 自己的 writer）種，不手工組檔案。
+
+| 情境 | 2B 標題 | 2A target | data-section | S.Ver | 畫布 |
+|---|---|---|---|---|---|
+| 切到 Introduction（有版本） | Introduction | introduction | introduction | `V0.2 ← 0.1 · pi@…`／`V0.1 · pi@…` **最新在最前、帶血緣** | `INTRO-V2`（不是 V1） |
+| 切到 Reference（**空白**） | Reference | reference | reference | 尚無版本 | 空的**可編輯編輯卡**，非 spinner、非 placeholder |
+| 切章瞬間 | 目標章 | 目標章 | 目標章 | 載入中… | 「正在載入 X …」且 **非 contenteditable** |
+| **快速切章**（intro→ref 連續） | Reference | reference | reference | 尚無版本 | 無 `INTRO-V2` 殘留 ⇒ **stale 回應被丟棄** |
+| **重整** | Reference | reference | reference | 尚無版本 | Reference ⇒ **位置持久化成功** |
+
+`collabRoleBadge` 全程「擁有者」；每一次切換後掃全頁文字，
+`Failed／Error／Unknown／失敗／undefined` **零命中**。
+
+「不得改動其他章」以磁碟逐檔 SHA-256 驗證：切了五、六次之後
+`introduction` 仍是 `V0.1/V0.2`、`results` 仍是 `V0.1`、`reference` 仍然沒有任何版本檔，
+**沒有任何版本檔被新增或修改**。
+
+### 但抓到一個使用者看得到的既有缺陷：**光是切過去看，就會產生草稿**
+
+磁碟比對時發現多出 `_draft__1.json`。隔離驗證（決定性）：
+切到**從未造訪過**的 `method`、**一個字都沒打**，
+`data/<pid>/manuscript/block/method/_draft__1.json` 立刻出現。
+
+實際內容：
+
+```
+abstract/_draft__1.json      content = "<p><br></p>"                 ← 從沒打過字
+method/_draft__1.json        content = "<p><br></p>"                 ← 從沒打過字
+reference/_draft__1.json     content = "<p><br></p>"                 ← 從沒打過字
+introduction/_draft__1.json  content = V0.2 的正文，**逐字相同**      ← 從沒編輯過
+```
+
+使用者看得到的後果（實機截到的文字）：
+
+```
+「Introduction」有未存檔的自動儲存草稿（2026/8/11 下午11:39:33）。[復原草稿] [保留目前內容]
+已復原「reference」的自動儲存草稿。按存檔可將它建立為正式版本。
+```
+
+也就是：
+1. 使用者被要求對**自己從未寫過**、且與已存版本逐字相同的「草稿」做決定。
+2. 空白章節會被**自動復原**一份空草稿，並被邀請「建立為正式版本」——
+   照做就會產生一個空的正式版本。
+
+**尚未定案的是觸發點。** autosave 的唯一綁定是
+`manuscript_ws.js:174` 的 `editorCanvas.addEventListener('input', ...)`，
+而程式化寫 `innerHTML` 不會觸發 `input`；伺服器端
+`ManuscriptIO.load_draft()` 也確認是只讀。所以還有第三個地方在觸發，
+下一輪要從「切章渲染完成後有誰動了畫布」往下找
+（`_flushAutosave` 加一行 `console.trace()` 最快）。
+
+**這不是本輪造成的**：`git diff 193393a 328105f -- app/static/js/manuscript_ws.js`
+沒有動到 autosave 的綁定或呼叫點。
+
+### 沒做
+
+- PAQ 2A 的「寫入」半段仍未在瀏覽器走完（隔離實例沒綁模型，回 `LLM_NOT_BOUND`）。
+- 上述草稿缺陷**只診斷未修**，觸發點未定案。
+- 部署（第 5 步）未做：VM 未碰、雜湊未比對、Gunicorn 未重啟。
+
+## 3.18 假草稿根因定位與修復（2026-08-11，同輪最後）
+
+### 定位方法：runtime wrap，不改原始碼
+
+`console.trace()` 要改檔重啟；直接在瀏覽器把方法包起來更快也更誠實：
+
+```js
+const orig = wsApp.soed.scheduleAutosave.bind(wsApp.soed);
+wsApp.soed.scheduleAutosave = function (...a) {
+    window.__traces.push({stack: new Error('t').stack}); return orig(...a);
+};
+// 另外攔 editorCanvas 的 input，記下 e.isTrusted
+```
+
+切到**從未造訪過**的 `discussion`、一個字都沒打，抓到三筆，答案就在第一筆：
+
+```
+INPUT_EVENT  isTrusted: true
+  at ManuSoed.insertEditorCard      (manuscript_soed.js:267)
+  at ManuSoed._renderBlankSection   (manuscript_soed.js:853)
+  at ManuSoed._applySectionSwitch   (manuscript_soed.js:887)
+scheduleAutosave  section: discussion
+  at HTMLDivElement.<anonymous>     (manuscript_ws.js:178)
+_flushAutosave    section: discussion
+```
+
+**根因**：`insertEditorCard()` 用 `document.execCommand('insertHTML')`，
+而 execCommand 在 contenteditable 上會派發 **`isTrusted: true` 的 input 事件**
+（瀏覽器標準行為，不是本專案的 bug）。autosave 綁在 `editorCanvas` 的 input 上，
+於是每一次切章渲染都被當成使用者編輯。
+
+`isTrusted` 這個欄位是關鍵：沒有它我會往「哪段程式手動 dispatch 了 input」找，
+而那個方向是空的。**攔事件時順手記 `isTrusted`，能直接分辨「瀏覽器產生」
+與「程式碼偽造」。**
+
+### 修法與被否決的修法
+
+`_renderWithoutAutosave(render)`：渲染期間設旗標，`scheduleAutosave()` 見到就 return。
+只套在切章的兩條渲染路徑（`_renderBlankSection`、`block_loaded` 載入既有版本）。
+
+**否決「直接在 `insertEditorCard()` 裡封鎖」**：插入素材、Word 匯入、
+2A 複製草稿、使用者按「復原草稿」都走同一個函式，那些是真的使用者動作。
+包錯層等於用「沒有假草稿」換「真的編輯存不進去」。決策見 NOTE-023。
+
+`finally` 不是防禦性寫法：少了它，任一次渲染拋例外就會讓旗標卡在 true、
+**autosave 從此永久靜音**，比原本的 bug 嚴重得多。已有測試守這一條。
+
+### 實機 A/B（隔離實例，含對照組）
+
+| 操作 | 修前 | 修後 |
+|---|---|---|
+| 切兩章（一空白一有版本），完全不打字 | 假草稿 2 個 | **0 個** |
+| 接著用 `execCommand('insertText')` 真的打字 | 存草稿 | **照常存**，內容含打進去的字 |
+
+第二列是**對照組，比第一列更重要**：只驗「草稿不見了」的話，
+把 autosave 整個關掉也會全綠。實機另外看到 `autosaveStatus`
+從「編輯中…」變成「已自動儲存 上午12:38:43」，版本檔全程沒有被新增或修改。
+
+瀏覽器實際載入的是 `manuscript_soed.js?v=3.0`（版號已同步 bump，
+既有的 `TestCacheBusting` 下限也一起提到 3.0）。
+
+### 觀察到但未定案
+
+手稿工作檯**偶發被帶回 Dashboard**（`/manuscript/?pid=...` → `/`），
+本輪發生兩次，兩次都沒有 console error、沒有失敗請求。
+不影響本輪結論（重新導向後重新進入即可復現全部驗收），但下一輪值得追：
+使用者中途被踢回首頁會直接損失未存內容。

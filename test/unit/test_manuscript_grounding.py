@@ -14,10 +14,30 @@
 #   - 這些是無外部 LLM 的契約測試；真正 UI 仍須以瀏覽器重新整理驗收。
 # -----------------------------------------------------------------------------
 
+import re
 from pathlib import Path
 
 from app.core_pro.manuscript.manuscript_ruling import ManuscriptRuling
 from app.llm_service.matching_tasks.task_8drafter import Task8Drafter
+
+
+def _assert_cache_version_at_least(html: str, asset: str, minimum: float) -> None:
+    """
+    資產版號的**下限**檢查。
+
+    原本這裡寫的是精確比對（`?v=2.9`）。意圖是對的 —— 改了 JS 就必須一起改版號，
+    否則 Jinja 會續用記憶體裡的舊模板、瀏覽器與正式站都吃到舊檔。
+    但精確比對做不到那件事：它只保證版號等於「上次寫死的那個值」，
+    於是任何一次正當的 bump 都會把測試弄紅（NOTE-023 修 autosave 假草稿時實際踩到），
+    久了就會有人反過來為了讓測試變綠而不敢動版號 —— 正好違背這個斷言的初衷。
+    改成下限：版號只能往前，不能倒退，也不擋正當的 bump。
+    """
+    m = re.search(rf"filename='(?:js|css)/{re.escape(asset)}'\s*\)\s*\}}\}}\?v=([\d.]+)", html)
+    assert m, f"找不到 {asset} 的 ?v= 標記"
+    assert float(m.group(1)) >= minimum, (
+        f"{asset} 的 ?v={m.group(1)} 低於 {minimum}：改了 JS 卻沒 bump 版號，"
+        "瀏覽器與正式站會續用舊檔"
+    )
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -116,11 +136,11 @@ def test_study_and_manuscript_rehydrate_from_server():
     assert "this.loadLatestMatrix(0, {switchMode: true, silentWhenMissing: true})" in study_js
     assert "this.app.socket.emit('cmd_list_blocks'" in manu_js
     assert "this.app.socket.emit('cmd_load_paper'" in manu_js
-    assert "study_core.js') }}?v=2.5" in study_html
+    _assert_cache_version_at_least(study_html, "study_core.js", 2.5)
     # 版號與 manuscript_workspace.html 綁死是刻意的：Jinja 會把編譯後的模板留在
     # 記憶體，改了 JS 卻沒動 ?v= 時，瀏覽器與正式站都會續用舊檔（本輪實測：容器
     # 內模板已是新版，伺服器仍吐舊版號，重啟後才生效）。改 JS 就必須一起改這裡。
-    assert "manuscript_soed.js') }}?v=2.9" in manu_html
+    _assert_cache_version_at_least(manu_html, "manuscript_soed.js", 3.0)
 
 
 def test_drafter_multiline_and_cancel_controls_contract():
@@ -146,5 +166,5 @@ def test_drafter_restores_last_section_and_ignores_stale_history():
     assert "window.localStorage.setItem(this._chatSectionStorageKey(), sectionId)" in manu_js
     assert "const section = this.soed.restoreChatSection" in ws_js
     assert "data.section !== this.app.drafterTargetSection.value" in manu_js
-    assert "manuscript_soed.js') }}?v=2.9" in manu_html
+    _assert_cache_version_at_least(manu_html, "manuscript_soed.js", 3.0)
     assert "manuscript_ws.js') }}?v=5.1" in manu_html
