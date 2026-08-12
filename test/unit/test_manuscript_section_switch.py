@@ -455,7 +455,7 @@ class TestCacheBusting:
         """?v= 沒 bump 的話瀏覽器吃舊檔：測試全綠，使用者看到的還是舊行為。"""
         html = MANU_HTML.read_text(encoding="utf-8")
         # manuscript_soed.js 3.0：NOTE-023 的 autosave 靜音（切章不再產生假草稿）。
-        for asset, minimum in (("manuscript_soed.js", 3.0), ("manuscript_wsui.js", 1.7),
+        for asset, minimum in (("manuscript_soed.js", 3.0), ("manuscript_wsui.js", 1.8),
                                ("manuscript_image.js", 1.9), ("manuscript.css", 1.4)):
             # 必須錨定在 url_for(...) 標籤上。寬鬆的 `{asset}[^?]*\?v=` 會從註解裡
             # 提到的檔名一路吃到後面某個不相干的 ?v=，比出來的版本號是別的資產的。
@@ -484,6 +484,8 @@ class TestGalleryImageUpload:
         assert "max_http_buffer_size=15 * 1024 * 1024" in app_init
         assert "_captionWithoutFigureLabel(img.fig_id, caption)" in wsui
         assert "${safeFigId}. ${safeDisplayCaption}" in wsui
+        assert "cardBody.contains(insertRange.commonAncestorContainer)" in wsui
+        assert "insertRange.selectNodeContents(cardBody)" in wsui
 
         gallery_guard = image_js.index("data.meta.source === 'gallery_upload'")
         automatic_insert = image_js.index("this.app.soed.importToEditor(imgTag)")

@@ -944,10 +944,28 @@ class ManuUI {
         // 3. 聚焦畫布並還原游標選取區 (Selection)
         targetCanvas.focus();
         const selection = window.getSelection();
+        let insertRange = this.savedCursorRange;
+
+        // 2B 存檔只序列化 .editor-card 的 .card-content。若游標落在卡片外
+        // （例如畫布末端的空白段落），素材必須收斂到目前卡片末端，否則只會
+        // 暫時顯示在畫面上，重新載入後消失。
+        if (this.currentInsertTarget === '2B') {
+            const cardBody = targetCanvas.querySelector('.editor-card .card-content');
+            if (!cardBody) {
+                this.app.soed.addSystemMessage('目前章節沒有可插入素材的內容卡片。');
+                this.savedCursorRange = null;
+                return;
+            }
+            if (!insertRange || !cardBody.contains(insertRange.commonAncestorContainer)) {
+                insertRange = document.createRange();
+                insertRange.selectNodeContents(cardBody);
+                insertRange.collapse(false);
+            }
+        }
         
-        if (this.savedCursorRange) {
+        if (insertRange) {
             selection.removeAllRanges();
-            selection.addRange(this.savedCursorRange);
+            selection.addRange(insertRange);
         } else {
             // 防呆：如果之前沒有成功抓到游標，預設將游標移到畫布的最末端
             selection.selectAllChildren(targetCanvas);
