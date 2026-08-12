@@ -63,7 +63,14 @@ limiter = Limiter(
     key_func=get_remote_address,
     default_limits=[os.environ.get("RATE_LIMIT_DEFAULT", "600 per minute")],
 )
-socketio = SocketIO(ping_interval=25, ping_timeout=120)
+# ponytail: Socket.IO applies this ceiling globally; 15 MiB is the smallest
+# bound that carries the existing 10 MiB image contract after base64 overhead.
+# Move gallery uploads to multipart before supporting larger binary payloads.
+socketio = SocketIO(
+    ping_interval=25,
+    ping_timeout=120,
+    max_http_buffer_size=15 * 1024 * 1024,
+)
 csrf = CSRFProtect()
 login_manager = LoginManager()
 login_manager.login_view = "auth.login"

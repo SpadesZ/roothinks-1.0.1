@@ -41,6 +41,7 @@ FORMAL_PID = "SWITCHPJ-p"
 SOED_JS = PROJECT_ROOT / "app/static/js/manuscript_soed.js"
 WSUI_JS = PROJECT_ROOT / "app/static/js/manuscript_wsui.js"
 IMAGE_JS = PROJECT_ROOT / "app/static/js/manuscript_image.js"
+APP_INIT = PROJECT_ROOT / "app/__init__.py"
 MANU_HTML = PROJECT_ROOT / "app/templates/manuscript_workspace.html"
 MANU_CSS = PROJECT_ROOT / "app/static/css/manuscript.css"
 
@@ -472,6 +473,7 @@ class TestGalleryImageUpload:
         html = MANU_HTML.read_text(encoding="utf-8")
         wsui = WSUI_JS.read_text(encoding="utf-8")
         image_js = IMAGE_JS.read_text(encoding="utf-8")
+        app_init = APP_INIT.read_text(encoding="utf-8")
 
         assert 'id="assetImageUploadInput"' in html
         assert 'id="assetImageCaption"' in html
@@ -479,6 +481,7 @@ class TestGalleryImageUpload:
         assert "this.app.socket.emit('cmd_save_image'" in wsui
         assert "source: 'gallery_upload'" in wsui
         assert "this.app.socket.emit('cmd_get_image_registry'" in wsui
+        assert "max_http_buffer_size=15 * 1024 * 1024" in app_init
 
         gallery_guard = image_js.index("data.meta.source === 'gallery_upload'")
         automatic_insert = image_js.index("this.app.soed.importToEditor(imgTag)")
