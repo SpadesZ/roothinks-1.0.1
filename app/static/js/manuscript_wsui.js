@@ -58,6 +58,16 @@ class ManuUI {
         }[ch]));
     }
 
+    _captionWithoutFigureLabel(figId, caption) {
+        const raw = String(caption || '').trim();
+        const label = String(figId || '').trim();
+        if (!label || !raw.toLowerCase().startsWith(label.toLowerCase())) return raw;
+
+        const remainder = raw.slice(label.length);
+        if (!/^[\s.:：-]/.test(remainder)) return raw;
+        return remainder.replace(/^[\s.:：-]+/, '').trim() || raw;
+    }
+
     _getApiToken() {
         try {
             return (window.localStorage.getItem('roothinks_api_token') || '').trim();
@@ -880,8 +890,10 @@ class ManuUI {
             col.className = 'col-md-6 col-lg-4';
             const imagePath = this._withAuthToken(img.path);
             const safePath = this._escapeHtml(imagePath);
-            const safeCaption = this._escapeHtml(img.caption);
+            const caption = String(img.caption || '').trim();
+            const safeCaption = this._escapeHtml(caption);
             const safeFigId = this._escapeHtml(img.fig_id);
+            const safeDisplayCaption = this._escapeHtml(this._captionWithoutFigureLabel(img.fig_id, caption));
             const sizeText = img.size_bytes ? Math.round(img.size_bytes / 1024) + ' KB' : '';
             const safeSizeText = this._escapeHtml(sizeText);
             
@@ -889,7 +901,7 @@ class ManuUI {
             const insertHtml = `
                 <div class="text-center my-4 image-container" contenteditable="false">
                     <img src="${safePath}" alt="${safeCaption}" class="img-fluid border border-2 rounded shadow-sm" style="max-width: 90%;">
-                    <p class="text-muted fw-bold small mt-2"><i>${safeFigId}: ${safeCaption}</i></p>
+                    <p class="text-muted fw-bold small mt-2"><i>${safeFigId}. ${safeDisplayCaption}</i></p>
                 </div><p><br></p>
             `;
             
@@ -906,7 +918,7 @@ class ManuUI {
                             <span class="badge bg-secondary">${safeFigId}</span>
                             <span class="small text-muted" style="font-size: 0.7rem;">${safeSizeText}</span>
                         </div>
-                        <p class="card-text small text-truncate mb-2 text-dark fw-bold" title="${safeCaption}">${safeCaption}</p>
+                        <p class="card-text small text-truncate mb-2 text-dark fw-bold" title="${safeCaption}">${safeDisplayCaption}</p>
                         <button class="btn btn-sm btn-outline-primary mt-auto fw-bold" onclick="wsApp.insertAssetToCanvas(decodeURIComponent('${safeHtml}'))">
                             <i class="bi bi-box-arrow-in-down-right me-1"></i> 插入到游標處
                         </button>
