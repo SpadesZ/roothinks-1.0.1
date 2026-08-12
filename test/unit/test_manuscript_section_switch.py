@@ -40,6 +40,7 @@ FORMAL_PID = "SWITCHPJ-p"
 
 SOED_JS = PROJECT_ROOT / "app/static/js/manuscript_soed.js"
 WSUI_JS = PROJECT_ROOT / "app/static/js/manuscript_wsui.js"
+IMAGE_JS = PROJECT_ROOT / "app/static/js/manuscript_image.js"
 MANU_HTML = PROJECT_ROOT / "app/templates/manuscript_workspace.html"
 MANU_CSS = PROJECT_ROOT / "app/static/css/manuscript.css"
 
@@ -453,8 +454,8 @@ class TestCacheBusting:
         """?v= 沒 bump 的話瀏覽器吃舊檔：測試全綠，使用者看到的還是舊行為。"""
         html = MANU_HTML.read_text(encoding="utf-8")
         # manuscript_soed.js 3.0：NOTE-023 的 autosave 靜音（切章不再產生假草稿）。
-        for asset, minimum in (("manuscript_soed.js", 3.0), ("manuscript_wsui.js", 1.5),
-                               ("manuscript.css", 1.4)):
+        for asset, minimum in (("manuscript_soed.js", 3.0), ("manuscript_wsui.js", 1.6),
+                               ("manuscript_image.js", 1.9), ("manuscript.css", 1.4)):
             # 必須錨定在 url_for(...) 標籤上。寬鬆的 `{asset}[^?]*\?v=` 會從註解裡
             # 提到的檔名一路吃到後面某個不相干的 ?v=，比出來的版本號是別的資產的。
             m = re.search(
@@ -464,6 +465,24 @@ class TestCacheBusting:
             assert float(m.group(1)) >= minimum, (
                 f"{asset} 的 ?v={m.group(1)} 低於本次變更的 {minimum}，瀏覽器會吃到舊檔"
             )
+
+
+class TestGalleryImageUpload:
+    def test_existing_image_upload_uses_registry_without_creating_second_card(self):
+        html = MANU_HTML.read_text(encoding="utf-8")
+        wsui = WSUI_JS.read_text(encoding="utf-8")
+        image_js = IMAGE_JS.read_text(encoding="utf-8")
+
+        assert 'id="assetImageUploadInput"' in html
+        assert 'id="assetImageCaption"' in html
+        assert "async uploadGalleryImage()" in wsui
+        assert "this.app.socket.emit('cmd_save_image'" in wsui
+        assert "source: 'gallery_upload'" in wsui
+        assert "this.app.socket.emit('cmd_get_image_registry'" in wsui
+
+        gallery_guard = image_js.index("data.meta.source === 'gallery_upload'")
+        automatic_insert = image_js.index("this.app.soed.importToEditor(imgTag)")
+        assert gallery_guard < automatic_insert
 
 
 class TestDraftRestoreIsNonBlocking:

@@ -18,6 +18,7 @@ class ManuUI {
         this.isResizing2 = false;
         this._toolbarBound = false;
         this.pendingWordImportTarget = null;
+        this.galleryUploadPending = false;
         
         // [v0.3 新增] 游標追蹤與目標畫布狀態
         this.currentInsertTarget = null;
@@ -30,7 +31,21 @@ class ManuUI {
                     this.renderAssetGallery(data.registry);
                 }
             });
+            this.app.socket.on('image_saved', (data) => {
+                if (!data?.ok || data?.meta?.source !== 'gallery_upload') return;
+                this.galleryUploadPending = false;
+                const btn = document.getElementById('btnUploadGalleryImage');
+                const input = document.getElementById('assetImageUploadInput');
+                const status = document.getElementById('assetImageUploadStatus');
+                if (btn) btn.disabled = false;
+                if (input) input.value = '';
+                if (status) status.innerText = `${data.meta.fig_id} 已加入圖片庫，可按「插入到游標處」。`;
+                this.app.socket.emit('cmd_get_image_registry', { pid: this.app.pid });
+            });
         }
+
+        const uploadBtn = document.getElementById('btnUploadGalleryImage');
+        if (uploadBtn) uploadBtn.addEventListener('click', () => this.uploadGalleryImage());
     }
 
     _escapeHtml(value) {
@@ -792,6 +807,52 @@ class ManuUI {
         
         // 發送 Socket 請求給 Python 端讀取 image_registry.json
         this.app.socket.emit('cmd_get_image_registry', { pid: this.app.pid });
+    }
+
+    async uploadGalleryImage() {
+        if (this.galleryUploadPending) return;
+
+        const input = document.getElementById('assetImageUploadInput');
+        const figIdInput = document.getElementById('assetImageFigId');
+        const captionInput = document.getElementById('assetImageCaption');
+        const btn = document.getElementById('btnUploadGalleryImage');
+        const status = document.getElementById('assetImageUploadStatus');
+        const fileObj = input?.files?.[0];
+        const figId = String(figIdInput?.value || '').trim();
+        const caption = String(captionInput?.value || '').trim();
+
+        if (!fileObj || !String(fileObj.type || '').startsWith('image/')) {
+            if (status) status.innerText = '請選擇圖片檔。';
+            return;
+        }
+        if (fileObj.size > 10 * 1024 * 1024) {
+            if (status) status.innerText = '圖片不可超過 10 MB。';
+            return;
+        }
+        if (!figId || !caption) {
+            if (status) status.innerText = '請填寫 Figure 編號與 caption。';
+            return;
+        }
+
+        this.galleryUploadPending = true;
+        if (btn) btn.disabled = true;
+        if (status) status.innerText = '正在上傳圖片…';
+
+        try {
+            const imageData = await this._readFileAsDataUrl(fileObj);
+            this.app.socket.emit('cmd_save_image', {
+                pid: this.app.pid,
+                image_data: imageData,
+                filename: fileObj.name,
+                fig_id: figId,
+                caption: caption,
+                source: 'gallery_upload',
+            });
+        } catch (e) {
+            this.galleryUploadPending = false;
+            if (btn) btn.disabled = false;
+            if (status) status.innerText = '圖片讀取失敗，請重新選擇。';
+        }
     }
 
     /**

@@ -64,6 +64,10 @@ class ManuImage {
     setupSocketEvents() {
         this.app.socket.on('image_saved', (data) => {
             if (data.ok && data.meta) {
+                if (data.meta.source === 'gallery_upload') {
+                    this.app.soed.addSystemMessage(`圖片已加入素材庫：${data.meta.fig_id}`);
+                    return;
+                }
                 const safePath = this._escapeHtml(this._withAuthToken(data.meta.path));
                 const safeCaption = this._escapeHtml(data.meta.caption);
                 const safeFig = this._escapeHtml(data.meta.fig_id);
