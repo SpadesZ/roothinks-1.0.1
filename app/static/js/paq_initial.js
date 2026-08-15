@@ -114,29 +114,75 @@ function sanitizeIconClass(value) {
 // 1. 初始化流程 (Initialization Flow)
 // ==================================================================================
 
-document.addEventListener('DOMContentLoaded', () => {
-    // 1.1 解析 URL 參數取得 PID
-    // [v3.4 Enhancement] Robust PID Parsing
-    // 優先順序: 1. Query String (?pid=...) 2. Path Param (/paq/status/...) 3. Path Param (/paq/...)
-    const params = new URLSearchParams(window.location.search);
-    currentPid = params.get('pid');
-    
-    if (!currentPid) {
-        const path = window.location.pathname;
-        // Regex to match typical PID patterns (alphanumeric, length 6-20) at end of path
-        // Matches /paq/123456 or /paq/status/123456
-        const match = path.match(/\/([A-Za-z0-9]{6,20})\/?$/);
-        if (match && match[1]) {
-            currentPid = match[1];
-        }
-    }
+/**
+ * 取得目前的專案 PID。
+ *
+ * NOTE(NOTE-025): 優先序是「伺服器注入 -> query string -> URL API 取 path 片段」。
+ * **前端不判定 PID 是否合法**，只負責取得。合法性的唯一真相在伺服器的
+ * validate_id（^[a-zA-Z0-9_-]{1,20}$）；無效 PID 由 API 回 4xx，呼叫端呈現該錯誤。
+ *
+ * 舊碼在這裡自行宣告合法字元集，而那個字元集**漏掉連字號** —— 真實 PID 一律是
+ * `ULQ8F6-p` 形式，於是每一個 RESTful 網址（書籤、分享連結）都解析失敗，
+ * 使用者被靜默踢回 Dashboard。
+ * 這裡刻意用 split 取片段而非 regex：切片不需要宣告字元白名單，
+ * 也就不可能再漏掉某個字元。
+ *
+ * @returns {string} 取得的 PID；三條來源都沒有時回傳空字串。
+ */
+function resolveCurrentPid() {
+    // 1) 伺服器注入。/paq/<pid> 與 /paq?pid=<pid> 是兩支不同的 Flask view，
+    //    但都 render_template('paq.html', pid=pid)，讀這裡可讓兩條路徑天然一致。
+    const bootstrapEl = document.getElementById('paq-bootstrap');
+    const injected = (bootstrapEl && bootstrapEl.dataset && bootstrapEl.dataset.pid) || '';
+    if (injected.trim()) return injected.trim();
 
-    if (!currentPid) {
-        console.error("[Init] Missing PID in URL or Path");
-        alert('無效的專案 ID (Missing PID). Redirecting to Dashboard...');
-        window.location.href = '/';
-        return;
-    }
+    let url;
+    try {
+        url = new URL(window.location.href);
+    } catch (e) {
+        return '';
+    }
+
+    // 2) Query string。
+    const fromQuery = (url.searchParams.get('pid') || '').trim();
+    if (fromQuery) return fromQuery;
+
+    // 3) Path 最後一段。只排除已知的非 PID 片段，不宣告字元白名單。
+    const segments = url.pathname.split('/').filter(Boolean);
+    const last = segments.length ? segments[segments.length - 1].trim() : '';
+    const NOT_A_PID = new Set(['paq', 'paq.html', 'status']);
+    if (last && !NOT_A_PID.has(last)) return last;
+
+    return '';
+}
+
+/**
+ * PID 取不到時原地顯示錯誤。
+ *
+ * NOTE(NOTE-025): 刻意**不導頁**。舊碼在這裡 alert 之後 location.href='/'，
+ * 把「前端沒讀到 PID」偽裝成「你該回 Dashboard 了」—— 使用者看到的是無聲跳轉，
+ * 完全不指向真正的原因，而且當下若有未存內容會一起丟掉。
+ */
+function showPidResolutionError() {
+    const nameEl = document.getElementById('header-pname');
+    if (nameEl) {
+        nameEl.textContent = '網址缺少專案 ID';
+        nameEl.title = '請從 Dashboard 重新進入，或確認網址為 /paq/<PID> 或 /paq?pid=<PID>';
+        nameEl.classList.add('text-danger');
+    }
+    const pidEl = document.getElementById('header-pid');
+    if (pidEl) pidEl.textContent = '--';
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    // 1.1 取得 PID（來源優先序見 resolveCurrentPid）
+    currentPid = resolveCurrentPid();
+
+    if (!currentPid) {
+        console.error('[Init] Missing PID in URL or Path');
+        showPidResolutionError();
+        return;
+    }
 
     console.log(`[Init] PAQ Loaded for Project: ${currentPid}`);
     try {

@@ -684,7 +684,12 @@ class ManuSoed {
 
             const block = this._ensureFusionBlock(section);
             const body = block.querySelector('.fusion-body');
-            if (body) body.innerHTML = content.replace(/\n/g, '<br>');
+            // NOTE(NOTE-030) 原樣搬運，**不得**再做 \n → <br>。
+            // 那一行是 v0.5 的殘骸：當時 content 取的是 innerText（純文字，換行是
+            // 語意的），v0.6 為了保住圖片改成 innerHTML 卻沒把補償一起拿掉，於是
+            // HTML 原始碼的排版換行全被當成使用者的分行。素材插入樣板都是多行
+            // template literal，所以只要該章有圖，推進 2C 就固定多出 4～5 個空行。
+            if (body) body.innerHTML = content;
 
             // 標記這一章對應 2B 的哪一版，讓「2C 這段是從哪來的」可追。
             const srcVer = this._currentSectionVer(section) || '';
@@ -723,8 +728,89 @@ class ManuSoed {
     _findFusionBlock(sectionId) {
         const canvas = this.app.fusionCanvas;
         if (!canvas) return null;
-        return Array.from(canvas.querySelectorAll('.fusion-block[data-section]'))
+        const byId = Array.from(canvas.querySelectorAll('.fusion-block[data-section]'))
             .find(b => b.getAttribute('data-section') === sectionId) || null;
+        if (byId) return byId;
+        // NOTE(NOTE-037) 沒有帶身分的區塊時，才去認領 NOTE-007 之前存下來的舊區塊。
+        return this._adoptLegacyFusionBlock(sectionId);
+    }
+
+    /**
+     * 認領一個「有標題但沒有 data-section」的舊區塊，並補寫身分。
+     *
+     * NOTE(NOTE-037) 為什麼需要這個：NOTE-007 之前的實作（commit 32e1949）是
+     *   this.app.fusionCanvas.innerHTML += `<div class="fusion-block ...">
+     *       <h5 ...><i class="bi bi-check2-circle me-1"></i>${sectionLabel}</h5>...`
+     * —— 純 append，而且**沒有 data-section**。那些區塊隨 G.Ver 一路存到今天。
+     * `_findFusionBlock` 只查 `[data-section]`，查不到就走 append 分支，於是每推
+     * 一次就在最後面多一個同名章節。擁有者在 G.Ver V12 的專案上實機撞到兩個
+     * Abstract，就是這條路徑（舊的那個標題旁沒有 S.Ver 徽章，新的有）。
+     *
+     * 認領的四道門檻是刻意收得極窄的 —— 這裡是整個 2C 最容易把使用者稿件搬錯
+     * 位置的地方：
+     *   1. 必須**完全沒有** data-section。絕不從別的章節手上搶。
+     *   2. 標題文字必須與章節 label **全等**（剝掉 icon 與 S.Ver 徽章、正規化空白、
+     *      忽略大小寫）。用 includes 會讓 `Abstract` 認領 `Abstract and Keywords`。
+     *   3. 只認領第一個相符者。
+     *   4. 認領**不搬動位置** —— 使用者的排版是他自己排的，只補一個屬性。
+     */
+    _adoptLegacyFusionBlock(sectionId) {
+        const canvas = this.app.fusionCanvas;
+        if (!canvas) return null;
+
+        const wanted = this._normaliseHeading(this._sectionLabel(sectionId));
+        if (!wanted) return null;
+
+        const candidates = Array.from(canvas.querySelectorAll('.fusion-block'))
+            .filter(b => !b.hasAttribute('data-section'))
+            .filter(b => this._normaliseHeading(this._blockHeadingText(b)) === wanted);
+
+        if (!candidates.length) return null;
+
+        const block = candidates[0];
+        block.setAttribute('data-section', sectionId);
+
+        // 舊樣板沒有 fusion-src-ver 這個元素，補上去 S.Ver 才寫得進去，
+        // 否則「這段來自 2B 第幾版」永遠是空的。
+        const heading = block.querySelector('h1, h2, h3, h4, h5, h6');
+        if (heading && !heading.querySelector('.fusion-src-ver')) {
+            const badge = document.createElement('span');
+            badge.className = 'badge bg-light text-secondary fw-normal ms-2 fusion-src-ver';
+            heading.appendChild(badge);
+        }
+        // 極舊的存檔可能連 .fusion-body 都沒有；沒有就把現有內容包進一個。
+        if (!block.querySelector('.fusion-body')) {
+            const body = document.createElement('div');
+            body.className = 'fusion-body';
+            while (heading ? heading.nextSibling : block.firstChild) {
+                const node = heading ? heading.nextSibling : block.firstChild;
+                body.appendChild(node);
+            }
+            block.appendChild(body);
+        }
+
+        if (candidates.length > 1 && this.app.ui && this.app.ui.showNotice) {
+            // **刻意不自動刪除**：那是使用者的稿件，靜默刪除比留下重複更糟。
+            this.app.ui.showNotice(
+                `2C 裡有 ${candidates.length} 個「${this._sectionLabel(sectionId)}」區塊，`
+                + '已更新第一個。請確認是否要手動移除其餘的。', 'warning');
+        }
+        return block;
+    }
+
+    /** 區塊標題的純文字（不含 S.Ver 徽章）。 */
+    _blockHeadingText(block) {
+        const heading = block.querySelector('h1, h2, h3, h4, h5, h6');
+        if (!heading) return '';
+        // 在複本上動刀，不影響畫面上的節點。
+        const clone = heading.cloneNode(true);
+        clone.querySelectorAll('.fusion-src-ver, .badge, i, svg').forEach(el => el.remove());
+        return clone.textContent || '';
+    }
+
+    /** 標題比對用的正規化：收斂空白、去頭尾、忽略大小寫。 */
+    _normaliseHeading(text) {
+        return String(text || '').replace(/\s+/g, ' ').trim().toLowerCase();
     }
 
     /**
@@ -807,6 +893,11 @@ class ManuSoed {
         if (this.app.ui && this.app.ui.updateDropdownLabel) {
             this.app.ui.updateDropdownLabel();
         }
+        // NOTE(NOTE-036) 完成比例掛在**這個唯一入口**，理由與 NOTE-004
+        // 記章節位置完全相同：下拉、2A 同步、重連後 resync 三條路徑都
+        // 走這裡。掛在任何一個呼叫端都會漏掉另外兩條，症狀是「切了章
+        // 但比例還是上一章的數字」——而那個數字看起來完全合理。
+        if (this.app.progress) this.app.progress.onSectionChanged();
 
         // 先隔離再載入：舊章內容必須立刻離開畫布。若等回應到了才清，
         // 中間這段時間畫面上是「Reference 的標題 + Introduction 的正文」，

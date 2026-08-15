@@ -331,6 +331,41 @@ def require_workspace_role(pid: str, min_role: str) -> Optional[Any]:
     return None
 
 
+def describe_project_access(pid: str) -> dict:
+    """
+    回報「呼叫者對這個專案能做什麼」，給前端用來決定呈現。
+
+    NOTE(NOTE-027): `can_edit` 刻意**直接問 require_workspace_role**，而不是在
+    呼叫端拿 role 字串自己比大小。理由是「授權門檻只能有一份」：
+    `enforce_project_ownership` 對 POST/PUT/PATCH 要求的正是 editor，
+    未來若改 method→role 對應表，這裡會跟著變，不可能與實際授權不一致。
+    自行比對 ROLE_ORDER 就會生出第二份角色表，兩邊漂移時前端這份必然是錯的。
+
+    安全邊界：這是**呈現用**的描述，不是授權本身。前端把 disabled 拿掉
+    仍然只會拿到 403 —— 真正的門檻在每個 route 的 enforce_project_ownership。
+
+    非 session 模式（dev / preview / bearer）回 can_edit=True，
+    與 enforce_project_ownership 的模式 B/C 放行行為一致；role 為 None
+    表示「這個模式下沒有 workspace 角色的概念」，不得被讀成 viewer。
+    """
+    # 延遲匯入避免循環依賴（與本檔其他角色判定一致）。
+    from app.models import ROLE_EDITOR
+
+    role = None
+    try:
+        from flask_login import current_user
+
+        if _get_auth_mode() == "session" and current_user.is_authenticated:
+            role = get_workspace_role(current_user.id, pid)
+    except Exception:
+        LOGGER.exception("describe_project_access role lookup failed pid=%s", pid)
+
+    return {
+        "role": role,
+        "can_edit": require_workspace_role(pid, ROLE_EDITOR) is None,
+    }
+
+
 def has_section_assignment(user_id: int, pid: str, section_key: str) -> bool:
     """
     該 user 是否被指派撰寫 pid 專案的 section_key 章節。

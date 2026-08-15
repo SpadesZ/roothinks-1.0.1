@@ -61,6 +61,11 @@ class ManuCollab {
             this._renderRoleBadge();
             this.refreshLock();
             this.refreshCommentBadge();
+            // NOTE(NOTE-036) 完成比例欄位的唯讀狀態取決於 canWrite()，而權限是
+            // 非同步來的。progress.load() 與這支是並行的，先回來的那一個看到的
+            // permissions 還是 null（canWrite 一律回 true），於是 viewer 的欄位
+            // 會停在「可編輯」的樣子。伺服器仍會擋（403），但畫面在騙人。
+            if (this.app.progress) this.app.progress.render();
         } catch (err) {
             console.warn('[collab] 權限載入失敗', err);
             this.permissions = null;

@@ -58,3 +58,7 @@ debug_task*_prompt*.txt
 Thumbs.db
 .vscode/
 .idea/
+
+# 本機驗證/暫存產物，不進版控
+output/
+.claude/

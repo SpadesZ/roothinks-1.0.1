@@ -242,8 +242,9 @@ class TestPaqCacheBusting:
     PAQ_HTML = PROJECT_ROOT / "app" / "templates" / "paq.html"
 
     @pytest.mark.parametrize("asset,minimum", [
-        ("paq_initial.js", 0.3),   # 本輪加入 loadChatHistory() 呼叫
-        ("paq_interact.js", 0.2),  # 本輪新增 loadChatHistory() 與 persisted 提示
+        ("paq_initial.js", 0.4),   # NOTE-025 改寫 PID 解析（0.3 是 loadChatHistory 那輪）
+        ("paq_interact.js", 0.2),  # loadChatHistory() 與 persisted 提示
+        ("paq_project.js", 0.4),   # NOTE-026 錯誤分區 + NOTE-027 formal 鎖定範圍
     ])
     def test_changed_paq_assets_are_cache_busted(self, asset, minimum):
         html = self.PAQ_HTML.read_text(encoding="utf-8")

@@ -374,7 +374,11 @@ class ManuImage {
                 pid: this.app.pid,
                 image_data: base64Data,
                 filename: `arch_${currentSec}.png`,
-                fig_id: `Figure ${Math.floor(Math.random()*100)}`,
+                section: currentSec,
+                // NOTE(NOTE-034) 這裡曾經是 `Figure ${Math.floor(Math.random()*100)}`。
+                // 亂數編號會讓同一篇論文出現兩張 Figure 42、也會從 7 跳到 91，
+                // 而且重跑一次就換一組 —— 正文裡的「如 Figure 42 所示」在下一次
+                // 存檔後就指向別張圖。編號一律由伺服器依 registry 現況推導。
                 caption: `System Architecture for ${currentSec}`,
                 source: "ai_generated"
             });

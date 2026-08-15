@@ -86,6 +86,12 @@
   回填，屬性能隨 G.Ver 往返，重整後仍冪等。
 - 不猜舊內容歸屬：實測既有存檔（PAPER1-p 的 V2）是 0 個 fusion-block 的裸段落，
   沒有任何章節身分；靠標題文字猜歸屬只會把使用者的舊稿搬錯位置。
+- **2026-08-15 修正（見 NOTE-037）**：上一行對「裸段落」仍然成立，但對
+  **NOTE-007 之前產生的 `.fusion-block`** 不成立 —— 那些區塊有標題卻沒有
+  `data-section`，於是每推一次就在最後面多一個同名章節（擁有者在 G.Ver V12 的
+  專案上實機撞到兩個 Abstract）。NOTE-037 因此加了一道**極窄的**一次性認領：
+  只認領「完全沒有 `data-section`」且「標題與章節 label **全等**」的區塊，
+  認領時不搬動位置、只補寫識別屬性。
 - 驗證：瀏覽器實測「亂序推 introduction→method→abstract 得到 canonical 順序」、
   「改內容重推原位取代仍 3 塊」、「存檔 V3 後重整再推第三次仍不重複」。
 
@@ -587,3 +593,491 @@
   實機 A/B（隔離實例）：切兩章不打字 → 草稿檔 **0 個**（修前為 2 個）；
   接著用 `execCommand('insertText')`（同樣是 isTrusted input）真的打字 →
   草稿**照常產生**且含打進去的字，UI 顯示「已自動儲存」。
+
+## NOTE-024：schema migration 只升級「已初始化」的 DB，全新 DB 交給 create_all
+
+- 決策日期：2026-08-13
+- 適用範圍：`fix_db_schema.py` 的 `_resolve_db_path()` / `target_db_path()` /
+  `upgrade_database()`；`app/__init__.py` 的 `_run_schema_fix()` 呼叫點。
+- 問題背景（**在乾淨 detached worktree 實測復現，不是引用交接文件**）：
+  全新機器 checkout 之後沒有 `data/`（整個目錄 gitignored 且零 tracked 檔），
+  `create_app()` 會連續死在兩個地方：
+  ```
+  1) FileNotFoundError: Database file not found in: [<repo>/data/roothinks.db, ...]
+     fix_db_schema.py:66  ← app/__init__.py:442 _run_schema_fix()
+  2) 補上空的 DB 檔之後：
+     RuntimeError: Missing 'projects' table. Please initialize database first.
+     fix_db_schema.py:242
+  ```
+- 真因是**一個**而不是兩個：`create_app()` 在 `__init__.py:442` 呼叫的是
+  **legacy 升級器**，而 `db.create_all()` 在 **:659** —— 相隔 217 行。
+  升級器整支的前提是「DB 已經被初始化過」，它沒有「尚未初始化」這條分支。
+  兩個 traceback 只是同一個前提在兩個不同深度爆開。
+- 決策：
+  1. `_resolve_db_path()` 新增 `must_exist` 參數。`target_db_path()` 用
+     `must_exist=False`，回傳「**將會**使用的路徑」——即使檔案還不存在。
+  2. `upgrade_database()` 在「DB 檔不存在」或「存在但沒有 `projects` 表」時
+     **視為尚未初始化，記 log 後直接 return**，把建置交給 `db.create_all()`。
+- 原因：
+  - 「這顆 DB 還沒被初始化」不是錯誤，是全新安裝的正常狀態。
+    升級器對它無事可做 —— 沒有 legacy schema 需要被升級。
+  - **刻意不改 `create_app()` 的順序**。既有 DB 必須「先升級舊表結構、
+    再 `create_all()` 補新表」；把 migration 移到 create_all 之後，
+    legacy DB 的欄位修復就會晚於 ORM 首次使用。順序是對的，缺的是空集合分支。
+  - `target_db_path()` 不再抛例外，`_should_run_schema_fix()`（NOTE-016）才能
+    真的做比對。原本它一遇到 FileNotFoundError 就 `return True`，
+    於是全新機器必然走進那條「開不起來」的路徑。
+- **否決方案 A：在啟動腳本或測試 fixture 預先塞一顆假 DB。**
+  否決理由：那是把缺陷搬到部署流程裡，新機器仍然「直接跑 create_app 開不起來」，
+  而且假 DB 的 schema 版本一旦和 ORM 不同步就會產生更難查的錯誤。
+- **否決方案 B：讓 migration 自己 `db.create_all()` 或建表。**
+  否決理由：會出現兩套建表真相（`models.py` 與 migration），
+  兩邊漂移時沒有人是對的。建表只能有一個來源。
+- 不變量：
+  1. **既有 DB 一律走原本的冪等 migration 路徑**，本改動不得讓任何
+     既有資料庫少跑一次升級 —— 判斷依據是「有沒有 `projects` 表」，
+     不是「檔案新不新」。
+  2. 不重建、不覆寫、不清空任何既有 DB。新增的分支只會 `return`。
+  3. `must_exist=True`（人工執行 `python fix_db_schema.py`）維持原本會抛
+     FileNotFoundError 的行為 —— 那條路徑是人明確要求升級某顆 DB。
+- 驗證：`test/unit/test_fresh_bootstrap.py`
+  （空目錄首次啟動、第二次啟動冪等、建資料後重啟仍在、既有 DB 仍會被升級的對照組）。
+  端對端：`scripts/verify_fresh_bootstrap.py` 在 detached worktree 上實跑。
+
+## NOTE-025：PID 的真相來自伺服器注入，前端不得自行用 regex 猜
+
+- 決策日期：2026-08-13
+- 適用範圍：`app/templates/paq.html` 的 `#paq-bootstrap`、
+  `app/static/js/paq_initial.js` 的 `resolveCurrentPid()`。
+- 問題背景（**瀏覽器實測，非推論**）：`paq_initial.js` 舊碼用
+  `path.match(/\/([A-Za-z0-9]{6,20})\/?$/)` 從網址尾端撈 PID，字元集**不含
+  連字號**；而本系統的正式 PID 一律長成 `ULQ8F6-p`、`DGVRYV-p`。
+  於是 `/paq/ULQ8F6-p` 比對失敗 → `currentPid` 為 null → alert 之後
+  `location.href='/'`，使用者被**靜默踢回 Dashboard**。
+  伺服器端從來沒有這個問題：`validate_id` 的 `project_id` pattern 是
+  `^[a-zA-Z0-9_-]{1,20}$`，**本來就接受連字號**，而且 `routes.py` 的
+  `paq_workspace()` 早就把驗證過的 `pid` 傳進 `render_template` —— 只是模板
+  從來沒有用過它。
+- 決策：模板輸出 `<div id="paq-bootstrap" data-pid="{{ pid }}">`，前端優先讀它；
+  其次讀 `URLSearchParams`；最後才用 `URL` API 取 path 片段。
+  三條來源都拿不到時**原地顯示錯誤，不得導頁**。
+- 原因：
+  - PID 的**驗證規則只能有一份**，而那一份在伺服器（`ID_PATTERNS`）。
+    前端再寫一次 regex 就是第二份真相，兩邊漂移時前端這份必然是錯的
+    —— 這次就是漂移了整整一個連字號。
+  - `/paq/<pid>` 與 `/paq?pid=<pid>` 走的是**不同的 Flask view**，但兩者都
+    `render_template('paq.html', pid=pid)`。讀注入值可以讓兩條路徑天然一致，
+    不必在前端維護兩套解析。
+  - 最後那條 path fallback 用 `new URL().pathname.split('/')` 而非 regex：
+    切片不需要宣告合法字元集，也就不可能再漏掉某個字元。
+- **否決方案：把前端 regex 的字元集補上 `-`。**
+  否決理由：那只修好今天這一個字元。`ID_PATTERNS` 還允許底線，未來若放寬
+  規則，同一個缺陷會以完全相同的形狀再發作一次，而且症狀（被踢回首頁）
+  完全不指向 PID 解析。要修的是「有第二份真相」，不是「第二份真相寫錯了」。
+- 不變量：
+  1. 前端**永遠不判定 PID 合法性**，只負責取得。合法性由伺服器的
+     `validate_id` 決定，無效 PID 由 API 回 4xx，前端呈現該錯誤。
+  2. PID 解析失敗**不得導頁**（見 NOTE-026 的同一原則：導頁會丟掉未存內容，
+     而且把「我沒讀到 PID」偽裝成「你該回首頁了」）。
+- 驗證：`test/unit/test_paq_pid_resolution.py`、`test/js/test_paq_pid_resolve.cjs`；
+  瀏覽器實機走 `/paq/<含連字號 PID>`、`/paq?pid=<同一 PID>` 與無效 PID 三條。
+
+## NOTE-026：子資源載入失敗不得改寫其他責任的錯誤歸因
+
+- 決策日期：2026-08-13
+- 適用範圍：`app/static/js/paq_project.js` 的 `loadPaqStatus()` 與其拆出的
+  `renderProjectIdentity()` / `renderTaxonomy()` / `renderVoxels()`。
+- 問題背景：舊碼把整個載入流程（專案名稱、PI、taxonomy、3D voxel）包在
+  **同一個 try** 裡，catch 一律把 `#header-pname` 寫成
+  「⚠ Load Failed」並 alert。而 `cube_renderer.js` 對缺 `val` 的 voxel 會
+  `v.val.toFixed(2)` 抛例外。結果是：
+  **3D 渲染器壞掉 → 畫面說「專案名稱載入失敗」**，而 `/api/paq/status` 實測
+  回 200 且 name 正確、名稱其實早在 catch 之前就已經正確寫進畫面了 ——
+  catch 把一個**已經成功**的結果覆蓋成失敗。
+- 決策：依「責任」拆成互不影響的區段，每段自己的 try/catch 只寫自己的區域：
+  | 失敗的東西 | 顯示位置 | 訊息 |
+  |---|---|---|
+  | 專案身分（API 本身 4xx/5xx） | `#header-pname` | 專案載入失敗（帶狀態碼） |
+  | voxel 不存在／空陣列 | cube 容器 | 尚未建立分類矩陣 |
+  | voxel 結構壞掉／渲染抛例外 | cube 容器 | Voxel 資料格式錯誤 |
+  | taxonomy 渲染失敗 | taxonomy 面板 | 分類清單顯示失敗 |
+- 原因：
+  - 錯誤訊息是**診斷的起點**。指向錯的元件會讓下一個人往完全錯的方向查
+    —— 這一條在 HANDOFF §3.16 已經真實發生過一次。
+  - 「一個子資源失敗就抹掉全部」讓使用者失去所有還能用的東西。
+    專案名稱、聊天、taxonomy 與 3D 圖是四件事，其中三件不依賴 voxel。
+- 不變量：
+  1. 任何一段的 catch **只能寫入自己負責的 DOM 區域**，不得碰別段已寫好的值。
+  2. **不得用裸 `except`／`catch` 吞掉來源**：每個分支都要能分辨
+     「沒有資料」與「資料壞掉」，那是兩種不同的使用者行動
+     （去建矩陣 vs 回報壞資料）。
+  3. 子資源失敗**不導頁、不 alert**。
+- 驗證：`test/js/test_paq_error_isolation.cjs` 四個分支各一個測試 ＋
+  「voxel 壞掉時專案名稱仍在」的對照組。
+
+## NOTE-027：formal 唯讀鎖定只鎖編輯面，不鎖對話；授權仍在後端
+
+- 決策日期：2026-08-13
+- 適用範圍：`app/static/js/paq_project.js` 的 `lockInterfaceForFormal()`；
+  `app/core_pro/paq/paq_routes.py` 的 `/status/<pid>` 回傳的 `access`。
+- 問題背景：`lockInterfaceForFormal()` 做的是
+  `document.querySelectorAll('input').forEach(el => el.disabled = true)`
+  —— 一個**全頁面**選擇器。它的意圖是鎖住 taxonomy 編輯，但 `#chat-input`
+  也是 `<input>`，於是**專案一轉正，PAQ Co-Pilot 對話就完全不能用**，
+  連 PI 自己都不行。轉正是專案的正常生命週期，不是降級。
+- 決策：
+  1. 鎖定範圍改為 taxonomy 面板內（`#panel-tax` 底下的輸入元素），
+     `#chat-input` 與送出鈕明確排除。
+  2. 是否唯讀改由**伺服器**決定：`/api/paq/status/<pid>` 新增
+     `access: {role, can_edit}`，`can_edit` 直接問
+     `require_workspace_role(pid, ROLE_EDITOR) is None` —— 也就是**問同一支
+     enforcement 函式**，而不是在前端重寫一次角色比大小。
+  3. viewer 的 `#chat-input` 維持 disabled，但那是**呈現**；
+     真正的門檻是 `enforce_project_ownership` 對 POST 要求 editor。
+- 原因：
+  - `can_edit` 若在前端自行由 role 字串推導，就會出現第二份角色表
+    （NOTE-025 同一個病）。直接呼叫 enforcement 函式的話，
+    未來改 method→role 對應表時徽章不可能與實際授權不一致。
+  - **解除 disabled 不等於取得授權**：把 `#chat-input` 放行之後，viewer 手動
+    在 console 移除 disabled 仍然只會拿到 403。前端這一層是體驗，不是防線。
+- 不變量：
+  1. 前端**不得**成為授權來源；移除任何 disabled 都不得讓 API 放行。
+  2. formal 專案對 editor 以上必須可輸入、可延續對話；readonly 專案
+     （轉正後的舊 provisional 快照）維持整體唯讀 —— 那是後端既有的
+     `project.status == 'readonly'` 判斷，不在本 NOTE 的變更範圍。
+- 驗證：`test/unit/test_paq_formal_chat_acl.py`（formal + editor 可發話、
+  formal + viewer 403、readonly 仍全面擋下）；
+  瀏覽器實機：formal 專案以 PI／Co-PI 各送出一輪並讀回，viewer 為唯讀。
+
+## NOTE-028：stub LLM adapter 進入 repo，但必須雙重上鎖
+
+- 決策日期：2026-08-13
+- 適用範圍：`app/llm_service/adapter/llm_stub.py`。
+- 背景：PAQ 2A 的「寫入」半段一直無法在瀏覽器走完 —— 隔離驗證環境沒有綁模型，
+  每次都停在 `LLM_NOT_BOUND`（HANDOFF §3.16）。於是「送出 → 存檔 → 重整 → 讀回
+  → 下一輪帶上前文」這條鏈，從來只有契約層測試，沒有實機證據。
+  綁真實 provider 不可行：要金鑰、要花錢、回覆不決定性，而且**無法證明
+  第三輪的 prompt 真的含有前兩輪** —— 那需要看見送進 provider 的字串。
+- 決策：把 stub adapter 放進 repo（讓驗證可重現），但加兩道鎖：
+  1. `__init__` 在 `ROOTHINKS_ALLOW_STUB_LLM` 不為 `1` 時**直接 raise**。
+  2. 每一則回覆都硬性帶上 `[STUB]` 前綴，且不可由呼叫端關閉。
+  另外把收到的完整 prompt 寫進 `<data_root>/_stub_llm/`，
+  那正是「第三輪含前兩輪」唯一的直接證據。
+- 原因：
+  - **不放進 repo 的代價**：驗證腳本每次都要自己生一份 adapter，
+    下一個人重跑不了，等於沒有可重現的驗收 —— 這正是本專案反覆出問題的地方。
+  - **放進 repo 的風險**是有人在正式站建一條 `vendor='stub'` 的連線，
+    於是研究內容被假文字污染且看不出來。兩道鎖各擋一半：
+    env 擋「跑得起來」，`[STUB]` 前綴擋「看起來像真的」。
+    前綴刻意不做成可設定 —— 可關掉的標記等於沒有標記。
+- **否決方案：用 monkeypatch 在測試裡替換 dispatcher。**
+  否決理由：那只在 pytest 行程內有效，瀏覽器打的是真的 HTTP 到真的 Flask
+  行程，monkeypatch 完全不在那條路徑上。要驗的正是那條路徑。
+- 不變量：
+  1. 沒有 `ROOTHINKS_ALLOW_STUB_LLM=1` 就必須無法建立實例。
+  2. prompt 落檔只在 stub 啟用時發生，且寫在 data root 之下（不得寫死路徑）。
+  3. 這個 adapter 永遠不得被當成「離線模式」或「降級 provider」使用。
+- 驗證：`test/unit/test_stub_llm_gate.py`（未設 env 必須 raise、設了才可用、
+  回覆一定帶 `[STUB]`）。
+
+## NOTE-029：導頁不得靜默吃掉未存內容；草稿以 sendBeacon 保底
+
+- 決策日期：2026-08-13
+- 適用範圍：`app/static/js/manuscript_ws.js` 的 `beforeunload` 守衛、
+  `app/core_pro/manuscript/manuscript_routes.py` 的
+  `POST /manuscript/api/draft/flush`。
+- 問題背景（**瀏覽器 navigation 證據，不是推論**）：
+  「手稿工作檯偶發被帶回 Dashboard」查了三輪都沒有結果，因為前幾輪都在找錯誤
+  —— 而這件事**沒有錯誤可找**。實際攔到的事件序列是：
+  ```
+  page-load     navType=navigate           /manuscript/?pid=PAQTST-p
+  anchor-click  href="/"  text="roothinks v1.0.1"
+  beforeunload
+  → 現在位置 /
+  console-error: 無      失敗請求: 無
+  ```
+  也就是 `_navbar.html` 的品牌連結（`<a href="/">`，實測位於 (12,8) 175×40，
+  永遠浮在編輯區正上方）與 Dashboard 連結，本來就是**通往首頁的合法連結**。
+  「偶發」的真相是**誤點**，而它之所以查不到，正是因為那是一次完全正常的導頁：
+  沒有 console error、沒有失敗請求 —— 與 §3.18 記錄的觀察逐字相符。
+- **真正的缺陷不是那個連結，是全 app 沒有任何 `beforeunload` 守衛**，
+  而 autosave 是 **1500ms debounce**。實測：在編輯區打入哨兵後 **6ms** 內點下
+  品牌連結，`grep -rl` 掃過整個 data/ —— 該哨兵**不存在於磁碟任何位置**，
+  永久遺失且全程沒有任何提示。
+- 決策：
+  1. `beforeunload` 時若有未落地的編輯，改用
+     **`navigator.sendBeacon()` 打 HTTP 端點**把草稿保住。
+  2. beacon 送不出去時（沒有 pid、payload 過大、瀏覽器不支援）才設
+     `returnValue` 讓瀏覽器跳原生確認框。
+- 原因：
+  - **不能用 socket 補送**：`_flushAutosave()` 走 `socket.emit('cmd_autosave_block')`，
+    而 unload 期間連線正在拆除，emit 不保證送達。`sendBeacon` 就是為這個時機
+    設計的（瀏覽器接手送出，不受頁面銷毀影響）。因此必須有一條 HTTP 路徑，
+    這不是重複實作，是同一個儲存動作的第二種傳輸。
+  - **優先「保住」而不是「攔住」**：擋下導頁要跳原生確認框，那東西會凍住
+    整個 renderer（§3.8 已記載 alert/confirm 的災情），而且使用者真的想離開時
+    只是多一次點擊。內容不掉才是目的，攔截只是手段。
+  - 端點刻意放在 `/manuscript/api/` 之下：`is_api_request_path()` 認得它，
+    於是 CSRF 守衛（`__init__.py` 約 L487）會跳過 —— 這是必要的，
+    **`sendBeacon` 無法設定自訂標頭**，帶不了 CSRF token。
+    授權因此必須在端點內自己做，不能靠 method 推導。
+- **否決方案 A：把 `_navbar.html` 的 `href="/"` 拿掉或改成 JS 攔截。**
+  否決理由：那是使用者要用的正常導覽，拿掉會讓人離不開工作檯；
+  而且只擋住這兩個連結，重整、關分頁、上一頁、外部連結全都還是會掉內容。
+  要修的是「沒有守衛」，不是「有連結」。
+- **否決方案 B：把 autosave debounce 調到 0 或很短。**
+  否決理由：每次按鍵都寫檔會把磁碟與 FileLock 打爆，
+  而且無論多短都仍有視窗 —— 這是把機率調小，不是把缺陷修掉。
+- 不變量：
+  1. beacon 端點的 ACL 必須與 `cmd_autosave_block` **完全一致**
+     （專案成員 + 章節可寫），不得因為「只是草稿」就放寬。
+  2. 只寫 `_draft` 檔，**不得產生版本、不得寫 RevisionLog** —— 與 socket 路徑同語意。
+  3. 守衛不得阻止使用者離開（只在 beacon 失敗時才提示）。
+  4. 記錄導頁證據時**不得寫入稿件內容、token 或個資**，只留元素識別與長度。
+- 驗證：`test/unit/test_navigation_guard.py`；
+  瀏覽器實機 A/B（打字 → 6ms 內點品牌連結 → 草稿仍在磁碟上）。
+
+## NOTE-030：2B 推進 2C 搬運的是 HTML，不得再套用純文字換行轉換
+
+- 決策日期：2026-08-13
+- 適用範圍：`app/static/js/manuscript_soed.js` 的 `cardActionPushToFusion()`。
+- 決策：把 2B 卡片內容寫進 2C 區塊時，**原樣搬運 `innerHTML`**，
+  不得再做 `\n` → `<br>` 之類的純文字換行補償。
+- 問題背景：這一行是 v0.5 留下的殘骸。當時搬的是 `innerText`（純文字，
+  換行是語意的，必須補 `<br>` 才看得到分行）；v0.6 為了讓圖片不消失把來源
+  改成 `innerHTML`，**但沒有把配套的換行轉換一起拿掉**。
+  於是每一個 HTML 原始碼裡的排版換行都被當成使用者的分行，變成一個真的 `<br>`。
+- 為什麼這件事「看起來只是偶爾怪怪的」：純文字段落的 innerHTML 通常沒有換行，
+  所以多數情況看不出來。但**素材插入用的樣板都是多行字串**
+  （`manuscript_image.js` 的 `imgTag`、`manuscript_wsui.js` 的 `insertHtml`
+  都是跨 5 行的 template literal），所以**只要那一章有圖，推進 2C 就會多出
+  4～5 個空行**，圖片被擠開、caption 與圖分家。章節有沒有圖，決定了症狀出不出現
+  ——這就是它被描述成「好像怪怪的」而不是「壞了」的原因。
+- 不變量：
+  1. 2B 與 2C 對同一段內容的**渲染結果必須一致**。2C 是 2B 的組裝，不是再排版。
+  2. 任何未來要在這條路徑上做的字串轉換，都必須先問「來源是 HTML 還是純文字」。
+- 相關：NOTE-007（2C 以章節為鍵原位 upsert）。同一個函式，不同的不變量。
+- 驗證：`test/unit/test_fusion_push_fidelity.py`。
+
+## NOTE-031：匯出成品由結構化轉換產生，畫布 chrome 不得進入文件
+
+- 決策日期：2026-08-13
+- 適用範圍：`app/core_pro/manuscript/manuscript_docx.py`、
+  `POST /manuscript/api/export/docx/<pid>`、
+  `app/static/js/manuscript_wsui.js` 的 `exportFusionToWord()`。
+- 決策：2C 匯出必須產生**真正的 OOXML `.docx`**（`zipfile` 手寫），
+  由伺服器把 2C 的 HTML 轉成 `w:p` / `w:tbl` / `w:drawing` 結構；
+  **廢除**把 `fusionCanvas.innerHTML` 包一層 `<html>` 再標成
+  `application/msword` 的假匯出。
+- 問題背景（擁有者回報「2C 的匯出排版完全亂掉」的真因）：
+  舊作法送出的是一份**沒有任何樣式表的 HTML**，副檔名 `.doc`。
+  Word 會讀，但它讀到的是 Bootstrap 的 class 名稱而不是樣式：
+  ```
+  <div class="fusion-block mb-4 border-start border-4 border-success ps-3">
+    <h5 class="text-success fw-bold"><i class="bi bi-check2-circle me-1"></i>Introduction
+      <span class="badge ... fusion-src-ver">S.Ver 0.3</span></h5>
+  ```
+  於是 (a) 所有間距／縮排／對齊**全部消失**（class 沒有對應的 CSS）；
+  (b) Bootstrap icon 的 `<i>` 變成空字元或亂碼方塊；
+  (c) 編輯器才需要看的 `S.Ver 0.3` 徽章**被當成標題的一部分印進論文**；
+  (d) 圖片 `src` 是伺服器相對路徑（還帶 `?access_token=`），
+      離線或換一台電腦開就是一排破圖。
+  這四件事加起來就是「排版完全亂掉」，而它不是樣式沒調好，
+  是**根本沒有在產生文件**。
+- 決策細節：
+  1. **轉換在伺服器端做**，輸入是 2C 的 HTML 字串。
+     瀏覽器端拿不到圖片的二進位、也不該拿到別人專案的檔案。
+  2. **畫布 chrome 一律剔除**：`.fusion-src-ver` 徽章、`<i class="bi-*">` 圖示、
+     `button`／`script`／`style`／`svg`。判準是「這個節點是給編輯者看的，
+     還是論文的一部分」，不是「它長得像不像內容」。
+  3. 章節標題（`.fusion-block` 的直屬 `<h5>`）映成 `Heading1`，
+     不照 HTML 的標籤層級硬換 —— 那個 `h5` 是版面選擇，不是文件層級。
+- 不變量：
+  1. 產出必須是可被 `zipfile` 開啟、且含
+     `[Content_Types].xml`、`_rels/.rels`、`word/document.xml`、
+     `word/_rels/document.xml.rels` 的合法 OOXML 套件。
+  2. MIME 必須是
+     `application/vnd.openxmlformats-officedocument.wordprocessingml.document`，
+     副檔名 `.docx`。
+  3. `document.xml` 內**不得**出現 `fusion-src-ver`、`S.Ver`、`bi-` 等 chrome 痕跡。
+- 驗證：`test/unit/test_manuscript_docx_export.py`（含解壓後的 part 清單與
+  document.xml 內容斷言）。
+
+## NOTE-032：DOCX 內嵌圖片只從本專案 image registry 取，伺服器不得抓任意 URL
+
+- 決策日期：2026-08-13
+- 適用範圍：`app/core_pro/manuscript/manuscript_docx.py` 的 `RegistryImageResolver`。
+- 決策：匯出時遇到 `<img src=...>`，**唯一**的解析來源是該 pid 的
+  `image_registry.json`。流程是「URL path → registry 比對 → `safe_join_under`
+  讀磁碟」，全程沒有任何 HTTP client。
+- 原因：
+  - **SSRF**：匯出的 HTML 由使用者控制。若伺服器照著 `src` 去抓，
+    `http://169.254.169.254/…`（雲端 metadata）、`http://redis:6379/…`
+    這種內網位址就會由**伺服器**代為請求，而且結果會被打包進使用者拿得到的檔案裡。
+    不是「驗證 URL 是否安全」——是**根本不要有抓取這個動作**。
+  - **跨專案越權**：registry 比對同時是 ACL。別的 pid 的
+    `/manuscript/image/OTHER-p/x.png` 在本次匯出的 registry 裡查不到，直接失敗。
+- 決策：`data:` URI **也拒絕**。它沒有 SSRF 風險，但它代表一張
+  **沒有登記在素材庫的圖**，與 NOTE-033 的資產身分規則衝突；
+  而且它讓匯出的大小不再有上界。拒絕時回可行動的訊息，不是靜默略過。
+- 不變量：
+  1. 這個模組不得 import 任何 HTTP client（`requests`／`urllib.request`／`httpx`）。
+  2. 圖片查不到、越權或格式不支援 → **明確失敗**，
+     不得產生「少一張圖但看起來成功」的 docx。
+- 驗證：`test/unit/test_manuscript_docx_export.py` 的
+  `test_external_url_image_is_rejected`、`test_cross_pid_image_is_rejected`、
+  `test_missing_image_fails_loudly`、`test_module_imports_no_http_client`。
+
+## NOTE-033：影像資產以 magic bytes 決定型別，副檔名與 MIME 都不可信
+
+- 決策日期：2026-08-13
+- 適用範圍：`app/core_pro/manuscript/manuscript_image.py` 的 `save_image_asset`、
+  `manuscript_routes.py` 的 `cmd_save_image`。
+- 決策：寫檔前先**解碼後嗅探實際位元組**判斷影像型別，並以嗅到的型別決定
+  落地副檔名。前端送來的 `filename` 與 `data:` header 的 MIME **只當提示**，
+  不作為判斷依據。只接受 PNG / JPEG / GIF / WebP。
+- 原因：
+  - 舊實作把 base64 解出來就寫，檔名只過 `_sanitize_filename`（換掉非
+    `A-Za-z0-9._-` 的字元）。也就是**任何位元組**都可以用 `x.png` 這個名字
+    落到 `data/<PID>-p/manuscript/image/` 底下，再由 `/manuscript/image/<pid>/<fname>`
+    服務出去。
+  - **SVG 是最直接的問題**：它是 XML，可以夾帶 `<script>`。若以
+    `image/svg+xml` 被服務出去且瀏覽器直接開啟，那是同源的 stored XSS。
+    因此 SVG 一律拒絕 —— 不是「消毒後接受」，消毒 SVG 是一場打不完的仗。
+  - 副檔名偽裝（`payload.php.png`、`x.png` 內容其實是 HTML）也由同一道擋掉。
+- 決策：**寫入權限門檻拉到章節可寫**。`cmd_save_image` 原本只有
+  `_ensure_socket_project_access`（專案成員即可），也就是 **viewer 可以上傳圖片**
+  並佔用專案容量。改用與 `cmd_save_block` 同一套 `_socket_can_write_section`。
+- 不變量：
+  1. 落地檔名的副檔名必須來自嗅探結果，不得來自使用者輸入。
+  2. 嗅不出支援的型別 → 拒絕，**且不得留下任何檔案**（先驗後寫）。
+  3. 單檔上限與專案容量上限都在解碼後、寫入前檢查。
+- 驗證：`test/unit/test_manuscript_image_upload.py`。
+
+## NOTE-034：素材身分由伺服器 asset id 決定，Figure／Table 編號在插入時推導
+
+- 決策日期：2026-08-13
+- 適用範圍：`app/static/js/manuscript_image.js`、`manuscript_wsui.js` 的素材插入、
+  `manuscript_image.py` 的 registry 欄位。
+- 決策：每一筆素材的身分是伺服器產生的 `id`（`img_001` / `tbl_001`）。
+  畫面上的 `Figure N` / `Table N` 是**顯示用的推導值**，由素材在 registry 中的
+  順序決定，不是身分。
+- 問題背景：`manuscript_image.js:377` 原本寫
+  `fig_id: \`Figure ${Math.floor(Math.random()*100)}\`` —— **編號是亂數**。
+  後果是：同一篇論文可能出現兩張 `Figure 42`、也可能從 `Figure 7` 跳到
+  `Figure 91`，而且**重跑一次就換一組號碼**，等於圖號完全不可引用。
+  這不是排版問題，是資料問題：正文裡寫「如 Figure 42 所示」在下一次存檔後
+  就指向別張圖。
+- 決策：`Math.random()` 一律移除。AI 產圖走與圖庫上傳相同的
+  `next_figure_label()`，由伺服器依 registry 現況給下一個號。
+- 不變量：
+  1. 前端**不得**自行產生素材編號。
+  2. 編號連續且穩定；刪除素材造成的空號由使用者自行處理，
+     系統不得為了補號而改動既有素材的號碼（那會讓正文引用失效）。
+- 驗證：`test/unit/test_manuscript_image_upload.py::test_figure_label_is_deterministic`、
+  `test/unit/test_manuscript_section_switch.py` 的素材插入斷言。
+
+## NOTE-035：錯誤回報不得使用阻塞式原生對話框
+
+- 決策日期：2026-08-13
+- 適用範圍：`app/static/js/manuscript_wsui.js` 的 `showNotice()` 與其所有呼叫端。
+- 決策：`alert()` / `confirm()` / `prompt()` 不得用於錯誤回報或流程確認，
+  一律改用非阻塞提示條。
+- 原因（**實測，不是偏好**）：原生對話框會凍住整個 renderer 行程。
+  本專案已經因此吃過兩次虧：§3.8 記載過一次；做 PID 解析的 A/B 時
+  `alert()` 讓自動化的 `preview_eval` 直接逾時、只能重啟容器。
+  最嚴重的是 `saveSectionConfig()` 的 catch —— **一次存檔失敗會讓整個工作檯
+  停止回應**，使用者連「重試」都按不到，而它本來只是要說一句「存檔失敗」。
+- 決策細節：成功／資訊類 6 秒後自動消失；警告／錯誤類留著等使用者關閉，
+  因為那通常要據此採取動作。訊息一律用 `textContent` 寫入
+  （內容含伺服器回來的檔名、標題與錯誤字串）。
+- 本輪範圍：只收斂 `manuscript_wsui.js`（7 處）。
+  `dashboard.js`／`lava_setup.js`／`google_driveapi.js`／`paq_interact.js`
+  仍有數十處，屬於獨立一輪 —— 那幾支需要各自的提示條宿主，
+  硬套 Manuscript 的 host 會產生跨頁面的相依。
+- 驗證：`test/unit/test_manuscript_docx_export.py` 之外，
+  以真瀏覽器確認匯出失敗時提示條出現且頁面仍可操作。
+
+## NOTE-036：章節完成度與章節設定分開存；整體比例保留欄位但現階段不計算
+
+- 決策日期：2026-08-14
+- 適用範圍：`app/core_pro/manuscript/model_section.py` 的 `ManuSectionProgress`、
+  `manuscript_routes.py` 的 `/manuscript/api/progress/*`、
+  `app/static/js/manuscript_progress.js`、`app/static/js/dashboard.js`。
+- 決策一：完成度**另立一張表**（`manu_section_progress`，鍵為 pid + section_key），
+  **不加在 `ManuSectionConfig` 上**。
+- 原因（這是本題唯一真正的陷阱）：`POST /manuscript/api/sections/<pid>` 的實作是
+  ```python
+  ManuSectionConfig.query.filter_by(pid=pid).delete()   # 全量覆蓋，避免排序殘留
+  ```
+  也就是**每一次改章節名稱或調整順序，整張設定表會被刪掉重建**。
+  完成度若是那張表上的一個欄位，使用者只要在「章節管理」按一次儲存，
+  **全部章節的進度就會靜默歸零**，而且畫面上不會有任何錯誤。
+  分表之後，「設定重寫不得清空進度」這件事是**結構上成立**的，
+  不是一條要靠人記得的紀律。
+- 決策二：**整體比例現階段不計算**。API 一律回 `overall: null`，
+  前端顯示「尚未計算」。
+- 原因：整體比例不是各章平均 —— 章節的份量差很多（Abstract 與 Results 不等重），
+  而且有些章節在特定研究裡根本不會寫。在權重規則定案之前，
+  **給一個看起來合理但其實錯的數字，比明白說「還沒算」更糟** ——
+  使用者會拿它去回報進度。欄位先留著，等規則定了只改一個函式。
+- 決策三：寫入門檻用 `_socket_can_write_section`，不是專案層的 editor 門檻。
+  - viewer 一律不得寫入（前端唯讀 + **後端也擋**）。
+  - owner／editor 可寫所有章節。
+  - coauthor（限定編輯）**可以寫自己被指派的章節** —— 被指派的人才知道那一章寫到
+    哪裡；要他回報給 owner 再由 owner 代填，等於讓最不知情的人填最需要準確的欄位。
+    這與 NOTE-029 的草稿保底採同一個判定函式。
+- 不變量：
+  1. `progress_percent` 一律是 **0～100 的整數**；伺服器負責 clamp 與型別檢查，
+     前端的 `min/max` 只是體驗優化。
+  2. 讀取範圍與 `_filter_visible_sections` 一致：coauthor 看不到未被指派的章節，
+     **進度 API 也不得洩漏那些章節的存在**。
+  3. 沒有紀錄的章節回 `null`（「還沒填」），**不是 0**（「填了 0%」）。
+     兩者在進度回報上意義完全不同。
+- 驗證：`test/unit/test_section_progress.py`。
+
+## NOTE-037：2C 的舊區塊以章節標題認領一次，認領後補寫 data-section
+
+- 決策日期：2026-08-15
+- 適用範圍：`app/static/js/manuscript_soed.js` 的 `_findFusionBlock()` /
+  `_adoptLegacyFusionBlock()`。
+- 問題（擁有者實機回報，附圖）：在 2B 改完 Abstract 後按「push fuse to 2C」，
+  2C **最後面**多出一個新的 Abstract，而**原本那個 Abstract 還在**
+  —— 同一份稿件出現兩個 Abstract。
+- 真因（查 git 歷史確認，不是推論）：NOTE-007 之前的實作（commit `32e1949`）是
+  ```js
+  const fusionHtml = `
+      <div class="fusion-block mb-4 border-start border-4 border-success ps-3 animate__animated animate__fadeInLeft">
+          <h5 class="text-success fw-bold"><i class="bi bi-check2-circle me-1"></i>${sectionLabel}</h5>
+          <div class="fusion-body">${content.replace(/\n/g, '<br>')}</div>
+      </div>`;
+  this.app.fusionCanvas.innerHTML += fusionHtml;      // append，且**沒有 data-section**
+  ```
+  那些區塊**沒有章節身分**，只有一行標題文字。NOTE-007 之後 `_findFusionBlock()`
+  是用 `.fusion-block[data-section]` 查的，查不到舊區塊 → 走 append 分支 → 產生第二個。
+  擁有者的專案已經到 G.Ver V12，2C 裡面存的正是這種舊區塊
+  （截圖佐證：舊的那個標題旁**沒有 `S.Ver` 徽章**，新的那個有 `S.Ver 1.5`）。
+- 決策：`_findFusionBlock()` 找不到 `data-section` 相符的區塊時，**認領一次**
+  符合條件的舊區塊，並當場補寫 `data-section`（一次性遷移，之後就是正常 upsert）。
+- 認領條件（**四道全部成立才認領**，這裡是全題最危險的地方）：
+  1. 該區塊**完全沒有** `data-section` —— 絕不從別的章節手上搶。
+  2. 標題文字（剝掉 icon 與 `S.Ver` 徽章、正規化空白、忽略大小寫）
+     **完全等於**該章節的 label —— 不是 `includes`。
+     用 `includes` 會讓 `Abstract` 認領 `Abstract and Keywords`。
+  3. 該區塊在 `fusionCanvas` 之內。
+  4. 只認領**第一個**相符者。
+- **為什麼這不違反 NOTE-007 的「不得靠標題文字猜歸屬」**：NOTE-007 擔心的是
+  「把使用者的舊稿搬錯位置」。這裡不搬動任何東西 —— 區塊留在原位，只補一個
+  識別屬性；而且比對是**全等**、只針對**完全沒有身分**的區塊。
+  真正會搬錯位置的是相反的作法（append 一個新的到最後面），而那正是現在的症狀。
+- 同名多個舊區塊：認領第一個，**其餘保留不動**，並以非阻塞提示條告知使用者
+  「2C 有多個『X』區塊，已更新第一個，請確認是否移除其餘」。
+  **刻意不自動刪除** —— 那是使用者的稿件，靜默刪除比留下重複更糟。
+- 認領時補上 `<span class="fusion-src-ver">`（舊樣板沒有這個元素），
+  否則 S.Ver 標記寫不進去，「這段來自 2B 第幾版」就永遠是空的。
+- 不變量：
+  1. 認領**不改變區塊在畫布上的位置**（使用者的排版是他自己排的）。
+  2. 認領只發生在「該章節還沒有帶 `data-section` 的區塊」時。
+  3. 認領後該章節必為**唯一**帶該 `data-section` 的區塊；同章連推 N 次仍只有一個。
+- 驗證：`test/unit/test_fusion_legacy_adoption.py`；瀏覽器實機（舊 HTML 載入 2C →
+  推同章 → 仍只有一個該章區塊，且內容被更新、位置不變）。

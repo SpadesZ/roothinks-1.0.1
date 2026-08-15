@@ -227,6 +227,7 @@ async function fetchProjects(status) {
                 renderFormalCards(projects);
             }
             renderCardWorkflows(projects);
+            renderCardProgress(projects);
         }
     } catch (e) {
         console.error(e);
@@ -407,6 +408,7 @@ function renderFormalCards(projects) {
                 </div>
                 <div class="card-footer bg-white border-top-0 pt-0 pb-3">
                     <div class="rt-card-workflow small mb-2" data-workflow-card="${escapeHtml(projectId)}"></div>
+                    <div class="rt-card-progress small mb-2" data-progress-card="${escapeHtml(projectId)}"></div>
                     <div class="row g-2">
                         <div class="col-6">
                             <a href="/literature?pid=${projectIdUrl}" class="btn btn-success w-100 fw-bold">
@@ -1335,4 +1337,109 @@ async function membersSelfExit() {
     } catch (e) {
         _membersShowError('網路錯誤，請稍後再試');
     }
+}
+
+
+// ==========================================
+// 章節完成比例（NOTE-036）
+// ==========================================
+
+/**
+ * 把每個正式專案的章節完成比例畫到卡片上。
+ *
+ * 走**一支批次端點**而不是逐張卡片打一次：卡片數量等於專案數量，
+ * N+1 會在專案一多時把首頁拖垮。
+ *
+ * NOTE(NOTE-036) 「整體比例」現階段一律顯示「尚未計算」，不做各章平均。
+ * 各章不等重（Abstract 與 Results 差很多），有些章節在特定研究裡根本不會寫；
+ * 在權重規則定案前給一個看起來合理但其實錯的數字，比明白說「還沒算」更糟
+ * —— 使用者會拿它去回報進度。欄位先留著，規則定了只改這一處與伺服器那一處。
+ */
+async function renderCardProgress(projects) {
+    const slots = document.querySelectorAll('[data-progress-card]');
+    if (!slots.length) return;
+
+    let byPid = {};
+    try {
+        const res = await fetch('/manuscript/api/progress_summary');
+        if (res.ok) {
+            const data = await res.json();
+            byPid = (data && data.projects) || {};
+        }
+    } catch (err) {
+        // 讀不到進度不得讓整張卡片壞掉；留白比顯示錯的數字好。
+        byPid = {};
+    }
+
+    slots.forEach((slot) => {
+        const pid = slot.getAttribute('data-progress-card') || '';
+        const info = byPid[pid];
+        slot.innerHTML = '';
+
+        const box = document.createElement('div');
+        box.className = 'border rounded bg-white p-2';
+
+        const head = document.createElement('div');
+        head.className = 'd-flex justify-content-between align-items-center mb-1';
+        const headLabel = document.createElement('span');
+        headLabel.className = 'fw-bold text-secondary';
+        headLabel.textContent = '整體完成度';
+        const headValue = document.createElement('span');
+        headValue.className = 'text-muted fst-italic';
+        // 保留欄位、明說沒算。不要放 0% 或 -- ，那兩個都會被讀成「數字」。
+        headValue.textContent = '尚未計算';
+        head.appendChild(headLabel);
+        head.appendChild(headValue);
+        box.appendChild(head);
+
+        if (!info || !Array.isArray(info.sections) || !info.sections.length) {
+            const empty = document.createElement('div');
+            empty.className = 'text-muted';
+            empty.textContent = info ? '尚無章節' : '完成度未載入';
+            box.appendChild(empty);
+            slot.appendChild(box);
+            return;
+        }
+
+        const list = document.createElement('div');
+        list.className = 'rt-progress-list';
+        list.style.maxHeight = '132px';
+        list.style.overflowY = 'auto';
+
+        info.sections.forEach((sec) => {
+            const row = document.createElement('div');
+            row.className = 'd-flex align-items-center gap-2 mb-1';
+
+            const name = document.createElement('span');
+            name.className = 'text-truncate text-dark';
+            name.style.flex = '0 0 40%';
+            name.title = String(sec.label || sec.id || '');
+            name.textContent = String(sec.label || sec.id || '');
+
+            const bar = document.createElement('div');
+            bar.className = 'progress flex-grow-1';
+            bar.style.height = '8px';
+            const filled = document.createElement('div');
+            filled.className = 'progress-bar bg-success';
+            // null 代表「還沒填」，不是 0%：條是空的，右邊寫「--」而不是「0%」。
+            const value = (sec.progress === null || sec.progress === undefined)
+                ? null : Number(sec.progress);
+            filled.style.width = (value === null ? 0 : value) + '%';
+            bar.appendChild(filled);
+
+            const pct = document.createElement('span');
+            pct.className = value === null ? 'text-muted' : 'text-dark fw-bold';
+            pct.style.flex = '0 0 40px';
+            pct.style.textAlign = 'right';
+            pct.textContent = value === null ? '--' : value + '%';
+
+            row.appendChild(name);
+            row.appendChild(bar);
+            row.appendChild(pct);
+            list.appendChild(row);
+        });
+
+        box.appendChild(list);
+        slot.appendChild(box);
+    });
 }

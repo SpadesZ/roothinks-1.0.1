@@ -61,7 +61,17 @@ function isPaqPrincipalInvestigator(role) {
  */
 async function loadPaqStatus() {
     // 顯示全域 Loading (如果有的話) 或 Panel Specific Loading
-    toggleLoading('taxonomy', true); 
+    toggleLoading('taxonomy', true);
+
+    // NOTE(NOTE-026): 提到 try 之外，好讓 voxel 那一段能在**主 try 結束之後**
+    // 獨立執行。留在 try 內的話，voxel 就只能待在同一個 catch 底下，
+    // 那正是「一個子資源失敗抹掉全部」的成因。
+    //
+    // 初值刻意是 null 而非 {}：null 代表「**根本沒拿到 survey**」，
+    // 與「拿到了、但矩陣是空的」是兩件不同的事。用 {} 當初值的話，
+    // 專案整個載入失敗時 voxel 區會顯示「尚未建立分類矩陣」——
+    // 那是我們**無從得知**的事，等於用另一種形式再犯一次錯誤歸因。
+    let surveyForVoxels = null;
 
     try {
         console.log(`[API] Fetching status for ${currentPid}...`);
@@ -173,14 +183,20 @@ async function loadPaqStatus() {
             finalTopicEl.value = (proj.research_title || proj.name || '').trim();
         }
 
-        // 3.2 檢查專案狀態 (轉正鎖定)
+        // 3.2 依專案狀態與**伺服器回報的存取權**設定介面。
+        // NOTE(NOTE-027): formal 只鎖 taxonomy 編輯面，對話維持可用；
+        // 是否唯讀由 access.can_edit（伺服器算）決定，前端不自行推導角色。
         if (proj.status === 'formal') {
             lockInterfaceForFormal();
+        }
+        if (proj.access && proj.access.can_edit === false) {
+            lockInterfaceForViewer();
         }
 
         // 3.3 載入 Survey 資料 (Taxonomy & Cube)
         const survey = data.survey || {};
-        
+        surveyForVoxels = survey;
+
         // [v3.3 Fix] 資料結構對接: 優先使用 axis_labels, 兼容 axis_definitions
         const loadedLabels = survey.axis_labels || survey.axis_definitions || {};
         const loadedTags = survey.axis_tags || {};
@@ -227,42 +243,134 @@ async function loadPaqStatus() {
         });
 
         // 更新 Tag 列表 UI
-        renderTaxonomyUI();  
-
-        // 3.4 載入 Cube Data
-        if (survey.cube_data && Array.isArray(survey.cube_data) && survey.cube_data.length > 0) {
-            console.log(`[Init] Rendering Cube with ${survey.cube_data.length} voxels.`);
-            // 呼叫外部渲染器 (CubeRenderer)
-            if (typeof CubeRenderer !== 'undefined') {
-                CubeRenderer.renderVoxels('cube-container', {
-                    voxels: survey.cube_data,
-                    axis_labels: localTaxonomy.axis_labels
-                });
-            } else {
-                console.warn('[Warn] CubeRenderer library not loaded.');
-            }
-        } else {
-            // 無資料時顯示 Waiting State
-            if (typeof CubeRenderer !== 'undefined') {
-                CubeRenderer.clear('cube-container');
-            }
+        // NOTE(NOTE-026): taxonomy 渲染失敗寫進自己的錯誤槽，不得冒到外層
+        // 而把專案名稱改寫成載入失敗。
+        try {
+            const taxErr = document.getElementById('taxonomy-error');
+            if (taxErr) taxErr.classList.add('d-none');
+            renderTaxonomyUI();
+        } catch (taxError) {
+            console.error('[Taxonomy] render failed', taxError);
+            showTaxonomyError(taxError);
         }
-        
+
         // 重置 Dirty 狀態 (剛載入視為乾淨)
-        setDirty(false); 
+        setDirty(false);
 
     } catch (e) {
+        // NOTE(NOTE-026): 這個 catch 現在**只**負責「專案身分載不到」。
+        // 3D voxel 已經移到下面自己的 try（見 renderVoxelsFromSurvey）——
+        // 舊碼把它包在這裡，於是 cube_renderer 對壞 voxel 抛的 TypeError 會
+        // 一路冒上來，把**已經正確寫進畫面**的專案名稱覆蓋成「⚠ Load Failed」。
+        // 壞的是 3D 渲染器，畫面卻說專案名稱載入失敗 —— 錯誤歸因指向錯的元件，
+        // 會讓下一個查的人往完全錯的方向走。
         console.error('[Load Error]', e);
-        
-        // [v3.4 Fix] UI Feedback on Error
-        document.getElementById('header-pname').innerHTML = `<span class="text-danger"><i class="bi bi-exclamation-triangle"></i> Load Failed</span>`;
-        document.getElementById('header-pname').title = e.message;
-        
-        alert('載入專案失敗 (Load Failed): ' + e.message);
-        
+        showProjectIdentityError(e);
     } finally {
-        toggleLoading('taxonomy', false); 
+        toggleLoading('taxonomy', false);
     }
+
+    // 3.4 3D Voxel：獨立責任、獨立 try。
+    // 刻意排在主 try 之外 —— 這一段失敗時，上面已經成功的專案名稱、PI、
+    // taxonomy 與聊天都必須留在畫面上。
+    try {
+        renderVoxelsFromSurvey(surveyForVoxels);
+    } catch (e) {
+        console.error('[Voxel] render failed', e);
+        showVoxelError(e);
+    }
+}
+
+/**
+ * 3D voxel 渲染與其失敗分類。
+ *
+ * NOTE(NOTE-026): 「沒有矩陣」與「矩陣壞掉」是兩種不同的使用者行動
+ * （去建一個 vs 回報壞資料），所以在這裡就分流，不留給呼叫端猜。
+ * 空值判斷刻意做在呼叫 renderVoxels **之前**：renderer 自己對空陣列會畫
+ * 「Waiting for Data…」，那句話對「還沒建立矩陣」的人沒有任何指示作用。
+ */
+function renderVoxelsFromSurvey(survey) {
+    // survey === null 代表「專案資料根本沒載到」。這時候**不能說**「尚未建立
+    // 分類矩陣」—— 我們沒有任何依據宣稱矩陣不存在。呼叫端已經在
+    // #header-pname 報過真正的失敗，這裡保持沉默即可。
+    if (survey === null || survey === undefined) {
+        showVoxelNotice('分類矩陣狀態未知',
+            '專案資料未能載入，無法判斷矩陣是否存在。請重新整理或稍後再試。');
+        return;
+    }
+
+    const voxels = survey.cube_data;
+
+    if (voxels === null || voxels === undefined
+        || (Array.isArray(voxels) && voxels.length === 0)) {
+        showVoxelNotice('尚未建立分類矩陣',
+            '完成 Task 1 的軸向與標籤後，按「Generate Cube Analysis」即可建立。');
+        return;
+    }
+
+    if (!Array.isArray(voxels)) {
+        // 型別就不對，連交給 renderer 都不必。
+        throw new TypeError(`cube_data 應為陣列，實際為 ${typeof voxels}`);
+    }
+
+    if (typeof CubeRenderer === 'undefined') {
+        throw new Error('CubeRenderer library not loaded');
+    }
+
+    console.log(`[Init] Rendering Cube with ${voxels.length} voxels.`);
+    CubeRenderer.renderVoxels('cube-container', {
+        voxels: voxels,
+        axis_labels: localTaxonomy.axis_labels
+    });
+}
+
+// --- 各區域專屬的錯誤呈現：每個只寫自己的 DOM（NOTE-026） ---------------------
+
+/**
+ * 只有「專案本身載不到」才寫 #header-pname。
+ * 不 alert：子資源失敗時彈窗會擋住使用者操作，而且看不出是哪一塊壞了。
+ */
+function showProjectIdentityError(err) {
+    const nameEl = document.getElementById('header-pname');
+    if (!nameEl) return;
+    nameEl.textContent = '專案載入失敗';
+    nameEl.title = `無法取得專案資料：${(err && err.message) || err}`;
+    nameEl.classList.add('text-danger');
+}
+
+/** 尚未建立矩陣：這不是錯誤，是還沒做，因此用中性語氣並指出下一步。 */
+function showVoxelNotice(title, hint) {
+    const el = document.getElementById('cube-container');
+    if (!el) return;
+    el.classList.add('d-flex', 'align-items-center', 'justify-content-center');
+    el.innerHTML = `
+        <div class="text-center text-white-50 px-3">
+            <i class="bi bi-box" style="font-size: 2rem;"></i>
+            <div class="fw-bold mt-2">${escapeHtml(title)}</div>
+            <div class="small mt-1">${escapeHtml(hint || '')}</div>
+        </div>`;
+}
+
+/** Voxel 資料格式錯誤：明說是 voxel，並保留原因供回報。 */
+function showVoxelError(err) {
+    const el = document.getElementById('cube-container');
+    if (!el) return;
+    el.classList.add('d-flex', 'align-items-center', 'justify-content-center');
+    el.innerHTML = `
+        <div class="text-center text-warning px-3">
+            <i class="bi bi-exclamation-triangle" style="font-size: 2rem;"></i>
+            <div class="fw-bold mt-2">Voxel 資料格式錯誤</div>
+            <div class="small mt-1 text-white-50">${escapeHtml((err && err.message) || String(err))}</div>
+            <div class="small mt-1 text-white-50">請重新執行 Task 2 產生矩陣。</div>
+        </div>`;
+}
+
+/** taxonomy 清單顯示失敗：寫進 taxonomy 面板自己的錯誤槽。 */
+function showTaxonomyError(err) {
+    const el = document.getElementById('taxonomy-error');
+    if (!el) return;
+    el.textContent = `分類清單顯示失敗：${(err && err.message) || err}`;
+    el.classList.remove('d-none');
 }
 
 /**
@@ -272,10 +380,17 @@ async function loadPaqStatus() {
 function lockInterfaceForFormal() {
     console.log('[Mode] Locking interface for Formal Project.');
     
-    // 1. 禁用所有輸入框
-    document.querySelectorAll('input').forEach(el => el.disabled = true);
-    document.querySelectorAll('textarea').forEach(el => el.disabled = true);
-    
+    // 1. 只鎖 taxonomy 編輯面。
+    //
+    // NOTE(NOTE-027): 舊碼是 `document.querySelectorAll('input')` —— 一個**全頁面**
+    // 選擇器，於是 `#chat-input` 一起被停用：專案一轉正，PAQ Co-Pilot 對話就完全
+    // 不能用，連 PI 自己都不行。轉正是專案的正常生命週期，不是降級。
+    // 這個函式的意圖一直都只是「鎖住 taxonomy 編輯」，是範圍寫錯而不是意圖如此。
+    const taxPanel = document.getElementById('panel-tax');
+    if (taxPanel) {
+        taxPanel.querySelectorAll('input, textarea').forEach(el => el.disabled = true);
+    }
+
     // 2. 隱藏操作按鈕
     const btnFresh = document.getElementById('btn-tax-fresh');
     const btnRefine = document.getElementById('btn-tax-refine');
@@ -290,7 +405,13 @@ function lockInterfaceForFormal() {
     // 3. 移除 Tag 刪除按鈕與新增按鈕
     document.querySelectorAll('.remove-tag-icon').forEach(icon => icon.style.display = 'none');
     
-    // 4. 顯示 Formal 標籤
+    // 4. 對話維持可用。
+    // NOTE(NOTE-027): 明確把 #chat-input 解鎖，不是「剛好沒被選到」而已 ——
+    // 這一行同時是文件：轉正之後 PI/Co-PI 仍必須能延續 PAQ 對話。
+    const chatInput = document.getElementById('chat-input');
+    if (chatInput) chatInput.disabled = false;
+
+    // 5. 顯示 Formal 標籤
     const headerName = document.getElementById('header-pname');
     if (headerName && !headerName.querySelector('.badge')) {
         const badge = document.createElement('span');
@@ -298,6 +419,22 @@ function lockInterfaceForFormal() {
         badge.innerText = 'Formal (Locked)';
         headerName.appendChild(badge);
     }
+}
+
+/**
+ * viewer（唯讀成員）：連送出都不給，因為後端 POST 需要 editor。
+ *
+ * NOTE(NOTE-027): 這是**呈現**，不是防線。使用者在 console 把 disabled 拿掉
+ * 仍然只會拿到 403 —— 真正的門檻是 enforce_project_ownership。
+ * 之所以還是要鎖，是因為讓人打完一整段話才被 403 是更差的體驗。
+ */
+function lockInterfaceForViewer() {
+    ['chat-input', 'btn-tax-fresh', 'btn-tax-refine', 'btn-run-cube'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.disabled = true;
+    });
+    const chatInput = document.getElementById('chat-input');
+    if (chatInput) chatInput.placeholder = '唯讀權限：無法送出訊息';
 }
 
 // ==================================================================================

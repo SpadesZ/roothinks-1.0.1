@@ -48,6 +48,61 @@ class ManuUI {
         if (uploadBtn) uploadBtn.addEventListener('click', () => this.uploadGalleryImage());
     }
 
+    /**
+     * 非阻塞提示條。**取代這支檔案裡所有的 alert()。**
+     *
+     * NOTE(NOTE-035) 原生 alert()/confirm() 會凍住整個 renderer —— 不是「使用者
+     * 覺得煩」而已，是 renderer 行程真的停住：實測自動化的 preview_eval 直接逾時，
+     * 只能重啟容器。saveSectionConfig() 的 catch 就是這樣，一次存檔失敗會讓整個
+     * 工作檯停止回應，使用者連重試都按不到。
+     *
+     * 沿用 NOTE-011 已經在草稿復原提示上採用的同一種形式：浮動、可關閉、
+     * 成功類自動淡出、錯誤類留著等使用者處理。
+     */
+    showNotice(message, level = 'info') {
+        const text = String(message == null ? '' : message);
+        if (!text) return null;
+
+        let host = document.getElementById('ws-notice-host');
+        if (!host) {
+            host = document.createElement('div');
+            host.id = 'ws-notice-host';
+            // position:fixed 讓它不受任何面板的 overflow 裁切影響；
+            // z-index 高於 Bootstrap modal(1055)，否則 modal 開著時提示會被蓋住。
+            host.style.cssText = 'position:fixed;top:64px;right:16px;z-index:2000;'
+                + 'max-width:420px;display:flex;flex-direction:column;gap:8px;';
+            document.body.appendChild(host);
+        }
+
+        const cls = ({ success: 'alert-success', warning: 'alert-warning',
+                       danger: 'alert-danger' })[level] || 'alert-info';
+        const bar = document.createElement('div');
+        bar.className = `alert ${cls} shadow-sm py-2 px-3 mb-0 small position-relative`;
+        bar.setAttribute('role', 'status');
+        bar.setAttribute('data-ws-notice', level);
+
+        // textContent 而不是 innerHTML：訊息含伺服器回來的檔名／標題／錯誤內容。
+        const body = document.createElement('div');
+        body.className = 'pe-4';
+        body.textContent = text;
+        bar.appendChild(body);
+
+        const close = document.createElement('button');
+        close.type = 'button';
+        close.className = 'btn-close';
+        close.setAttribute('aria-label', 'Close');
+        close.style.cssText = 'position:absolute;top:6px;right:8px;font-size:0.7rem;';
+        close.addEventListener('click', () => bar.remove());
+        bar.appendChild(close);
+
+        host.appendChild(bar);
+        // 錯誤與警告不自動消失：使用者需要時間讀完，而且通常要據此採取動作。
+        if (level === 'success' || level === 'info') {
+            setTimeout(() => bar.remove(), 6000);
+        }
+        return bar;
+    }
+
     _escapeHtml(value) {
         return String(value || '').replace(/[&<>"']/g, (ch) => ({
             '&': '&amp;',
@@ -395,33 +450,97 @@ class ManuUI {
         }
     }
 
-    exportFusionToWord() {
+    /**
+     * 把 2C 全篇匯出成真正的 .docx。
+     *
+     * NOTE(NOTE-031) 轉換在**伺服器端**做，這裡只負責送出畫布 HTML 與收下檔案。
+     * 舊版是在瀏覽器把 `fusionCanvas.innerHTML` 包一層 `<html>` 再標成
+     * `application/msword` —— 那不是在產生文件，是在改副檔名。Word 讀到的是
+     * 一份沒有樣式表的 HTML：Bootstrap class 全部失效、`S.Ver` 編輯徽章被印進
+     * 論文、圖片是伺服器相對 URL 所以離線就是破圖。這就是「排版完全亂掉」。
+     *
+     * 為什麼不能在前端修一修就好：`<img src>` 是一條**需要授權**的 URL，
+     * 瀏覽器拿不到、也不該拿到那些位元組來組出可攜的檔案（NOTE-032）。
+     */
+    async exportFusionToWord() {
         const fusionCanvas = this.app.fusionCanvas;
         if (!fusionCanvas) return;
 
         const rawText = (fusionCanvas.innerText || '').trim();
         const cleanText = rawText.replace(/來自 2B 的段落將會依序插入於此處\.\.\./g, '').trim();
         if (!cleanText) {
-            alert('目前 2C 畫布沒有可匯出的內容。');
+            this.showNotice('目前 2C 畫布沒有可匯出的內容。', 'warning');
             return;
         }
 
-        const title = (this.app.paperTitleInput?.value || this.app.pid || 'manuscript').trim();
-        const safeName = title.replace(/[\\/:*?"<>|]/g, '_').replace(/\s+/g, '_') || 'manuscript';
-        const exportHtml = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${this._escapeHtml(title)}</title></head><body>${fusionCanvas.innerHTML}</body></html>`;
-        const blob = new Blob(['\ufeff', exportHtml], { type: 'application/msword;charset=utf-8' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `${safeName}.doc`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
-
-        if (this.app.soed && this.app.soed.addSystemMessage) {
-            this.app.soed.addSystemMessage(`Word export completed: ${safeName}.doc`);
+        const btn = document.getElementById('btnExportWord');
+        const originalHtml = btn ? btn.innerHTML : '';
+        if (btn) {
+            btn.disabled = true;
+            btn.innerHTML = `<span class="spinner-border spinner-border-sm me-1"></span>產生 Word 檔…`;
         }
+
+        const title = (this.app.paperTitleInput?.value || this.app.pid || 'manuscript').trim();
+
+        try {
+            const res = await fetch(
+                `/manuscript/api/export/docx/${encodeURIComponent(this.app.pid)}`,
+                {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ title, html: fusionCanvas.innerHTML }),
+                }
+            );
+
+            if (!res.ok) {
+                // 伺服器把缺圖／跨專案／格式不支援的原因寫成可行動的中文訊息，
+                // 這裡原樣顯示。靜默略過一張圖等於交出一份不完整的論文。
+                let message = `匯出失敗（HTTP ${res.status}）。`;
+                try {
+                    const err = await res.json();
+                    if (err && err.message) message = err.message;
+                } catch (parseErr) { /* 非 JSON 回應就沿用預設訊息 */ }
+                this.showNotice(message, 'danger');
+                return;
+            }
+
+            const blob = await res.blob();
+            const safeName = this._downloadNameFromResponse(res, title);
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = safeName;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+
+            this.showNotice(`Word 匯出完成：${safeName}`, 'success');
+            if (this.app.soed && this.app.soed.addSystemMessage) {
+                this.app.soed.addSystemMessage(`Word export completed: ${safeName}`);
+            }
+        } catch (e) {
+            this.showNotice(`匯出失敗：${e.message || '無法連線到伺服器'}`, 'danger');
+        } finally {
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = originalHtml;
+            }
+        }
+    }
+
+    /** 從 Content-Disposition 取檔名；取不到就用標題自己組一個。 */
+    _downloadNameFromResponse(res, title) {
+        const disposition = res.headers.get('Content-Disposition') || '';
+        const utf8 = disposition.match(/filename\*=UTF-8''([^;]+)/i);
+        if (utf8) {
+            try { return decodeURIComponent(utf8[1]); } catch (e) { /* 落到下面的備援 */ }
+        }
+        const plain = disposition.match(/filename="([^"]+)"/i);
+        if (plain) return plain[1];
+        const safe = String(title || 'manuscript')
+            .replace(/[\\/:*?"<>|]/g, '_').replace(/\s+/g, '_') || 'manuscript';
+        return `${safe}.docx`;
     }
 
     // =========================================================================
@@ -539,7 +658,7 @@ class ManuUI {
                 this.app.soed.addSystemMessage('Section config synced to server.');
             }
         } catch (e) {
-            alert(`Section config save failed: ${e.message}`);
+            this.showNotice(`章節設定儲存失敗：${e.message}`, 'danger');
         }
     }
 
@@ -603,7 +722,7 @@ class ManuUI {
         const fileMime = String(f.type || '').toLowerCase().trim();
         if (this._isLegacyDocExt(fileName) || this._isLegacyDocMime(fileMime)) {
             this.clearFile();
-            alert('目前 Manuscript 僅支援匯入 .docx（不支援舊版 .doc）。請先另存成 .docx 後再上傳。');
+            this.showNotice('目前 Manuscript 僅支援匯入 .docx（不支援舊版 .doc）。請先另存成 .docx 後再上傳。', 'warning');
             if (this.app.soed && this.app.soed.addSystemMessage) {
                 this.app.soed.addSystemMessage('Word import blocked: legacy .doc is not supported. Please convert to .docx.');
             }
@@ -647,7 +766,7 @@ class ManuUI {
                 const selectedName = String(fileObj?.name || '').trim();
                 const selectedMime = String(fileObj?.mime || '').toLowerCase().trim();
                 if (this._isLegacyDocExt(selectedName) || this._isLegacyDocMime(selectedMime)) {
-                    alert('Google Drive 匯入目前僅支援 .docx；請先將舊版 .doc 轉檔。');
+                    this.showNotice('Google Drive 匯入目前僅支援 .docx；請先將舊版 .doc 轉檔。', 'warning');
                     if (this.app.soed && this.app.soed.addSystemMessage) {
                         this.app.soed.addSystemMessage('Google Drive Word import blocked: legacy .doc is not supported.');
                     }
@@ -658,18 +777,18 @@ class ManuUI {
                 this.app.fileNameDisplay.innerText = fileObj.name + ' (Google Drive)';
             });
         } else {
-            alert("Google Drive 模組尚未載入");
+            this.showNotice('Google Drive 模組尚未載入。', 'warning');
         }
     }
 
     triggerWordImport(targetCanvas = '2B') {
         const target = String(targetCanvas || '').toUpperCase() === '2C' ? '2C' : '2B';
         if (!this.app.pid) {
-            alert('尚未選擇專案，無法匯入 Word。');
+            this.showNotice('尚未選擇專案，無法匯入 Word。', 'warning');
             return;
         }
         if (!this.app.wordImportInput) {
-            alert('Word 匯入元件尚未載入。');
+            this.showNotice('Word 匯入元件尚未載入。', 'danger');
             return;
         }
         this.pendingWordImportTarget = target;
@@ -776,7 +895,7 @@ class ManuUI {
             );
         } catch (err) {
             const msg = err?.message || 'Word 匯入失敗';
-            alert(msg);
+            this.showNotice(`Word 匯入失敗：${msg}`, 'danger');
             if (this.app.soed && this.app.soed.addSystemMessage) {
                 this.app.soed.addSystemMessage(`Word 匯入失敗：${msg}`);
             }
@@ -823,12 +942,10 @@ class ManuUI {
         if (this.galleryUploadPending) return;
 
         const input = document.getElementById('assetImageUploadInput');
-        const figIdInput = document.getElementById('assetImageFigId');
         const captionInput = document.getElementById('assetImageCaption');
         const btn = document.getElementById('btnUploadGalleryImage');
         const status = document.getElementById('assetImageUploadStatus');
         const fileObj = input?.files?.[0];
-        const figId = String(figIdInput?.value || '').trim();
         const caption = String(captionInput?.value || '').trim();
 
         if (!fileObj || !String(fileObj.type || '').startsWith('image/')) {
@@ -839,8 +956,8 @@ class ManuUI {
             if (status) status.innerText = '圖片不可超過 10 MB。';
             return;
         }
-        if (!figId || !caption) {
-            if (status) status.innerText = '請填寫 Figure 編號與 caption。';
+        if (!caption) {
+            if (status) status.innerText = '請填寫 Figure caption。';
             return;
         }
 
@@ -850,11 +967,13 @@ class ManuUI {
 
         try {
             const imageData = await this._readFileAsDataUrl(fileObj);
+            // NOTE(NOTE-034) 不送 fig_id：編號由伺服器依 registry 推導。
+            // 送 section 讓伺服器做章節層寫入判定（NOTE-033）。
             this.app.socket.emit('cmd_save_image', {
                 pid: this.app.pid,
+                section: Array.from(this.app.selectedSections || [])[0] || 'general',
                 image_data: imageData,
                 filename: fileObj.name,
-                fig_id: figId,
                 caption: caption,
                 source: 'gallery_upload',
             });

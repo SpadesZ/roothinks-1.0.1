@@ -15,6 +15,9 @@
 # 輸入輸出契約:
 #   無參數；資料庫路徑由 _resolve_db_path() 於 data/ 或 app/data/ 下尋得。
 #   失敗時拋例外，create_app 會據此中止啟動（寧可開不起來也不要帶著壞 schema 跑）。
+#   例外（NOTE-024）：「DB 尚未初始化」不算失敗。DB 檔不存在、或存在但沒有
+#   projects 表時，fix_schema() 記 log 後直接 return，把建置交給 db.create_all()。
+#   全新機器上那是正常狀態，不是錯誤 —— 升級器沒有 legacy schema 可升。
 # 安全邊界:
 #   - 破壞性操作（DROP TABLE / 重建表）。以檔案鎖 _schema_lock 序列化，
 #     避免多個 worker 同時啟動時互相踩踏。
@@ -50,11 +53,26 @@ def target_db_path() -> str:
     真的要用的那一顆」。路徑相對本檔位置寫死，**完全不看 SQLALCHEMY_DATABASE_URI**
     —— 不論呼叫端把 DB 指到哪，這裡永遠回傳 repo 的 data/roothinks.db。
     那道比對見 app/__init__.py 的 _should_run_schema_fix()。
+
+    NOTE(NOTE-024): 用 must_exist=False —— 回傳的是「**將會**使用的路徑」，
+    檔案還不存在也照樣回答。全新機器上該檔本來就不存在，若這裡抛例外，
+    _should_run_schema_fix() 會退回 `return True` 而讓啟動直接失敗。
+    「這顆 DB 是哪一顆」與「這顆 DB 存不存在」是兩個不同的問題。
     """
-    return _resolve_db_path()
+    return _resolve_db_path(must_exist=False)
 
 
-def _resolve_db_path() -> str:
+def _resolve_db_path(must_exist: bool = True) -> str:
+    """
+    找出這支 migration 的目標 DB 路徑。
+
+    must_exist=True（人工執行 `python fix_db_schema.py`）維持原行為：找不到就抛
+    FileNotFoundError。那條路徑是人明確要求「升級某顆既有 DB」，找不到就是真的
+    錯了，不該安靜地無事發生。
+
+    must_exist=False 用於啟動流程：回傳第一順位候選路徑，讓呼叫端自己決定
+    「不存在」代表什麼（見 upgrade_database() 的未初始化分支）。
+    """
     base_dir = os.path.dirname(os.path.abspath(__file__))
     candidates = [
         os.path.join(base_dir, "data", "roothinks.db"),
@@ -63,7 +81,30 @@ def _resolve_db_path() -> str:
     for path in candidates:
         if os.path.exists(path):
             return path
-    raise FileNotFoundError(f"Database file not found in: {candidates}")
+    if must_exist:
+        raise FileNotFoundError(f"Database file not found in: {candidates}")
+    return candidates[0]
+
+
+def _database_is_initialised(db_path: str) -> bool:
+    """
+    這顆 DB 是否已經被 `db.create_all()` 建立過。
+
+    NOTE(NOTE-024): 判斷依據刻意是「有沒有 projects 表」，而不是「檔案在不在」
+    或「檔案多大」。`sqlite3.connect()` 對不存在的路徑會**直接建出一個 0 byte
+    的檔**，所以「檔案存在」完全不代表裡面有 schema —— 那正是本缺陷第二層的
+    形狀（補上空 DB 檔之後，改成在 projects 表那一行爆）。
+    """
+    if not os.path.exists(db_path):
+        return False
+    try:
+        with contextlib.closing(sqlite3.connect(db_path, timeout=30)) as conn:
+            return _table_exists(conn.cursor(), "projects")
+    except sqlite3.DatabaseError:
+        # 檔案存在但不是合法 sqlite（例如被截斷）。這裡回 False 只是讓 migration
+        # 讓路；真正的錯誤會在 create_all/首次查詢時如實爆出來。由那一層報告，
+        # 比在 migration 裡把它改寫成別的訊息誠實。
+        return False
 
 
 @contextlib.contextmanager
@@ -230,7 +271,22 @@ def _upgrade_users_table(cursor):
 
 
 def upgrade_database():
-    db_path = _resolve_db_path()
+    db_path = _resolve_db_path(must_exist=False)
+
+    # NOTE(NOTE-024): 全新安裝 —— 這顆 DB 還沒被 db.create_all() 建立過。
+    # 升級器對它無事可做（沒有 legacy schema 需要被升級），把建置讓給
+    # create_all()（app/__init__.py，本函式之後才執行）。
+    # 這道判斷放在鎖**之內**：多個 gunicorn worker 同時開機時，
+    # 「檢查」與「升級」必須是同一段臨界區，否則 B 可能對 A 正在建到一半的
+    # schema 跑升級。
+    if not _database_is_initialised(db_path):
+        LOGGER.info(
+            "Schema upgrade skipped: %s is not initialised yet; "
+            "db.create_all() will bootstrap it",
+            db_path,
+        )
+        return
+
     LOGGER.info("Running schema upgrade on %s", db_path)
 
     with sqlite3.connect(db_path, timeout=30) as conn:
@@ -424,12 +480,28 @@ def _upgrade_chapter_comments_table(cursor):
 
 
 def fix_schema():
-    db_path = _resolve_db_path()
+    """
+    啟動期入口。既有 DB 走冪等升級；全新 DB 直接讓路（見 NOTE-024）。
+    """
+    db_path = _resolve_db_path(must_exist=False)
+
+    # NOTE(NOTE-024): DB 檔根本不存在時提早回傳，連鎖都不取 —— `_schema_lock()`
+    # 會 makedirs 鎖檔所在目錄，在這裡取鎖等於讓「只是檢查一下」產生副作用。
+    if not os.path.exists(db_path):
+        LOGGER.info(
+            "Schema upgrade skipped: %s does not exist yet (fresh install)",
+            db_path,
+        )
+        return
+
     lock_path = os.path.join(os.path.dirname(db_path), ".schema_fix.lock")
     with _schema_lock(lock_path):
         upgrade_database()
 
 
 if __name__ == "__main__":
+    # 人工執行：目標 DB 必須真的存在。這條路徑是人明確要求升級某顆既有 DB，
+    # 找不到就是真的錯了 —— 不套用 NOTE-024 的「讓路」語意。
     logging.basicConfig(level=logging.INFO)
+    _resolve_db_path(must_exist=True)
     fix_schema()

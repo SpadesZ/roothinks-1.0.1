@@ -167,4 +167,7 @@ def test_drafter_restores_last_section_and_ignores_stale_history():
     assert "const section = this.soed.restoreChatSection" in ws_js
     assert "data.section !== this.app.drafterTargetSection.value" in manu_js
     _assert_cache_version_at_least(manu_html, "manuscript_soed.js", 3.0)
-    assert "manuscript_ws.js') }}?v=5.1" in manu_html
+    # 改用下限而非等值比對：等值寫法讓「每一次正當的 bump」都變成一次假紅
+    # （HANDOFF §3.8 記載交接當下就有兩個測試因此是紅的）。
+    # 5.2 = NOTE-029 的 beforeunload 草稿保底。
+    _assert_cache_version_at_least(manu_html, "manuscript_ws.js", 5.2)

@@ -56,6 +56,7 @@ import logging
 import atexit
 from concurrent.futures import ThreadPoolExecutor
 from typing import Optional
+from urllib.parse import quote
 from uuid import uuid4
 
 from flask import Blueprint, render_template, request, send_from_directory, jsonify, current_app, g
@@ -66,9 +67,18 @@ from app.llm_service.matching_tasks.task_8drafter import Task8Drafter
 from app.core_pro.manuscript.manuscript_io import ManuscriptIO, _get_data_root
 from app.core_pro.manuscript.manuscript_image import ManuscriptImage
 from app.core_pro.manuscript import presence
-from app.core_pro.manuscript.model_section import ManuSectionConfig
+from app.core_pro.manuscript.model_section import (
+    ManuSectionConfig,
+    ManuSectionProgress,
+)
 from app.core_pro.manuscript.source_context import build_drafter_corpus
 from app.core_pro.manuscript.coc_bundle import build_coc_bundle, resolve_section_version
+from app.core_pro.manuscript.manuscript_docx import (
+    DOCX_MIME,
+    DocxExportError,
+    build_docx,
+    safe_download_name,
+)
 from app.models import Project
 from app.security import (
     check_ownership,
@@ -901,6 +911,172 @@ def save_sections(pid):
         return jsonify({'ok': False, 'message': 'Internal server error'}), 500
 
 
+# ---------------------------------------------------------------------------
+# 章節完成度（NOTE-036）
+# ---------------------------------------------------------------------------
+
+def _progress_payload(pid):
+    """組出「這個專案每一章的完成度」。
+
+    章節清單走 `_filter_visible_sections`，與 bootstrap／sections 同一個過濾器
+    —— coauthor 看不到未被指派的章節，進度 API 也**不得洩漏那些章節的存在**。
+    """
+    rows = _filter_visible_sections(pid, _get_or_init_sections(pid))
+    stored = ManuSectionProgress.map_for_pid(pid)
+    sections = [
+        {
+            'id': s.section_key,
+            'label': s.section_name,
+            'order_index': int(s.order_index),
+            # 沒有紀錄回 None（還沒填），**不是 0**（填了 0%）。
+            # 兩者在進度回報上是完全不同的事。
+            'progress': stored.get(s.section_key),
+        }
+        for s in rows
+    ]
+    return {
+        'ok': True,
+        'pid': pid,
+        'sections': sections,
+        # NOTE(NOTE-036) 整體比例現階段一律 null。各章不等重（Abstract 與 Results
+        # 差很多），有些章節在特定研究裡根本不會寫，權重規則尚未定案。
+        # 給一個看起來合理但其實錯的數字，比明白說「還沒算」更糟 ——
+        # 使用者會拿它去回報進度。
+        'overall': None,
+        'overall_status': 'not_calculated',
+    }
+
+
+@bp.route('/api/progress/<pid>', methods=['GET'])
+def get_section_progress(pid):
+    """讀取單一專案的章節完成度。專案成員皆可讀（含 viewer）。"""
+    formal_pid = _resolve_formal_project_pid(pid)
+    if not formal_pid:
+        return jsonify({'ok': False, 'message': 'Invalid pid'}), 404
+
+    auth_mode = str(current_app.config.get("AUTH_MODE", "none")).strip().lower()
+    if auth_mode == "session":
+        try:
+            from flask_login import current_user
+            if not current_user.is_authenticated:
+                return jsonify({'ok': False, 'message': 'Forbidden'}), 403
+            if get_workspace_role(current_user.id, formal_pid) is None:
+                return jsonify({'ok': False, 'message': 'Forbidden'}), 403
+        except ImportError:
+            pass
+
+    try:
+        return jsonify(_progress_payload(formal_pid))
+    except Exception as e:
+        logger.error("[get_section_progress] pid=%s %s", formal_pid, e, exc_info=True)
+        return jsonify({'ok': False, 'message': 'Internal server error'}), 500
+
+
+@bp.route('/api/progress/<pid>', methods=['POST'])
+def set_section_progress(pid):
+    """設定單一章節的完成度。
+
+    NOTE(NOTE-036) 授權用 `_socket_can_write_section`，不是專案層的 editor 門檻：
+      - viewer 一律擋掉（前端唯讀只是體驗，**這裡才是把關**）。
+      - owner／editor 可寫所有章節。
+      - coauthor 可寫**自己被指派的**章節 —— 被指派的人才知道那一章寫到哪裡；
+        要他回報給 owner 再代填，等於讓最不知情的人填最需要準確的欄位。
+
+    安全邊界：本路徑在 `/manuscript/api/` 之下，`is_api_request_path()` 會讓它
+    跳過 CSRF 守衛，因此授權必須在這裡自己做，不能靠 method 推導。
+    """
+    formal_pid = _resolve_formal_project_pid(pid)
+    if not formal_pid:
+        return jsonify({'ok': False, 'message': 'Invalid pid'}), 404
+
+    data = request.get_json(silent=True) or {}
+    section = _safe_component(data.get('section'), '')
+    if not section:
+        return jsonify({'ok': False, 'message': 'Missing section'}), 400
+
+    percent = ManuSectionProgress.clamp(data.get('progress'))
+    if percent is None:
+        # 看不懂的輸入不得當成 0 —— 那會讓使用者以為自己填的被記錄了。
+        return jsonify({'ok': False, 'message': '完成比例必須是 0～100 的數字。'}), 400
+
+    uid = None
+    auth_mode = str(current_app.config.get("AUTH_MODE", "none")).strip().lower()
+    if auth_mode == "session":
+        try:
+            from flask_login import current_user
+            if not current_user.is_authenticated:
+                return jsonify({'ok': False, 'message': 'Forbidden'}), 403
+            if get_workspace_role(current_user.id, formal_pid) is None:
+                return jsonify({'ok': False, 'message': 'Forbidden'}), 403
+            uid = current_user.id
+            if not _socket_can_write_section(uid, formal_pid, section):
+                return jsonify({'ok': False, 'message': 'Forbidden'}), 403
+        except ImportError:
+            pass
+
+    # 章節必須真的存在於這個專案。否則任何字串都能在表裡長出一列孤兒紀錄，
+    # 而且 coauthor 可以藉此探測別人章節的 key。
+    known = {s.section_key for s in _filter_visible_sections(
+        formal_pid, _get_or_init_sections(formal_pid))}
+    if section not in known:
+        return jsonify({'ok': False, 'message': 'Unknown section'}), 404
+
+    try:
+        row = ManuSectionProgress.query.filter_by(
+            pid=formal_pid, section_key=section).first()
+        if row is None:
+            row = ManuSectionProgress(pid=formal_pid, section_key=section)
+            db.session.add(row)
+        row.progress_percent = percent
+        row.updated_by = uid
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        logger.error("[set_section_progress] pid=%s section=%s %s",
+                     formal_pid, section, e, exc_info=True)
+        return jsonify({'ok': False, 'message': 'Internal server error'}), 500
+
+    return jsonify({'ok': True, 'section': section, 'progress': percent})
+
+
+@bp.route('/api/progress_summary', methods=['GET'])
+def get_progress_summary():
+    """Dashboard 用：一次拿回登入者看得到的所有正式專案的章節完成度。
+
+    刻意做成一支批次端點而不是讓 Dashboard 逐張卡片打一次 —— 卡片數量等於
+    專案數量，N+1 會在專案一多時把首頁拖垮。
+    """
+    auth_mode = str(current_app.config.get("AUTH_MODE", "none")).strip().lower()
+    pids = []
+    if auth_mode == "session":
+        try:
+            from flask_login import current_user
+            if not current_user.is_authenticated:
+                return jsonify({'ok': False, 'message': 'Forbidden'}), 403
+            from app.models import WorkspaceMember
+            pids = [m.pid for m in
+                    WorkspaceMember.query.filter_by(user_id=current_user.id).all()]
+        except ImportError:
+            pids = []
+    if not pids:
+        # AUTH_MODE=none（dev/TESTING）：沒有成員概念，就以有章節設定的專案為準。
+        pids = [row[0] for row in
+                db.session.query(ManuSectionConfig.pid).distinct().all()]
+
+    projects = {}
+    for candidate in sorted(set(pids)):
+        formal_pid = _resolve_formal_project_pid(candidate)
+        if not formal_pid:
+            continue
+        try:
+            projects[formal_pid] = _progress_payload(formal_pid)
+        except Exception:
+            # 一個專案讀不出來不得讓整張 Dashboard 空白（NOTE-026 的同一條原則：
+            # 子資源失敗不得改寫其他責任的結果）。
+            logger.warning("[progress_summary] 略過 pid=%s", formal_pid, exc_info=True)
+    return jsonify({'ok': True, 'projects': projects})
+
+
 @bp.route('/api/import_word/<pid>', methods=['POST'])
 def import_word_to_canvas(pid):
     pid = _resolve_formal_project_pid(pid)
@@ -952,6 +1128,80 @@ def import_word_to_canvas(pid):
     except Exception as e:
         logger.error("[import_word_to_canvas] %s", e, exc_info=True)
         return jsonify({'ok': False, 'message': 'Internal server error'}), 500
+
+
+@bp.route('/api/export/docx/<pid>', methods=['POST'])
+def export_fusion_docx(pid):
+    """把 2C 全篇匯出成真正的 .docx。
+
+    NOTE(NOTE-031): 轉換刻意放在伺服器端。瀏覽器拿不到圖片的二進位
+    （`<img src>` 只是一條需要授權的 URL），所以在前端組不出可攜的檔案 ——
+    舊作法把 `fusionCanvas.innerHTML` 包一層 `<html>` 標成 `application/msword`
+    就是因為這個限制，結果是一份沒有樣式表的 HTML：Bootstrap class 全部失效、
+    `S.Ver` 編輯徽章被印進論文、圖片離線就是破圖。
+
+    NOTE(NOTE-032): 圖片只從本專案 image registry 解析，這個模組沒有任何
+    HTTP client —— 匯出的 HTML 由使用者控制，若伺服器照著 src 去抓就是 SSRF。
+
+    安全邊界：
+      - 路徑在 `/manuscript/api/` 之下，`is_api_request_path()` 會讓它跳過
+        CSRF 守衛，因此**授權必須在這裡自己做**。
+      - 讀取門檻用 `_socket_can_read_paper`，不是 `enforce_project_ownership`：
+        2C 全篇跨所有章節，coauthor（限定編輯）本來就讀不到整篇，
+        不能讓他用匯出繞過章節層的讀取限制。viewer 讀得到，所以匯得出來。
+    """
+    formal_pid = _resolve_formal_project_pid(pid)
+    if not formal_pid:
+        return jsonify({'ok': False, 'message': 'Invalid pid'}), 404
+
+    auth_mode = str(current_app.config.get("AUTH_MODE", "none")).strip().lower()
+    if auth_mode == "session":
+        try:
+            from flask_login import current_user
+            if not current_user.is_authenticated:
+                return jsonify({'ok': False, 'message': 'Forbidden'}), 403
+            if get_workspace_role(current_user.id, formal_pid) is None:
+                return jsonify({'ok': False, 'message': 'Forbidden'}), 403
+            if not _socket_can_read_paper(current_user.id, formal_pid):
+                return jsonify({'ok': False, 'message': 'Forbidden'}), 403
+        except ImportError:
+            pass
+    elif current_app.config.get("API_AUTH_ENABLED", False):
+        token = get_request_token()
+        if not token or not check_ownership(token, formal_pid):
+            return jsonify({'ok': False, 'message': 'Forbidden'}), 403
+
+    data = request.get_json(silent=True) or {}
+    html = str(data.get('html') or '')
+    title = str(data.get('title') or '').strip()
+
+    max_html = _read_positive_int_env("MANUSCRIPT_DOCX_MAX_HTML_CHARS", 4000000)
+    if len(html) > max_html:
+        return jsonify({'ok': False, 'message': '2C 內容過長，無法匯出。'}), 413
+    if not html.strip():
+        return jsonify({'ok': False, 'message': '目前 2C 畫布沒有可匯出的內容。'}), 400
+
+    try:
+        blob = build_docx(formal_pid, title, html)
+    except DocxExportError as e:
+        # 這些訊息是寫給使用者看的（缺圖、跨專案、格式不支援），
+        # 必須原樣回去 —— 靜默略過一張圖等於交出一份不完整的論文。
+        return jsonify({'ok': False, 'message': str(e)}), 422
+    except Exception as e:
+        logger.error("[export_fusion_docx] pid=%s %s", formal_pid, e, exc_info=True)
+        return jsonify({'ok': False, 'message': 'Internal server error'}), 500
+
+    filename = f"{safe_download_name(title or formal_pid)}.docx"
+    response = current_app.response_class(blob, mimetype=DOCX_MIME)
+    # filename* 用 RFC 5987：論文標題常含中文，只給 ASCII filename 會變亂碼。
+    ascii_name = re.sub(r'[^A-Za-z0-9._-]+', '_', filename) or 'manuscript.docx'
+    response.headers['Content-Disposition'] = (
+        f"attachment; filename=\"{ascii_name}\"; "
+        f"filename*=UTF-8''{quote(filename)}"
+    )
+    response.headers['Content-Length'] = str(len(blob))
+    response.headers['X-Content-Type-Options'] = 'nosniff'
+    return response
 
 
 @bp.route('/image/<pid>/<filename>')
@@ -1669,6 +1919,75 @@ def handle_save_block(data):
         emit('sys_msg', {'msg': 'Save Error.'})
 
 
+@bp.route('/api/draft/flush', methods=['POST'])
+def flush_draft_on_unload():
+    """
+    離開頁面前保住未落地的編輯。**只給 `navigator.sendBeacon()` 用。**
+
+    NOTE(NOTE-029): 為什麼需要一條 HTTP 路徑，而不是沿用 socket 的
+    `cmd_autosave_block` —— autosave 是 1500ms debounce，使用者在這個視窗內
+    點掉導覽列（`_navbar.html` 的品牌連結就浮在編輯區正上方）就會永久丟失
+    最新輸入；實測打字後 6ms 內導頁，哨兵在整個 data/ 裡一個字都找不到。
+    而 unload 期間 socket 連線正在拆除，`emit()` 不保證送達，
+    `sendBeacon` 才是為這個時機設計的傳輸。
+    這不是第二套儲存邏輯：底下呼叫的是**同一個** `ManuscriptIO.save_draft`。
+
+    安全邊界：
+      - `sendBeacon` **無法設定自訂標頭**，因此帶不了 CSRF token。本路徑掛在
+        `/manuscript/api/` 之下讓 `is_api_request_path()` 認得它、跳過 CSRF 守衛，
+        所以**授權必須在這裡自己做**，不能靠 method 推導。
+      - ACL 與 `cmd_autosave_block` 逐條相同：專案成員 + 該章節可寫。
+        「只是草稿」不是放寬的理由 —— 草稿內容就是稿件內容。
+      - 只寫 `_draft` 檔：不產生版本、不寫 RevisionLog（與 socket 路徑同語意）。
+    """
+    # sendBeacon 送出的 Blob 常常帶 text/plain，get_json() 會直接拒收，
+    # 因此一律用 force=True 自己解析。
+    data = request.get_json(silent=True, force=True) or {}
+
+    try:
+        pid = validate_id(data.get('pid'), "project_id")
+    except Exception:
+        return jsonify({'success': False, 'message': 'Invalid request'}), 400
+
+    section = str(data.get('section') or 'general')
+
+    # 授權刻意**不用** enforce_project_ownership：它依 HTTP method 推 min_role，
+    # POST 一律要 editor，而 coauthor（限定編輯）低於 editor —— 那會讓限定編輯
+    # 在自己被指派的章節上反而存不了草稿。這裡改成與 socket 版逐條相同的兩道：
+    # 專案成員（任何角色）+ 該章節可寫。
+    current_username = None
+    auth_mode = str(current_app.config.get("AUTH_MODE", "none")).strip().lower()
+    if auth_mode == "session":
+        try:
+            from flask_login import current_user
+            if not current_user.is_authenticated:
+                return jsonify({'success': False, 'message': 'Forbidden'}), 403
+            if get_workspace_role(current_user.id, pid) is None:
+                return jsonify({'success': False, 'message': 'Forbidden'}), 403
+            current_username = current_user.username
+            if not _socket_can_write_section(current_user.id, pid, section):
+                return jsonify({'success': False, 'message': 'Forbidden'}), 403
+        except ImportError:
+            pass
+
+    try:
+        result = ManuscriptIO.save_draft(
+            pid, section,
+            data.get('title', 'Untitled_Paper'),
+            data.get('content', ''),
+            updated_by=current_username,
+            owner_key=_session_uid(),
+        )
+        return jsonify({
+            'success': True,
+            'section': result.get('section', section),
+            'saved_at': result.get('saved_at'),
+        }), 200
+    except Exception as e:
+        logger.error("[draft/flush] pid=%s section=%s %s", pid, section, e, exc_info=True)
+        return jsonify({'success': False, 'message': 'Draft flush failed'}), 500
+
+
 @socketio.on('cmd_autosave_block', namespace='/manu_ws')
 def handle_autosave_block(data):
     """
@@ -2096,32 +2415,55 @@ def handle_load_block(data):
 # =========================================================================
 @socketio.on('cmd_save_image', namespace='/manu_ws')
 def handle_save_image(data):
-    """接收前端傳來的圖片與屬性，獨立解碼並存檔註冊"""
+    """接收前端傳來的圖片與屬性，解碼、驗型別後存檔註冊。
+
+    NOTE(NOTE-033) 這裡原本只有 `_ensure_socket_project_access`，那只驗「是不是
+    專案成員」—— 也就是 **viewer 可以上傳圖片**並佔用專案容量。圖片是稿件內容
+    的一部分，寫入門檻必須與 `cmd_save_block` 一致。
+
+    NOTE(NOTE-034) `fig_id` 一律由伺服器依 registry 現況推導，不接受前端指定
+    編號。前端唯一能提供的是 caption。
+    """
     data = data or {}
     pid = _resolve_socket_pid_or_emit(data, missing_msg='Image save failed: Missing project id (pid).')
     if not pid:
         return
     if not _ensure_socket_project_access(pid):
         return
-    base64_data = data.get('image_data')  
+
+    # 圖片沒有自己的章節欄位，插入點是「目前章節」。用它做章節層判定，
+    # 讓 coauthor 在自己被指派的章節仍然可以上傳（與 NOTE-029 的草稿保底同一個判斷）。
+    section = _safe_component(data.get('section'), 'general')
+    uid = _session_uid()
+    if uid is not None and not _socket_can_write_section(uid, pid, section):
+        emit('image_saved', {'ok': False, 'error': 'forbidden'})
+        emit('sys_msg', {'msg': '權限不足：唯讀角色不能上傳圖片。'})
+        return
+
+    base64_data = data.get('image_data')
     filename = data.get('filename', 'untitled.png')
-    fig_id = data.get('fig_id', 'Unassigned')
     caption = data.get('caption', '')
     source = data.get('source', 'upload')
-    
+
     if not base64_data:
         emit('sys_msg', {'msg': 'Image save failed: No image data provided.'})
         return
-        
+
     try:
+        fig_id = ManuscriptImage.next_figure_label(pid)
         meta = ManuscriptImage.save_image_asset(pid, base64_data, filename, fig_id, caption, source)
         emit('image_saved', {'ok': True, 'meta': meta})
         emit('sys_msg', {'msg': f"Image successfully registered as {meta['id']}"})
+    except ValueError as e:
+        # 型別／大小這類使用者自己可以修正的問題，訊息要回得去；
+        # 只 log 不回報會讓上傳看起來「沒反應」。
+        logger.info("[cmd_save_image] rejected pid=%s: %s", pid, e)
+        emit('image_saved', {'ok': False, 'error': str(e)})
+        emit('sys_msg', {'msg': f"圖片未被接受：{e}"})
     except Exception as e:
-        # 將錯誤詳細印在後端，並回傳給前端
         logger.error("[cmd_save_image] %s", e, exc_info=True)
+        emit('image_saved', {'ok': False, 'error': 'internal_error'})
         emit('sys_msg', {'msg': "Image saving error."})
-
 # [v1.4 核心修改] 同步前端請求事件名稱為 cmd_get_image_registry
 @socketio.on('cmd_get_image_registry', namespace='/manu_ws')
 def handle_get_image_registry(data):

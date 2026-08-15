@@ -218,6 +218,19 @@
                     <!-- [v1.8] 自動存檔狀態。停筆 1.5 秒觸發，寫入草稿而不產生版本。 -->
                     <span id="autosaveStatus" class="small text-muted ms-1" style="min-width:104px;"></span>
 
+                    <!-- 章節完成比例（NOTE-036）。owner／editor 可填所有章節，
+                         限定編輯只可填被指派的章節，檢視者唯讀。
+                         min/max 只是體驗優化，真正的 clamp 與授權都在伺服器。 -->
+                    <div class="input-group input-group-sm ms-1" style="width: 132px;">
+                        <span class="input-group-text small px-1" title="本章節完成比例">完成</span>
+                        <input type="number" class="form-control form-control-sm text-end px-1"
+                               id="sectionProgress" min="0" max="100" step="1" placeholder="--"
+                               aria-label="本章節完成比例（0-100）"
+                               title="本章節完成比例（0-100）。留空代表尚未填寫。">
+                        <span class="input-group-text small px-1">%</span>
+                    </div>
+                    <span id="sectionProgressStatus" class="small text-muted ms-1" style="min-width:64px;"></span>
+
                     <div class="vr mx-1"></div>
 
                     <!-- [collab] 章節協作：角色標示、指派、留言 -->
@@ -568,7 +581,10 @@
                                             <input type="file" class="form-control form-control-sm" id="assetImageUploadInput" accept="image/png,image/jpeg,image/webp">
                                         </div>
                                         <div class="col-md-2">
-                                            <input type="text" class="form-control form-control-sm" id="assetImageFigId" value="Figure 1" aria-label="Figure 編號">
+                                            <!-- NOTE(NOTE-034) 編號由伺服器依素材庫現況指派，不讓使用者輸入。
+                                                 讓使用者填會產生重複與跳號，而正文的「如 Figure N 所示」是靠這個號碼指涉的。 -->
+                                            <div class="form-control form-control-sm bg-light text-muted" id="assetImageFigId"
+                                                 aria-label="Figure 編號（自動指派）">自動編號</div>
                                         </div>
                                         <div class="col-md-5">
                                             <textarea class="form-control form-control-sm" id="assetImageCaption" rows="2" placeholder="Figure caption" aria-label="Figure caption"></textarea>
@@ -623,11 +639,12 @@
     
     <script src="{{ url_for('static', filename='js/manuscript_ioruling.js') }}?v=0.1"></script>
     
-    <script src="{{ url_for('static', filename='js/manuscript_wsui.js') }}?v=1.8"></script>
+    <script src="{{ url_for('static', filename='js/manuscript_wsui.js') }}?v=1.9"></script>
     <script src="{{ url_for('static', filename='js/manuscript_image.js') }}?v=1.9"></script>
-    <script src="{{ url_for('static', filename='js/manuscript_soed.js') }}?v=3.0"></script>
-    <script src="{{ url_for('static', filename='js/manuscript_collab.js') }}?v=1.7"></script>
-    <script src="{{ url_for('static', filename='js/manuscript_ws.js') }}?v=5.1"></script>
+    <script src="{{ url_for('static', filename='js/manuscript_soed.js') }}?v=3.3"></script>
+    <script src="{{ url_for('static', filename='js/manuscript_collab.js') }}?v=1.8"></script>
+    <script src="{{ url_for('static', filename='js/manuscript_progress.js') }}?v=0.1"></script>
+    <script src="{{ url_for('static', filename='js/manuscript_ws.js') }}?v=5.3"></script>
     <script src="{{ url_for('static', filename='js/manuscript_citation.js') }}?v=0.1"></script>
 
 </body>

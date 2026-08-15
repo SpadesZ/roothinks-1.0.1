@@ -1,6 +1,12 @@
 # HANDOFF — roothinks 正式站（給接手的 AI 讀）
 
-最後更新：2026-08-10　分支 `release/vm-20260806`（HEAD 193393a，本輪改動尚未 commit）
+最後更新：2026-08-13　分支 `codex/manuscript-gallery-upload`（HEAD 08d5877，本輪改動尚未 commit）
+
+**接手前先讀最後一節 §3.19。本輪只做完 P0 五項（含實機與 A/B 證據），
+P1 四項一條都沒動，正式站一次都沒碰、未部署。**
+（本行以下的「最後更新 2026-08-10」段落是上一輪的內容，未改寫。）
+
+舊標頭：2026-08-10　分支 `release/vm-20260806`（HEAD 193393a）
 
 維護規範：每次實作結束更新本檔，與該次改動一起 commit。只寫已實際查證的事，
 推測要標明是推測 —— 下一個 AI 會信任這裡的每一句話。
@@ -1859,3 +1865,706 @@ _flushAutosave    section: discussion
 本輪發生兩次，兩次都沒有 console error、沒有失敗請求。
 不影響本輪結論（重新導向後重新進入即可復現全部驗收），但下一輪值得追：
 使用者中途被踢回首頁會直接損失未存內容。
+
+## 3.19 P0 五項完成（2026-08-13）
+
+**範圍聲明：本輪只做 P0。P1 四項（可編輯表格／本機圖片上傳／真 DOCX／
+偶發跳回 Dashboard）一行都沒動；VM 一次都沒碰；未 push、未部署。**
+
+### 接手時先復現的事（不引用交接文件，全部實測）
+
+| 項目 | 交接聲稱 | 本輪實測 |
+|---|---|---|
+| repo/HEAD | — | `codex/manuscript-gallery-upload` @ `08d5877`，工作區僅 `?? output/` |
+| `pytest test/unit tests` | 845 | 起點未複測；**本輪結束 877 passed / 0 failed** |
+| 全新機 bootstrap 兩層失敗 | §3.16 記載 | **兩層都在乾淨 detached worktree 復現**（見下） |
+| PAQ 四個缺陷 | §3.16 記載 | 四個都在原始碼確認，並在瀏覽器復現 |
+
+### P0-5 全新機 bootstrap（NOTE-024）
+
+乾淨 checkout（無 `data/`）跑 `create_app()` 的兩個 traceback，逐字復現：
+
+```
+1) FileNotFoundError: Database file not found in: [<wt>/data/roothinks.db, ...]
+   fix_db_schema.py:66  ← app/__init__.py:442
+2) 補上空 DB 檔之後：
+   RuntimeError: Missing 'projects' table. Please initialize database first.
+   fix_db_schema.py:242
+```
+
+**真因是一個不是兩個**：`create_app()` 在 `:442` 呼叫 legacy 升級器，
+而 `db.create_all()` 在 `:659` —— 相隔 217 行。升級器整支的前提是
+「DB 已初始化」，沒有「尚未初始化」這條分支；兩個 traceback 只是同一個
+前提在兩個深度爆開。
+
+修法：`_resolve_db_path(must_exist=False)` 讓 `target_db_path()` 回答
+「將會用哪一顆」而不抛例外；`upgrade_database()` 在 DB 未初始化時 return，
+把建置讓給 `create_all()`。**刻意不動 create_app 的順序** —— 既有 DB 必須
+先升級舊表再 create_all 補新表。
+
+驗收（`scripts/verify_fresh_bootstrap.py`，在 detached worktree 實跑）：
+
+```
+boot-1 empty checkout rc=0 BOOT_OK
+boot-2 idempotent     rc=0 BOOT_OK    tables: boot1=17 boot2=17
+seed user+project     rc=0 SEED_OK
+restart + readback    rc=0 READBACK user=True project=True
+quick_check roothinks.db / manu_core.db / sys/llm_match.db : ok / ok / ok
+```
+
+### P0-1~P0-4 PAQ（NOTE-025 / 026 / 027 / 028）
+
+四個缺陷的根因都在前端，且伺服器端**本來就是對的**：
+
+| # | 根因 | 伺服器實況 |
+|---|---|---|
+| PID | `paq_initial.js` 自己宣告合法字元集，漏掉連字號 | `validate_id` 的 pattern 一直含 `-`；`routes.py` 早就把 pid 傳進模板，**模板從沒用過** |
+| voxel | `loadPaqStatus()` 一個 try 包全部，catch 覆蓋 `#header-pname` | `/api/paq/status` 回 200 且 name 正確 |
+| formal | `lockInterfaceForFormal()` 用**全頁面** `querySelectorAll('input')` | 後端只擋 `readonly`，從來沒有以 formal 為由擋過對話 |
+| 存檔 | 程式碼在 §3.15 已補上，但**從未跑過真的 provider** | — |
+
+**stub provider（NOTE-028）是這一輪的關鍵工具**：沒有它，「第三輪帶不帶前兩輪」
+無法取得證據 —— 那需要看見送進 provider 的字串。雙重上鎖：
+`ROOTHINKS_ALLOW_STUB_LLM=1` 才能建立實例，回覆強制帶 `[STUB]` 前綴。
+
+### 實機證據（隔離 worktree + 自己的 data/，正式 repo 未參與）
+
+`/paq/PAQTST-p`（含連字號）→ `currentPid` 精確為 `PAQTST-p`，
+載入的是 `paq_initial.js?v=0.4` / `paq_project.js?v=0.3`。
+
+三輪對話（走真實 input + Enter keypress，非直接呼叫函式）：
+
+```
+turn1 → [STUB] ... 對話輪次標記 1 次
+turn2 → [STUB] ... 對話輪次標記 2 次
+GET /api/paq/chat_history → 2 筆，ai 欄 typeof === "string"（不是 dict）
+磁碟 data/PAQTST-p/paq/chat/paq-chat_*.json → user/ai 皆純文字、UTF-8 正確
+瀏覽器重整 → 氣泡 5 個還原、chatSessionHistory 4 筆還原
+turn3 → 對話輪次標記 3 次
+```
+
+**最關鍵的一條**：turn3 送進 provider 的 prompt（stub 落檔）內含
+`ALPHA-7731` 與 `BRAVO-9925` 兩個前輪哨兵，而且這是**重整之後**送的
+—— 證明前文來自伺服器往返，不是瀏覽器殘留的記憶體狀態。
+
+XSS：`<script>alert(1)</script>` 在氣泡中以字面顯示，
+`#chat-history` 內 `script` 元素 0 個、未執行。
+PID 隔離：PAQBAD-p / PAQNUL-p 的 chat_history 皆 0 筆且不含 ALPHA-7731。
+
+存檔失敗（把 `data/PAQNUL-p/paq/chat` 換成同名**檔案**讓 makedirs 必失敗）：
+回覆照常顯示，並多出一則「（提醒：這一輪對話未能存檔，重新整理後會消失）」，
+`chat_history` 回 0 筆 —— 沒有假裝成功，也沒有偽造歷史。
+
+角色矩陣（AUTH_MODE=session，另一顆 5611 實例）：
+
+| 角色 | `access.can_edit` | `#chat-input` | POST run_task |
+|---|---|---|---|
+| Co-PI（editor） | true | 可用 | 200，訊息落地 |
+| viewer | false | disabled＋「唯讀權限」 | **手動移除 disabled 後仍 403**，歷史 0 筆 |
+
+最後一格是「解除 disabled 不等於授權」的直接證據。
+formal 專案的 `#label-x` 仍為 disabled —— 鎖定範圍收斂成功，不是整個拿掉。
+
+### A/B 反證（把修復還原成原始實作的形狀，只改 preview worktree）
+
+| 關掉的修復 | 結果 |
+|---|---|
+| PID 解析退回舊 regex | `/paq/PAQTST-p` 觸發 `alert()` → **renderer 凍結、`preview_eval` 逾時**。凍結本身就是證據（§3.8 記載過 alert/confirm 會凍住 renderer），因為只有 `resolveCurrentPid()` 回空字串才會走到那一行 |
+| voxel 回到主 try | `header-pname` = **`Load Failed`**、專案名稱消失、cube 容器空白 |
+| formal 鎖定回到全頁面選擇器 | formal 專案的 `#chat-input` **`disabled: true`** |
+| `upgrade_database` 的未初始化分支 | `test_fresh_bootstrap.py` 2 FAILED，紅在 `RuntimeError: Missing 'projects' table`（原始缺陷逐字重現），**對照組 `TestExistingDatabaseStillUpgraded` 保持綠** |
+| `target_db_path()` 改回 must_exist | 1 FAILED，紅在 `FileNotFoundError`（第一層逐字重現） |
+
+全部是 FAILED 不是 ERROR（§3.15 的教訓：ERROR 幾乎一定是變異本身壞了）。
+還原後 `grep` 掃 app/test/tests/scripts 無 `ABTEST`／`ab-orig` 殘留。
+
+### 數字與隔離
+
+```
+py -3.10 -m pytest test/unit tests -q   →  877 passed / 0 failed
+scripts/audit_source_contract.py        →  ok, scope 267
+  --cached（即將發布的那棵樹）           →  ok, scope 261
+  --self-test                           →  ok
+真實 data/ 遞迴快照（排除 _logs/_locks） →  2475 檔
+  跑全套前 aggregate = 4dc755247df4f238...
+  跑全套後 aggregate = 4dc755247df4f238...   （逐位元相同，連 mtime 都沒動）
+```
+
+### 這一輪值得記的兩個環境事實
+
+1. **`paq_initial.js` 的縮排是 U+00A0（NBSP）+ 空白，不是 ASCII 空白，
+   而且同一支檔案裡 LF 與 CRLF 並存**（`paq_project.js` 也是混的）。
+   字串比對型的編輯工具會直接失配。改這幾支檔要走位元組層或 regex 錨點。
+2. **這台機器沒有 Node.js**（`node --check` 跑不了，`test/js/*.cjs` 也跑不了）。
+   各 JS 檔頭寫的「驗證: node --check ...」目前無法執行；本輪的 JS 證據
+   全部來自真瀏覽器。要恢復那條驗證得先裝 Node。
+
+### 還沒做（**不得當成完成**）
+
+1. **P1 四項全部未動**：可編輯表格、本機圖片上傳、真 DOCX、偶發跳回 Dashboard。
+   已確認的起點座標：
+   - 假 Word 匯出在 `manuscript_wsui.js:412`（`Blob(['﻿', exportHtml],
+     {type:'application/msword'})`）。
+   - 隨機圖號在 `manuscript_image.js:377`
+     （`fig_id: \`Figure ${Math.floor(Math.random()*100)}\``）。
+   - 可重用的既有 writer：`ManuscriptImage.save_image_asset`
+     （`manuscript_image.py:59`），已有呼叫端 `manuscript_routes.py:2117`。
+   - **相依套件實況：`python-docx` 與 `lxml` 都沒裝；`openpyxl` 3.1.5 與
+     Pillow 10.2.0 有。** 要做真 DOCX 就得二選一：加新相依（要重建 image）
+     或用 stdlib `zipfile` 手寫 OOXML。依擁有者對 XLSX 的裁示
+     （「僅在可重用既有 dependency 時支援」），傾向後者。
+2. **正式站一次都沒碰**，未 push、未部署、未備份 VM 的三顆 DB。
+3. P0 的實機驗收都在**隔離 worktree**上做，正式站尚未逐項重驗。
+
+## 3.20 P1-4「偶發跳回 Dashboard」根因（2026-08-13，同輪稍後）
+
+### 為什麼查了三輪查不到：**沒有錯誤可找**
+
+§3.18 的觀察是「發生兩次，兩次都沒有 console error、沒有失敗請求」。
+那個觀察是對的，而它本身就是答案 —— 前幾輪都在找錯誤，但這件事根本不是錯誤。
+
+用注入式導頁追蹤器（記 anchor 點擊、form submit、beforeunload 堆疊、
+非 2xx 請求、console error；**只記元素識別與狀態碼，不記稿件內容／token／個資**）
+攔到的完整序列：
+
+```
+page-load     navType=navigate     /manuscript/?pid=PAQTST-p
+anchor-click  href="/"  text="roothinks v1.0.1"
+beforeunload
+→ 現在位置 /
+console-error: 無        失敗請求: 無
+```
+
+`_navbar.html` 的品牌連結是 `<a href="/">`，實測位置 **(12,8) 175×40**
+—— 永遠浮在編輯區正上方；旁邊還有一個 `Dashboard` 連結。
+**「偶發」的真相是誤點**，而誤點產生的是一次完全正常的導頁。
+
+### 真正的缺陷：全 app 沒有任何 beforeunload 守衛
+
+`grep -rn "beforeunload" app/static/js app/templates` → **零命中**，
+而 autosave 是 `setTimeout(..., 1500)` debounce（`manuscript_soed.js:499`）。
+於是那 1.5 秒視窗內的任何導頁（誤點、重整、關分頁、上一頁）都會靜默吃掉最新輸入。
+
+**這不是「有個 redirect 要刪掉」**：那兩個連結是使用者要用的正常導覽。
+要修的是「沒有守衛」。
+
+### 修法（NOTE-029）
+
+`beforeunload` 時用 **`navigator.sendBeacon()`** 把草稿送到新的
+`POST /manuscript/api/draft/flush`；beacon 送不出去時才設 `returnValue` 提示。
+
+- **不能沿用 socket**：unload 期間連線正在拆除，`emit()` 不保證送達。
+  底下呼叫的仍是**同一個** `ManuscriptIO.save_draft`，不是第二套儲存邏輯。
+- **端點刻意不受 CSRF 保護**（掛在 `/manuscript/api/` 下讓
+  `is_api_request_path()` 認得），因為 **sendBeacon 無法設自訂標頭、帶不了 token**。
+  授權因此完全靠端點自己做。
+- **授權刻意不用 `enforce_project_ownership`**：它依 method 推 min_role，
+  POST 要 editor，而 coauthor 低於 editor —— 那會讓限定編輯在自己被指派的章節
+  上反而存不了草稿，症狀是「偶爾掉字」，幾乎不可能被回報成權限問題。
+  改成與 socket 版逐條相同的兩道：專案成員 + `_socket_can_write_section`。
+- **預設不攔截導頁**：原生確認框會凍住整個 renderer（§3.8 已記載災情，
+  本輪做 PID 的 A/B 時又親眼看到一次 —— `alert()` 讓 `preview_eval` 直接逾時）。
+  內容不掉才是目的，攔截只是手段。
+
+### 實機 A/B（同樣的插入點、同樣的 3ms 時間差）
+
+| 守衛 | 磁碟上有哨兵嗎 |
+|---|---|
+| ON | **有** —— `_draft.json` 的 content = `<p>未存哨兵 NAVKEEP-9001</p>` |
+| OFF | **沒有** —— `grep -rl` 掃過整個 data/，一個字都沒有 |
+
+### 本輪差點記下假證據，值得記的一次自我更正
+
+第一次做這個實驗時我用 `canvas.focus()` 後 `execCommand('insertText')`，
+結果 beacon 寫出來的 content 是 `<p><br></p>` —— **哨兵不在裡面**。
+原因是 execCommand 插在「目前插入點」，而插入點不在 `.card-content` 內
+（§3.5.1 記載過同一個機制，只是那次的症狀是「載入回報成功、畫布空白」）。
+
+那代表我**第一次量到的「內容遺失」也是假的** —— 那些字從來沒有進過
+autosave 會讀的元素，開不開守衛都不會被存下來。
+修正方式是先用 `Range` 把插入點確實放進 `.card-content`，
+並且**先斷言 `cc.innerHTML.includes(哨兵)` 為真**再點連結。
+教訓：驗「東西有沒有被保住」之前，要先證明「東西真的在該在的地方」。
+
+### 數字
+
+```
+py -3.10 -m pytest test/unit tests -q   →  884 passed / 0 failed   （877 → +7）
+source contract audit                   →  ok，scope 268
+真實 data/ 遞迴快照                      →  2475 檔，aggregate 與開工前完全相同
+A/B 殘留（grep app/ test/）              →  無
+```
+
+### P1-4 尚未涵蓋的驗收情境（**不得當成完成**）
+
+擁有者要求的清單裡，本輪只做完「含連字號 PID」與「未存內容導頁」兩項。
+**閒置後重連、快速切章、重新整理、API 單點失敗、Socket 暫斷、30 次反覆操作
+都還沒跑**，導頁追蹤器已可重複使用（注入式，見上面的事件格式）。
+
+## 3.21 P1-4 七項驗收補完 ＋ 嚴謹自審（2026-08-13，同輪最後）
+
+### 七項情境全部跑完（隔離實例，真瀏覽器）
+
+| 情境 | 結果 |
+|---|---|
+| 含連字號 PID | 停在 `/paq/PAQTST-p`，`currentPid` 精確 |
+| Socket 暫斷 | 徽章轉 Offline，停在 `/manuscript/`，未跳頁 |
+| 閒置 3s 後重連 | 徽章回 Online、editor 仍在、pid 不變，未跳頁 |
+| 快速切章（6 章連切，每次間隔 60ms） | 收斂到最後請求的章節，卡片 1 張、`data-section` 正確、無 stale 殘留 |
+| 重新整理 | `navType=reload`，pid/editor/socket 全部復原 |
+| API 單點失敗 | bootstrap／sections／formal_projects／my-permissions **四支逐一注入 500**，全部原地降級、未跳頁 |
+| 30 次反覆操作（切章＋打字＋每 7 圈斷線重連） | 未跳頁、無可疑字串、socket 自行復原 |
+
+### 自審抓到三件事（**兩件是我自己造成的**）
+
+**1. 我的 P0-4 修復自己犯了它要修的錯（已修）。**
+`loadPaqStatus()` 的 `surveyForVoxels` 初值是 `{}`，於是專案整個載入失敗（404）時，
+畫面同時顯示「專案載入失敗」**與「尚未建立分類矩陣」**——
+後者是我們**無從得知**的事（根本沒拿到 survey），等於用另一種形式再犯一次錯誤歸因。
+改成初值 `null`（代表「沒拿到」），並新增第四種顯示：
+```
+專案載不到 → 「分類矩陣狀態未知：專案資料未能載入，無法判斷矩陣是否存在」
+```
+四種狀態現在各自正確：正常畫圖／voxel 壞掉／尚未建立／狀態未知。
+
+**2. 我的 API 單點失敗測試有一半是空的（已修）。**
+第一版毒了 `wsApp.loadBootstrap` 與 `wsApp.soed.loadSections`，
+但這兩個函式**根本不存在**（`typeof === 'undefined'`），那兩格「沒有跳頁」什麼都沒證明。
+真正的入口是 `wsApp.ui.bootstrapWorkspace()` 與 `wsApp.ui.saveSectionConfig()`。
+已在測試裡加 `poisonActuallyHit` 旗標，四支全部確認 `true` 之後結論才成立。
+**通則：注入式測試一定要回報「注入有沒有真的被觸發」，否則無法分辨
+「擋住了」與「根本沒跑到」。**
+
+**3. `saveSectionConfig()` 失敗時用原生 `alert()`（已診斷，未修）。**
+`manuscript_wsui.js:542` 的 catch 是 `alert(...)`，實測會**凍住整個 renderer**
+（本輪就因此逾時一次，只能重啟 preview 容器）。
+它技術上滿足「不導頁」，但違反 NOTE-011 已經在別處拿掉的同一個反樣式。
+**未修的理由是範圍**：它不是導頁缺陷。全站還有幾處 `alert()`／`prompt()`
+（`paq_interact.js` 的 `createTag`／`removeTag` 也是），要改應該一次收斂成
+既有的非阻塞提示條，屬於獨立一輪。
+
+### 免 CSRF 端點的輸入面已實測（不是「既有程式碼會處理」）
+
+`POST /manuscript/api/draft/flush` 刻意免 CSRF（sendBeacon 帶不了標頭），
+因此輸入面另外驗過：
+
+- `section` 帶 `../../../../etc/passwd` 等四種穿越字串 → 沒有任何檔案寫到
+  專案目錄之外（`_section_dir_name` + `safe_join_under` 兩道確實生效）。
+- 帶別人的 pid → **403**，且該內容不存在於任何檔案。
+- 速率：繼承全域 `RATE_LIMIT_DEFAULT`（預設 600/min）。
+
+### A/B（本輪新增）
+
+| 關掉 | 紅在哪 |
+|---|---|
+| `describe_project_access` 的 `can_edit` 改成寫死 `True` | `test_paq_formal_chat_acl.py:180` **只有 viewer 那格紅**：「can_edit=True 但實際 POST 被擋」——owner/editor 仍綠，因為對他們而言 True 剛好是對的。一致性測試正確地只在分歧處發作 |
+
+### 數字
+
+```
+py -3.10 -m pytest test/unit tests -q   →  889 passed / 0 failed
+source contract audit / --self-test     →  ok（scope 268）
+真實 data/ 遞迴快照                      →  2475 檔，aggregate 與開工前完全相同
+```
+
+## 3.22 Literature 模組現況盤點與「要不要打掉重練」的判斷（2026-08-13）
+
+擁有者回報「實際使用後體驗非常不好，感覺要打掉重練」。本節是**盤點與判斷**，
+**沒有動任何一行 literature 程式碼**。
+
+### 結論先講：該重寫的是入口層與資訊架構，**不是管線**
+
+行數大致對半：
+
+| 區塊 | 行數 | 判斷 |
+|---|---|---|
+| 管線領域碼（segmentizer／processing_ops／translator／latex_ocr／major_segmenter／stacka／stackb／cvpipeline／arbiterlogic） | ~7,900 | **保留**。它能跑，產出品質是好的 |
+| 編排／路由／前端（routes／bflow／flowb_helpers／context_routes／4 支 JS／template） | ~7,800 | **缺陷集中在這裡** |
+
+管線品質是實查的，不是推測：`ULQ8F6-p/Medium-Utterance_Baseline` 的
+`05_interprets/summary.json` 是紮實的中文摘要（multi-confidence thresholding 框架、
+FA/CA 權衡、貪婪疊代分割），**沒有** `LLM_PROVIDER_ERROR`、
+**沒有** `fallback_synthetic`。重寫它等於把已經解掉的 bug 全部重新踩一次。
+
+### 結構性真因：**兩個互不相通的文獻清單**
+
+| UI 區塊 | API | 實際儲存 | 由誰寫入 |
+|---|---|---|---|
+| 「2.2B 文獻庫」 | `/api/literature/library` | `library.json` | **只有**雲端搜尋（`literature_context_routes.py:212` 的 `merge_candidates`） |
+| 「2.3 文獻處理」 | `/api/literature/status/<pid>` | `papers/` 目錄 | **只有**上傳 PDF |
+
+**上傳的 PDF 永遠不會進文獻庫；文獻庫的搜尋結果沒有 PDF 可處理。**
+串接只有一支 `literature_batch_routes.py:104` 的
+`update_entry(pid, entry_id, {"paper_id": …})`，前提是**條目已經存在**
+（也就是必須先走過搜尋那條路）。上傳路由完全沒有碰 library。
+
+這解釋了兩個一直沒有人解釋的數字：
+
+```
+全站 library.json     0 個
+全站 papers 目錄       3 篇（DFQQY9-p / DSPWVD-p / ULQ8F6-p 各 1）
+全站 search_results   2 個
+```
+
+**文獻庫不是沒人想用，是那條路走不完。** 而 NOTE-013 規定 Drafter 只收
+`included`，`included` 只能來自文獻庫 —— 所以
+**Drafter 從來沒有過任何論文依據**，與 §3.13 的警告完全吻合。
+先前把這件事記成「screening 遷移未做」，那是症狀；真因是兩條路沒接上。
+
+### 實測到的使用面問題（開瀏覽器看的，不是讀碼推的）
+
+`/literature?pid=…` 的 accessibility snapshot：
+
+1. **內部規格編號直接當資訊架構**：1.1 研究列表／2.1 研究主題定義／
+   2.2A 開啟文獻搜尋／2.2B 文獻庫／2.2C 上傳文件／2.3 文獻處理。
+   使用者不會用「2.2B」思考。
+2. **三個上傳入口散在三個框**：2.2C 的「選擇並上傳 PDF/圖片」、
+   2.3 的「Upload Papers」、2.2B 的「批次匯入」。
+3. **要研究者貼 JSON**：「批次匯入：貼上 CSL JSON 或 normalized JSON 陣列」。
+4. **欄位標題是內部表名**：「Table 1: 文件基本資訊」「Table 2: 處理進度」
+   「Table 3: 流程狀態」。
+5. **手動排程負擔**：「一次處理一篇：上傳後先『文獻解析』，看過用量再決定
+   是否『文獻翻譯』」—— 多階段管線的編排責任被推給使用者。
+6. 中英混雜不一致（Upload Papers／Refresh／Library is empty. 執行搜尋或匯入後…）。
+
+### 效能實測（`_jobs/flow_b_result.json`，三篇全查）
+
+| 論文 | elapsed_sec | nllb_ready |
+|---|---|---|
+| Shared_functional_specialization… | 473.7 | False |
+| Connectionist_Temporal_Classification… | **2398.7** | True |
+| Medium-Utterance_Baseline | 117.9 | False |
+
+單篇 2～40 分鐘，而 UI 要求一次一篇。另外**三次有兩次 `nllb_ready=False`，
+但 strategy 仍把 `short_text_engine` 指向 `nllb`** —— 短文被路由到一個沒就緒的
+引擎，這條要查它實際降級到哪裡、有沒有靜默。
+
+### 建議的第一刀（尚未執行，待擁有者裁示）
+
+**單一文獻清單**：上傳與搜尋都落進同一個 library，「有沒有 PDF」只是欄位而非
+另一個世界；單一入口；依研究流程命名而非規格編號；批次處理取代手動單篇排程。
+**管線完全不動**，只換它前面的殼。
+
+風險提示：`library.json` 目前 0 個，所以「合併兩個清單」**沒有既有資料要遷移**
+—— 這是現在動手最便宜的時機。但 `papers/` 的 3 篇需要被反向登記進 library，
+且依 NOTE-020 只能產生 `candidate`，不得自動標 `included`（那等於偽造作者審核）。
+
+## 3.23 2C 匯出與 2B→2C 保真：真 DOCX ＋ 素材把關（2026-08-13，同輪最後）
+
+**範圍聲明：本輪做的是擁有者最新回報的「2C 匯出排版完全亂掉、2B 插進 2C 好像也
+怪怪的」，連帶完成 P1-2（本機圖片上傳把關）與 P1-3（真 DOCX）。
+P1-1 可編輯表格一行都沒動；Literature 第一刀沒動；VM 一次都沒碰、未 push、未部署。**
+
+### 接手時先復現的事（不引用交接文件，全部實測）
+
+| 項目 | 交接聲稱 | 本輪實測 |
+|---|---|---|
+| repo/HEAD | `08d5877` | **相符**，20 個未提交項目全在，未動 |
+| `pytest test/unit tests` | 889 | **889 passed / 0 failed**（跑了 464s） |
+| `audit_source_contract.py` | ok, scope 268 | **ok, scope 268**；`--self-test` ok |
+| 真實 data/ | 2475 檔 | **2475 檔**（aggregate 值與交接不可比：本輪的快照腳本另外排除 `__pycache__`，改以「本輪前後」自比） |
+
+### 真因：兩個缺陷，都是「殘骸」而不是「沒寫」
+
+**A. 2B 插進 2C 怪怪的 → `manuscript_soed.js:687` 的 `\n` → `<br>`（NOTE-030）**
+
+那一行是 v0.5 的殘骸。當時 `content` 取的是 `innerText`（純文字，換行是語意的，
+必須補 `<br>` 才看得到分行）；**v0.6 為了讓圖片不消失把來源改成 `innerHTML`，
+卻沒把配套的換行補償一起拿掉**。於是 HTML 原始碼裡的每一個排版換行都變成一個
+真的 `<br>`。
+
+為什麼它被描述成「好像怪怪的」而不是「壞了」：純文字段落的 innerHTML 通常沒有
+換行，所以沒圖的章節推過去毫無症狀。但**素材插入樣板都是跨行的 template literal**
+（`manuscript_image.js` 的 `imgTag`、`manuscript_wsui.js` 的 `insertHtml`），
+所以只要那一章有圖，推進 2C 就固定多出 3～5 個空行。**有沒有圖決定症狀出不出現。**
+
+**B. 2C 匯出排版完全亂掉 → `manuscript_wsui.js:412` 根本沒有在產生文件（NOTE-031）**
+
+舊作法是 `new Blob(['﻿', exportHtml], {type:'application/msword'})` 再存成
+`.doc` —— 那不是匯出，是改副檔名。Word 讀到的是一份**沒有任何樣式表**的 HTML：
+
+1. Bootstrap class 沒有對應 CSS → 所有間距／縮排／對齊**全部消失**；
+2. `<i class="bi bi-check2-circle">` 圖示變成空字元／方塊；
+3. **`S.Ver 0.3` 編輯徽章被當成標題的一部分印進論文**；
+4. 圖片 `src` 是伺服器相對路徑（還帶 `?access_token=`）→ 離線／換電腦就是破圖。
+
+### 修法
+
+| # | 修法 | 為什麼不是別的作法 |
+|---|---|---|
+| NOTE-030 | 原樣搬 `innerHTML`，移除 `.replace(/\n/g,'<br>')` | 2C 是 2B 的**組裝**，不是再排版。兩邊渲染結果必須一致 |
+| NOTE-031 | 新增 `manuscript_docx.py`：stdlib `zipfile` 手寫 OOXML，HTML 用 stdlib `html.parser` 掃成 `w:p`/`w:tbl`/`w:drawing` | **不加相依**（`python-docx`／`lxml` 都沒裝）。轉換放伺服器端，因為 `<img src>` 是需要授權的 URL，瀏覽器拿不到位元組 |
+| NOTE-032 | 圖片**只**從本專案 `image_registry.json` 解析；模組內沒有任何 HTTP client | 匯出的 HTML 是使用者控制的輸入。防線不是「檢查 URL 安不安全」，是**根本沒有抓取這個動作** |
+| NOTE-033 | 上傳先解碼、先嗅 magic bytes 再決定檔名；SVG 一律拒絕；寫入門檻拉到章節可寫 | 舊碼**任何位元組**都能用 `x.png` 落地再被服務出去 = stored XSS；且 **viewer 本來可以上傳** |
+| NOTE-034 | `Math.random()*100` 的圖號移除，改由伺服器 `next_figure_label()` 推導 | 亂數編號會出現兩張 `Figure 42`、重跑就換一組，**正文的「如 Figure 42 所示」會指向別張圖** |
+| NOTE-035 | `manuscript_wsui.js` 的 7 處 `alert()` 收斂成 `showNotice()` | 原生對話框凍住整個 renderer；`saveSectionConfig()` 的 catch 讓一次存檔失敗變成整個工作檯停止回應 |
+
+### 實機證據（隔離 worktree ＋ 自己的 data/，正式 repo 未參與）
+
+隔離作法：`robocopy` 出一份工作樹副本（排除 `.git`／`data`／`.env`），
+自帶 `.env`、自己的 `data/`、port 5620、`MSTEST-p` 測試專案與三個 `*@preview.local` 帳號。
+**空目錄第一次啟動即成功建出 17 張表** —— 順帶再次驗證了 NOTE-024 的 fresh bootstrap。
+
+**NOTE-030 實機 A/B（同一個 UI 路徑、同一張圖、真的按按鈕）：**
+
+| 守衛 | 2B `<br>` | 2C `<br>` | 2C 與 2B 逐字相同 |
+|---|---|---|---|
+| ON | 1 | **1** | **true**（495 chars = 495 chars） |
+| OFF（逐位元還原成修復前的那一行） | 1 | **4** | **false**（495 → 504 chars） |
+
+插入的素材 HTML 實測含 **3 個原始換行** —— 正是舊轉換多生出來的 3 個 `<br>`。
+還原用的變異先以 `git show HEAD:` 比對過**位元組完全相同**
+（第一次寫的變異把 `\n` 寫成真的換行，那不是證據，是把檔案弄壞了，已重做）。
+
+**DOCX 產物（真的從跑起來的伺服器下載，解壓後逐項檢查）：**
+
+```
+3431 bytes, magic PK, zipfile.testzip() -> None
+parts: [Content_Types].xml / _rels/.rels / word/document.xml /
+       word/_rels/document.xml.rels / word/styles.xml / word/numbering.xml /
+       word/media/image1.png          （6 個 XML part 全部 ElementTree 解析通過）
+段落樣式: Title / Heading1(Abstract) / Normal / ListParagraph x2 / Caption
+文字: 匯出驗收論文 Export Check | Abstract | Intro sentence with | bold | italic
+      | alpha | beta | Figure 1. Seeded figure 320x200
+粗體/斜體: w:b -> "bold"、w:i -> "italic"
+圖片: word/media/image1.png 721 bytes，magic \x89PNG，PIL 解出 240x240
+      rels rId3 -> media/image1.png，document.xml 內 r:embed="rId3"  → 配對成立
+chrome 殘留檢查（8 項全部 False）:
+  S.Ver / fusion-src-ver / bi-check2-circle / border-start /
+  /manuscript/image/ / access_token / img-fluid / <!DOCTYPE
+外部參照: 只有 OOXML 的 namespace URI，沒有任何會去抓的資源網址
+Content-Disposition: filename="__Export_Check.docx";
+                     filename*=UTF-8''%E5%8C%AF%E5%87%BA...  （中文標題不亂碼）
+```
+
+**匯出失敗路徑（真瀏覽器，按真的按鈕）** —— 四種都出現可行動的中文提示條，
+`window.alert` 攔截紀錄為**空陣列**，頁面全程可操作、未導頁：
+
+```
+外部網址   → 匯出中止：不允許外部圖片來源（https）。論文圖片必須先存進本專案的圖片庫。
+未登記     → 匯出中止：圖片「ghost.png」不在本專案的圖片庫裡，無法嵌入。
+跨專案     → 匯出中止：文件內有不屬於本專案的圖片來源。跨專案的素材不會被嵌入。
+空畫布     → 目前 2C 畫布沒有可匯出的內容。
+```
+
+**上傳把關（真瀏覽器，走真的 socket）：**
+
+```
+偽裝 SVG（檔名 .png、MIME image/png、內容是含 <script> 的 SVG）
+  → image_saved {ok:false, error:"Unsupported image format. Only PNG/JPEG/GIF/WebP..."}
+  → 磁碟上 image/ 目錄檔案數不變，grep 'script' 命中 0（除 registry 外）
+真 PNG → img_003 / Figure 3   （編號連續，伺服器指派）
+圖庫的 Figure 欄位已改成唯讀的「自動編號」
+```
+
+### A/B 反證彙整（全部 FAILED，沒有 ERROR）
+
+| 關掉的修復 | 紅在哪 |
+|---|---|
+| `\n`→`<br>` 還原 | `test_fusion_push_fidelity.py:76`；對照組（樣板是多行）保持綠 |
+| chrome 剔除清單清空 | `test_manuscript_docx_export.py:170`「編輯用的版本徽章被印進論文了」 |
+| heading 角色改回標籤映射 | `:195`，styles 變成 `Heading3` |
+| 圖片來源 scheme 守衛 | `:345`/`:352` **DID NOT RAISE** |
+| `_socket_can_read_paper` | `test_manuscript_docx_route.py:184`「coauthor 匯出了全篇（HTTP 200）」 |
+| magic bytes | 9 條紅，含 `test_manuscript_image_acl.py:212`「SVG 被接受了」 |
+| `except ValueError` 直通 | `:213` 錯誤被抹平成 `internal_error` |
+| 章節寫入守衛 | `:153`「viewer 成功上傳了圖片」 |
+| 伺服器指派編號 | `:176`「伺服器採用了前端送的編號：Figure 999」 |
+
+`grep -rn ABTEST app/ test/` → 無殘留。
+
+### 兩個「A/B 才發現我證明得不夠」的自我更正
+
+1. **外部圖片的 parametrize 其實什麼都沒證明。** 關掉 scheme 守衛後那組**全綠** ——
+   因為 `https://evil.example.com/x.png` 是被**前綴檢查**擋掉的（path 不是
+   `/manuscript/image/<pid>/`）。真正只有 scheme 守衛擋得住的，是
+   `https://evil.example.com/manuscript/image/MSTEST-p/fig_a.png` 這種
+   **path 恰好長得跟本地一樣**的絕對網址。補了兩條之後 A/B 才真的轉紅。
+2. **`except Exception` 把 `ValueError` 抹平了。** `save_image_asset` 結尾的
+   `raise Exception(error_detail)` 讓新寫的 `cmd_save_image` 的 `except ValueError`
+   **永遠不會命中**，使用者只會看到 "Image saving error."。是測試抓到的，不是讀碼推的。
+
+### 數字與隔離
+
+```
+py -3.10 -m pytest test/unit tests -q  →  973 passed / 0 failed   （889 → +84）
+scripts/audit_source_contract.py       →  ok, scope 274
+  --self-test                          →  ok
+真實 data/ 遞迴快照（排除 _logs/_locks/__pycache__）
+  開工前 2475 檔 aggregate 63538b41c2eabe49...
+  收工後 2475 檔 aggregate 63538b41c2eabe49...   （diff 為空，逐位元相同）
+```
+
+### 值得記的環境事實（會省下一輪的時間）
+
+1. **`openpyxl` 不在正式映像裡。** 開發機上裝了 3.1.5，但 `pip show` 的
+   `Required-by` 是**空的**，而 `requirements.txt` 沒有它，`Dockerfile` 只跑
+   `pip install -r requirements.txt`。上一份交接把它列為「可重用的既有相依」是錯的。
+   **`beautifulsoup4` 才是真的有**（`deep-translator` 的傳遞相依）。
+   因此表格素材只做 CSV（stdlib），XLSX 的前提不成立。
+2. **`manuscript_wsui.js` 是 CRLF/LF 混排**（871 CRLF + 118 裸 LF，
+   上一輪追加的區塊是 LF）。字串比對型編輯工具會失配，要走位元組層或 regex 錨點。
+3. **Socket.IO 的 origin 白名單只列 `127.0.0.1` 時，用 `localhost` 開的頁面會被擋**，
+   症狀是 `connect_error: xhr post error` 洗版而不是明確的 CORS 訊息，
+   伺服器 log 才看得到 `is not an accepted origin`。
+
+### 沒做（**不得當成完成**）
+
+1. **P1-1 可編輯表格完全沒做。** `galleryTableContainer` 目前是純佔位
+   （`grep` 全 repo：零後端、零 JS），要從 registry 開始建。
+   `manuscript_docx.py` 已經能把 `<figure class="table-container">` + `<table>`
+   轉成 `w:tbl`（有測試），所以那一側是接得上的。
+2. **Literature 第一刀（§3.22）沒動。**
+3. **`alert()` 只收斂了 `manuscript_wsui.js`。** `dashboard.js`、`lava_setup.js`、
+   `google_driveapi.js`、`paq_interact.js` 還有數十處，各自需要自己的提示條宿主。
+4. **正式站一次都沒碰**：未 push、未部署、未備份 VM 的三顆 DB。
+5. **一個未定案的觀察**：Socket.IO 完全連不上時（本輪因 origin 設定錯而遇到兩次），
+   手稿工作檯會**自己導回 Dashboard**。origin 修好後重跑三十餘次操作都沒再發生，
+   所以**沒有取得可靠的重現條件**，不列為結論。但這與 P1-4 的驗收要求
+   「Socket 暫斷不得直接導回 Dashboard」直接相關，**下一輪應該優先用
+   「連線永久失敗」而不是「暫斷」來重現**。
+
+## 3.24 章節完成比例（2026-08-14）
+
+**範圍聲明：擁有者指定「先做這個、上線後再談其他」。本節只做完成比例。
+P1-1 可編輯表格、Literature 第一刀仍未動；VM 一次都沒碰、未 push、未部署。**
+
+### 需求
+
+1. 每個章節的 2B 上方，editor／owner 可填入完成比例（0–100%）。
+2. Dashboard 對每個專案要看得到「整體比例」與「每個 section 個別比例」。
+3. **整體比例先保留欄位，現階段不計算。**
+
+### 這題唯一真正的陷阱：`save_sections` 是全量覆蓋
+
+`POST /manuscript/api/sections/<pid>` 的實作是
+
+```python
+ManuSectionConfig.query.filter_by(pid=pid).delete()   # 全量覆蓋，避免排序殘留
+```
+
+也就是**使用者每按一次「章節管理 → 儲存」（改名或調順序），整張設定表會被刪掉重建**。
+完成比例若是 `ManuSectionConfig` 上的一個欄位，那個動作會把**所有章節的進度靜默
+歸零**，畫面上還不會有任何錯誤 —— 使用者只會發現「上禮拜填的進度不見了」，
+而且找不到重現條件（因為觸發點是改章節名稱，跟進度看起來毫無關係）。
+
+因此 NOTE-036 決定**另立 `manu_section_progress` 表**（鍵為 pid + section_key）。
+分表之後「設定重寫不得清空進度」是**結構上成立**的，不必靠人記得在覆蓋時搬欄位。
+`test_saving_section_config_does_not_wipe_progress` 就是這條的守衛。
+
+### 三個決策
+
+| # | 決策 | 理由 |
+|---|---|---|
+| 1 | 進度另立一張表 | 見上。這是本題唯一會造成資料遺失的地方 |
+| 2 | **整體比例一律回 `null`**（`overall_status='not_calculated'`） | 各章不等重（Abstract 與 Results 差很多），有些章節在特定研究裡根本不會寫。權重規則定案前，給一個看起來合理但其實錯的數字**比明白說「還沒算」更糟** —— 使用者會拿它去回報進度 |
+| 3 | 寫入門檻用 `_socket_can_write_section` | viewer 擋掉；owner／editor 全部章節；**coauthor 可寫自己被指派的章節** —— 被指派的人才知道那章寫到哪，要他回報給 owner 代填等於讓最不知情的人填最需要準確的欄位。**若擁有者要收緊成「只有 editor/owner」，改這一行即可** |
+
+其他不變量：
+- `progress_percent` 一律 0–100 整數，**伺服器 clamp**；前端 `min/max` 只是體驗。
+- 看不懂的輸入（`"abc"`／`""`／`None`）回 **400**，**不得當成 0** —— 寫成 0 會讓
+  使用者以為自己填的被記錄了。
+- **「沒填」回 `null`，不是 `0`**。兩者在進度回報上意義完全不同；
+  Dashboard 上未填顯示 `--`，填了 0% 顯示 `0%`。
+- 讀取範圍與 `_filter_visible_sections` 一致：coauthor 看不到未指派章節，
+  進度 API 也不得洩漏那些章節的存在。
+- Dashboard 走**批次端點** `/manuscript/api/progress_summary`，不是逐張卡片打一次
+  —— 卡片數 = 專案數，N+1 會在專案一多時把首頁拖垮。
+
+### 改到的檔案
+
+```
+app/core_pro/manuscript/model_section.py     + ManuSectionProgress（含 clamp / map_for_pid）
+app/core_pro/manuscript/manuscript_routes.py + GET/POST /api/progress/<pid>
+                                             + GET /api/progress_summary
+app/static/js/manuscript_progress.js         新增（ManuProgress）
+app/static/js/manuscript_ws.js               建構 + 載入
+app/static/js/manuscript_soed.js             切章唯一入口刷新（同 NOTE-004 的理由）
+app/static/js/manuscript_collab.js           權限回來後重繪（見下面的競態）
+app/static/js/dashboard.js                   renderCardProgress()
+app/templates/manuscript_workspace.html      #sectionProgress 欄位 + ?v= bump
+app/templates/dashboard.html                 dashboard.js ?v=2.4 → 2.5
+```
+
+**一個差點漏掉的競態**：`progress.load()` 與 `collab.loadPermissions()` 是並行的。
+先回來的那一個看到 `permissions === null`，而 `canWrite()` 在權限未載入時一律回
+`true`（刻意的，避免誤鎖正常使用者）—— 於是 **viewer 的欄位會停在「可編輯」的
+樣子**。伺服器仍然擋（實測 403），但畫面在騙人。修法是在 `loadPermissions()`
+拿到權限後補一次 `progress.render()`。
+
+### 實機證據（隔離實例，真瀏覽器，走真的 input + change 事件）
+
+```
+owner / abstract
+  填 65 → 狀態「已儲存」
+  切到 introduction → 欄位變空、狀態「尚未填寫」   （沒有殘留 65）
+  introduction 填 30 → 「已儲存」
+  切回 abstract → 65                               （各章互不干擾）
+  GET /api/progress → {abstract:65, introduction:30}, overall=null,
+                      overall_status="not_calculated"
+  重整後 → abstract 仍是 65
+```
+
+Dashboard（`/?status=formal`，真的按分頁）：
+
+```
+整體完成度  尚未計算
+Title -- / Author -- / Abstract 65% / Keyword -- / Introduction 30% /
+Method -- / Results -- / Discussion -- / Conclusion -- / ...（13 章全列）
+progress-bar 寬度實測 ["0%","0%","65%","0%","30%","0%"]
+未填的章節顯示 `--`，**不是 0%**
+```
+
+viewer（另一個帳號登入同一專案）：
+
+```
+欄位 disabled=true、狀態「唯讀」、仍看得到 65
+手動把 disabled 拿掉再送 → 值被還原成 65、狀態回「唯讀」
+直接 POST /api/progress → **403**，伺服器上 abstract 仍是 65
+```
+
+最後一段是「解除 disabled 不等於授權」的直接證據。
+整頁掃描 `Failed/Unknown/失敗/undefined/NaN` 只有一個命中：Dashboard 卡片的
+PI 名稱顯示 `Unknown` —— 那是 `renderFormalCards` 既有的預設值（測試專案沒有 PI
+成員），與本次變更無關。
+
+### A/B 反證（全部 FAILED，沒有 ERROR）
+
+| 關掉的修復 | 紅在哪 |
+|---|---|
+| 進度改回跟著章節設定一起被刪 | `test_section_progress.py:212`「章節設定重寫把進度清掉了」 |
+| 拿掉 `_socket_can_write_section` | `:245`「viewer 寫入成功了（200）」 |
+| 看不懂的輸入當成 0 | `:176`「`''`／`'abc'`／`None`／`'N/A'` 未被拒絕，回 200」 |
+| 整體比例改成各章平均 | `:331`「整體比例被計算了：100」 |
+| 拿掉 clamp | `:168` `assert 150 == 100`、`assert -20 == 0`；`:344` 同款 |
+
+`grep -rn ABTEST app/ test/ scripts/` → 無殘留。
+
+### 數字
+
+```
+py -3.10 -m pytest test/unit tests -q   →  1018 passed / 0 failed   （973 → +45）
+scripts/audit_source_contract.py        →  ok, scope 277
+真實 data/ 遞迴快照                      →  2475 檔，aggregate 與開工前完全相同
+```
+
+### 既有 DB 怎麼拿到新表
+
+`manu_section_progress` 由 `create_all()` 建立（`app/__init__.py:659`）。
+`create_all` 只建**缺少的**表、不會 ALTER 也不會動既有資料，因此正式站那顆
+`manu_core.db` 在下次啟動時會自動長出這張表，**不需要手寫 migration**。
+（與 NOTE-024 的分流一致：既有 DB 先跑 legacy 升級器，再由 create_all 補新表。）
+
+### 沒做（**不得當成完成**）
+
+1. **整體比例的計算規則未定**，API 與 UI 都只保留欄位。規則定了之後只需改
+   `_progress_payload()` 的 `overall` 與 `dashboard.js` 的 `headValue` 兩處。
+2. **P1-1 可編輯表格、Literature 第一刀**仍未動。
+3. **正式站一次都沒碰**：未 push、未部署、未備份 VM 的三顆 DB。
+4. **仍未解的觀察**：把 `location.href` 設成手稿工作檯網址時，**偶發**會落到
+   Dashboard。本輪又遇到 3 次，但**裝上導頁追蹤器之後就重現不出來**
+   （追蹤器攔到的那一次是正常導頁：`beforeunload` → 停在 `/manuscript/`）。
+   已排除的：伺服器端沒有任何 redirect（`manuscript_page()` 只 render）、
+   `manuscript_*.js` 內唯一的 `location.href` 是 `switchProject()` 且它不會導向 `/`、
+   本輪的進度改動與它無關（進度程式碼還不存在時就出現過）。
+   **沒有取得可靠重現條件，不列為結論。**

@@ -28,7 +28,7 @@ import shutil
 import glob
 import logging
 from werkzeug.exceptions import BadRequest, Forbidden, Unauthorized
-from app.security import validate_id, enforce_project_ownership
+from app.security import validate_id, enforce_project_ownership, describe_project_access
 
 bp = Blueprint('paq', __name__, url_prefix='/api/paq')
 logger = logging.getLogger("PaqRoutes")
@@ -132,6 +132,10 @@ def get_paq_status(pid):
             'pi_name': pi_name,               
             'status': project.status,
             'research_title': project.research_title,
+            # NOTE(NOTE-027): 前端據此決定 #chat-input 等元素的呈現。
+            # can_edit 由 describe_project_access 直接問 enforcement 函式算出，
+            # 前端不得自行由 role 推導 —— 那會生出第二份角色表。
+            'access': describe_project_access(pid),
             'members': members_data if isinstance(members_data, list) else [],
             'survey': {
                 'axis_labels': survey.axis_labels if survey else {},

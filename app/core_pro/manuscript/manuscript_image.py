@@ -15,9 +15,24 @@
 # 安全邊界:
 #   - 禁止 os.path.join('data', ...) 相對路徑組合。
 #   - 圖片刪除前透過 realpath + commonpath 雙重確認邊界。
+# ACL/安全邊界:
+#   - 禁止 os.path.join('data', ...) 相對路徑組合；一律 safe_join_under。
+#   - 影像型別以 magic bytes 判定（sniff_image_type），**不信任** filename 與
+#     data: header 的 MIME。SVG 一律拒絕：它是 XML、可夾帶 <script>，而這個目錄
+#     的內容會由 /manuscript/image/<pid>/<filename> 服務出去（NOTE-033）。
+#   - 呼叫端（cmd_save_image）負責角色判定；本模組不做身分判斷。
+# 不變量:
+#   - 先驗後寫：嗅不出支援型別的請求**不得留下任何檔案**。
+#   - 落地副檔名來自嗅探結果，不來自使用者輸入。
+#   - asset id 以既有最大號 +1 產生，刪除後不得重用（id 是刪除與引用的鍵）。
+#   - Figure 編號由 next_figure_label 依 registry 推導，前端不得指定（NOTE-034）。
+# 相關 NOTE:
+#   NOTE-033、NOTE-034。
 # 維護提醒:
 #   - v0.5 [Batch C] 改用 safe_join_under + DATA_ROOT 絕對路徑，
 #     消除原 L65/127/179/200 的 os.path.join('data', ...) 繞過點。
+# 驗證:
+#   python -m pytest test/unit/test_manuscript_image_upload.py test/unit/test_manuscript_image_acl.py -q
 # ------------------------------------------------------------------------------
 
 import os
@@ -32,6 +47,10 @@ from app.core_pro.manuscript.manuscript_io import _get_data_root
 
 # 設定模組級日誌，方便在 Docker Compose Logs 中快速過濾
 logger = logging.getLogger("manuscript_image")
+
+# 單檔上限（解码後）。base64 的長度上限只是粗略的前置檢查，
+# 真正要把關的是解碼後的位元組數。
+MAX_IMAGE_BYTES = 10 * 1024 * 1024
 
 class ManuscriptImage:
     """
@@ -54,6 +73,73 @@ class ManuscriptImage:
     def _sanitize_filename(filename: str) -> str:
         safe = re.sub(r"[^A-Za-z0-9._-]+", "_", str(filename or "").strip())
         return safe or "untitled.png"
+
+    @staticmethod
+    def sniff_image_type(data: bytes) -> Optional[str]:
+        """從**實際位元組**判斷影像型別，回傳副檔名；認不出來回 None。
+
+        NOTE(NOTE-033) 前端送來的 `filename` 與 `data:` header 的 MIME 都只是提示，
+        不是判斷依據。舊實作把 base64 解出來就寫，檔名只過 `_sanitize_filename`
+        —— 也就是**任何位元組**都能用 `x.png` 這個名字落到 image 目錄，
+        再由 `/manuscript/image/<pid>/<fname>` 服務出去。
+        SVG 是其中最直接的問題：它是 XML，可以夾帶 `<script>`，
+        以 `image/svg+xml` 服務出去且被直接開啟就是同源的 stored XSS。
+        因此 SVG 一律拒絕 —— 不是消毒後接受，消毒 SVG 是一場打不完的仗。
+
+        刻意用位元組前綴而不是 PIL：這一步要在解碼**之前**擋掉非影像內容，
+        把不明位元組餵進解碼器本身就是一個攻擊面。PIL 的解析留給下游需要
+        尺寸的地方（manuscript_docx._probe_image）。
+        """
+        if not data or len(data) < 12:
+            return None
+        if data[:8] == b"\x89PNG\r\n\x1a\n":
+            return "png"
+        if data[:3] == b"\xff\xd8\xff":
+            return "jpg"
+        if data[:6] in (b"GIF87a", b"GIF89a"):
+            return "gif"
+        if data[:4] == b"RIFF" and data[8:12] == b"WEBP":
+            return "webp"
+        return None
+
+    @staticmethod
+    def next_figure_label(pid: str) -> str:
+        """依 registry 現況給下一個 Figure 編號。
+
+        NOTE(NOTE-034) 編號是**推導值**，不是身分；身分是 registry 的 `id`。
+        前端絕對不能自己產生編號 —— 舊的 `manuscript_image.js` 寫的是
+        `Figure ${Math.floor(Math.random()*100)}`，於是同一篇論文會出現兩張
+        `Figure 42`、也會從 `Figure 7` 跳到 `Figure 91`，而且重跑一次就換一組。
+        正文裡寫「如 Figure 42 所示」在下一次存檔後就指向別張圖。
+        """
+        registry = ManuscriptImage.get_image_registry(pid)
+        used = set()
+        for entry in registry or []:
+            if not isinstance(entry, dict):
+                continue
+            m = re.match(r"\s*Figure\s+(\d+)\s*$", str(entry.get("fig_id") or ""))
+            if m:
+                used.add(int(m.group(1)))
+        n = 1
+        while n in used:
+            n += 1
+        return f"Figure {n}"
+
+    @staticmethod
+    def _next_asset_id(registry_data: List[Dict[str, Any]]) -> str:
+        """以既有最大號 +1，**不是** len()+1。
+
+        len()+1 在「刪掉中間一筆再新增」時會產生重複 id，而 id 是刪除與
+        引用的鍵 —— 重複之後 delete_image_asset 會刪掉錯的那一張。
+        """
+        largest = 0
+        for entry in registry_data or []:
+            if not isinstance(entry, dict):
+                continue
+            m = re.match(r"img_(\d+)$", str(entry.get("id") or ""))
+            if m:
+                largest = max(largest, int(m.group(1)))
+        return f"img_{largest + 1:03d}"
 
     @staticmethod
     def save_image_asset(pid: str, base64_data: str, filename: str, fig_id: str, caption: str, source: str = "upload") -> Dict[str, Any]:
@@ -106,16 +192,38 @@ class ManuscriptImage:
             if missing_padding:
                 encoded += '=' * (4 - missing_padding)
 
-            # 3. 檔名唯一性與路徑準備
+            # 3. **先解碼、先驗型別，才決定檔名** —— 順序是刻意的。
+            # NOTE(NOTE-033) 舊流程是「組檔名 → 寫檔 → 再說」，於是不合法的
+            # 位元組已經躺在磁碟上，而且用的是使用者給的副檔名。
+            # 這裡改成驗過才寫：拒絕的請求**不會留下任何檔案**。
+            try:
+                raw = base64.b64decode(encoded)
+            except Exception as decode_err:
+                raise ValueError("Image payload is not valid base64.") from decode_err
+
+            if len(raw) > MAX_IMAGE_BYTES:
+                raise ValueError("Image payload too large (>10MB decoded limit).")
+
+            sniffed = ManuscriptImage.sniff_image_type(raw)
+            if sniffed is None:
+                # 訊息刻意具體：使用者要知道換哪種格式重試，而不是「失敗了」。
+                raise ValueError(
+                    "Unsupported image format. Only PNG / JPEG / GIF / WebP are "
+                    "accepted (SVG is rejected because it can carry script)."
+                )
+
+            # 落地副檔名一律由嗅探結果決定，不採用使用者給的那個。
+            base_name = ManuscriptImage._sanitize_filename(filename)
+            base_name = re.sub(r"\.[A-Za-z0-9]{1,8}$", "", base_name) or "image"
             timestamp_str = datetime.now().strftime('%y%m%d_%H%M%S')
-            safe_fname = f"{timestamp_str}_{ManuscriptImage._sanitize_filename(filename)}"
+            safe_fname = f"{timestamp_str}_{base_name}.{sniffed}"
             file_path = safe_join_under(img_dir, safe_fname)
 
             # 4. 執行二進制寫入（強制刷入磁碟）
             logger.info(f"[ManuscriptImage] Attempting to write binary data: {file_path}")
             try:
                 with open(file_path, "wb") as img_file:
-                    img_file.write(base64.b64decode(encoded))
+                    img_file.write(raw)
                     img_file.flush()
                     os.fsync(img_file.fileno())
             except IOError as io_err:
@@ -148,7 +256,7 @@ class ManuscriptImage:
 
             # 7. 封裝圖片屬性 (Attributes)
             image_meta = {
-                "id": f"img_{len(registry_data) + 1:03d}",
+                "id": ManuscriptImage._next_asset_id(registry_data),
                 "filename": safe_fname,
                 "fig_id": fig_id,
                 "caption": caption,
@@ -170,6 +278,14 @@ class ManuscriptImage:
             error_detail = f"Permission denied. Details: {perm_err}"
             logger.error(f"[ManuscriptImage] FATAL PERMISSION ERROR: {error_detail}")
             raise PermissionError(error_detail)
+
+        except ValueError:
+            # NOTE(NOTE-033) ValueError 是「使用者送錯東西」（格式不支援、過大、
+            # base64 壞掉），必須原樣往上拋。底下那個 `raise Exception(...)` 會把
+            # 型別抹平成 Exception，於是 cmd_save_image 的 `except ValueError`
+            # **永遠不會命中** —— 使用者只會看到 "Image saving error."，
+            # 不知道是格式問題還是伺服器壞了。這是測試抓到的，不是推論。
+            raise
 
         except Exception as e:
             error_detail = f"System Error during image processing: {str(e)}"

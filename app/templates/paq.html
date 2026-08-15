@@ -8,6 +8,16 @@
 -->
 {% include '_header.html' %}
 
+{#
+  NOTE(NOTE-025): PID 的唯一真相由伺服器注入，前端不得自行用 regex 從網址猜。
+  `routes.py` 的 paq_workspace() / paq_workspace_query() 都已經把經過
+  `validate_id` 驗證的 pid 傳進來（無效時為空字串），兩條路徑因此天然一致。
+  舊碼的前端 regex 字元集不含連字號，而正式 PID 一律是 `XXXXXX-p` 形式，
+  於是 `/paq/ULQ8F6-p` 會解析失敗並把使用者踢回 Dashboard。
+  這個節點是那個缺陷的替代品：值為空字串時前端會退回 query string 與 URL API。
+#}
+<div id="paq-bootstrap" data-pid="{{ pid or '' }}" hidden></div>
+
 <div class="container-fluid px-3 pb-3 d-flex flex-column" style="height: calc(105vh - 70px); overflow: hidden;">
     
     <div class="card shadow-sm mb-2 bg-white project-header-block" style="border-top: 4px solid var(--bs-primary) !important; flex-shrink: 0; height: 60px; overflow: hidden;">
@@ -62,6 +72,10 @@
                     <div class="spinner-border text-primary mb-2" role="status"></div>
                     <span class="text-primary fw-bold small">AI Generating Taxonomy...</span>
                 </div>
+
+                {# NOTE(NOTE-026): taxonomy 專用的錯誤槽。每個子資源在自己的區域回報，
+                   不得寫進 #header-pname —— 那是「專案身分」的責任。 #}
+                <div id="taxonomy-error" class="alert alert-warning py-2 px-3 small d-none" role="alert"></div>
 
                 <div class="mb-3 d-flex gap-2">
                     <button id="btn-tax-fresh" class="btn btn-primary btn-sm flex-grow-1 shadow-sm" onclick="runTaxonomyTask('fresh')">
@@ -201,7 +215,7 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz" crossorigin="anonymous"></script>
-<script src="/static/js/paq_initial.js?v=0.3"></script>
+<script src="/static/js/paq_initial.js?v=0.4"></script>
 <script src="/static/js/paq_interact.js?v=0.2"></script>
-<script src="/static/js/paq_project.js?v=0.2"></script>
+<script src="/static/js/paq_project.js?v=0.4"></script>
 <script src="/static/js/cube_renderer.js?v=1.4"></script>

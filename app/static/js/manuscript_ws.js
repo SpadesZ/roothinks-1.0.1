@@ -162,6 +162,9 @@ class ManuscriptWorkspace {
         this.imgEngine = new ManuImage(this);
         // [collab] 章節指派／留言／唯讀鎖定
         this.collab = new ManuCollab(this);
+        // 章節完成比例（NOTE-036）。放在 collab 之後：render() 要問
+        // collab.canWrite() 才知道欄位該不該鎖成唯讀。
+        this.progress = new ManuProgress(this);
 
         this.init();
     }
@@ -179,6 +182,8 @@ class ManuscriptWorkspace {
                 });
             }
 
+            this.setupUnloadGuard();
+
             this.soed.setupSocketEvents();
             this.ui.setupResizer();
             this.soed.setupUIEvents();
@@ -188,6 +193,9 @@ class ManuscriptWorkspace {
 
             // [collab] 取得逐章可寫狀態，把沒有撰寫權的章節鎖成唯讀。
             this.collab.loadPermissions();
+
+            // 章節完成比例：一次抓齊全部章節，之後切章只換顯示。
+            this.progress.load();
 
             // [v1.8] 主動要一次主論文版本清單來填 G.Ver 選單。
             // 不做的話，選單要等到「這次工作階段有存過檔」才會有內容，
@@ -293,6 +301,88 @@ class ManuscriptWorkspace {
         const url = new URL(window.location);
         url.searchParams.set('pid', pid);
         window.location.href = url.toString();
+    }
+
+    /**
+     * 離開頁面前把未落地的編輯保住。
+     *
+     * NOTE(NOTE-029): 「偶發跳回 Dashboard」查了三輪查不到，因為**沒有錯誤可找**
+     * —— 導覽列的品牌連結（`<a href="/">`，實測就浮在編輯區正上方 (12,8) 175×40）
+     * 本來就是通往首頁的合法連結，誤點一次就是一次完全正常的導頁：
+     * 沒有 console error、沒有失敗請求。
+     *
+     * 真正的缺陷是全 app 沒有任何 beforeunload 守衛，而 autosave 是 1500ms
+     * debounce：實測打字後 6ms 內點下該連結，內容在磁碟上一個字都找不到。
+     *
+     * 為什麼用 sendBeacon 而不是補一次 `socket.emit`：unload 期間連線正在拆除，
+     * emit 不保證送達；sendBeacon 由瀏覽器接手送出，不受頁面銷毀影響。
+     *
+     * 為什麼預設不攔截導頁：原生確認框會凍住整個 renderer（見 HANDOFF §3.8），
+     * 而使用者真的想離開時只是多一次點擊。**內容不掉才是目的，攔截只是手段**，
+     * 所以只有在 beacon 送不出去時才退回提示。
+     */
+    setupUnloadGuard() {
+        if (this._unloadGuardInstalled) return;
+        this._unloadGuardInstalled = true;
+
+        window.addEventListener('beforeunload', (e) => {
+            let preserved = false;
+            try {
+                preserved = this.flushDraftBeacon();
+            } catch (err) {
+                preserved = false;
+            }
+
+            // 保住了就安靜放行。保不住才擋，並且交給瀏覽器顯示它自己的提示。
+            if (!preserved && this.hasUnsavedEdits()) {
+                e.preventDefault();
+                e.returnValue = '';
+                return '';
+            }
+        });
+    }
+
+    /** 目前畫布是否有還沒寫進草稿的編輯（autosave 計時器還在跑就算）。 */
+    hasUnsavedEdits() {
+        return !!(this.soed && this.soed._autosaveTimer);
+    }
+
+    /**
+     * 用 sendBeacon 把目前章節的草稿送出去。
+     * @returns {boolean} 是否**已交給瀏覽器送出**（不代表伺服器已寫入）。
+     */
+    flushDraftBeacon() {
+        if (!this.pid || !navigator.sendBeacon) return false;
+        if (!this.hasUnsavedEdits()) return false;
+        if (!this.editorCanvas) return false;
+
+        const cards = this.editorCanvas.querySelectorAll('.editor-card');
+        if (!cards.length) return false;
+
+        const title = this.paperTitleInput
+            ? this.paperTitleInput.value.trim()
+            : 'Untitled_Paper';
+
+        let queued = false;
+        cards.forEach((card) => {
+            const body = card.querySelector('.card-content');
+            if (!body) return;
+            const payload = JSON.stringify({
+                pid: this.pid,
+                title: title,
+                section: card.getAttribute('data-section') || 'general',
+                content: body.innerHTML,
+            });
+            // sendBeacon 不能設自訂標頭；端點因此用 force=True 自行解析 JSON，
+            // 並自己做授權（帶不了 CSRF token，見 NOTE-029）。
+            const blob = new Blob([payload], { type: 'application/json' });
+            if (navigator.sendBeacon('/manuscript/api/draft/flush', blob)) {
+                queued = true;
+            }
+        });
+        // 已經交出去就取消計時器，避免 unload 途中又排一次沒有意義的 socket emit。
+        if (queued && this.soed) clearTimeout(this.soed._autosaveTimer);
+        return queued;
     }
 
     escapeHtml(val) {
