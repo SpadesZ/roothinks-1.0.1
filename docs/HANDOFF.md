@@ -2568,3 +2568,179 @@ scripts/audit_source_contract.py        →  ok, scope 277
    `manuscript_*.js` 內唯一的 `location.href` 是 `switchProject()` 且它不會導向 `/`、
    本輪的進度改動與它無關（進度程式碼還不存在時就出現過）。
    **沒有取得可靠重現條件，不列為結論。**
+
+## 3.25 2C 重複章節修復（NOTE-037）＋ 首次正式站部署（2026-08-15）
+
+### 擁有者回報：2C 出現兩個 Abstract
+
+「在 2B 重新改版內容後按 push fuse to 2C → 會在最後面（前面有之前的段落），
+之前的 Abstract 還是在這 → 此時有兩個 Abstract 在 2C Fusor 之中。」
+
+### 真因（查 git 歷史確認，不是推論）
+
+NOTE-007 之前的實作（commit `32e1949`）長這樣：
+
+```js
+const fusionHtml = `
+    <div class="fusion-block mb-4 border-start border-4 border-success ps-3 animate__animated animate__fadeInLeft">
+        <h5 class="text-success fw-bold"><i class="bi bi-check2-circle me-1"></i>${sectionLabel}</h5>
+        <div class="fusion-body">${content.replace(/\n/g, '<br>')}</div>
+    </div>`;
+this.app.fusionCanvas.innerHTML += fusionHtml;     // append，且**沒有 data-section**
+```
+
+那些區塊只有標題、**沒有章節身分**，而且隨 G.Ver 一路存到今天。
+NOTE-007 之後 `_findFusionBlock()` 查的是 `.fusion-block[data-section]`
+—— 查不到舊區塊 → 走 append 分支 → 每推一次就在最後面多一個同名章節。
+擁有者的專案已到 **G.Ver V12**，2C 裡存的正是這種舊區塊。
+截圖佐證：舊的那個標題旁**沒有 `S.Ver` 徽章**，新推出來的有 `S.Ver 1.5`。
+
+### 修法（NOTE-037）：一次性認領，門檻收到最窄
+
+`_findFusionBlock()` 找不到帶身分的區塊時，才呼叫 `_adoptLegacyFusionBlock()`：
+認領一個舊區塊並**當場補寫 `data-section`**，之後就是正常的原位 upsert。
+
+四道門檻（這裡是整個 2C 最容易把使用者稿件搬錯位置的地方）：
+1. 必須**完全沒有** `data-section` —— 絕不從別章手上搶。
+2. 標題（剝掉 icon 與徽章、正規化空白、忽略大小寫）必須與章節 label **全等**
+   —— 用 `includes` 會讓 `Abstract` 認領 `Abstract and Keywords`。
+3. 只認領第一個。
+4. **不搬動位置**，只補屬性。
+
+同名多個時：認領第一個、**其餘保留不動**，並以非阻塞提示條請使用者確認
+—— 刻意不自動刪除，那是使用者的稿件。
+
+### 實機證據（隔離實例，灌入 commit 32e1949 的逐字舊樣板）
+
+```
+起始 2C：舊 Abstract / 舊 Introduction / 一段裸段落 / 舊 Method（皆無 data-section）
+在 2B 改 Abstract 後按真的「Push to Fusor 2C」：
+  總區塊數        3 → 3          （沒有多出新區塊）
+  Abstract 區塊數 1              （不再是 2）
+  第一個仍是 Abstract            （位置沒被搬動）
+  舊內容被新內容取代、S.Ver 徽章補上
+  Introduction / Method / 裸段落 三者完全未被碰到
+```
+
+四個邊界情境：
+
+| 情境 | 結果 |
+|---|---|
+| 同章連推 3 次 | 仍 1 個 Abstract，內容為最後一次 |
+| 舊標題是 `Abstract and Keywords` | **不認領**，原文完整保留，另開一個正確的 Abstract |
+| 兩個同名舊 Abstract | 認領第一個並更新，第二個原樣保留，出現提示條「2C 裡有 2 個「Abstract」區塊，已更新第一個…」 |
+| 舊標題是 `  ABSTRACT  ` | 認領（大小寫／空白不敏感），仍 1 個 |
+
+### 數字
+
+```
+py -3.10 -m pytest test/unit tests -q  →  1029 passed / 0 failed   （1018 → +11）
+scripts/audit_source_contract.py        →  ok, scope 278
+  --cached（即將發布的那棵樹）           →  ok, scope 278
+真實 data/ 遞迴快照                      →  2475 檔，aggregate 與開工前完全相同
+```
+
+---
+
+## 正式站部署（2026-08-15）
+
+### 先釐清一件會誤導下一輪的事
+
+`docker-compose.gcp.yml` 裡的 `CORS_ALLOWED_ORIGINS` 預設值 `http://35.221.224.128`
+**是舊的**。那個 IP 現在是另一台 VM（`rootmedicals`），實測 `GET /` 回 307 →
+`/demo/latest`、`/auth/login` 回 404。**照著那個檔案找正式站會找錯機器。**
+
+真正的正式站：
+
+```
+帳號      kx4492.hddspace1@gmail.com     （不是 gcloud 目前的 active account）
+專案      project-ce416b1d-0d83-41d9-a4f
+VM        roothinks    zone asia-east1-c    IP 34.80.240.29
+容器      roothinks_progress_paq_v8_10005 / roothinks_progress_redis_10005
+部署目錄  ~/roothinks-app   （**git repo**，且 `.:/app` bind-mount 進容器）
+```
+
+因為 `/app` 是 bind-mount，**部署 = 更新該目錄的原始碼 + restart 容器**，
+本次沒有新增相依，所以不需要重建 image。
+
+### 部署前狀態（實查，不引用歷史值）
+
+```
+VM HEAD            08d5877   （與本機 HEAD 相同 → 本輪全部成果都是未提交的差異）
+VM dirty           docker-compose.override.yml（正式站專用設定，含對外 CORS
+                   http://34.80.240.29 與 COMPOSE_CPUS）—— **不得動到**
+三顆 DB            roothinks.db 700416B / manu_core.db 28672B / sys/llm_match.db 274432B
+外網               / =302 → /auth/login、login=200、Socket.IO=200
+```
+
+### 備份與回滾包
+
+```
+~/roothinks-backup-20260815-193508/
+  roothinks.db  manu_core.db  llm_match.db      三顆皆 quick_check = ok
+  env.backup    docker-compose.override.yml
+docker image     roothinks10005-roothinks-paq:rollback-08d5877
+```
+
+**注意：VM 上沒有 `sqlite3` CLI**，備份是 `cp`（已確認無 `-wal/-shm` 旁檔，
+且對備份檔跑過 `quick_check` 全部 ok）。要做 `.backup` 式熱備份得先裝 sqlite3。
+
+### 部署動作
+
+```
+本機   git commit dba7ed5  → git push r10005 codex/manuscript-gallery-upload
+VM     git fetch origin codex/manuscript-gallery-upload
+       git checkout dba7ed5497cd47f73cb1b679d5a86e1faea9b6f4
+       docker restart roothinks_progress_paq_v8_10005
+```
+
+刻意用 `git checkout <commit>` 而不是 `pull`：本次 commit 沒有碰
+`docker-compose.override.yml`，checkout 因此不會覆蓋那份 dirty 的正式站設定
+（部署後實測該檔仍為 ` M`、大小 4188、mtime 未變，`.env` 亦未動）。
+
+### 部署後驗證
+
+```
+容器            Up (healthy)
+啟動 log        Running schema upgrade on /app/data/roothinks.db → finished
+                Database initialization completed        （無 Traceback）
+外網            / =302 → /auth/login、/auth/login =200、Socket.IO =200
+新資產          /static/js/manuscript_progress.js = 200
+新端點（未登入）  export/docx =401、progress =401、progress_summary =401
+三顆 DB         quick_check 全部 ok
+```
+
+**資料零遺失（逐表比對備份與線上）**：
+
+```
+roothinks.db   新增表 none  移除表 none  列數減少 none   （projects 7 / users 14 / members 9）
+manu_core.db   新增表 ['manu_section_progress']（0 列）  移除表 none  列數減少 none
+llm_match.db   新增表 none  移除表 none  列數減少 none
+```
+
+唯一的 schema 變動就是 `create_all()` 補出來的那張新表，符合 NOTE-036 的預期
+（`create_all` 只建缺少的表，不 ALTER、不動既有資料）。
+
+線上程式碼實查（curl 靜態資產）：`_adoptLegacyFusionBlock` 命中 2 次、
+`body.innerHTML = content;` 命中 1 次、舊的 `content.replace(/\n/g` **0 次**、
+`showNotice(message, level` 命中 1 次、假匯出的 `application/msword;charset` **0 次**。
+
+### 回滾程序
+
+```
+docker stop roothinks_progress_paq_v8_10005
+cd ~/roothinks-app && git checkout 08d5877
+cp ~/roothinks-backup-20260815-193508/roothinks.db  data/roothinks.db      # 僅在資料需還原時
+cp ~/roothinks-backup-20260815-193508/manu_core.db  data/manu_core.db
+cp ~/roothinks-backup-20260815-193508/llm_match.db  data/sys/llm_match.db
+docker start roothinks_progress_paq_v8_10005
+```
+（多數情況只需 `git checkout 08d5877` + restart —— 本次唯一的 schema 變動是
+新增一張空表，回舊版時它只是沒有人用，不影響舊程式碼。）
+
+### 本次部署**沒有**在正式站做的事
+
+- **沒有用正式帳號登入做逐項 UI 重驗**：手上沒有正式站的使用者密碼。
+  線上驗到的是「服務健康 + 正確的程式碼確實在線上 + 端點授權正確 + 資料零遺失」。
+  逐項功能驗收是在隔離實例上以真瀏覽器完成的（見 §3.23／§3.24／本節）。
+- 沒有建立測試專案 —— 為了不在正式資料庫留下測試資料。
