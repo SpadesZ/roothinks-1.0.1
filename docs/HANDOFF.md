@@ -2822,3 +2822,28 @@ models,<br>encounter                (BA 45):<br>␣␣␣␣␣Finally,
 - **沒有替擁有者實際執行清理**。那會改到他的論文，必須由他自己在畫面上看過
   再按 Save。按鈕已經上線，他打開 2C 就會看到。
 - 沒有用他的帳號在正式站按任何會寫入的按鈕。
+
+### NOTE-038 部署（2026-08-16）
+
+```
+commit    eb3be75   （dd5cf46 → eb3be75）
+方式      VM ~/roothinks-app git checkout eb3be75 + docker restart
+          （同前：本次 commit 沒碰 docker-compose.override.yml，
+            checkout 後該檔仍為 ` M`，正式站設定未被覆蓋）
+測試      1039 passed / 0 failed
+audit     ok, scope 279（--cached 亦 ok）
+```
+
+部署後驗證：
+
+```
+容器            Up (healthy)
+啟動 log        schema upgrade → finished、Database initialization completed（無 Traceback）
+外網            / =302、/auth/login =200、Socket.IO =200
+線上程式碼       manuscript_soed.js 內 cleanupHardWraps 命中 1 次
+三顆 DB         quick_check 全部 ok；projects=7 users=14（與部署前相同）
+擁有者的稿件     paper/V12.json 仍是 14276 bytes / Aug 11 18:06 —— **完全沒有被動到**
+```
+
+**擁有者要自己做的一步**：打開 2C → 按「清理硬換行」→ 看過內容 → 按 Save。
+系統不會替他做這件事（NOTE-038）。
