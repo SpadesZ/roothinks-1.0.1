@@ -844,6 +844,143 @@ class ManuSoed {
         return block;
     }
 
+    // =========================================================================
+    // Word 貼上殘留的硬換行清理（NOTE-038）
+    // =========================================================================
+
+    /**
+     * 這個 <br> 是不是「硬換行殘骸」（出現在句子中間的換行）。
+     *
+     * NOTE(NOTE-038) 用 DOM 節點判斷，**不對 HTML 跑 regex** —— 用 regex 改寫
+     * HTML 是已知的坑（屬性裡的 `&lt;br&gt;` 也會被打到，實測那份稿件的 style
+     * 屬性裡就有 `mso-pagination` 旁邊夾著跳脫過的 br 字樣）。
+     *
+     * 判準是「這個換行落在一個句子的中間」：
+     *   前面可見文字結尾是字母/數字，或**非句末**標點（, ; : ) ] -）
+     *   後面可見文字（略過空白）開頭是字母/數字/中文/左括號
+     * 句末標點（. ! ? 。！？）之後的換行**刻意保留** —— 那可能是作者要的分行。
+     */
+    _isSoftWrapBreak(br) {
+        const prev = this._visibleTextBefore(br);
+        const next = this._visibleTextAfter(br);
+        if (!prev || !next) return false;
+        // 前面：非句末的結尾字元
+        if (!/[A-Za-z0-9,;:)\]\-一-鿿]$/.test(prev)) return false;
+        // 後面：略過空白之後必須立刻是內容
+        if (!/^[A-Za-z0-9(一-鿿]/.test(next.replace(/^\s+/, ''))) return false;
+        return true;
+    }
+
+    /** <br> 之前最近的可見文字（往前走出祖先，遇到區塊邊界就停）。 */
+    _visibleTextBefore(node) {
+        let cur = node;
+        let text = '';
+        while (cur && text.length < 40) {
+            let sib = cur.previousSibling;
+            while (sib) {
+                if (sib.nodeType === Node.TEXT_NODE) text = sib.textContent + text;
+                else if (sib.nodeType === Node.ELEMENT_NODE) {
+                    if (this._isBlockLevel(sib)) return text.replace(/\s+$/, '');
+                    text = (sib.textContent || '') + text;
+                }
+                if (text.replace(/\s+$/, '')) return text.replace(/\s+$/, '');
+                sib = sib.previousSibling;
+            }
+            cur = cur.parentNode;
+            if (!cur || this._isBlockLevel(cur)) break;
+        }
+        return text.replace(/\s+$/, '');
+    }
+
+    /** <br> 之後最近的可見文字。 */
+    _visibleTextAfter(node) {
+        let cur = node;
+        let text = '';
+        while (cur && text.length < 40) {
+            let sib = cur.nextSibling;
+            while (sib) {
+                if (sib.nodeType === Node.TEXT_NODE) text += sib.textContent;
+                else if (sib.nodeType === Node.ELEMENT_NODE) {
+                    if (this._isBlockLevel(sib)) return text;
+                    text += (sib.textContent || '');
+                }
+                if (text.trim()) return text;
+                sib = sib.nextSibling;
+            }
+            cur = cur.parentNode;
+            if (!cur || this._isBlockLevel(cur)) break;
+        }
+        return text;
+    }
+
+    _isBlockLevel(el) {
+        return el && el.nodeType === Node.ELEMENT_NODE && /^(P|DIV|LI|OL|UL|TABLE|TR|TD|TH|H1|H2|H3|H4|H5|H6|BLOCKQUOTE|SECTION|ARTICLE)$/
+            .test(el.tagName);
+    }
+
+    /**
+     * 清理 2C 畫布上 Word 貼上殘留的硬換行。**由使用者按按鈕觸發，不自動執行。**
+     *
+     * NOTE(NOTE-038) 刻意不自動跑、也不自動存檔：這是在改使用者的稿件，
+     * 哪些換行是作者故意的只有作者知道。清理後畫面先呈現結果，
+     * 使用者確認無誤才自己按 Save；不滿意就重新整理，等於什麼都沒發生。
+     */
+    cleanupHardWraps() {
+        const canvas = this.app.fusionCanvas;
+        if (!canvas) return 0;
+
+        const notify = (msg, level) => {
+            if (this.app.ui && this.app.ui.showNotice) this.app.ui.showNotice(msg, level);
+        };
+
+        const before = canvas.querySelectorAll('br').length;
+        if (!before) { notify('2C 沒有找到任何換行，不需要清理。', 'info'); return 0; }
+
+        let removed = 0;
+
+        // 1) 連續 3 個以上的 <br>：Word 拿來當垂直間距的填充，整組移除。
+        const all = Array.from(canvas.querySelectorAll('br'));
+        let run = [];
+        const flushRun = () => {
+            if (run.length >= 3) { run.forEach(b => { b.remove(); removed++; }); }
+            run = [];
+        };
+        all.forEach((br) => {
+            const prev = br.previousSibling;
+            const contiguous = run.length && prev === run[run.length - 1];
+            const onlySpaceBetween = run.length && prev && prev.nodeType === Node.TEXT_NODE
+                && !prev.textContent.trim() && prev.previousSibling === run[run.length - 1];
+            if (contiguous || onlySpaceBetween) run.push(br);
+            else { flushRun(); run = [br]; }
+        });
+        flushRun();
+
+        // 2) 直接掛在 <ol>/<ul> 底下（夾在 </li> 與 <li> 之間）的 <br>。
+        Array.from(canvas.querySelectorAll('ol > br, ul > br')).forEach((br) => {
+            br.remove(); removed++;
+        });
+
+        // 3) 句子中間的硬換行 —— 換成一個空白，否則前後字會黏在一起。
+        Array.from(canvas.querySelectorAll('br')).forEach((br) => {
+            if (!br.isConnected) return;
+            if (!this._isSoftWrapBreak(br)) return;
+            br.replaceWith(document.createTextNode(' '));
+            removed++;
+        });
+
+        const after = canvas.querySelectorAll('br').length;
+        this.updateWordCount();
+
+        if (!removed) {
+            notify('沒有偵測到 Word 貼上殘留的硬換行（保留了所有換行）。', 'info');
+        } else {
+            notify(`已移除 ${removed} 個硬換行（換行數 ${before} → ${after}）。`
+                 + '請確認內容無誤後按 Save 保存；不滿意就重新整理，不會有任何變更。',
+                   'warning');
+        }
+        return removed;
+    }
+
     cardActionContext(btn) {
         const card = btn.closest('.editor-card');
         const content = card.querySelector('.card-content').innerText;

@@ -151,6 +151,13 @@
                     </button>
                     <button type="button" class="btn btn-sm btn-success fw-bold" id="btnExportWord"><i class="bi bi-download me-1"></i>匯出 Word</button>
                     
+                    <!-- NOTE(NOTE-038) Word 貼上會把每 ~70 字元的硬斷行變成真的 <br>
+                         （正式站實測單一版本 146 個，全部落在句子中間）。刻意做成手動按鈕：
+                         這是在改使用者的稿件，而且清理後不自動存檔，重整即可放棄。 -->
+                    <button class="btn btn-sm btn-outline-secondary fw-bold shadow-sm ms-2" onclick="wsApp.soed.cleanupHardWraps()" title="移除從 Word 貼上時殘留的句中硬換行（清理後需自行按 Save 才會保存）">
+                        <i class="bi bi-text-wrap me-1"></i>清理硬換行
+                    </button>
+
                     <button class="btn btn-sm btn-outline-primary fw-bold shadow-sm ms-2" onclick="wsApp.openAssetGallery('2C')" title="從圖庫插入圖片或表格">
                         <i class="bi bi-images me-1"></i>插入素材
                     </button>
@@ -641,7 +648,7 @@
     
     <script src="{{ url_for('static', filename='js/manuscript_wsui.js') }}?v=1.9"></script>
     <script src="{{ url_for('static', filename='js/manuscript_image.js') }}?v=1.9"></script>
-    <script src="{{ url_for('static', filename='js/manuscript_soed.js') }}?v=3.3"></script>
+    <script src="{{ url_for('static', filename='js/manuscript_soed.js') }}?v=3.4"></script>
     <script src="{{ url_for('static', filename='js/manuscript_collab.js') }}?v=1.8"></script>
     <script src="{{ url_for('static', filename='js/manuscript_progress.js') }}?v=0.1"></script>
     <script src="{{ url_for('static', filename='js/manuscript_ws.js') }}?v=5.3"></script>

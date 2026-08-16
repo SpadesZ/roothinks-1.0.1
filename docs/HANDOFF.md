@@ -2744,3 +2744,81 @@ docker start roothinks_progress_paq_v8_10005
   線上驗到的是「服務健康 + 正確的程式碼確實在線上 + 端點授權正確 + 資料零遺失」。
   逐項功能驗收是在隔離實例上以真瀏覽器完成的（見 §3.23／§3.24／本節）。
 - 沒有建立測試專案 —— 為了不在正式資料庫留下測試資料。
+
+## 3.26 正式站帳號驗證：找到「排版亂掉」的另一半（2026-08-16）
+
+擁有者提供正式站帳號後做的**唯讀**驗證（本節所有動作都不寫入任何資料）。
+
+### 驗證結果
+
+```
+登入 /api/auth/login                    -> 200
+正式專案                                 -> 1 個：DGVRYV-p
+  「A Self-Evaluated Framework of LLM-Augmented Validation…」
+GET /manuscript/api/progress_summary     -> 200
+  DGVRYV-p: 18 章、0 章已填、overall=None (not_calculated)   ← 新功能在線上正常
+```
+
+### NOTE-037 的根因在**真實稿件**上得到確認
+
+`data/DGVRYV-p/manuscript/paper/V12.json`（最新已存版本，13,611 字元）：
+
+```
+fusion-block 共 2 個
+  有 data-section : 0
+  無 data-section : 2      ← 全部都是 NOTE-007 之前存下的舊區塊
+標題            : ['Abstract', 'Introduction']
+```
+
+也就是擁有者的 2C **整份都是沒有章節身分的舊區塊**。修復前推 Abstract 必然
+append 出第三塊 —— 正是他截圖裡的兩個 Abstract。修復後會認領原本那一塊。
+
+### **新發現：「2C 匯出排版完全亂掉」還有第二個成因（NOTE-038）**
+
+同一份 V12 裡有 **146 個 `<br>`**，而且幾乎全部落在句子中間：
+
+```
+code-switching<br>requires          comprising<br>8,420
+which<br>primarily                  integrating<br>Transformer-based
+models,<br>encounter                (BA 45):<br>␣␣␣␣␣Finally,
+```
+
+內容是從 **Word 貼上**的（`class="MsoNormal"`、`<span lang="EN-US">`），
+原文每 ~70 字元硬斷行。NOTE-030 修掉的那個 `content.replace(/\n/g,'<br>')`
+把每一個來源斷行都變成真的 `<br>`，段落因此被永久切成 70 字一行。
+
+**NOTE-030 只能阻止新的，修不好已經存進去的。** 這就是為什麼擁有者的截圖裡
+2B 第一行只有孤零零一個 "The"。另外還有兩種 Word 垃圾：
+`<p>` 裡連續 10 個 `<br>` 當垂直間距、`</li>` 與 `<li>` 之間的 `<br>`。
+
+### 修法（NOTE-038）：明確的「清理硬換行」按鈕，不自動改稿
+
+判定以 **DOM 節點**做，不對 HTML 跑 regex（那份稿件的 style 屬性裡就有跳脫過的
+`&lt;br&gt;` 字樣，regex 會打到它）。移除條件是「這個換行落在句子中間」：
+前面是文字或非句末標點、後面（略過空白）是文字／數字／中文／左括號。
+句末（`. ! ? 。！？`）之後的換行**刻意保留**。
+
+**不自動執行、不自動存檔**：清理後畫面先呈現，使用者確認才按 Save；
+不滿意重新整理即可放棄 —— 整個動作可逆。這是在改使用者的論文，
+系統不該在他沒看到的時候動手。
+
+### 實機證據（把**正式站 V12 的真實內容**灌進隔離實例的 2C）
+
+```
+<br>            146 → 7      （移除 139）
+可見文字         9707 字元 → 9707 字元，**逐字完全相同**（textIdentical = true）
+結構             fusion-block 2→2、<p> 8→8、<li> 4→4
+黏字檢查         switchingrequires / processingmixed / comprising8,420 … 8 種全部不存在
+正確接合         「code-switching requires」「processing mixed-language」等 6/6 成立
+提示條           「已移除 139 個硬換行（換行數 146 → 7）。請確認內容無誤後按 Save…」
+保留的 7 個      4 個在句號之後、2 個後面接 →/&、1 個後面沒有文字   ← 全部是保守保留
+```
+
+`textIdentical = true` 是最關鍵的一條：它證明只有 `<br>` 節點被動到，
+沒有任何文字被刪除、改寫或黏在一起。
+
+### 正式站上還沒做的事
+
+- **沒有替擁有者實際執行清理**。那會改到他的論文，必須由他自己在畫面上看過
+  再按 Save。按鈕已經上線，他打開 2C 就會看到。
+- 沒有用他的帳號在正式站按任何會寫入的按鈕。
