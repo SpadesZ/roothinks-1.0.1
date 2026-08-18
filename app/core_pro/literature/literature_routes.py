@@ -75,6 +75,7 @@ from app.core_pro.literature.literature_bflow import (
     write_job_config as _bflow_write_job_config,
 )
 from app.core_pro.literature.literature_batch_routes import register_batch_routes
+from app.core_pro.literature.literature_chat_routes import register_chat_routes
 from app.core_pro.literature.literature_context_chain_routes import register_context_chain_routes
 from app.core_pro.literature.literature_context_routes import register_context_routes
 from app.core_pro.literature.literature_debug_routes import register_debug_routes
@@ -152,6 +153,9 @@ semantic_corrector = None
 interpreter = None
 semantic_reflow_task = None
 task_3search_module = None
+task_3a_litchat_module = None
+task_3bc_scout_module = None
+literature_chat_store_service = None
 nllb_translator = None
 context_chain_service = None
 _BATCH_EXECUTOR_MAX_WORKERS = max(1, int(os.environ.get("LITERATURE_MAX_WORKERS", "1")))
@@ -325,6 +329,43 @@ def get_task_3search():
             logger.warning(f"[System] Task 3 Search init failed: {e}")
             return None
     return task_3search_module
+
+
+def get_task_3a_litchat():
+    """Lazy-load Literature 對話腳 A（意圖判斷 + 回覆組合）"""
+    global task_3a_litchat_module
+    if task_3a_litchat_module is None:
+        try:
+            from app.llm_service.matching_tasks import task_3a_litchat
+            task_3a_litchat_module = task_3a_litchat
+        except Exception as e:
+            logger.warning(f"[System] Task 3A LitChat init failed: {e}")
+            return None
+    return task_3a_litchat_module
+
+
+def get_task_3bc_scout():
+    """Lazy-load Literature 搜尋腳 B/C（grounded 搜尋 + 互檢 + 回查驗證）"""
+    global task_3bc_scout_module
+    if task_3bc_scout_module is None:
+        try:
+            from app.llm_service.matching_tasks import task_3bc_scout
+            task_3bc_scout_module = task_3bc_scout
+        except Exception as e:
+            logger.warning(f"[System] Task 3BC Scout init failed: {e}")
+            return None
+    return task_3bc_scout_module
+
+
+def get_literature_chat_store():
+    """Lazy singleton：Literature 對話紀錄與搜尋 cache（per project）。"""
+    global literature_chat_store_service
+    if literature_chat_store_service is None:
+        from app.services.literature_chat_store import LiteratureChatStore
+
+        literature_chat_store_service = LiteratureChatStore(DATA_ROOT)
+    return literature_chat_store_service
+
 
 def get_nllb_translator():
     """Lazy-load Hybrid Translator (NLLB + Gemini fallback)"""
@@ -1658,3 +1699,4 @@ register_batch_routes(literature_bp, sys.modules[__name__])
 register_context_chain_routes(literature_bp, sys.modules[__name__])
 register_debug_routes(literature_bp, sys.modules[__name__])
 register_library_routes(literature_bp, sys.modules[__name__])
+register_chat_routes(literature_bp, sys.modules[__name__])

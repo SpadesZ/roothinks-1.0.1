@@ -2,10 +2,14 @@
 # 檔案路徑: app/llm_service/matching_tasks/task_3search.py
 # 模組定位: LLM task 業務層；組合特定任務 prompt，經 dispatcher 呼叫已綁定模型。
 # 主要責任: 以研究查詢搜尋外部學術來源並正規化候選 metadata；只負責 seed discovery。
+#   v0.7 另提供 resolve_reference()：把單筆書目回查成真實 DOI/URL，供 Literature
+#   對話式找文獻（task_3bc_scout）做幻覺剔除。
 # 上下游: matching task -> dispatcher -> LlmBus -> provider adapter；binding/usage 由 llm_match DB 與 usage store 支援。
 # 維護邊界: 不得記錄 API key 或完整 prompt；provider error、usage、cache 與 cancel_event 身分不可在層間遺失或靜默降級。
+#   resolve_reference() 查無資料時必須回空，不得為了「有東西可回」而放寬比對門檻。
 # 驗證: python -m pytest test/unit tests -q
-#路徑(./app/llm_service/matching_tasks/task_3search.py) #版本 v0.6 #更版時間 20260209-0030
+#路徑(./app/llm_service/matching_tasks/task_3search.py) #版本 v0.7 #更版時間 20260817-1200
+import difflib
 import json
 import math
 import hashlib
@@ -17,7 +21,7 @@ import ipaddress
 import xml.etree.ElementTree as ET
 from datetime import datetime
 from typing import Dict, List, Any
-from urllib.parse import urlparse
+from urllib.parse import quote, urlparse
 
 from filelock import FileLock
 
@@ -262,6 +266,38 @@ class ContextSearcher:
                 time.sleep(0.25 * (2 ** attempt))
         return {}
 
+    def _crossref_item_to_paper(self, it: Dict[str, Any]) -> Dict[str, Any]:
+        """Crossref work -> 內部 paper dict。搜尋清單與單筆 DOI 查詢共用同一份對應。"""
+        title = (it.get("title") or [""])[0].strip()
+        if not title:
+            return {}
+
+        authors = []
+        for a in it.get("author", [])[:8]:
+            family = (a.get("family") or "").strip()
+            given = (a.get("given") or "").strip()
+            name = f"{family}, {given}".strip(", ")
+            if name:
+                authors.append(name)
+
+        year = None
+        issued = it.get("issued", {}).get("date-parts", [])
+        if issued and issued[0]:
+            year = issued[0][0]
+
+        doi = (it.get("DOI") or "").strip()
+        return {
+            "title": title,
+            "authors": authors,
+            "year": year,
+            "venue": (it.get("container-title") or [""])[0],
+            "doi": doi,
+            "url": f"https://doi.org/{doi}" if doi else (it.get("URL") or ""),
+            "abstract": it.get("abstract") or "",
+            "citations": int(it.get("is-referenced-by-count") or 0),
+            "source": "crossref",
+        }
+
     def _search_crossref(self, topic: str, limit: int = 20) -> List[Dict[str, Any]]:
         data = self._http_get_json(
             "https://api.crossref.org/works",
@@ -270,36 +306,9 @@ class ContextSearcher:
         items = data.get("message", {}).get("items", []) if data else []
         out: List[Dict[str, Any]] = []
         for it in items:
-            title = (it.get("title") or [""])[0].strip()
-            if not title:
-                continue
-            authors = []
-            for a in it.get("author", [])[:8]:
-                family = (a.get("family") or "").strip()
-                given = (a.get("given") or "").strip()
-                name = f"{family}, {given}".strip(", ")
-                if name:
-                    authors.append(name)
-
-            year = None
-            issued = it.get("issued", {}).get("date-parts", [])
-            if issued and issued[0]:
-                year = issued[0][0]
-
-            doi = (it.get("DOI") or "").strip()
-            out.append(
-                {
-                    "title": title,
-                    "authors": authors,
-                    "year": year,
-                    "venue": (it.get("container-title") or [""])[0],
-                    "doi": doi,
-                    "url": f"https://doi.org/{doi}" if doi else (it.get("URL") or ""),
-                    "abstract": it.get("abstract") or "",
-                    "citations": int(it.get("is-referenced-by-count") or 0),
-                    "source": "crossref",
-                }
-            )
+            paper = self._crossref_item_to_paper(it)
+            if paper:
+                out.append(paper)
         return out
 
     def _search_openalex(self, topic: str, limit: int = 20) -> List[Dict[str, Any]]:
@@ -453,6 +462,133 @@ class ContextSearcher:
             return out
         except Exception:
             return []
+
+    # ---------------------------------------------------------------------
+    # Reference resolution：把「LLM 說有這篇」變成「這篇真的存在，而且在這裡」
+    # ---------------------------------------------------------------------
+    # 0.82 是「標題只差冠詞、副標題或標點」還能過、但同領域的不同論文會被擋下來的位置。
+    # 調低會開始放行同主題的不同篇；調高則連合法的標題變體（連字號、大小寫）都擋掉。
+    _RESOLVE_TITLE_THRESHOLD = 0.82
+    # DOI 對得上時標題門檻放寬到 0.55：出版社登錄的標題常與作者寫法有出入，
+    # 但完全不像（例如 DOI 被接到另一篇）仍必須擋下來。
+    _RESOLVE_DOI_TITLE_FLOOR = 0.55
+
+    @staticmethod
+    def _norm_title(title: str) -> str:
+        return re.sub(r"[^a-z0-9]+", " ", str(title or "").lower()).strip()
+
+    def _title_similarity(self, left: str, right: str) -> float:
+        a = self._norm_title(left)
+        b = self._norm_title(right)
+        if not a or not b:
+            return 0.0
+        if a == b:
+            return 1.0
+        return difflib.SequenceMatcher(None, a, b).ratio()
+
+    @staticmethod
+    def normalize_doi(raw: str) -> str:
+        clean = str(raw or "").strip()
+        clean = re.sub(r"^https?://(dx\.)?doi\.org/", "", clean, flags=re.IGNORECASE)
+        clean = clean.strip().rstrip(".,;)")
+        return clean if re.match(r"^10\.\d{4,9}/\S+$", clean) else ""
+
+    def _fetch_by_doi(self, doi: str) -> Dict[str, Any]:
+        clean = self.normalize_doi(doi)
+        if not clean:
+            return {}
+        data = self._http_get_json(
+            f"https://api.crossref.org/works/{quote(clean, safe='/')}", {}
+        )
+        message = (data or {}).get("message") or {}
+        if not isinstance(message, dict):
+            return {}
+        return self._crossref_item_to_paper(message)
+
+    @staticmethod
+    def canonical_reference_url(paper: Dict[str, Any]) -> str:
+        """
+        對外顯示用的連結，依可驗證程度排序：doi.org > PubMed/arXiv 原始頁 > 其他 landing page。
+        一律 https —— arXiv 的 Atom id 是 http，直接放上去會被瀏覽器擋混合內容。
+        """
+        doi = str(paper.get("doi") or "").strip()
+        if doi:
+            return f"https://doi.org/{doi}"
+        url = str(paper.get("url") or "").strip()
+        if url.startswith("http://"):
+            url = "https://" + url[len("http://"):]
+        return url
+
+    def resolve_reference(
+        self,
+        title: str,
+        authors: List[str] = None,
+        year: Any = None,
+        doi: str = "",
+    ) -> Dict[str, Any]:
+        """
+        以書目資訊回查真實學術來源，取得 canonical DOI/URL。
+
+        NOTE(NOTE-039): 這是對抗 LLM 幻覺的**主要**防線，不是輔助。兩個模型可以一起編出同一篇
+        不存在的論文（互檢會一致通過），但編出來的東西在 Crossref/OpenAlex/
+        PubMed/arXiv 一定查不到。回 {} 代表「在我們認可的來源裡查無此文」，
+        呼叫端應直接剔除，不得因為「模型很有把握」而保留。
+
+        :return: 命中的 paper dict（含 match/match_score/canonical_url），查無則 {}。
+        """
+        title = str(title or "").strip()
+        clean_doi = self.normalize_doi(doi)
+
+        if clean_doi:
+            hit = self._fetch_by_doi(clean_doi)
+            if hit:
+                sim = self._title_similarity(title, hit.get("title")) if title else 1.0
+                if sim >= self._RESOLVE_DOI_TITLE_FLOOR:
+                    hit["match"] = "doi"
+                    hit["match_score"] = round(sim, 4)
+                    hit["canonical_url"] = self.canonical_reference_url(hit)
+                    hit["apa"] = self._to_apa_citation(hit)
+                    return hit
+                # DOI 存在但指向完全不同的論文 = 模型把 DOI 接錯了，
+                # 這種「半真」比整篇捏造更危險，不能靜靜地採用 DOI 那一邊。
+
+        if not title:
+            return {}
+
+        best: Dict[str, Any] = {}
+        best_score = 0.0
+        for finder in (
+            self._search_crossref,
+            self._search_openalex,
+            self._search_pubmed,
+            self._search_arxiv,
+        ):
+            try:
+                candidates = finder(title, limit=5)
+            except Exception:
+                continue
+            for cand in candidates or []:
+                score = self._title_similarity(title, cand.get("title"))
+                if score > best_score:
+                    best, best_score = cand, score
+            if best_score >= 0.95:
+                break  # 逐字命中，沒必要再打其餘 API
+
+        if not best or best_score < self._RESOLVE_TITLE_THRESHOLD:
+            return {}
+
+        want_year = self._normalize_year(year)
+        got_year = self._normalize_year(best.get("year"))
+        if isinstance(want_year, int) and isinstance(got_year, int) and abs(want_year - got_year) > 1:
+            # 標題像但年份差兩年以上：多半是對到同名的另一篇（會議版 vs 期刊版差 1 年，容許）。
+            return {}
+
+        resolved = dict(best)
+        resolved["match"] = "title"
+        resolved["match_score"] = round(best_score, 4)
+        resolved["canonical_url"] = self.canonical_reference_url(resolved)
+        resolved["apa"] = self._to_apa_citation(resolved)
+        return resolved
 
     def _build_search_keywords(self, topic: str) -> List[str]:
         cleaned = re.sub(r"\s+", " ", topic).strip()
