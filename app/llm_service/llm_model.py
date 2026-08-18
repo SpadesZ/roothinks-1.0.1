@@ -315,6 +315,12 @@ class LLMModel:
                 "task_2cubegen",
                 "task_2a_chat",
                 "task_3search",
+                # Literature 對話式找文獻的三腳：A 負責對話與意圖判斷，B/C 各自上網搜尋再互檢。
+                # B/C 必須綁 Gemini —— 只有 Gemini 支援 Google Search grounding。
+                # 漏加在這個清單裡的 task_id 會被下面那行 DELETE ... NOT IN 清掉。
+                "task_3a_litchat",
+                "task_3b_scout",
+                "task_3c_scout",
                 "task_4cv",
                 "task_5interpret",
                 "task_5b_reflow",

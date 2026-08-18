@@ -76,6 +76,10 @@ TASK_BINDING_ORDER = [
     "task_2cubegen",
     "task_2a_chat",
     "task_3search",
+    # 緊接在 task_3search 之後：同屬 Literature 找文獻，UI 上要排在一起。
+    "task_3a_litchat",
+    "task_3b_scout",
+    "task_3c_scout",
     "task_4cv",
     "task_5interpret",
     "task_5b_reflow",

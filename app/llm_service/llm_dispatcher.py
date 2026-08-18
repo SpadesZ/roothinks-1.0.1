@@ -1,7 +1,7 @@
 # 檔案路徑: app/llm_service/llm_dispatcher.py
 # 產生時間: 2026-07-04 19:10 +08:00
-# 版本: v0.6（cancellable provider dispatch）
-# 更新時間: 2026-08-10 +08:00
+# 版本: v0.7（grounding passthrough）
+# 更新時間: 2026-08-17 +08:00
 # 模組定位:
 #   LLM task dispatcher：Task ID -> binding -> bus -> provider。
 # 主要責任:
@@ -15,6 +15,7 @@
 # 維護提醒:
 #   - cache 預設關閉；不可保存 API key 或 connection raw row。
 #   - cancellation 是終止狀態，不得包成一般 provider error 後重試。
+#   - grounding=True 一律略過 cache，且 provider 不支援時是 fatal（不重試、不降級）。
 # 驗證方式:
 #   python -m pytest test/unit/test_llm_cancellation.py test/unit/test_llm_usage_and_pricing.py -q
 # -----------------------------------------------------------------------------
@@ -42,7 +43,7 @@ class LlmDispatcher:
     
     def execute(
         self, task_id: str, text: str, images: list = None, max_retries: int = 1,
-        cancel_event=None,
+        cancel_event=None, grounding: bool = False,
     ):
         """
         執行指定的 AI 任務
@@ -50,6 +51,7 @@ class LlmDispatcher:
         :param text: Prompt 文本
         :param images: 圖片路徑列表 (可選)
         :param max_retries: 重試次數
+        :param grounding: 要求 provider 開 Google Search grounding（只有 Google adapter 支援）
         :return: (Success: bool, Result: dict, Message: str)
         """
         try:
@@ -84,7 +86,9 @@ class LlmDispatcher:
                 return False, {"error_code": err.code.value}, str(err)
 
             cache_key = ""
-            if is_llm_cache_enabled() and not images:
+            # NOTE(NOTE-039): grounded 請求刻意不進 cache——它的價值就是「現在上網查到的」，
+            # 命中舊 cache 等於拿一份沒搜尋過的舊答案冒充搜尋結果，而且從回應看不出來。
+            if is_llm_cache_enabled() and not images and not grounding:
                 cache_key = build_llm_cache_key(
                     task_type=task_id,
                     prompt=text,
@@ -103,7 +107,9 @@ class LlmDispatcher:
             
             # 3. 執行生成
             # 調用 Bus 的統一介面發送請求
-            ok, res, err = bus.send_message(text, images, cancel_event=cancel_event)
+            ok, res, err = bus.send_message(
+                text, images, cancel_event=cancel_event, grounding=grounding
+            )
 
             if ok:
                 # [usage] 記在這裡而不是各個 task 類別裡：這是唯一同時知道
@@ -138,10 +144,14 @@ dispatcher = LlmDispatcher()
 
 
 def dispatch_task(
-    task_id, prompt, priority=5, images=None, max_retries=None, cancel_event=None
+    task_id, prompt, priority=5, images=None, max_retries=None, cancel_event=None,
+    grounding=False,
 ):
     """
     向後相容函式：回傳舊版 dict 結構，供 task_3~task_7直接使用。
+
+    grounding=True 時額外回 `grounding` 欄位（webSearchQueries / 命中網域 / chunk 數），
+    呼叫端要靠 chunk_count 判斷這次是不是真的有搜尋。
     """
     retry_cnt = 0
     try:
@@ -157,13 +167,15 @@ def dispatch_task(
         if is_cancelled(cancel_event):
             return {"ok": False, "cancelled": True, "msg": "LLM request cancelled"}
         ok, res, msg = dispatcher.execute(
-            task_id, prompt, images, cancel_event=cancel_event
+            task_id, prompt, images, cancel_event=cancel_event, grounding=grounding
         )
         if ok:
             out = {"ok": True, "text": res.get("text", "")}
             if res.get("cache_hit"):
                 out["cache_hit"] = True
                 out["cache_key"] = res.get("cache_key")
+            if res.get("grounding") is not None:
+                out["grounding"] = res.get("grounding")
             return out
 
         if (res or {}).get("cancelled") or is_cancelled(cancel_event):
@@ -172,7 +184,13 @@ def dispatch_task(
         last_msg = msg
         # 避免在安全阻擋或設定錯誤時做無效重試
         fatal_error_codes = {ErrorCode.LLM_NOT_BOUND.value, ErrorCode.SECRET_CONFIG_ERROR.value}
-        fatal_keywords = ["Unknown vendor", "API Key missing", "Blocked by safety filters"]
+        fatal_keywords = [
+            "Unknown vendor",
+            "API Key missing",
+            "Blocked by safety filters",
+            # 綁錯 provider 不是暫時性故障，重試只是把同一個錯誤再撞三次。
+            "does not support Google Search grounding",
+        ]
         if (res or {}).get("error_code") in fatal_error_codes or any(k in (msg or "") for k in fatal_keywords):
             break
 

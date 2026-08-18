@@ -1122,3 +1122,111 @@
   3. 必須回報移除數量，讓使用者知道剛剛發生了什麼。
 - 驗證：`test/unit/test_hard_wrap_cleanup.py`（以真實 V12 的形狀為樣本）；
   瀏覽器實機（清理前後段落數不變、文字內容逐字不變、只有 `<br>` 減少）。
+
+## NOTE-039：對話式找文獻的幻覺防線是回查真實來源，不是 LLM 互檢
+
+- 決策日期：2026-08-17
+- 適用範圍：`app/llm_service/matching_tasks/task_3a_litchat.py`、`task_3bc_scout.py`、
+  `task_3search.py` 的 `resolve_reference()`、`app/llm_service/adapter/llm_google.py`
+  的 `send_text_with_search_grounding()`、`app/core_pro/literature/literature_chat_routes.py`。
+- 背景：擁有者用 multi-LLMs debate + model cascades + cross-prompting 手動找到三篇
+  腦神經科學關鍵論文，建立 LAVASR 對應大腦聽覺流程的理論可靠度。這個流程原本只存在
+  於他的操作習慣裡，每次都要重來一遍；本輪把它做進 Literature 頁。
+
+### 1. 為何機械驗證是主防線、互檢只是輔助
+
+- **兩個 LLM 可以一起編出同一篇不存在的論文**，互檢會一致通過。
+  但編出來的 DOI 在 Crossref 查不到、標題在 OpenAlex/PubMed/arXiv 也查不到。
+- 因此 B↔C 互檢負責抓「真實但不相干」，`resolve_reference()` 負責抓「根本不存在」，
+  兩者不可互相取代。任何「因為模型很有把握所以保留」的例外都不准加。
+- `resolve_reference()` 查無資料時**必須回空**。放寬比對門檻換取「有東西可回」，
+  等於用另一篇論文冒充使用者要的那篇——比空手而回更糟。
+- 門檻：標題相似度 0.82（DOI 對得上時放寬到 0.55），年份差 > 1 年直接否決
+  （會議版 vs 期刊版差 1 年是合法的，差兩年以上多半是對到同名的另一篇）。
+
+### 1.5 要求 JSON 會讓 Gemini 完全跳過搜尋（實機量到的，不是推論）
+
+- 實測日期：2026-08-17，`gemini-flash-latest` 與 `gemini-3.1-pro-preview`，
+  同一支 `send_text_with_search_grounding()`、同一個主題，只差在 prompt：
+
+  | prompt | `groundingMetadata` | 實際行為 |
+  |---|---|---|
+  | 開放式「Use Google Search… write a short survey」 | 12–18 chunks、5–9 條 `webSearchQueries` | 真的搜尋 |
+  | 「Reply with JSON only: {…}」 | **整個欄位缺席** | 憑記憶編出 title/DOI |
+
+- **失敗模式是靜默的**：HTTP 200、`finishReason: STOP`、有格式正確的 JSON、
+  沒有任何錯誤訊息。唯一看得出來的差別就是 `groundingMetadata` 不見了。
+  第一版的 scout prompt 正是要求 JSON-only，所以照那版上線，B/C 根本不會上網。
+- 因此 `run_scout()` 是**兩段式且不得合併**：
+  第一段 grounded 開放式提問負責「真的上網」，
+  第二段不帶 tools 負責「轉成 JSON」（沒有 tools 就可以安心要求 JSON）。
+  `_build_scout_prompt()` 裡出現 JSON 指示即為契約破損，有測試盯著。
+- `chunk_count == 0` 一律**拋例外**進 `stage_errors`，不得當成「這次剛好沒找到」。
+  groundingChunks 是唯一能證明「這批文獻來自搜尋而非記憶」的硬證據；
+  放行等於讓整個功能靜靜地退化成兩個模型互相幻想。
+- `google_search_retrieval` 已被 API 拒絕（HTTP 400：
+  `google_search_retrieval is not supported. Please use google_search tool instead.`），
+  所以 tools 寫法的退回順序必須是 `google_search` 優先。
+
+### 1.6 時間預算：grounded 檢索與純文字階段不能共用同一個數字
+
+- 實測：`gemini-flash-latest` 跑完 9 條搜尋查詢約 90 秒；
+  `gemini-3.1-pro-preview` 在 75 秒的舊時限內**跑不完直接被砍**
+  （`stage_errors: {'scout_C': 'timeout after 75s'}` —— 變成單邊搜尋，互檢失去意義）。
+- 因此拆成三個旋鈕：`LIT_CHAT_SEARCH_TIMEOUT_SEC`（150，只給 grounded 檢索）、
+  `LIT_CHAT_STAGE_TIMEOUT_SEC`（60，互檢與回查，兩者都不開 grounding）、
+  以及 `LIT_CHAT_TOTAL_BUDGET_SEC`（210）當總閘門 ——
+  各階段時限相加會衝破 gunicorn 的 `--timeout`（300s），
+  所以前面跑久了、後面就只能拿剩下的時間，並保留約 90 秒給 A 組稿。
+- 兩段都到位後的實測：B/C 各自 18/14 chunks，11 候選 → 10 篇通過回查，
+  `stage_errors` 為空，全程 119 秒。
+
+### 2. 為何 B/C 都必須綁 Gemini
+
+- Google Search grounding 是 **Gemini 限定**：Gemma 走 Google AI API 完全不支援 tools。
+  所以「BC 限定使用 gemini/gemma」在實作上只能是兩隻 Gemini（型號不同以保留互檢差異）。
+- `LlmBus.send_message(grounding=True)` 在 provider 不支援時**回明確錯誤**，
+  不得默默改走一般生成路徑。沒有這條，B 綁到 OpenAI 時使用者會拿到憑記憶編的清單，
+  卻以為它經過搜尋驗證——這是最危險的失敗模式，因為它看起來完全正常。
+- 這個錯誤在 dispatcher 被列為 fatal：綁錯 provider 不是暫時性故障，重試只是撞三次。
+
+### 3. 為何「只到 Scholar/PubMed/arXiv」要靠後驗而不是參數
+
+- Gemini grounding **沒有限制網域的 API 參數**，回傳的還是
+  `vertexaisearch.cloud.google.com/grounding-api-redirect/...` 這種 redirect URI。
+- 所以 `site:` 只能寫進查詢字串引導（提高命中率），真正的把關在回查：
+  只有 Crossref/OpenAlex/PubMed/arXiv 認得的東西才進得了結果。
+- 對外顯示連結只允許 `doi.org` / PubMed / arXiv / Google Scholar 四種。
+  OpenAlex 給的出版社 landing page（例如 sciencedirect.com）**一律退回 Scholar 查詢連結**
+  ——貼一個沒被驗證過的出版社網址等於默默違背「連結只到這三個來源」的承諾。
+
+### 4. 為何 grounded 請求不進 response cache
+
+- grounded 請求的價值就是「現在上網查到的」。命中舊 cache 等於拿一份沒搜尋過的
+  舊答案冒充搜尋結果，而且從回應上看不出來。`dispatcher.execute(grounding=True)`
+  一律略過 `llm_response_cache`。
+- 另一層 cache 在 `LiteratureChatStore`（依 query hash、TTL 預設 6 小時），
+  那是省 grounding 額度用的，且**stage_errors 非空的結果不入 cache**：
+  半套的搜尋被快取起來，接下來 6 小時都會拿到同一份殘缺清單且看不出原因。
+
+### 5. 為何不自動搜尋、為何匯入只到 candidate
+
+- 每一輪搜尋是 4 次 LLM 呼叫（B/C 搜尋 + B/C 互檢）加上數十次外部 API 回查。
+  意圖閘門由 A 做**語意**判斷，關鍵字快篩只是餵給 A 的提示：
+  「不用再找了」含「找」但不該觸發搜尋。
+- A 判不出來時退回關鍵字，但必須在 `meta.intent_source=keyword` 標明是退化路徑。
+- 對話裡的論文匯入文獻庫時**永遠只產生 candidate**（沿用 NOTE-013 / NOTE-020）：
+  納入與否是作者的學術判斷，而 included 直接決定 Drafter 的寫作依據。
+
+### 6. 不變量
+
+1. 回查不到的論文不得出現在結果，且必須出現在 `dropped` 裡並附原因。
+2. 任一階段失敗都要進 `meta.stage_errors` 並在前端顯示——
+   跑一半的搜尋不能長得像完整結果。
+3. A 的回覆只能引用傳入的已驗證清單，不得補充清單外的論文。
+4. 對話存檔必須連 `papers` 一起存，否則重新整理後 hyperlink 消失，
+   使用者得再付一次驗證成本。
+- 驗證：`test/unit/test_literature_chat_pipeline.py`、
+  `test/unit/test_literature_chat_persistence.py`、
+  `test/unit/test_llm_grounding_contract.py`；
+  瀏覽器實機（純聊天不觸發搜尋、找文獻連結點得開、同句再問命中 cache）。

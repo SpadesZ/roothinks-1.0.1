@@ -2,8 +2,8 @@
 # 上下游: matching task -> dispatcher -> LlmBus -> provider adapter；binding/usage 由 llm_match DB 與 usage store 支援。
 # 檔案路徑: roothinks/app/llm_service/llm_bus.py
 # 產生時間: 2026-07-04 23:35 +08:00
-# 版本: v0.4（cancel_event passthrough）
-# 更新時間: 2026-08-10 +08:00
+# 版本: v0.5（grounding passthrough）
+# 更新時間: 2026-08-17 +08:00
 # 模組定位:
 #   LLM 服務匯流排 (Service Bus)。從 DB 讀取連線設定 -> 動態載入 Adapter ->
 #   建立 Client 實例,對上提供統一 send_message 介面。
@@ -18,6 +18,8 @@
 #   - v0.3 起 load_from_db 會區分「API Key 未設定」與「解密失敗」兩種錯誤,
 #     解密失敗多半是 FERNET_KEY 與加密當時不一致,錯誤訊息已註明。
 #   - 新增 adapter 的 send_text_and_optional_images 必須接受 cancel_event=None。
+#   - grounding 是**選配能力**：adapter 有 send_text_with_search_grounding 才算支援。
+#     沒有就回錯，不要為了「至少有回答」而退回無搜尋路徑（見 send_message 註解）。
 # 驗證方式:
 #   - .venv/Scripts/python -m pytest test/unit/test_llm_dispatcher.py -q 應全綠。
 # ------------------------------------------------------------------------------
@@ -123,14 +125,32 @@ class LlmBus:
             return False, f"DB Load Error: {e}"
 
     def send_message(
-        self, text: str, images: List[str] = None, cancel_event=None
+        self, text: str, images: List[str] = None, cancel_event=None,
+        grounding: bool = False,
     ) -> Tuple[bool, Dict, str]:
         """
         統一發送介面，代理至底層 Client
+
+        grounding=True 代表呼叫端要的是「真的上網查過」的回答（目前只有 Google
+        adapter 做得到）。
+
+        NOTE(NOTE-039): provider 不支援時**回明確錯誤**，不得默默改走一般路徑：
+        那會讓呼叫端拿到憑記憶編出來的文獻清單，卻以為它經過搜尋驗證。
         """
         if not self._client:
             return False, {}, "Bus not initialized (No Provider)"
-        
+
+        if grounding:
+            if not hasattr(self._client, 'send_text_with_search_grounding'):
+                return False, {}, (
+                    f"Provider '{self._provider_name}' does not support Google Search grounding"
+                )
+            if images:
+                return False, {}, "Grounded request does not accept images"
+            return self._client.send_text_with_search_grounding(
+                text=text, cancel_event=cancel_event
+            )
+
         if hasattr(self._client, 'send_text_and_optional_images'):
             # NOTE(NOTE-002): event identity 必須從 Socket job 一路保持到 adapter。
             return self._client.send_text_and_optional_images(

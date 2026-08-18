@@ -1,12 +1,20 @@
 # 檔案路徑: app/llm_service/adapter/llm_google.py
-# 版本: v0.3；更新時間: 2026-08-10 +08:00
-# 模組定位: Google Gemini provider adapter，含 quota gate、JSON mode 與多模態支援。
+# 版本: v0.4；更新時間: 2026-08-17 +08:00
+# 模組定位: Google Gemini provider adapter，含 quota gate、JSON mode、多模態與 Search grounding。
 # 主要責任: 建立 Gemini content、載入／關閉圖片、限制配額、解析安全阻擋與 usage。
 # 上下游: LlmBus 傳入 prompt/filepaths/cancel_event；成功 usage 交 dispatcher 記帳。
 # 安全邊界: API key 僅以 HTTPS query param 送 Google 官方 endpoint，不寫 log/cache。
 # 取消契約: 有 event 時把 SDK request 轉為同 schema REST coroutine以便關閉；無 event
 #   仍走原 SDK 同步路徑，避免影響 Literature 等既有呼叫。
-# 驗證: python -m pytest test/unit/test_llm_cancellation.py test/unit/test_llm_usage_and_pricing.py -q
+# Grounding 契約（v0.4）:
+#   - send_text_with_search_grounding() 直接打 v1beta REST，payload 帶 tools，
+#     不走 SDK types —— google-generativeai<0.8 的 Tool 型別沒有 google_search 欄位。
+#   - tools 與 response_mime_type=application/json 在 Gemini API 互斥，
+#     所以 grounding 路徑一律不設 JSON mode，改要求模型輸出 fenced JSON 由呼叫端清洗。
+#   - 只有這條路徑會真的上網。一般 send_text_and_optional_images() 不帶 tools，
+#     行為與 v0.3 完全相同。
+# 驗證: python -m pytest test/unit/test_llm_cancellation.py test/unit/test_llm_usage_and_pricing.py
+#       test/unit/test_llm_grounding_contract.py -q
 import google.generativeai as genai
 from google.ai.generativelanguage_v1beta.types.generative_service import (
     GenerateContentResponse as RawGenerateContentResponse,
@@ -423,6 +431,168 @@ return {1, 0}
         except Exception as e:
             logger.error(f"[GoogleClient] List Models Error: {e}")
             return []
+
+    # Gemini 2.x 用 google_search；1.5 系列只認 google_search_retrieval。
+    # 兩者互不相容，送錯的那個 API 回 400，所以依序試而不是猜模型世代
+    # —— 模型名稱是使用者在 LAVA Setup 自己填的，猜不得。
+    _GROUNDING_TOOL_VARIANTS = ({"google_search": {}}, {"google_search_retrieval": {}})
+
+    @staticmethod
+    def _is_tool_shape_rejection(error_text: str) -> bool:
+        """400 是「這個模型不吃這種 tools 寫法」還是真的壞掉？只有前者才值得換寫法重試。"""
+        low = str(error_text or "").lower()
+        if "400" not in low and "invalid_argument" not in low:
+            return False
+        shape_signals = (
+            "google_search",
+            "unknown name",
+            "invalid json payload",
+            "not supported",
+            "unsupported",
+        )
+        return any(s in low for s in shape_signals)
+
+    def _model_path(self) -> str:
+        name = (self.model_name or "").strip()
+        return name if name.startswith("models/") else f"models/{name}"
+
+    def _post_generate_content(self, payload: Dict, cancel_event=None) -> Dict:
+        """打官方 v1beta REST。回傳已解析的 JSON dict；非 2xx 一律拋含狀態碼的例外。"""
+        endpoint = (
+            f"https://generativelanguage.googleapis.com/v1beta/"
+            f"{self._model_path()}:generateContent"
+        )
+
+        async def _post():
+            async with httpx.AsyncClient(timeout=self.timeout_sec) as client:
+                response = await client.post(
+                    endpoint, params={"key": self.api_key}, json=payload
+                )
+                if response.status_code >= 400:
+                    # 帶上 body：Google 把「哪個欄位不認得」寫在 body 而不是 status。
+                    raise RuntimeError(
+                        f"HTTP {response.status_code}: {response.text[:1200]}"
+                    )
+                return response.json()
+
+        if cancel_event is not None:
+            return run_cancellable_async(_post, cancel_event, timeout_sec=self.timeout_sec)
+
+        with httpx.Client(timeout=self.timeout_sec) as client:
+            resp = client.post(endpoint, params={"key": self.api_key}, json=payload)
+            if resp.status_code >= 400:
+                raise RuntimeError(f"HTTP {resp.status_code}: {resp.text[:1200]}")
+            return resp.json()
+
+    @staticmethod
+    def _parse_rest_response(data: Dict) -> Tuple[str, Dict, Dict]:
+        """把 v1beta REST 回應拆成 (text, usage, grounding)。缺欄位一律回空，不臆測。"""
+        candidates = (data or {}).get("candidates") or []
+        if not candidates:
+            feedback = (data or {}).get("promptFeedback") or {}
+            block_reason = feedback.get("blockReason") or ""
+            if block_reason:
+                raise ValueError(f"Blocked by safety filters. Feedback: {block_reason}")
+            raise ValueError("Google returned no candidates")
+
+        first = candidates[0] or {}
+        parts = ((first.get("content") or {}).get("parts") or [])
+        text = "".join(str(p.get("text") or "") for p in parts if isinstance(p, dict)).strip()
+        if not text:
+            finish = first.get("finishReason") or "UNKNOWN"
+            raise ValueError(f"Google returned empty text (finishReason={finish})")
+
+        um = (data or {}).get("usageMetadata") or {}
+        usage = {
+            "input_tokens": um.get("promptTokenCount", 0) or 0,
+            "output_tokens": um.get("candidatesTokenCount", 0) or 0,
+            "total_tokens": um.get("totalTokenCount", 0) or 0,
+        }
+
+        gm = first.get("groundingMetadata") or {}
+        domains: List[str] = []
+        for chunk in gm.get("groundingChunks") or []:
+            web = (chunk or {}).get("web") or {}
+            title = str(web.get("title") or "").strip()
+            if title and title not in domains:
+                domains.append(title)
+        grounding = {
+            "queries": [str(q) for q in (gm.get("webSearchQueries") or [])],
+            "domains": domains,
+            # chunk 數是「這次到底有沒有真的搜尋」的唯一硬證據，0 代表模型是憑記憶答的。
+            "chunk_count": len(gm.get("groundingChunks") or []),
+        }
+        return text, usage, grounding
+
+    def send_text_with_search_grounding(
+        self, text: str, cancel_event=None
+    ) -> Tuple[bool, Dict, str]:
+        """
+        開 Google Search grounding 的純文字生成。
+        return: (Success, {"text", "usage", "grounding"}, ErrorMsg)
+
+        刻意不接受圖片：這條路徑存在的理由是「上網找文獻」，多模態走原本那條。
+        """
+        est_tokens = self._estimate_tokens(
+            text=text,
+            image_count=0,
+            output_tokens=self.estimated_output_tokens,
+            image_token_cost=self.image_token_cost,
+        )
+
+        last_err = ""
+        for tool in self._GROUNDING_TOOL_VARIANTS:
+            payload = {
+                "contents": [{"role": "user", "parts": [{"text": text}]}],
+                "tools": [tool],
+                # 不設 response_mime_type：Gemini API 不允許 tools 與 JSON mode 併用。
+                "generationConfig": {"temperature": 0.1},
+            }
+
+            attempts = max(1, self.max_retries + 1)
+            wrong_tool_shape = False
+            for attempt in range(1, attempts + 1):
+                ok_to_send, quota_msg = self._wait_for_quota_slot(
+                    est_tokens, cancel_event=cancel_event
+                )
+                if not ok_to_send:
+                    return False, {}, f"Google quota throttle: {quota_msg}"
+
+                try:
+                    data = self._post_generate_content(payload, cancel_event=cancel_event)
+                    body_text, usage, grounding = self._parse_rest_response(data)
+                    return True, {"text": body_text, "usage": usage, "grounding": grounding}, ""
+                except LLMRequestCancelled:
+                    raise
+                except ValueError as ve:
+                    # 安全阻擋／空回應：換 tools 寫法救不了，直接回報。
+                    return False, {}, str(ve)
+                except Exception as e:
+                    last_err = str(e)
+                    if self._is_tool_shape_rejection(last_err):
+                        wrong_tool_shape = True
+                        break  # 換下一種 tools 寫法
+                    if self._is_daily_quota_exhausted(last_err):
+                        return False, {}, f"Google daily quota exhausted: {last_err}"
+
+                if attempt < attempts:
+                    retry_after_sec = self._extract_retry_after_sec(last_err)
+                    sleep_sec = max(self.retry_backoff_sec * attempt, retry_after_sec)
+                    sleep_sec = min(max(0.0, sleep_sec), self.max_backoff_sec)
+                    if sleep_sec <= 0:
+                        sleep_sec = self.retry_backoff_sec
+                    if cancel_event is not None:
+                        if cancel_event.wait(sleep_sec):
+                            raise LLMRequestCancelled("LLM request cancelled")
+                    else:
+                        time.sleep(sleep_sec)
+
+            if not wrong_tool_shape:
+                # 逾時／網路／provider 錯誤：換 tools 寫法只會換來另一個看不懂的 400，
+                # 直接把真正的錯誤回上去。
+                return False, {}, f"Google grounded request failed: {last_err}"
+
+        return False, {}, f"Google grounded request failed (no supported tools shape): {last_err}"
 
     def send_text_and_optional_images(
         self, text: str, filepaths: List[str] = None, cancel_event=None
