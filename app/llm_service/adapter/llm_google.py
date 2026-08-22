@@ -384,7 +384,13 @@ return {1, 0}
                         params={"key": self.api_key},
                         json=payload,
                     )
-                    response.raise_for_status()
+                    # NOTE(NOTE-040): 不可用 raise_for_status()。httpx 會把
+                    # **完整 request URL** 寫進 HTTPStatusError 的訊息，而 key 就在
+                    # query param 裡，於是 API key 一路流到 UI 與 log。
+                    if response.status_code >= 400:
+                        raise RuntimeError(
+                            f"HTTP {response.status_code}: {response.text[:1200]}"
+                        )
                     raw = RawGenerateContentResponse.from_json(response.text)
                     return generation_types.GenerateContentResponse.from_response(raw)
 

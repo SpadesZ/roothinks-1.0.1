@@ -1230,3 +1230,41 @@
   `test/unit/test_literature_chat_persistence.py`、
   `test/unit/test_llm_grounding_contract.py`；
   瀏覽器實機（純聊天不觸發搜尋、找文獻連結點得開、同句再問命中 cache）。
+
+## NOTE-040：Google adapter 不得使用 raise_for_status()，API key 在 query param 裡
+
+- 決策日期：2026-08-18
+- 適用範圍：`app/llm_service/adapter/llm_google.py` 的所有 HTTP 錯誤處理。
+- 問題（實測，不是推論）：Google Generative Language API 的金鑰是以
+  `params={"key": ...}` 送出，也就是**在 request URL 裡**。而 httpx 的
+  `raise_for_status()` 會把**完整 request URL** 寫進 `HTTPStatusError` 的訊息：
+
+  ```
+  Client error '400 Bad Request' for url
+  'https://generativelanguage.googleapis.com/v1beta/models/x:generateContent?key=AIzaSy...'
+  ```
+
+  實測對照（同一支腳本）：`ConnectError` 不帶 key；`raise_for_status()` **帶**；
+  手動比 `status_code` 再自組訊息不帶。
+- 為什麼這是真的洩漏而不只是理論：
+  - 這條錯誤字串會回到 dispatcher，再進到各 task 的錯誤路徑，最後顯示在 UI ——
+    Literature 找文獻的 `meta.stage_errors` 是直接渲染在對話視窗裡的。
+  - roothinks 是**多人 workspace**（owner／editor／coauthor／viewer），
+    LLM connection 是共用的。key 過期或配額用盡時，任何 editor 觸發一次
+    Manuscript 草稿生成，就會在畫面上看到 owner 的 API key。
+  - 出事的那行在 `_generate_with_timeout` 的 cancellable 分支，
+    而 Manuscript 2A 走的正是那條（NOTE-002）。
+  - 檔案標頭寫的是「API key ... 不寫 log/cache」，這條與該承諾直接衝突。
+- 決策：這個 adapter **一律不使用 `raise_for_status()`**。自己比 `status_code`，
+  錯誤訊息只帶「狀態碼 + response body」（body 是 Google 的 JSON 錯誤，不含 key）。
+- 護欄形式是**原始碼層級的守衛**，不是行為測試。理由：出事那行要走到它得先有
+  真的 genai model 與 cancel_event；實測把修復還原後，整組行為測試仍然全綠
+  （toothless）。原始碼守衛則在還原漏洞時立刻變紅，已 mutation 驗證。
+  守衛必須排除註解行 —— 這條 NOTE 的說明文字裡就有這個字串。
+- 不變量：
+  1. `llm_google.py` 內不得出現非註解的 `raise_for_status(` 呼叫。
+  2. 任何從本 adapter 回出去的錯誤字串都不得包含 `self.api_key`。
+- 驗證：`test/unit/test_llm_grounding_contract.py` 的
+  `test_google_adapter_never_calls_raise_for_status`、
+  `test_http_error_never_carries_the_api_key`、
+  `test_grounded_failure_message_never_carries_the_api_key`。

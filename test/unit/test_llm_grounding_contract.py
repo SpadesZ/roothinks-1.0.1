@@ -161,3 +161,109 @@ def test_unsupported_grounding_is_fatal_and_not_retried(monkeypatch):
     assert result["ok"] is False
     assert "does not support Google Search grounding" in result["msg"]
     assert client.plain_calls == 0
+
+
+# ---------------------------------------------------------------------------
+# API key 不得出現在任何錯誤訊息裡（NOTE-040）
+# ---------------------------------------------------------------------------
+FAKE_KEY = "AIzaSyFAKE_this_is_the_secret_do_not_leak_98765"
+
+
+def _google_client(monkeypatch):
+    from app.llm_service.adapter import llm_google
+
+    monkeypatch.setattr(llm_google.genai, "configure", lambda **_k: None)
+    client = llm_google.GoogleClient.__new__(llm_google.GoogleClient)
+    client.api_key = FAKE_KEY
+    client.model_name = "gemini-flash-latest"
+    client.timeout_sec = 5
+    client.max_retries = 0
+    client.retry_backoff_sec = 0
+    client.max_backoff_sec = 0
+    client.rate_limit_enabled = False
+    client.estimated_output_tokens = 100
+    client.image_token_cost = 0
+    return client
+
+
+def test_http_error_never_carries_the_api_key(monkeypatch):
+    """
+    NOTE(NOTE-040): key 走 query param，所以任何把 request URL 放進訊息的例外
+    （httpx 的 raise_for_status 就是）都會外洩。錯誤字串會一路流到 stage_errors
+    與 UI —— 在多人 workspace 裡，editor 觸發一次就看得到 owner 的 key。
+    """
+    import httpx
+
+    from app.llm_service.adapter import llm_google
+
+    client = _google_client(monkeypatch)
+
+    class _FakeResponse:
+        status_code = 400
+        text = '{"error":{"code":400,"message":"API key not valid"}}'
+
+    class _FakeClient:
+        def __init__(self, **_k):
+            pass
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_a):
+            return False
+
+        def post(self, *_a, **_k):
+            return _FakeResponse()
+
+    monkeypatch.setattr(llm_google.httpx, "Client", _FakeClient)
+
+    try:
+        client._post_generate_content({"contents": []})
+        raise AssertionError("400 竟然沒有拋錯")
+    except RuntimeError as exc:
+        assert FAKE_KEY not in str(exc), "錯誤訊息把 API key 帶出來了"
+        assert "400" in str(exc), "錯誤訊息要保留狀態碼，否則不可診斷"
+
+
+def test_grounded_failure_message_never_carries_the_api_key(monkeypatch):
+    """整條 send_text_with_search_grounding 的失敗字串同樣不得帶 key。"""
+    from app.llm_service.adapter import llm_google
+
+    client = _google_client(monkeypatch)
+    monkeypatch.setattr(
+        llm_google.GoogleClient,
+        "_post_generate_content",
+        lambda _self, _payload, cancel_event=None: (_ for _ in ()).throw(
+            RuntimeError("HTTP 503: upstream unavailable")
+        ),
+    )
+
+    ok, _res, err = client.send_text_with_search_grounding("找文獻")
+    assert ok is False
+    assert FAKE_KEY not in err, f"grounding 失敗訊息外洩 API key: {err}"
+
+
+def test_google_adapter_never_calls_raise_for_status():
+    """
+    NOTE(NOTE-040): 原始碼層級的守衛。
+
+    行為測試蓋不到這條：出事的那行在 _generate_with_timeout 的 async 分支裡，
+    要走到它得先有真的 genai model 與 cancel_event。實測過——把修復還原回
+    raise_for_status()，整組行為測試仍然全綠（toothless）。
+
+    key 走 query param，而 httpx 把**完整 request URL** 寫進 HTTPStatusError，
+    所以在這個 adapter 裡 raise_for_status() 等於把 API key 交出去。
+    要判斷狀態碼請自己比 status_code，錯誤訊息只帶 status 與 response body。
+    """
+    from pathlib import Path
+
+    src = Path(__file__).resolve().parents[2] / "app" / "llm_service" / "adapter" / "llm_google.py"
+    offenders = [
+        (i, line.strip())
+        for i, line in enumerate(src.read_text(encoding="utf-8").splitlines(), 1)
+        if "raise_for_status(" in line and not line.lstrip().startswith("#")
+    ]
+    assert not offenders, (
+        "llm_google.py 又出現 raise_for_status()，會把 API key 帶進錯誤訊息："
+        + "; ".join(f"L{i}: {t}" for i, t in offenders)
+    )
