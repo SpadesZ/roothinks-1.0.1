@@ -25,11 +25,20 @@ COPY requirements.txt .
 
 # NLLB / easyocr 共用的 PyTorch:強制 CPU-only wheel,先裝好讓後續 easyocr、
 # transformers 直接複用,避免預設 index 拉進數 GB 的 CUDA 版本。
-# 不釘版本:本環境 index 提供 torch 2.12.x。torch.load 的 CVE 守衛(要求 >=2.6,
-# 卻誤判 2.12 為 <2.6)改由 bake_nllb.py 轉 safetensors 繞過,故此處取最新 CPU wheel。
+#
+# 必須釘版本:PyTorch 在 2.6.0 之後不再為 Python 3.10 出 wheel,CPU index 上
+# 最新的 cp310 檔就是 torch 2.6.0+cpu / torchvision 0.21.0+cpu。不釘版本會讓
+# pip 去要最新版(2.12.x)、找不到 cp310 wheel 後退回原始碼編譯而失敗。
+# 2.6.0 同時滿足 transformers 的 torch>=2.6 CVE 守衛,且不會踩到該守衛把
+# "2.12" 字串誤判成小於 "2.6" 的比較問題。
+#
+# --extra-index-url 是必要的:--index-url 會完全取代 PyPI,一旦 pip 需要抓
+# 建置依賴(例如 typing_extensions 的 flit_core)就會 "No matching distribution"。
+# 併用 PyPI 不會誤抓 CUDA 版,因為 +cpu 這個 local version 只存在於 PyTorch index。
 RUN pip install --no-cache-dir \
     --index-url https://download.pytorch.org/whl/cpu \
-    torch torchvision
+    --extra-index-url https://pypi.org/simple \
+    torch==2.6.0+cpu torchvision==0.21.0+cpu
 
 RUN pip install --no-cache-dir -r requirements.txt
 
