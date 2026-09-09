@@ -5,7 +5,7 @@
 # 上下游: 開發/測試/GCP 操作者 -> Docker build/Compose -> app 與 Redis；正式 data/.env 由 host volume 提供。
 # 維護邊界: 不得把 .env/data/secrets 打進 image；正式 cutover 只重建 app、保留 Redis 身分、健康檢查與 rollback image。
 # 驗證: docker compose -f docker-compose.yml config
-# 路徑(./docker-compose.yml) #版本 v0.4 #更版時間 20260409
+# 路徑(./docker-compose.yml) #版本 v0.5 #更版時間 20260909
 # Base compose (shared by dev/prod). Keep this file free of source-code bind mount.
 
 services:
@@ -15,9 +15,17 @@ services:
     # 預設只綁 loopback。要對外開（例如 GCP VM 直接吃 80 埠）就在該機的 .env
     # 設 HOST_BIND_ADDR=0.0.0.0 / HOST_PORT=80 —— .env 已被 gitignore，
     # 單機專屬設定不會被推進共用 repo 弄壞其他環境。
+    # 容器側必須等於 gunicorn 實際綁的埠（Dockerfile 的 ${PORT:-10000}）。
+    # 這裡曾寫死 10005，於是容器內沒有任何行程在聽 10005：狀態顯示
+    # Up (healthy)——HEALTHCHECK 打的是容器內 ${PORT:-10000}，自己打自己
+    # 會通——但瀏覽器一律 ERR_CONNECTION_REFUSED。host 側仍是 10005。
     ports:
-      - "${HOST_BIND_ADDR:-127.0.0.1}:${HOST_PORT:-10005}:10005"
+      - "${HOST_BIND_ADDR:-127.0.0.1}:${HOST_PORT:-10005}:${PORT:-10000}"
     environment:
+      # PORT 同時決定 gunicorn 綁的埠與上面 ports 的容器側，兩者不會再分岔。
+      # 必須列在這裡:base compose 沒有 env_file:，光在該機 .env 設 PORT
+      # 只會參與 ${PORT} 插值、不會傳進容器，容器仍用 Dockerfile 的預設值。
+      - PORT=${PORT:-10000}
       # 多人登入模式:session=帳號制(預設), none=單機免登入。
       - AUTH_MODE=${AUTH_MODE:-session}
       - RATELIMIT_STORAGE_URI=${RATELIMIT_STORAGE_URI:-redis://redis:6379/0}
