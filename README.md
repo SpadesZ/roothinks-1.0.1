@@ -6,16 +6,20 @@ Follow a paper from reading notes to a manuscript draft. The workspace has
 separate areas for literature processing, study notes, question matrices and
 section editing.
 
-![Real local manuscript workspace with a sample project and manually entered text](docs/assets/manuscript-workspace.png)
-
-*Real UI from an isolated local instance. The project and paragraph are sample
-data. Text was entered manually; no paper was uploaded and no model was called.
-The UI's original labels are shown unchanged.*
-
 **Prototype. Local setup and model configuration are required.** Deployment
 and end-to-end paper processing were not checked in this documentation review.
 
-[Start locally](#start-locally) · [See the workflow](#-系統架構圖-architecture) · [Data layout](DATA_LAYOUT_POLICY.md)
+[Start locally](#start-locally) · [See the workflow](#workflow) · [Data layout](DATA_LAYOUT_POLICY.md)
+
+![Actual local manuscript editor with a saved sample writing plan](docs/assets/manuscript-workspace.png)
+
+*Real UI, manually entered sample writing plan. Saved and reloaded in an isolated
+local instance. No paper was processed and no model was called. Original UI
+labels are unchanged.*
+
+The sample records a question, a draft scope, an evidence gap and the next
+check. Use the editor to keep these together; configured paper-processing
+actions require their own validation.
 
 ## Start locally
 
@@ -50,6 +54,9 @@ for this review.
 
 ## 技術細節與原始操作文件（繁體中文）
 
+<details>
+<summary>原始專案介紹與技術連結</summary>
+
 <div align="center">
 
 # 🔬 Roothinks
@@ -57,19 +64,21 @@ for this review.
 
 [![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
 [![Flask](https://img.shields.io/badge/Flask-3.0-009688?style=for-the-badge&logo=flask&logoColor=white)](https://flask.palletsprojects.com/)
-[![PyTorch](https://img.shields.io/badge/PyTorch-AI Engine-EE4C2C?style=for-the-badge&logo=pytorch&logoColor=white)](https://pytorch.org/)
+[![PyTorch](https://img.shields.io/badge/PyTorch-AI%20Engine-EE4C2C?style=for-the-badge&logo=pytorch&logoColor=white)](https://pytorch.org/)
 [![EasyOCR](https://img.shields.io/badge/EasyOCR-Layout%20Parse-FF6F00?style=for-the-badge&logo=opencv&logoColor=white)](https://github.com/JaidedAI/EasyOCR)
 [![Docker](https://img.shields.io/badge/Docker-Containerized-2496ED?style=for-the-badge&logo=docker&logoColor=white)](https://www.docker.com/)
 
 *專為醫學文獻解析、FlowB 論文處理流水線、PAQ 數據矩陣與論文寫作打造的 AI 智能工作引擎*
 
 [✨ 核心亮點](#-核心亮點-key-highlights) •
-[🏛️ 系統架構](#-系統架構圖-architecture) •
+[🏛️ 系統架構](#workflow) •
 [🧩 核心模組](#-核心系統模組-module-breakdown) •
 [🚀 快速開始](#-快速開始指南-quick-start) •
-[📑 生產過渡規劃](#-生產過渡與規範)
+[📑 生產過渡規劃](#production-guidance)
 
 </div>
+
+</details>
 
 ---
 
@@ -93,7 +102,9 @@ for this review.
 
 ---
 
-## 🏛️ 系統架構圖 (Architecture)
+<a id="workflow"></a>
+
+## 系統架構圖
 
 ```mermaid
 %%{init: {"theme":"base","themeVariables":{"primaryColor":"#edf4fc","primaryTextColor":"#193048","primaryBorderColor":"#8faccc","lineColor":"#52677d"}}}%%
@@ -132,6 +143,9 @@ roothinks/
 
 ---
 
+<details>
+<summary>原始跨平台與 Docker 起步參考</summary>
+
 ## 🚀 快速開始指南 (Quick Start)
 
 ### 1. 複製倉庫 (Clone Repository)
@@ -165,7 +179,12 @@ docker compose up -d --build
 
 ---
 
-## 📑 生產過渡與規範 (Production Guidance)
+
+</details>
+
+<a id="production-guidance"></a>
+
+## 生產過渡與規範
 
 - **預檢與調試**：執行 `python deploy_preflight.py` 進行部署前環境與依賴預檢。
 - **數據版面規範**：參閱 `DATA_LAYOUT_POLICY.md` 了解原始論文與快取資料的目錄保護政策。
