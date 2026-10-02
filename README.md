@@ -2,24 +2,25 @@
 
 A workspace for reading papers, organizing evidence, and editing manuscripts.
 
-Follow a paper from reading notes to a manuscript draft. The workspace has
-separate areas for literature processing, study notes, question matrices and
-section editing.
+Read a paper in the literature workspace, organize its evidence in study notes
+and question matrices, then edit manuscript sections. Keep the research question
+and evidence gaps visible as you write; review each claim before export.
 
-**Prototype. Local setup and model configuration are required.** Deployment
-and end-to-end paper processing were not checked in this documentation review.
+**Prototype.** Manual section editing can be inspected locally. Paper processing
+and model-backed actions require configuration and separate checks; the full
+paper-to-manuscript path and current deployment were not verified in this batch.
 
 [Start locally](#start-locally) · [See the workflow](#workflow) · [Data layout](DATA_LAYOUT_POLICY.md)
 
-![Actual local manuscript editor with a saved sample writing plan](docs/assets/manuscript-workspace.png)
+<img src="docs/assets/manuscript-workspace.png" alt="Actual local manuscript editor with a saved sample writing plan" width="500">
 
 *Real UI, manually entered sample writing plan. Saved and reloaded in an isolated
 local instance. No paper was processed and no model was called. Original UI
 labels are unchanged.*
 
 The sample records a question, a draft scope, an evidence gap and the next
-check. Use the editor to keep these together; configured paper-processing
-actions require their own validation.
+check. It demonstrates manual editing and saved content, not evidence extracted
+from a paper. See [what was checked](#verification-scope) for the export boundary.
 
 ## Start locally
 
@@ -51,6 +52,17 @@ also downloads and packages an NLLB model; the full image build was not rerun
 for this review.
 
 ---
+
+## Verification scope
+
+On 2026-10-02, a manual sample was saved and reloaded in an isolated Flask
+instance. The actual DOCX export endpoint returned a valid `.docx`; its ZIP
+structure, document XML and sample text were checked. The 49 focused export
+and export-route tests passed, including access limits.
+
+The sample contains a writing question and an explicit evidence gap. It is not
+a processed paper or research result. Checks used existing dependencies and
+images; fresh installation, model calls and cloud deployment were not tested.
 
 ## 技術細節與原始操作文件（繁體中文）
 
@@ -86,7 +98,7 @@ for this review.
 
 **Roothinks** 是一套先進的本地化 AI 科研與文獻工作流系統。專為醫學研究團隊、臨床論文作者與學術分析人員設計。系統整合 **FlowB 文獻處理流水線**、**EasyOCR 版面分析**、**PAQ (Precision Question) 分類矩陣**，以及 **Manuscript 論文寫作工作區**，串接 PDF 解析、文獻整理與手稿編輯；各流程仍需依設定與資料實際驗證。
 
-> 💡 **資料邊界與隱私安全**：倉庫源碼預設排除所有本地運行數據、模型權重檔 (`.pth`)、上傳論文與敏感密鑰 (`.env`)，確保團隊協同與合規安全。
+> 💡 **資料邊界與隱私安全**：倉庫源碼預設排除所有本地運行數據、模型權重檔 (`.pth`)、上傳論文與敏感密鑰 (`.env`)，用於保護本機資料；排除檔案不等於已完成合規或安全驗收。
 
 ---
 
@@ -105,6 +117,9 @@ for this review.
 <a id="workflow"></a>
 
 ## 系統架構圖
+
+此圖保留文獻、證據與稿件模組的設計流程；本輪僅重新驗證手動編輯與 DOCX 匯出，
+不表示各條 paper-processing 或模型路徑已完成端到端驗收。
 
 ```mermaid
 %%{init: {"theme":"base","themeVariables":{"primaryColor":"#edf4fc","primaryTextColor":"#193048","primaryBorderColor":"#8faccc","lineColor":"#52677d"}}}%%
