@@ -8,7 +8,7 @@ function setup(rev = 0, stored = new Map()) {
     const body = {innerHTML: 'my human paragraph'};
     const card = {getAttribute: () => 'intro', querySelector: () => body};
     const events = [];
-    const context = vm.createContext({console, window: {localStorage: {
+    const context = vm.createContext({console, clearTimeout() {}, setTimeout() {return 1;}, window: {localStorage: {
         get length() {return stored.size;}, key: i => [...stored.keys()][i], setItem: (k, v) => stored.set(k, v), getItem: k => stored.get(k), removeItem: k => stored.delete(k),
     }}, document: {getElementById: id => id === 'currentUserId' ? {value: '17'} : status}});
     vm.runInContext(fs.readFileSync('app/static/js/manuscript_soed.js', 'utf8'), context);
@@ -85,4 +85,15 @@ function setup(rev = 0, stored = new Map()) {
     assert.equal(app._draftConflicts.intro, true);
     assert.equal(app._draftRevMap.intro, 0, '復原舊草稿不可冒用目前伺服器版號');
 }
-console.log('manuscript draft integrity: 6 scenarios passed');
+{
+    const {app} = setup(4);
+    app._draftDirty = false;
+    app.app.selectedSections = new Set(['intro']);
+    app.app.ui = {updateDropdownLabel() {}};
+    app._draftRecoveries = () => [];
+    app.scheduleAutosave = Object.getPrototypeOf(app).scheduleAutosave;
+    app.insertEditorCard = () => app.scheduleAutosave();
+    app._offerDraftRestore('intro', {content:'existing server draft'});
+    assert.equal(app._draftDirty, false, '初次載入伺服器草稿是讀取，不可排程寫入');
+}
+console.log('manuscript draft integrity: 7 scenarios passed');

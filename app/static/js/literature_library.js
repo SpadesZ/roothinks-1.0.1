@@ -58,13 +58,14 @@
                     `<option value="${esc(e.entry_id)}">${esc(e.title)}${e.paper_id ? '（已有 PDF，新版需重核）' : ''}</option>`).join('');
             }
             const papers = [...new Set(entries.flatMap(e => [e.paper_id, ...(e.paper_ids || [])]).filter(Boolean))];
+            const mainEntries = entries.filter(e => !e.linked_to);
             const badge = document.getElementById("libCountBadge");
-            if (badge) badge.innerText = `${entries.length} entries`;
+            if (badge) badge.innerText = `${mainEntries.length} 文獻 · ${entries.length - mainEntries.length} 來源紀錄`;
             if (!entries.length) {
                 host.innerHTML = '<tr><td colspan="4" class="text-center text-muted small py-3">Library is empty. 執行搜尋或匯入後會自動累積。</td></tr>';
                 return;
             }
-            host.innerHTML = entries.map(function (e) {
+            host.innerHTML = mainEntries.map(function (e) {
                 const link = e.url || (e.doi ? `https://doi.org/${e.doi}` : "");
                 const titleHtml = link
                     ? `<a href="${esc(link)}" target="_blank" rel="noopener">${esc(e.title || "(untitled)")}</a>`
@@ -77,7 +78,7 @@
                     ? `<span class="badge bg-success-subtle text-success border border-success" title="已連結 PDF pipeline">PDF: ${esc(e.paper_id)}</span>`
                     : '<span class="text-muted small">—</span>';
                 const revision = Number(e._rev || 0);
-                const details = e.linked_to ? `<div class="small">已連到 ${esc(e.linked_to)}；保留此來源 ID：${esc(e.entry_id)}</div>` : `
+                const details = `
                     <details class="mt-2 lib-decision" data-entry="${esc(e.entry_id)}" data-rev="${revision}" data-server-rev="${revision}">
                         <summary>理由、閱讀筆記與來源版本</summary>
                         <label class="d-block mt-2">採用／排除理由<textarea class="form-control form-control-sm" data-field="screening_note" rows="2">${esc(e.screening_note || '')}</textarea></label>

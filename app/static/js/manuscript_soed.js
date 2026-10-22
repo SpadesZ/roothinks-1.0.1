@@ -575,7 +575,7 @@ class ManuSoed {
         const hasEditorContent = Array.from(this.app.editorCanvas.querySelectorAll('.card-content'))
             .some(el => String(el.innerText || '').trim().length > 0);
         if (!hasEditorContent && !recoveries.length) {
-            restore();
+            this._renderWithoutAutosave(restore);
             return;
         }
 
