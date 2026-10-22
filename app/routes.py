@@ -18,7 +18,7 @@ import logging
 from flask import Blueprint, jsonify, render_template, request, session
 from werkzeug.exceptions import BadRequest
 
-from app.security import validate_id
+from app.security import validate_id, require_system_admin
 
 logger = logging.getLogger("main_routes")
 
@@ -76,6 +76,9 @@ def index():
 @main_bp.route('/lava_setup.html')
 def setup_page():
     """渲染 LAVA LLM 連線與任務綁定設定頁面 (支援雙路由)"""
+    denied = require_system_admin()
+    if denied is not None:
+        return denied
     return render_template('lava_setup.html')
 
 @main_bp.route('/paq/<pid>')

@@ -43,7 +43,7 @@ from sqlalchemy.exc import OperationalError
 from sqlalchemy.pool import NullPool
 from werkzeug.exceptions import HTTPException
 
-from app.security import is_api_request_path, parse_allowed_origins, require_request_auth
+from app.security import is_api_request_path, parse_allowed_origins, require_request_auth, require_system_admin
 from app.status import ProcessStatus
 from app.system_runtime import apply_cpu_thread_limit_env, setup_system_logging, start_system_monitor
 
@@ -526,6 +526,8 @@ def create_app(test_config=None):
                     )
 
                     _module = module_of_path(_path)
+                    if _module == "setup":
+                        return require_system_admin()
                     if _module and not can_access_module(
                         current_user.id, request_pid(), _module
                     ):

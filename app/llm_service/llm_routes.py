@@ -23,13 +23,14 @@ import logging
 import os
 from typing import Dict, List
 
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, g, jsonify, request
 
 from app import limiter
 from app.llm_service.llm_bus import get_bus
 from app.llm_service.llm_dispatcher import dispatcher
 from app.llm_service.llm_model import LLMModel
 from app.models import _get_kv, _set_kv
+from app.security import require_system_admin
 from app.system_runtime import apply_cpu_thread_limit_env, apply_torch_thread_limits, cap_worker_count, get_cpu_limit_info
 
 bp = Blueprint("llm_service", __name__, url_prefix="/api/llm")
@@ -37,6 +38,21 @@ LOGGER = logging.getLogger("llm_routes")
 LIST_LIMIT = "120 per minute"
 MUTATE_LIMIT = "30 per minute"
 TEST_LIMIT = "10 per minute"
+
+
+@bp.before_request
+def _require_llm_admin():
+    return require_system_admin()
+
+
+@bp.after_request
+def _audit_llm_admin(response):
+    if request.method in {"POST", "PUT", "PATCH", "DELETE"}:
+        LOGGER.info("LLM admin actor=%s endpoint=%s status=%s",
+                    getattr(g, "system_admin_actor", "denied"), request.endpoint, response.status_code)
+    return response
+
+
 DISALLOWED_OPENROUTER_HINTS = (
     "deepseek",
     "moonshot",

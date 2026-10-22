@@ -267,6 +267,32 @@ def _get_auth_mode() -> str:
     return str(current_app.config.get("AUTH_MODE", "none")).strip().lower()
 
 
+def require_system_admin():
+    """全站設定只認系統角色；專案 owner／mentor 不是管理員。"""
+    if _get_auth_mode() == "session":
+        from flask_login import current_user
+        if not current_user.is_authenticated:
+            return client_error("Unauthorized", 401)
+        if current_user.system_role != "admin":
+            return client_error("Forbidden", 403)
+        g.system_admin_actor = f"user:{current_user.id}"
+        return None
+    if _auth_enabled():
+        token = get_request_token()
+        if not _token_matches_configured(token, _configured_tokens()):
+            return client_error("Unauthorized", 401)
+        # 機器帳號也需明確授權；專案 wildcard 不授予全站權限。
+        token_acl = _token_acl_map().get(token, {})
+        if not isinstance(token_acl, dict) or token_acl.get("system_role") != "admin":
+            return client_error("Forbidden", 403)
+        g.system_admin_actor = "token:" + hashlib.sha256(token.encode()).hexdigest()[:12]
+        return None
+    if _get_auth_mode() == "none":
+        g.system_admin_actor = "local-auth-disabled"
+        return None
+    return client_error("Forbidden", 403)
+
+
 def get_workspace_role(user_id: int, pid: str) -> Optional[str]:
     """
     查詢指定 user 在 pid 專案中的角色。
