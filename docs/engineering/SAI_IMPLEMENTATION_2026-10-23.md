@@ -71,6 +71,14 @@
 - `node test/js/test_manuscript_draft_integrity.cjs`：4 個行為情境通過。
 - 完整回歸尚待執行；Phase B 尚未開始實作。
 
+### Phase A 完整回歸第一輪
+
+- 固定 SHA `023fb207cc8d5e7166084ba7915b64048c99cb7a`，命令 `python -m pytest test tests -q -p no:cacheprovider --tb=short --show-capture=no`。
+- 結果：**1,203 通過、2 失敗、1 略過**，1206 案例，463.93 秒。沒有把這輪標成通過。
+- 兩項是本輪引入的回歸：未授權章節 autosave 多回一個 ack；`manuscript_ws.js` 版本號改成非數字格式，既有 cache-buster 下限斷言拒絕。
+- 保留原有測試斷言，恢復未授權 autosave 原行為，資產版號改為數字 5.4。
+- 章節權限及 grounding 組 **63 通過**。完整回歸第二輪待執行；Phase B 保持未開始。
+
 ## 中斷接續
 
 先讀本檔、`git status`、本分支最近提交與 `docs/ACCEPTANCE_MATRIX.md`。

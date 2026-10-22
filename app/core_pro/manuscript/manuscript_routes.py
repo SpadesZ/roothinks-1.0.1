@@ -2010,7 +2010,6 @@ def handle_autosave_block(data):
     if auth_mode == "session":
         from flask_login import current_user
         if not current_user.is_authenticated or not _socket_can_write_section(current_user.id, pid, section):
-            emit('autosave_ack', {'ok': False, 'section': section, 'error': 'forbidden', 'req_id': data.get('req_id')})
             return
         current_username = current_user.username
         if data.get('base_rev') is None:
