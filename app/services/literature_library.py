@@ -30,6 +30,7 @@
 
 from __future__ import annotations
 
+import copy
 import hashlib
 import json
 import os
@@ -40,7 +41,7 @@ from typing import Any, Optional
 from filelock import FileLock
 from werkzeug.exceptions import Conflict
 
-from app.security import build_lock_path, validate_id
+from app.security import build_lock_path, validate_id, _write_json_atomic
 
 LIBRARY_SCHEMA_VERSION = 1
 
@@ -198,10 +199,7 @@ class LiteratureLibrary:
 
     def _write_unlocked(self, path: str, data: dict) -> None:
         data["updated_at"] = _now_iso()
-        tmp_path = f"{path}.tmp"
-        with open(tmp_path, "w", encoding="utf-8") as f:
-            json.dump(data, f, ensure_ascii=False, indent=2)
-        os.replace(tmp_path, path)
+        _write_json_atomic(path, data)
 
     def load(self, pid: str) -> dict:
         path = self._library_path(pid, create_dir=False)
@@ -258,6 +256,7 @@ class LiteratureLibrary:
             changed = True
         if changed:
             entry["updated_at"] = _now_iso()
+            entry["_rev"] = entry.get("_rev", 0) + 1
         return changed
 
     def merge_candidates(self, pid: str, candidates: list[dict], *, topic: str = "", default_source: str = "") -> dict:
@@ -291,6 +290,23 @@ class LiteratureLibrary:
             self._write_unlocked(path, data)
             total = len(entries)
         return {"added": added, "updated": updated, "skipped": skipped, "total": total}
+
+    def register_upload(self, pid: str, paper_id: str, filename: str, *, source_sha256: str, actor: str = "") -> dict:
+        """PDF 起步保留獨立身分；不以檔名推定它等於任何搜尋條目。"""
+        paper_id = validate_id(paper_id, "paper_id")
+        key = "upload-" + hashlib.sha256(paper_id.encode()).hexdigest()[:16]
+        path = self._library_path(pid)
+        with FileLock(build_lock_path(path), timeout=10):
+            data = self._read_unlocked(path, pid)
+            if key not in data["entries"]:
+                entry = self._new_entry(key, normalize_entry_metadata({"title": filename}), source="upload", topic="")
+                entry.update(paper_id=paper_id, paper_ids=[paper_id], uploaded_sources=[{
+                    "paper_id": paper_id, "filename": filename, "sha256": source_sha256,
+                    "uploaded_by": actor, "uploaded_at": _now_iso(),
+                }], _rev=0)
+                data["entries"][key] = entry
+                self._write_unlocked(path, data)
+            return copy.deepcopy(data["entries"][key])
 
     def update_entry(
         self,
@@ -338,6 +354,38 @@ class LiteratureLibrary:
                 raise ValueError("Invalid stored revision")
             if base_rev is not None and revision != base_rev:
                 raise Conflict("文獻決策已更新，請先核對最新版；本次修改未儲存。")
+            if entry.get("linked_to"):
+                raise ValueError("此來源已連到另一文獻，請編輯主文獻條目。")
+            previous = copy.deepcopy({k: v for k, v in entry.items() if k != "history"})
+            paper_changed = "paper_id" in patch and str(patch["paper_id"] or "").strip() != entry.get("paper_id", "")
+            if paper_changed and entry.get("paper_id") and screening == "included":
+                raise ValueError("更換 PDF 後請先核對新版本，再另行確認納入。")
+            if paper_changed:
+                versions = entry.setdefault("paper_ids", [])
+                for paper in (entry.get("paper_id"), str(patch["paper_id"] or "").strip()):
+                    if paper and paper not in versions:
+                        versions.append(paper)
+                upload_key = "upload-" + hashlib.sha256(str(patch["paper_id"]).encode()).hexdigest()[:16]
+                source = data["entries"].get(upload_key)
+                if source and source is not entry:
+                    if source.get("linked_to") not in (None, "", entry_id):
+                        raise ValueError("此 PDF 已連到其他文獻，請先核對身分。")
+                    source["linked_to"] = entry_id
+                    source["_rev"] = source.get("_rev", 0) + 1
+                    entry.setdefault("source_entry_ids", [])
+                    if upload_key not in entry["source_entry_ids"]:
+                        entry["source_entry_ids"].append(upload_key)
+                    for uploaded in source.get("uploaded_sources", []):
+                        if uploaded not in entry.setdefault("uploaded_sources", []):
+                            entry["uploaded_sources"].append(copy.deepcopy(uploaded))
+                    for origin in source.get("sources", []):
+                        if origin not in entry.setdefault("sources", []):
+                            entry["sources"].append(origin)
+            decision_changed = any(k in patch and patch[k] != entry.get(k, "") for k in ("screening_note", "reading_note", "title", "doi"))
+            if (paper_changed or decision_changed) and screening is None and entry.get("screening_status") != "candidate":
+                entry["screening_status"] = "candidate"
+                for field in _DECISION_FIELDS:
+                    entry.pop(field, None)
             for key, value in patch.items():
                 if key not in allowed:
                     continue
@@ -357,6 +405,9 @@ class LiteratureLibrary:
                 entry["screening_decided_by"] = str(actor).strip()
                 entry["screening_decided_at"] = _now_iso()
                 entry["screening_batch_id"] = str(batch_id or "").strip()
+            # ponytail: 小型文獻庫沿用單檔原子歷史；大型長期紀錄再遷至既有資料庫。
+            entry.setdefault("history", []).append({"revision": revision, "actor": str(actor or ""), "at": _now_iso(), "previous": previous})
+            entry["last_edited_by"] = str(actor or "")
             entry["updated_at"] = _now_iso()
             entry['_rev'] = revision + 1
             self._write_unlocked(path, data)
@@ -402,6 +453,8 @@ class LiteratureLibrary:
         entries = self.list_entries(pid, screening="included" if scope == "included" else "")
         out = []
         for entry in entries:
+            if entry.get("linked_to"):
+                continue
             out.append(
                 {
                     "title": entry.get("title") or "",

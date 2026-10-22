@@ -81,7 +81,7 @@ def register_library_routes(literature_bp, deps):
         # 保護就會無聲消失；而 screening 決定的是稿件引用哪些文獻，
         # 屬於學術誠信控制，值得在真正做決定的那一行再確認一次。
         # 不要把它當成「原本沒有角色檢查所以補上」—— 那個描述是錯的。
-        actor = ""
+        actor = deps.current_screening_actor()
         if 'screening_status' in patch:
             from app.models import ROLE_EDITOR
             from app.security import require_workspace_role

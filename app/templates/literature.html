@@ -353,7 +353,7 @@
         </div>
     </div>
 
-    <div class="row mb-4" id="libraryPanel">
+    <div class="row mb-4" id="libraryPanel" data-owner="{{ current_user.id if current_user.is_authenticated else 'local' }}">
         <div class="col-12">
             <div class="card shadow-sm border-0">
                 <div class="card-header bg-white border-bottom fw-bold py-3 d-flex justify-content-between align-items-center">
@@ -381,7 +381,7 @@
                             <button class="btn btn-sm btn-outline-dark" onclick="window.literatureLibrary.rebuildIndex()" title="Backfill / 重建 evidence index"><i class="bi bi-database-gear"></i> 索引重建</button>
                         </div>
                     </div>
-                    <div class="table-responsive" style="max-height: 340px; overflow-y: auto;">
+                    <div class="table-responsive" style="overflow-x: auto;">
                         <table class="table table-sm table-hover align-middle mb-2">
                             <thead class="table-light sticky-top">
                                 <!-- [ui] Reading 欄已移除：讀了沒讀是閱讀進度，歸 Study 模組管，
@@ -414,6 +414,9 @@
                     <span class="badge bg-success-subtle text-success border border-success">Local</span>
                 </div>
                 <div class="card-body d-flex flex-column align-items-center">
+                    <label class="w-75 mb-3">本次上傳對應文獻（請先核對是否同篇）
+                        <select id="libUploadTarget" class="form-select form-select-sm"><option value="">建立獨立候選文獻</option></select>
+                    </label>
                     <input type="file" id="pdfUploadInput" accept=".pdf,image/*" style="display: none;">
                     
                     <div class="w-100 text-center mb-3">
@@ -673,10 +676,10 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz" crossorigin="anonymous"></script>
-<script src="{{ url_for('static', filename='js/literature_app.js') }}?v=5.4"></script>
-<script src="{{ url_for('static', filename='js/literature_library.js') }}?v=0.4"></script>
+<script src="{{ url_for('static', filename='js/literature_app.js') }}?v=5.5"></script>
+<script src="{{ url_for('static', filename='js/literature_library.js') }}?v=0.5"></script>
 <script src="{{ url_for('static', filename='js/literature_scholar.js') }}?v=1.4"></script>
-<script src="{{ url_for('static', filename='js/literature_origins.js') }}?v=1.0"></script>
+<script src="{{ url_for('static', filename='js/literature_origins.js') }}?v=1.1"></script>
 <script src="{{ url_for('static', filename='js/literature_chat.js') }}?v=0.1"></script>
 </body>
 </html>

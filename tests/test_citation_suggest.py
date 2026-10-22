@@ -52,6 +52,31 @@ def test_suggest_citations_uses_real_evidence_only(tmp_path, monkeypatch):
             title="Insulin Study",
             text="insulin resistance was associated with diabetes progression",
         )
+        from app.services.literature_library import LiteratureLibrary
+        library = LiteratureLibrary(str(tmp_path))
+        library.merge_candidates('P1', [{'title':'Insulin Study'}])
+        entry_id = next(iter(library.load('P1')['entries']))
+        library.update_entry('P1', entry_id, {'paper_id':'paper-1','screening_status':'included'}, actor='professor')
         suggestions = suggest_citations_for_paragraph("P1", "insulin resistance has been reported", top_k=3)
         assert suggestions[0]["paper_id"] == "paper-1"
         assert suggestions[0]["segment_ids"] == ["s1"]
+
+
+def test_citation_candidates_need_confirmed_current_pdf(tmp_path, monkeypatch):
+    import app.services.evidence_index_service as eis
+    from app.services.literature_library import LiteratureLibrary
+    monkeypatch.setattr(eis, '_resolve_data_root', lambda:str(tmp_path))
+    app = _app()
+    with app.app_context():
+        db.create_all()
+        library = LiteratureLibrary(str(tmp_path))
+        for paper in ('approved', 'candidate', 'excluded'):
+            upsert_evidence_segment(project_id='P1', source_type='paper_segment', source_id=paper,
+                                    paper_id=paper, segment_id=paper, text='insulin resistance evidence', title=paper)
+            e = library.register_upload('P1', paper, paper+'.pdf', source_sha256='a'*64)
+            if paper != 'candidate':
+                library.update_entry('P1', e['entry_id'], {'screening_status':'included' if paper=='approved' else 'excluded'}, actor='professor', base_rev=0)
+        hits = eis.search_evidence('P1', 'insulin resistance', inclusion_scope='any')
+        assert {'approved','candidate'} <= {h['paper_id'] for h in hits}
+        suggestions = suggest_citations_for_paragraph('P1', 'insulin resistance', top_k=5)
+        assert {s['paper_id'] for s in suggestions} == {'approved'}

@@ -11,6 +11,7 @@
 #2. 處理檔案上傳與 Flow A 批次背景任務排程。
 #3. 組裝 Flow B 依賴並委派 run_translation_impl 執行。
 
+import hashlib
 import os
 import re
 import threading
@@ -108,17 +109,8 @@ def register_batch_routes(literature_bp, deps):
                     {"original_filename": filename, "upload_time": time.time(), "source_type": source_type},
                 )
 
-                # 選配：連結 library entry（metadata 由 library 管，Paper 只管 PDF/pipeline）
                 entry_id = str(request.form.get('entry_id') or '').strip()
                 entry = None
-                if entry_id:
-                    try:
-                        library = deps.get_literature_library()
-                        entry = library.update_entry(pid, entry_id, {"paper_id": paper_id})
-                    except Exception:
-                        deps.logger.exception("Upload library link failed")
-                        return jsonify({"status": "error", "original_saved": True, "paper_id": paper_id,
-                                        "message": "原件已保存，但文獻連結失敗，請重試連結。"}), 503
                 try:
                     existing_paper = deps.Paper.query.filter_by(paper_id=paper_id, pid=pid).first()
                     if not existing_paper:
@@ -142,6 +134,25 @@ def register_batch_routes(literature_bp, deps):
                     deps.logger.exception("Failed to register uploaded original")
                     return jsonify({"status": "error", "original_saved": True, "paper_id": paper_id,
                                     "message": "原件已保存，但資料登記失敗；請保留此文獻 ID。"}), 503
+                try:
+                    with open(save_path, 'rb') as source:
+                        digest = hashlib.sha256()
+                        for chunk in iter(lambda: source.read(1024 * 1024), b''):
+                            digest.update(chunk)
+                    library = deps.get_literature_library()
+                    actor = deps.current_screening_actor()
+                    entry = library.register_upload(pid, paper_id, filename, source_sha256=digest.hexdigest(), actor=actor)
+                    if entry_id:
+                        raw_rev = request.form.get('base_rev')
+                        if raw_rev is None and current_app.config.get('AUTH_MODE') == 'session':
+                            raise ValueError("連結文獻需要載入的版號，原件已保留。")
+                        entry = library.update_entry(pid, entry_id, {"paper_id": paper_id}, actor=actor,
+                                                     base_rev=int(raw_rev) if raw_rev is not None else None)
+                    entry_id = entry['entry_id']
+                except Exception:
+                    deps.logger.exception("Upload library registration/link failed")
+                    return jsonify({"status": "error", "original_saved": True, "paper_id": paper_id,
+                                    "message": "原件已保存；文獻登記或連結未完成，請保留此 ID 並核對文獻清單。"}), 503
                 deps.logger.info(f"File uploaded: {save_path}")
                 return jsonify({"status": "success", "paper_id": paper_id, "linked_entry_id": entry_id if entry else ""})
 

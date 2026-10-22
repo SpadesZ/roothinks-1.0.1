@@ -79,7 +79,10 @@ def upsert_evidence_segment(
             raise AppError(ErrorCode.DB_SCHEMA_MISMATCH, "project_id and text are required", ErrorSeverity.USER_ACTION_REQUIRED)
 
         chash = content_hash(body, metadata)
-        row = EvidenceSegment.query.filter_by(project_id=project, content_hash=chash).first()
+        identity = dict(project_id=project, source_type=src_type, paper_id=paper_id, content_hash=chash)
+        if src_type != EvidenceSourceType.PAPER_SEGMENT.value:
+            identity["source_id"] = src_id
+        row = EvidenceSegment.query.filter_by(**identity).first()
         now = _now()
         if row is None:
             row = EvidenceSegment(
@@ -391,6 +394,8 @@ def _screening_sets(project_id: str) -> tuple[set[str], set[str]]:
     included: set[str] = set()
     excluded: set[str] = set()
     for entry in entries or []:
+        if (entry or {}).get("linked_to"):
+            continue
         paper_id = str((entry or {}).get("paper_id") or "").strip()
         if not paper_id:
             continue

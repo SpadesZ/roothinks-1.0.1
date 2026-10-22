@@ -23,6 +23,20 @@
         return div.innerHTML;
     }
 
+    let loadedEntries = [];
+
+    function draftKey(entryId) {
+        const owner = document.getElementById('libraryPanel')?.dataset.owner || 'local';
+        return `literature-decision:${owner}:${pid()}:${entryId}`;
+    }
+
+    function persistDecision(form) {
+        const patch = {};
+        form.querySelectorAll('[data-field]').forEach(control => {patch[control.dataset.field] = control.value;});
+        try { sessionStorage.setItem(draftKey(form.dataset.entry), JSON.stringify({patch, base_rev: Number(form.dataset.rev)})); }
+        catch (error) { form.querySelector('.lib-save-status').textContent = '無法保留本機副本，請先複製文字。'; }
+    }
+
     async function loadLibrary() {
         const host = document.getElementById("libraryTableBody");
         if (!host || !pid()) return;
@@ -35,7 +49,15 @@
         try {
             const res = await fetch(`/api/literature/library?${params.toString()}`);
             const data = await res.json();
+            if (!res.ok || data.status !== 'success') throw new Error(data.message || '文獻讀取失敗');
             const entries = (data && data.entries) || [];
+            loadedEntries = entries;
+            const target = document.getElementById('libUploadTarget');
+            if (target) {
+                target.innerHTML = '<option value="">建立獨立候選文獻</option>' + entries.filter(e => !e.linked_to).map(e =>
+                    `<option value="${esc(e.entry_id)}">${esc(e.title)}${e.paper_id ? '（已有 PDF，新版需重核）' : ''}</option>`).join('');
+            }
+            const papers = [...new Set(entries.flatMap(e => [e.paper_id, ...(e.paper_ids || [])]).filter(Boolean))];
             const badge = document.getElementById("libCountBadge");
             if (badge) badge.innerText = `${entries.length} entries`;
             if (!entries.length) {
@@ -54,49 +76,103 @@
                 const paperTag = e.paper_id
                     ? `<span class="badge bg-success-subtle text-success border border-success" title="已連結 PDF pipeline">PDF: ${esc(e.paper_id)}</span>`
                     : '<span class="text-muted small">—</span>';
-                const selectHtml = function (field, options, current) {
-                    return `<select class="form-select form-select-sm lib-status" data-entry="${esc(e.entry_id)}" data-field="${field}" data-rev="${Number(e._rev || 0)}" data-current="${current}">`
-                        + options.map(o => `<option value="${o}" ${o === current ? "selected" : ""}>${o}</option>`).join("")
-                        + "</select>";
-                };
+                const revision = Number(e._rev || 0);
+                const details = e.linked_to ? `<div class="small">已連到 ${esc(e.linked_to)}；保留此來源 ID：${esc(e.entry_id)}</div>` : `
+                    <details class="mt-2 lib-decision" data-entry="${esc(e.entry_id)}" data-rev="${revision}" data-server-rev="${revision}">
+                        <summary>理由、閱讀筆記與來源版本</summary>
+                        <label class="d-block mt-2">採用／排除理由<textarea class="form-control form-control-sm" data-field="screening_note" rows="2">${esc(e.screening_note || '')}</textarea></label>
+                        <label class="d-block mt-2">閱讀筆記與適用限制<textarea class="form-control form-control-sm" data-field="reading_note" rows="2">${esc(e.reading_note || '')}</textarea></label>
+                        <label class="d-block mt-2">對應 PDF（核對同篇後選擇）<select class="form-select form-select-sm" data-field="paper_id">
+                            <option value="">尚未連結</option>${papers.map(p => `<option value="${esc(p)}" ${p === e.paper_id ? 'selected' : ''}>${esc(p)}</option>`).join('')}
+                        </select></label>
+                        <label class="d-block mt-2">作者決策<select class="form-select form-select-sm" data-field="screening_status">
+                            ${SCREENING.map(status => `<option value="${status}" ${status === e.screening_status ? 'selected' : ''}>${status}</option>`).join('')}
+                        </select></label>
+                        <div class="small text-muted mt-2">新 PDF 先存為 candidate，檢視後再確認 included。只有已確認的目前版本會供寫作使用。</div>
+                        <button class="btn btn-sm btn-primary mt-2 lib-save">儲存並確認決策</button><span class="lib-save-status ms-2" role="status"></span>
+                        <details class="lib-server-review mt-2" hidden><summary>伺服器目前已存決策（請比對）</summary><div>${esc(e.screening_status)} · ${esc(e.paper_id)} · 修訂 ${revision}</div><p>${esc(e.screening_note)}</p><p>${esc(e.reading_note)}</p>
+                            <button class="btn btn-sm btn-outline-primary lib-resolve">採用目前編輯內容，另存新版決策</button>
+                        </details>
+                        <div class="small mt-2">決策者：${esc(e.screening_decided_by || '尚未確認')} · ${esc(e.screening_decided_at || '')} · 修訂 ${revision}</div>
+                        <details class="mt-2"><summary>變更紀錄（${(e.history || []).length}）</summary>${(e.history || []).slice().reverse().map(h => `<p class="small">修訂 ${Number(h.revision)} · ${esc(h.actor || '舊版／內部流程')} · ${esc(h.at)}<br>${esc(h.previous.screening_status)} · ${esc(h.previous.paper_id)}<br>${esc(h.previous.screening_note)}<br>${esc(h.previous.reading_note)}</p>`).join('')}</details>
+                        <div class="small">來源：${esc((e.sources || []).join(', '))} · 原 ID：${esc((e.source_entry_ids || [e.entry_id]).join(', '))}</div>
+                        ${(e.uploaded_sources || []).map(src => `<div class="small text-break">${esc(src.filename)} · ${esc(src.paper_id)} · SHA256 ${esc(src.sha256)}</div>`).join('')}
+                    </details>`;
                 return `<tr>
-                    <td class="small">${titleHtml}<div class="text-muted">${esc(authors)}${e.year ? " · " + esc(e.year) : ""}${e.venue ? " · " + esc(e.venue) : ""}</div></td>
-                    <td class="small text-muted">${esc(e.doi || "")}</td>
-                    <td>${selectHtml("screening_status", SCREENING, e.screening_status)}</td>
-                    <td>${paperTag}</td>
+                    <td class="small">${titleHtml}<div class="text-muted">${esc(authors)}${e.year ? ' · ' + esc(e.year) : ''}${e.venue ? ' · ' + esc(e.venue) : ''}</div>${details}</td>
+                    <td class="small text-muted">${esc(e.doi || '')}</td>
+                    <td>${esc(e.screening_status)}</td><td>${paperTag}</td>
                 </tr>`;
-            }).join("");
-            host.querySelectorAll("select.lib-status").forEach(function (sel) {
-                sel.addEventListener("change", function () {
-                    updateEntry(sel.dataset.entry, sel.dataset.field, sel.value, sel);
+            }).join('');
+            host.querySelectorAll('.lib-decision').forEach(form => {
+                const button = form.querySelector('.lib-save');
+                button.addEventListener('click', () => saveDecision(form, button));
+                form.querySelectorAll('[data-field]').forEach(control => {
+                    control.addEventListener('input', () => persistDecision(form));
+                    control.addEventListener('change', () => persistDecision(form));
                 });
+                form.querySelector('.lib-resolve').addEventListener('click', () => {
+                    form.dataset.rev = form.dataset.serverRev;
+                    persistDecision(form);
+                    saveDecision(form, button);
+                });
+                try {
+                    const draft = JSON.parse(sessionStorage.getItem(draftKey(form.dataset.entry)) || 'null');
+                    if (draft && draft.patch) {
+                        form.querySelectorAll('[data-field]').forEach(control => {
+                            if (Object.hasOwn(draft.patch, control.dataset.field)) control.value = draft.patch[control.dataset.field];
+                        });
+                        form.dataset.rev = draft.base_rev;
+                        form.open = true;
+                        const stale = Number(draft.base_rev) !== Number(form.dataset.serverRev);
+                        form.querySelector('.lib-server-review').hidden = !stale;
+                        form.querySelector('.lib-save-status').textContent = stale
+                            ? '未儲存草稿已保留；伺服器有新版，請先比對再明確另存。' : '未儲存草稿已復原。';
+                    }
+                } catch (error) {}
             });
         } catch (err) {
             host.innerHTML = `<tr><td colspan="4" class="text-danger small py-3">Load failed: ${esc(err)}</td></tr>`;
         }
     }
 
-    async function updateEntry(entryId, field, value, control) {
+    function appendUploadTarget(formData) {
+        const id = document.getElementById('libUploadTarget')?.value;
+        const entry = loadedEntries.find(e => e.entry_id === id);
+        if (entry) {
+            formData.append('entry_id', id);
+            formData.append('base_rev', Number(entry._rev || 0));
+        }
+    }
+
+    async function saveDecision(form, button) {
         const patch = {};
-        patch[field] = value;
+        form.querySelectorAll('[data-field]').forEach(control => {patch[control.dataset.field] = control.value;});
+        const status = form.querySelector('.lib-save-status');
+        persistDecision(form);
+        button.disabled = true;
+        status.textContent = '儲存中…';
         try {
-            const res = await fetch("/api/literature/library/update", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ pid: pid(), entry_id: entryId, patch: patch, base_rev: Number(control.dataset.rev) }),
+            const res = await fetch('/api/literature/library/update', {
+                method: 'POST', headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({pid: pid(), entry_id: form.dataset.entry, patch, base_rev: Number(form.dataset.rev)}),
             });
             const data = await res.json();
-            if (!res.ok || data.status !== "success") {
-                control.value = control.dataset.current;
-                alert(`更新失敗: ${data.message || "unknown"}`);
-            } else {
-                control.dataset.current = value;
-                control.dataset.rev = data.entry._rev;
+            if (!res.ok || data.status !== 'success') throw new Error(data.message || '儲存失敗');
+            const newer = {};
+            form.querySelectorAll('[data-field]').forEach(control => {newer[control.dataset.field] = control.value;});
+            form.dataset.rev = data.entry._rev;
+            if (JSON.stringify(newer) !== JSON.stringify(patch)) {
+                persistDecision(form);
+                status.textContent = '有較新文字尚未儲存；本機副本已保留。';
+                return;
             }
+            status.textContent = '已儲存';
+            try { sessionStorage.removeItem(draftKey(form.dataset.entry)); } catch (error) {}
+            await loadLibrary();
         } catch (err) {
-            control.value = control.dataset.current;
-            alert(`更新失敗: ${err}`);
-        }
+            status.textContent = `未儲存；輸入已保留。${err.message} 請按 Refresh 比對新版。`;
+        } finally { button.disabled = false; }
     }
 
     async function importItems() {
@@ -154,7 +230,7 @@
         window.open(`/api/literature/library/export?pid=${encodeURIComponent(pid())}&format=${fmt}&scope=${scope}`, "_blank");
     }
 
-    window.literatureLibrary = { loadLibrary: loadLibrary, importItems: importItems, rebuildIndex: rebuildIndex, exportRefs: exportRefs };
+    window.literatureLibrary = { loadLibrary: loadLibrary, appendUploadTarget, importItems: importItems, rebuildIndex: rebuildIndex, exportRefs: exportRefs };
 
     document.addEventListener("DOMContentLoaded", function () {
         if (!document.getElementById("libraryPanel")) return;

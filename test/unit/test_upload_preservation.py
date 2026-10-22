@@ -77,3 +77,17 @@ def test_database_failure_is_not_upload_success(uploads, monkeypatch):
     with app.app_context():
         source = Path(routes._get_literature_paper_dir(PID, response.json['paper_id'], for_write=False)) / '00_origins' / 'source.pdf'
     assert source.read_bytes() == b"%PDF-preserve-on-database-failure"
+
+
+def test_pdf_first_creates_candidate_and_hash(uploads):
+    app, routes, root = uploads
+    response = upload(app, b'%PDF-candidate-source')
+    assert response.status_code == 200
+    assert response.json['linked_entry_id']
+    with app.app_context():
+        entries = routes.get_literature_library().list_entries(PID)
+    assert len(entries) == 1
+    assert entries[0]['paper_id'] == response.json['paper_id']
+    assert entries[0]['screening_status'] == 'candidate'
+    import hashlib
+    assert entries[0]['uploaded_sources'][0]['sha256'] == hashlib.sha256(b'%PDF-candidate-source').hexdigest()

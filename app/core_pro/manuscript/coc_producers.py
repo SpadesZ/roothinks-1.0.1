@@ -323,6 +323,8 @@ def load_literature_context(pid: str, *, data_root: str, budget_tokens: int) -> 
 
     included, withheld = [], {"candidate": 0, "excluded": 0, "unknown": 0}
     for entry in entries:
+        if entry.get("linked_to"):
+            continue
         status = str((entry or {}).get("screening_status") or "").strip().lower()
         if status == "included":
             included.append(entry)
@@ -365,9 +367,17 @@ def load_literature_context(pid: str, *, data_root: str, budget_tokens: int) -> 
             "source_type": "literature_included",
             "source_id": str(entry.get("entry_id") or ""),
             "paper_id": str(entry.get("paper_id") or "") or None,
+            "decision_revision": entry.get("_rev", 0),
+            "confirmed_by": entry.get("screening_decided_by"),
+            "confirmed_at": entry.get("screening_decided_at"),
+            "source_entry_ids": entry.get("source_entry_ids", []),
             "fingerprint": _fingerprint({
                 "entry_id": entry.get("entry_id"),
                 "updated_at": entry.get("updated_at"),
+                "revision": entry.get("_rev", 0),
+                "content": chunk,
+                "confirmed_by": entry.get("screening_decided_by"),
+                "paper_id": entry.get("paper_id"),
             }),
         })
 

@@ -228,6 +228,7 @@ class LiteratureOriginsHandler {
         const formData = new FormData();
         formData.append('file', file);
         formData.append('pid', this.pid);
+        window.literatureLibrary?.appendUploadTarget(formData);
 
         const xhr = new XMLHttpRequest();
         // [Fix] 路徑修正為符合 literature_routes.py v3.3 的 /api/literature/upload
@@ -250,6 +251,7 @@ class LiteratureOriginsHandler {
                         this.app.log(`[Origins] Success: ${res.paper_id}`);
                         if(progressBar) progressBar.style.width = '100%';
                         this.loadFileList();
+                        window.literatureLibrary?.loadLibrary();
                         // 若有 Pipeline 表格也刷新
                         if(this.app.refreshPipelineTable) this.app.refreshPipelineTable();
                     } else {
@@ -261,6 +263,11 @@ class LiteratureOriginsHandler {
                 }
             } else {
                 this.app.log(`[Error] Server Error: ${xhr.status}`);
+                let message = `上傳未完成 (${xhr.status})`;
+                try { const failure = JSON.parse(xhr.responseText); message = failure.message || message;
+                    if (failure.original_saved) message += ` 原件已保留：${failure.paper_id}`;
+                } catch (error) {}
+                alert(message);
             }
             // 延遲隱藏進度條
             setTimeout(() => { if(progressContainer) progressContainer.style.display = 'none'; }, 2000);

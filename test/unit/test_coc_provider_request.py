@@ -364,3 +364,34 @@ class TestStaleChainDoesNotReachProvider:
             "non-stale 的 L2 哨兵進不了 request —— 否定斷言的對照組失效"
         assert self.S_FRESH_L1 in prompt, \
             "L1 哨兵進不了 request —— fallback chain 路徑根本沒跑"
+
+
+def test_confirmed_upload_reason_reaches_actual_task8_request(app, monkeypatch):
+    from app.core_pro.manuscript.manuscript_io import _get_data_root
+    from app.services.literature_library import LiteratureLibrary
+    from app.services.evidence_index_service import upsert_evidence_segment
+    with app.app_context():
+        _seed(app)
+        library = LiteratureLibrary(_get_data_root())
+        uploaded = library.register_upload(PID, 'HUMANPDF', 'Synthetic source.pdf', source_sha256='a'*64, actor='student')
+        library.merge_candidates(PID, [{'title':'Verified literature identity','doi':'10.1234/human','source':'crossref'}])
+        target = next(e for e in library.list_entries(PID) if e.get('doi')=='10.1234/human')
+        linked = library.update_entry(PID, target['entry_id'], {'paper_id':'HUMANPDF'}, actor='student', base_rev=0)
+        upsert_evidence_segment(project_id=PID, source_type='paper_segment', source_id='human', paper_id='HUMANPDF', text='triage approved measurement SENTINEL_APPROVED_PDF')
+        before, _ = _capture_provider_prompt(app, monkeypatch)
+        assert 'SENTINEL_APPROVED_PDF' not in before
+        confirmed = library.update_entry(PID, target['entry_id'], {'screening_status':'included',
+            'screening_note':'SENTINEL_HUMAN_REASON_KEEP_MEASUREMENT_CONDITION',
+            'reading_note':'SENTINEL_HUMAN_LIMITATION_NO_CLINICAL_CLAIM'}, actor='professor', base_rev=linked['_rev'])
+        prompt, bundle = _capture_provider_prompt(app, monkeypatch)
+        assert 'SENTINEL_HUMAN_REASON_KEEP_MEASUREMENT_CONDITION' in prompt
+        assert 'SENTINEL_HUMAN_LIMITATION_NO_CLINICAL_CLAIM' in prompt
+        assert 'SENTINEL_APPROVED_PDF' in prompt
+        assert S_UNKNOWN not in prompt and S_EXCLUDED not in prompt and S_OTHER_PROJECT not in prompt
+        item = next(i for i in bundle['items'] if i.get('source_id')==target['entry_id'])
+        assert item['confirmed_by'] == 'professor'
+        assert item['decision_revision'] == confirmed['_rev']
+        library.update_entry(PID, target['entry_id'], {'screening_status':'excluded'}, actor='professor', base_rev=confirmed['_rev'])
+        after, _ = _capture_provider_prompt(app, monkeypatch)
+        assert 'SENTINEL_HUMAN_REASON_KEEP_MEASUREMENT_CONDITION' not in after
+        assert 'SENTINEL_APPROVED_PDF' not in after

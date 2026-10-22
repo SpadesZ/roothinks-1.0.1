@@ -48,7 +48,7 @@ def suggest_citations_for_paragraph(
     query = " ".join(x for x in [section_title or "", paragraph_text or ""] if x.strip())
     from app.services.evidence_index_service import search_evidence
 
-    results = search_evidence(project_id=project_id, query=query, top_k=max(10, int(top_k or 5) * 3))
+    results = search_evidence(project_id=project_id, query=query, top_k=max(10, int(top_k or 5) * 3), inclusion_scope="writing")
 
     grouped: dict[str, dict] = {}
     snippets: dict[str, list[str]] = defaultdict(list)

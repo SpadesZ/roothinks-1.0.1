@@ -653,6 +653,7 @@ window.literatureApp = {
         const formData = new FormData();
         formData.append('file', file);
         formData.append('pid', this.currentPid);
+        window.literatureLibrary?.appendUploadTarget(formData);
 
         const pBar = document.getElementById('uploadProgressBar');
         const pContainer = document.getElementById('uploadProgressContainer');
@@ -676,7 +677,8 @@ window.literatureApp = {
             
             if (data.status === 'success') {
                 alert(`上傳成功。\n文件 ID: ${data.paper_id}`);
-                this.loadPipelineTable(); 
+                this.loadPipelineTable();
+                window.literatureLibrary?.loadLibrary();
             } else {
                 alert('上傳失敗: ' + data.message);
             }

@@ -130,3 +130,29 @@ def test_study_pid_smuggling_never_reaches_model(admin_app, monkeypatch, body, p
     response = _client(admin_app, "editor").post(path, json=body)
     assert response.status_code == status
     assert calls == []
+
+
+@pytest.mark.parametrize('role,status', [('owner',200),('editor',200),('viewer',403),('coauthor',403)])
+def test_literature_decision_uses_authenticated_actor(admin_app, monkeypatch, tmp_path, role, status):
+    from app.core_pro.literature import literature_routes
+    from app.services.literature_library import LiteratureLibrary
+    library = LiteratureLibrary(str(tmp_path))
+    library.merge_candidates('ADMIN-p', [{'title':'Human controlled'}])
+    eid = next(iter(library.load('ADMIN-p')['entries']))
+    monkeypatch.setattr(literature_routes, 'get_literature_library', lambda:library)
+    response = _client(admin_app, role).post('/api/literature/library/update', json={
+        'pid':'ADMIN-p','entry_id':eid,'base_rev':0,'actor':'forged professor',
+        'patch':{'screening_status':'included','screening_note':'calibrated condition',
+                 'screening_decided_by':'forged professor','last_edited_by':'forged'}})
+    assert response.status_code == status
+    entry = library.load('ADMIN-p')['entries'][eid]
+    if status == 200:
+        assert entry['screening_decided_by'] == role+'@example.invalid'
+        assert entry['last_edited_by'] == role+'@example.invalid'
+        assert entry['history'][0]['actor'] == role+'@example.invalid'
+        assert _client(admin_app, role).post('/api/literature/library/update', json={
+            'pid':'ADMIN-p','entry_id':eid,'base_rev':0,'patch':{'reading_note':'old tab'}}).status_code == 409
+    else:
+        assert entry['screening_status'] == 'candidate'
+    assert _client(admin_app, role).post('/api/literature/library/update', json={
+        'pid':'PRIVATE-p','entry_id':eid,'base_rev':0,'patch':{'screening_status':'included'}}).status_code == 403

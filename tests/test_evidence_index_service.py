@@ -90,3 +90,13 @@ def test_search_returns_beyond_first_1000_segments():
         rows = search_evidence("P1", "unicornmarker needle", top_k=5)
         # 舊的 limit(1000) 會讓最早索引的 target 被截斷而消失；移除後必須仍可召回。
         assert any(r["paper_id"] == "paper-target" for r in rows)
+
+
+def test_identical_text_keeps_distinct_paper_provenance():
+    app = _app()
+    with app.app_context():
+        db.create_all()
+        first = upsert_evidence_segment(project_id='P1', source_type='paper_segment', source_id='A', paper_id='A', text='identical measured condition')
+        second = upsert_evidence_segment(project_id='P1', source_type='paper_segment', source_id='B', paper_id='B', text='identical measured condition')
+        assert first.id != second.id
+        assert first.paper_id == 'A'
