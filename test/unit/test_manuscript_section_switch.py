@@ -572,5 +572,9 @@ class TestSwitchingDoesNotFabricateDrafts:
         assert "_programmaticRender = true" not in insert_body, \
             "旗標被設在 insertEditorCard 內部，使用者主動插入的內容也會失去 autosave"
         restore = _method_body(_soed(), "_offerDraftRestore")
-        assert "_renderWithoutAutosave" not in restore, \
+        # SAI REL-03：空畫布初次載入伺服器草稿是讀取，不是使用者按復原。
+        automatic = re.search(r"if \(!hasEditorContent && !recoveries.length\) \{([^}]+)\}", restore)
+        assert automatic, "自動載入必須限定空畫布且沒有本機復原候選"
+        assert "this._renderWithoutAutosave(restore)" in automatic.group(1)
+        assert "_renderWithoutAutosave" not in restore.replace(automatic.group(0), ""), \
             "使用者按下『復原草稿』之後的內容應該可以被 autosave 接手"

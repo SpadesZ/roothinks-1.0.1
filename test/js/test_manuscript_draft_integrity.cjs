@@ -96,4 +96,19 @@ function setup(rev = 0, stored = new Map()) {
     app._offerDraftRestore('intro', {content:'existing server draft'});
     assert.equal(app._draftDirty, false, '初次載入伺服器草稿是讀取，不可排程寫入');
 }
-console.log('manuscript draft integrity: 7 scenarios passed');
+{
+    const {app, body} = setup(4);
+    app.app.editorCanvas.querySelector = () => body;
+    const local = {key:'local', content:'human initiated restore', base_rev:4};
+    let restore, muted;
+    app.app.selectedSections = new Set(['intro']);
+    app.app.ui = {updateDropdownLabel() {}};
+    app._draftRecoveries = () => [local];
+    app._showDraftRestoreBar = (section, draft, callback) => {restore=callback;};
+    app.insertEditorCard = () => {muted=!!app._programmaticRender;};
+    app._offerDraftRestore('intro', {content:'server'});
+    restore(local);
+    assert.equal(muted,false,'使用者主動復原仍應走可自動儲存的編輯路徑');
+    assert.equal(app._draftDirty,true);
+}
+console.log('manuscript draft integrity: 8 scenarios passed');

@@ -129,3 +129,10 @@
 - 初次自動載入伺服器草稿仍會觸發同文寫入；Node 先重現 dirty=true，改用既有 programmatic render guard，避免單純閱讀推進版號。
 - UX 複查：來源別名不能再顯成第二篇獨立文獻。主表只顯示 primary，API 仍保留 alias、原 ID、hash 與來源詳情；計數區分文獻／來源紀錄。
 - 最終 runtime 提交後再做完整回歸；補丁前的全綠不冒稱涵蓋新補丁。
+
+### 最後一輪靜態護欄調整
+
+- 5d4a0d4 完整回歸：1,218 通過、1 失敗、0 略過，423.46 秒；phase-ab-final.* 原證據保留。
+- 失敗是舊靜態護欄把整個復原函式禁止 programmatic guard，連空畫布初次自動讀取也禁掉。修正該測試只允許「空畫布且無本機候選」分支靜音，其他使用者復原路徑仍禁止靜音；新增 Node positive control，主動復原仍可自動存。
+- 未為此改產品程式。獨立全新瀏覽器 profile 已驗：A 原文載入、rev=6、dirty=false、無 timer，磁碟仍同一份 rev=6（時間未變）。
+- 筆記真瀏覽器已驗：A 保存、B 舊分頁 409、刷新選擇復原後仍保留原 rev=2、核對畫面並排顯示 A/B，明確另存成功。證據 study-conflict-review-verified.png。
