@@ -544,24 +544,27 @@ class ManuSoed {
         // 只處理目前正在檢視的章節，避免切換章節時把畫布換成別章的草稿。
         if (!this.app.selectedSections.has(section)) return;
 
-        try {
-            const local = JSON.parse(window.localStorage.getItem(this._draftStorageKey(section)) || 'null');
-            if (local && local.content && local.content !== draft.content) {
-                draft = {...draft, content: local.content};
-                this._draftConflicts[section] = local.base_rev !== this._draftRevMap[section];
-                this._draftDirty = true;
-            }
-        } catch (error) {}
+        const recoveries = this._draftRecoveries(section);
+        if ((!draft || !draft.content) && recoveries.length) draft = recoveries[0];
         if (!draft || !draft.content) return;
         this._draftPrompted = this._draftPrompted || {};
         if (this._draftPrompted[section]) return;
         this._draftPrompted[section] = true;
 
-        const restore = () => {
+        const restore = (chosen = draft) => {
+            if (chosen.key) {
+                const current = this.app.editorCanvas.querySelector('.card-content')?.innerHTML;
+                if (current && this._draftDirty) {
+                    this._rememberDraft(section, current);
+                    this._draftRecoveryId = null;
+                }
+                this._draftConflicts[section] = chosen.base_rev !== this._draftRevMap[section];
+                this._draftDirty = true;
+            }
             this.app.selectedSections = new Set([section]);
             this.app.ui.updateDropdownLabel();
             this.app.editorCanvas.innerHTML = '';
-            this.insertEditorCard(draft.content, section);
+            this.insertEditorCard(chosen.content, section);
             this.addSystemMessage(`已復原「${section}」的自動儲存草稿。按存檔可將它建立為正式版本。`);
         };
 
@@ -569,14 +572,14 @@ class ManuSoed {
         // 才詢問，避免跨章切換時覆蓋使用者眼前的工作。
         const hasEditorContent = Array.from(this.app.editorCanvas.querySelectorAll('.card-content'))
             .some(el => String(el.innerText || '').trim().length > 0);
-        if (!hasEditorContent) {
+        if (!hasEditorContent && !recoveries.length) {
             restore();
             return;
         }
 
         // NOTE(NOTE-011) 這裡不能用原生 confirm()：它會凍結整個分頁。
         // 改用與 conflict-bar / peer-update-bar 同一套的非阻塞提示條。
-        this._showDraftRestoreBar(section, draft, restore);
+        this._showDraftRestoreBar(section, draft, restore, recoveries);
     }
 
     /**
@@ -591,7 +594,7 @@ class ManuSoed {
      * 不自動消失 —— 這是一個需要使用者決定的提示，不是通知；
      * 但「不理它」本身就是安全的那一邊（目前內容不動），所以不強迫互動。
      */
-    _showDraftRestoreBar(section, draft, restore) {
+    _showDraftRestoreBar(section, draft, restore, recoveries = []) {
         const canvas = this.app.editorCanvas;
         if (!canvas) return;
         const card = canvas.querySelector(`.editor-card[data-section="${CSS.escape(section)}"]`)
@@ -631,21 +634,32 @@ class ManuSoed {
             + `「${this._esc(this._sectionLabel(section))}」有未存檔的自動儲存草稿`
             + `（${this._esc(when)}）。`;
 
+        const choices = document.createElement('select');
+        const records = draft.key ? recoveries : [draft, ...recoveries];
+        records.forEach((record, i) => {
+            const option = document.createElement('option');
+            option.value = String(i);
+            option.textContent = record.key
+                ? `本機草稿 ${new Date(record.timestamp || 0).toLocaleString()} · ${String(record.content).replace(/<[^>]*>/g, '').slice(0, 45)}`
+                : '伺服器自動儲存草稿';
+            choices.appendChild(option);
+        });
         const btnRestore = document.createElement('button');
         btnRestore.className = 'btn btn-sm btn-primary fw-bold';
         btnRestore.textContent = '復原草稿';
         btnRestore.onclick = () => {
             bar.remove();
-            restore();
+            restore(records[Number(choices.value)] || draft);
         };
 
         const btnKeep = document.createElement('button');
         btnKeep.className = 'btn btn-sm btn-outline-secondary fw-bold';
         btnKeep.textContent = '保留目前內容';
-        btnKeep.title = '草稿會在下次存檔時被覆蓋';
+        btnKeep.title = '保留本機復原紀錄，稍後仍可處理';
         btnKeep.onclick = () => bar.remove();
 
         bar.appendChild(msg);
+        bar.appendChild(choices);
         bar.appendChild(btnRestore);
         bar.appendChild(btnKeep);
         card.insertBefore(bar, card.firstChild);
@@ -680,14 +694,35 @@ class ManuSoed {
         }
     }
 
-    _draftStorageKey(section) {
+    _draftStoragePrefix(section) {
         const user = document.getElementById('currentUserId')?.value || 'local';
         return `roothinks:draft:${user}:${this.app.pid}:${section}`;
     }
 
+    _draftStorageKey(section) {
+        this._draftRecoveryId ||= `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+        return `${this._draftStoragePrefix(section)}:${this._draftRecoveryId}`;
+    }
+
+    _draftRecoveries(section) {
+        const records = [], storage = window.localStorage, prefix = this._draftStoragePrefix(section);
+        // ponytail: 少量本機草稿線性掃描；長期大量紀錄時改用 IndexedDB 索引。
+        try {
+            for (let i = 0; i < storage.length; i++) {
+                const key = storage.key(i);
+                if (key !== prefix && !key.startsWith(prefix + ':')) continue;
+                try {
+                    const record = JSON.parse(storage.getItem(key));
+                    if (record && typeof record.content === 'string') records.push({...record, key});
+                } catch (error) {}
+            }
+        } catch (error) {}
+        return records.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+    }
+
     _rememberDraft(section, content) {
         this._draftDirtySections[section] = true;
-        try { window.localStorage.setItem(this._draftStorageKey(section), JSON.stringify({content, base_rev: this._draftRevMap[section]})); }
+        try { window.localStorage.setItem(this._draftStorageKey(section), JSON.stringify({content, base_rev: this._draftRevMap[section], timestamp: Date.now()})); }
         catch (error) { this.addSystemMessage('無法保留本機草稿，請先複製文字或另存版本。'); }
     }
 

@@ -2150,7 +2150,7 @@ def save_user_notes():
             actor = str(current_user.id) if current_user.is_authenticated else None
         except AttributeError:
             actor = None
-        result = check_and_save_json(note_path, payload, data['base_rev'], actor)
+        result = check_and_save_json(note_path, payload, data['base_rev'], actor, history_dir=note_path + '.history')
         return jsonify(result), (200 if result['ok'] else 409)
     except Exception as e:
         return _internal_error("save_user_notes", e)
@@ -2193,6 +2193,17 @@ def load_user_notes(pid):
                 with open(legacy_path, 'r', encoding='utf-8') as f:
                     content = f.read()
 
+        requested_rev = request.args.get("rev")
+        if requested_rev is not None:
+            if not requested_rev.isascii() or not requested_rev.isdigit():
+                return jsonify({"ok": False, "msg": "Invalid revision"}), 400
+            requested_rev = int(requested_rev)
+            if requested_rev != revision:
+                snapshot = os.path.join(note_path + ".history", f"{requested_rev}.json")
+                if not os.path.isfile(snapshot):
+                    return jsonify({"ok": False, "msg": "Revision not found"}), 404
+                old = load_json_locked(snapshot, {}, strict=True)
+                content, revision = old["notes"], old.get("_rev", 0)
         return jsonify({"ok": True, "notes": content, "rev": revision})
     except Exception as e:
         return _internal_error("load_user_notes", e)

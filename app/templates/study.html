@@ -344,6 +344,15 @@ Study 的 Matrix/Fulltext 內嵌切換為階段性方案，後續請由人類團
                     <button class="btn btn-sm btn-link" onclick="window.studyCore.downloadNotesDraft()">下載本機草稿</button>
                     <button class="btn btn-sm btn-link" onclick="window.studyCore.loadNotes(true)">核對伺服器版本</button>
                 </div>
+                <div class="px-2 pb-1 d-flex gap-1">
+                    <select id="study-note-recovery" class="form-select form-select-sm" aria-label="本機筆記草稿"></select>
+                    <button class="btn btn-sm btn-outline-secondary text-nowrap" onclick="window.studyCore.restoreNotesDraft()">復原</button>
+                </div>
+                <details id="study-note-review" class="px-2 small" hidden>
+                    <summary>伺服器目前版本</summary>
+                    <pre id="study-note-server-text" style="max-height: 7rem; overflow: auto; white-space: pre-wrap;"></pre>
+                    <button class="btn btn-sm btn-outline-primary mb-1" onclick="window.studyCore.resolveNotesConflict()">採用目前編輯內容，另存新版筆記</button>
+                </details>
                 <textarea data-owner="{{ current_user.id if current_user.is_authenticated else 'local' }}" id="study-notes" class="form-control border-0 flex-grow-1 p-3"
                           style="resize: none; background: #fffdf0; font-family: monospace;" 
                           placeholder="在此記錄您的發現與 Insight... (自動儲存)"></textarea>
@@ -358,7 +367,7 @@ Study 的 Matrix/Fulltext 內嵌切換為階段性方案，後續請由人類團
 
 <script src="{{ url_for('static', filename='js/study_split_prefs.js') }}?v=1.0"></script>
 <script src="{{ url_for('static', filename='js/study_view.js') }}?v=3.9"></script>
-<script src="{{ url_for('static', filename='js/study_core.js') }}?v=2.6"></script>
+<script src="{{ url_for('static', filename='js/study_core.js') }}?v=2.7"></script>
 <script src="{{ url_for('static', filename='js/study_chat.js') }}?v=1.6"></script>
 
 <script>

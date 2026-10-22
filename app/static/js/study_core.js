@@ -331,15 +331,69 @@ class StudyCore {
         });
     }
 
-    _notesKey() {
+    _notesPrefix() {
         const area = document.getElementById('study-notes');
         return `study-notes:${area?.dataset.owner || 'local'}:${this.resolvePidRuntime()}`;
+    }
+
+    _notesKey() {
+        this.notesRecoveryId ||= `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+        return `${this._notesPrefix()}:${this.notesRecoveryId}`;
+    }
+
+    _noteRecoveries() {
+        const prefix = this._notesPrefix();
+        const records = [];
+        // ponytail: localStorage 小量草稿採線性掃描；若達大量長期紀錄，改 IndexedDB 索引。
+        try {
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key !== prefix && !key.startsWith(prefix + ':')) continue;
+                try {
+                    const record = JSON.parse(localStorage.getItem(key));
+                    if (record && typeof record.notes === 'string') records.push({...record, key});
+                } catch (error) {}
+            }
+        } catch (error) {}
+        return records.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+    }
+
+    _renderNoteRecoveries() {
+        const select = document.getElementById('study-note-recovery');
+        if (!select) return;
+        select.replaceChildren();
+        const empty = document.createElement('option');
+        empty.value = '';
+        empty.textContent = '選擇要復原的本機草稿';
+        select.appendChild(empty);
+        this._noteRecoveries().forEach(record => {
+            const option = document.createElement('option');
+            option.value = record.key;
+            option.textContent = `${new Date(record.timestamp || 0).toLocaleString()} · ${record.notes.slice(0, 45)}`;
+            select.appendChild(option);
+        });
+    }
+
+    restoreNotesDraft() {
+        const key = document.getElementById('study-note-recovery')?.value;
+        const record = this._noteRecoveries().find(item => item.key === key);
+        const area = document.getElementById('study-notes');
+        if (!record || !area) return;
+        if (this.notesDirty) {
+            this._rememberNotes();
+            this.notesRecoveryId = null;
+        }
+        this.notesRecoveredKey = record.key;
+        area.value = record.notes;
+        this.notesDirty = true;
+        this.notesConflict = record.base_rev !== this.notesRev;
+        this._notesStatus(this.notesConflict ? '草稿已復原；請核對伺服器版本後另存' : '草稿已復原，請確認後儲存', false);
     }
 
     _rememberNotes() {
         const area = document.getElementById('study-notes');
         try {
-            localStorage.setItem(this._notesKey(), JSON.stringify({notes: area.value, base_rev: this.notesRev}));
+            localStorage.setItem(this._notesKey(), JSON.stringify({notes: area.value, base_rev: this.notesRev, timestamp: Date.now()}));
         } catch (error) {
             this.showToast('無法保留本機副本，請下載草稿後再離開。', 'error');
         }
@@ -389,7 +443,15 @@ class StudyCore {
             this.notesRev = data.rev;
             this.notesDirty = area.value !== content;
             if (!this.notesDirty) {
-                try { localStorage.removeItem(this._notesKey()); } catch (error) {}
+                try {
+                    localStorage.removeItem(this._notesKey());
+                    if (this.notesRecoveredKey) {
+                        const original = JSON.parse(localStorage.getItem(this.notesRecoveredKey) || 'null');
+                        if (original?.notes === content) localStorage.removeItem(this.notesRecoveredKey);
+                    }
+                } catch (error) {}
+                this.notesRecoveredKey = null;
+                this._renderNoteRecoveries();
                 this._notesStatus('已儲存', true);
             } else {
                 this._rememberNotes();
@@ -407,9 +469,7 @@ class StudyCore {
     async loadNotes(reload = false) {
         const area = document.getElementById('study-notes');
         const pid = this.resolvePidRuntime();
-        if (!area || !pid) return;
-        if (this.notesSavePending) return;
-        if (reload && this.notesDirty && !confirm('將顯示伺服器版本。請先下載要保留的本機文字，確定繼續？')) return;
+        if (!area || !pid || this.notesSavePending) return;
         const before = area.value;
         try {
             const response = await fetch(`/api/study/notes/load/${encodeURIComponent(pid)}`);
@@ -421,26 +481,34 @@ class StudyCore {
                 this._notesStatus('讀取期間有新輸入；請先保留本機文字再核對版本', false);
                 return;
             }
-            let draft = null;
-            try { draft = JSON.parse(localStorage.getItem(this._notesKey()) || 'null'); } catch (error) {}
+            this._renderNoteRecoveries();
+            if (reload) {
+                this.notesReviewedRev = data.rev;
+                const review = document.getElementById('study-note-review');
+                const text = document.getElementById('study-note-server-text');
+                if (review) { review.hidden = false; review.open = true; }
+                if (text) text.textContent = data.notes || '(空白筆記)';
+                this._notesStatus('已顯示伺服器版本；合併文字後可另存', false);
+                return;
+            }
             this.notesRev = data.rev;
             this.notesConflict = false;
             this.notesDirty = false;
-            if (!reload && draft && typeof draft.notes === 'string' && draft.notes !== data.notes) {
-                area.value = draft.notes;
-                this.notesDirty = true;
-                this.notesConflict = draft.base_rev !== data.rev;
-                this._notesStatus(this.notesConflict ? '已恢復本機草稿；與伺服器有版本衝突' : '已恢復未儲存草稿，請確認後儲存', false);
-            } else {
-                area.value = data.notes || '';
-                try { localStorage.removeItem(this._notesKey()); } catch (error) {}
-                this._notesStatus('已讀取伺服器版本', true);
-            }
+            area.value = data.notes || '';
+            this._notesStatus(this._noteRecoveries().length ? '伺服器版本已載入；另有本機草稿可選擇復原' : '已讀取伺服器版本', true);
         } catch (error) {
             this.notesRev = null;
             this._notesStatus('讀取失敗；保留目前文字', false);
             this.showToast(String(error.message || error), 'error');
         }
+    }
+
+    resolveNotesConflict() {
+        if (!Number.isInteger(this.notesReviewedRev) || this.notesSavePending) return;
+        this.notesRev = this.notesReviewedRev;
+        this.notesReviewedRev = null;
+        this.notesConflict = false;
+        this.saveNotes();
     }
 
     runTask6() {

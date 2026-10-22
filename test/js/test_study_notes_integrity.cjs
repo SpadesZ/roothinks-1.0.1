@@ -5,15 +5,14 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const vm = require('node:vm');
 
-function setup() {
+function setup(stored = new Map()) {
     const area = {value: 'human thought', dataset: {owner: '17'}, style: {}};
     const status = {textContent: ''};
-    const stored = new Map();
     const context = vm.createContext({
         console, setTimeout, clearTimeout, URLSearchParams,
         window: {location: {search: '?pid=P-p', pathname: '/study/project/P-p'}},
-        document: {getElementById: id => id === 'study-notes' ? area : status},
-        localStorage: {setItem: (k, v) => stored.set(k, v), getItem: k => stored.get(k) || null, removeItem: k => stored.delete(k)},
+        document: {getElementById: id => id === 'study-notes' ? area : (id === 'study-notes-status' ? status : null)},
+        localStorage: {get length() {return stored.size;}, key: i => [...stored.keys()][i], setItem: (k, v) => stored.set(k, v), getItem: k => stored.get(k) || null, removeItem: k => stored.delete(k)},
     });
     vm.runInContext(fs.readFileSync('app/static/js/study_core.js', 'utf8'), context);
     const Core = vm.runInContext('StudyCore', context);
@@ -37,9 +36,23 @@ function reply(status, data) { return {ok: status < 400, status, json: async () 
         assert.equal(app.notesRev, 0);
         assert.equal(app.notesConflict, true);
         assert.equal(app.notesDirty, true);
-        assert.ok(stored.get('study-notes:17:P-p').includes('human thought'));
+        assert.ok([...stored.values()].some(value => value.includes('human thought')));
         context.fetch = () => {throw Error('衝突時不可自動重送');};
         await app.saveNotes();
+    }
+    {
+        const shared = new Map();
+        const a = setup(shared);
+        const b = setup(shared);
+        let resolve;
+        a.context.fetch = () => new Promise(done => {resolve = done;});
+        const pending = a.app.saveNotes();
+        b.area.value = 'B private unsaved thought';
+        b.app._rememberNotes();
+        resolve(reply(200, {ok: true, rev: 1}));
+        await pending;
+        assert.ok([...shared.values()].some(value => value.includes('B private unsaved thought')),
+                  'A 的 ack 不可清掉另一個分頁 B 的未儲存副本');
     }
     {
         const {context, app, area, stored} = setup();
@@ -73,5 +86,5 @@ function reply(status, data) { return {ok: status < 400, status, json: async () 
         assert.equal(area.value, 'user 18 server');
         assert.ok(stored.has('study-notes:17:P-p'));
     }
-    console.log('study notes integrity: 4 scenarios passed');
+    console.log('study notes integrity: 5 scenarios passed');
 })().catch(error => { console.error(error); process.exitCode = 1; });

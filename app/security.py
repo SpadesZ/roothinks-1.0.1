@@ -811,7 +811,7 @@ def update_json_locked(path: str, update, fallback=None):
         return updated
 
 
-def check_and_save_json(path: str, payload: dict, base_rev, updated_by=None) -> dict:
+def check_and_save_json(path: str, payload: dict, base_rev, updated_by=None, history_dir=None) -> dict:
     """以現有 _rev 契約保護整段 read/compare/write；破損檔案禁止覆蓋。"""
     from datetime import datetime, timezone
     if base_rev is not None and (type(base_rev) is not int or base_rev < 0):
@@ -827,6 +827,16 @@ def check_and_save_json(path: str, payload: dict, base_rev, updated_by=None) -> 
             result.update(ok=False, conflict=True, current_rev=rev, base_rev=base_rev,
                           updated_by=current.get("_updated_by"), updated_at=current.get("_updated_at"))
             return None
+        if history_dir and current:
+            os.makedirs(history_dir, exist_ok=True)
+            snapshot = os.path.join(history_dir, f"{rev}.json")
+            # 同一 canonical FileLock 下只有一個歷史寫入者；失敗不留半份快照。
+            if os.path.exists(snapshot):
+                with open(snapshot, encoding="utf-8") as f:
+                    if json.load(f) != current:
+                        raise ValueError("History revision mismatch")
+            else:
+                _write_json_atomic(snapshot, current)
         result.update(ok=True, rev=rev + 1)
         return dict(payload, _rev=rev + 1, _updated_by=updated_by,
                     _updated_at=datetime.now(timezone.utc).isoformat())

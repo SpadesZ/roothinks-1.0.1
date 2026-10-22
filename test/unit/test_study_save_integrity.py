@@ -119,3 +119,32 @@ def test_matrix_outcome_and_storage_are_separate(study_app, monkeypatch, mode, s
     assert response.json["saved"] is (mode == "partial")
     if mode != "partial":
         assert snapshot.read_text(encoding="utf-8") == '{"previous":"keep"}'
+
+
+def test_note_history_survives_explicit_conflict_resolution(study_app):
+    app, _, root = study_app
+    client = app.test_client()
+    assert client.post('/api/study/notes/save', json={'pid':'P-p','notes':'A original','base_rev':0}).status_code == 200
+    assert client.post('/api/study/notes/save', json={'pid':'P-p','notes':'B resolved','base_rev':1}).status_code == 200
+    old = client.get('/api/study/notes/load/P-p?rev=1')
+    assert old.status_code == 200
+    assert old.json['notes'] == 'A original'
+    assert old.json['rev'] == 1
+    assert client.get('/api/study/notes/load/P-p').json['notes'] == 'B resolved'
+    assert client.get('/api/study/notes/load/P-p?rev=999').status_code == 404
+    assert client.get('/api/study/notes/load/P-p?rev=../notes').status_code == 400
+
+
+def test_history_write_failure_keeps_canonical_note(study_app, monkeypatch):
+    app, _, root = study_app
+    client = app.test_client()
+    assert client.post('/api/study/notes/save', json={'pid':'P-p','notes':'keep','base_rev':0}).status_code == 200
+    import app.security as security
+    real = security._write_json_atomic
+    def fail_history(path, obj):
+        if '.history' in str(path):
+            raise OSError('synthetic full history disk')
+        return real(path, obj)
+    monkeypatch.setattr(security, '_write_json_atomic', fail_history)
+    assert client.post('/api/study/notes/save', json={'pid':'P-p','notes':'replacement','base_rev':1}).status_code == 500
+    assert client.get('/api/study/notes/load/P-p').json['notes'] == 'keep'
