@@ -175,7 +175,9 @@ class ManuscriptWorkspace {
             this.ui.setupToolbarActions();
             this.soed.updateWordCount();
             if (this.editorCanvas) {
-                this.editorCanvas.addEventListener('input', () => {
+                this.editorCanvas.addEventListener('input', (event) => {
+                    // 復原／衝突提示列的表單控制不屬正文，不能把空白畫布存回草稿。
+                    if (event.target?.closest?.('select, input, textarea, button')) return;
                     this.soed.updateWordCount();
                     // [v1.8] 停筆 1.5 秒後自動存檔（寫草稿，不產生版本）。
                     this.soed.scheduleAutosave();
@@ -364,11 +366,16 @@ class ManuscriptWorkspace {
             : 'Untitled_Paper';
 
         let queued = false;
+        let allQueued = true;
         cards.forEach((card) => {
             const body = card.querySelector('.card-content');
             if (!body) return;
             const section = card.getAttribute('data-section') || 'general';
             this.soed?._rememberDraft(section, body.innerHTML);
+            if (this.soed?._draftConflicts[section] || !Number.isInteger(this.soed?._draftRevMap[section])) {
+                allQueued = false;
+                return;
+            }
             const payload = JSON.stringify({
                 base_rev: this.soed?._draftRevMap[section],
                 pid: this.pid,
@@ -381,11 +388,13 @@ class ManuscriptWorkspace {
             const blob = new Blob([payload], { type: 'application/json' });
             if (navigator.sendBeacon('/manuscript/api/draft/flush', blob)) {
                 queued = true;
+            } else {
+                allQueued = false;
             }
         });
         // 已經交出去就取消計時器，避免 unload 途中又排一次沒有意義的 socket emit。
         if (queued && this.soed) clearTimeout(this.soed._autosaveTimer);
-        return queued;
+        return queued && allQueued;
     }
 
     escapeHtml(val) {

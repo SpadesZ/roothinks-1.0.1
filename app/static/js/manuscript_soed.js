@@ -551,20 +551,22 @@ class ManuSoed {
         if (this._draftPrompted[section]) return;
         this._draftPrompted[section] = true;
 
-        const restore = (chosen = draft) => {
-            if (chosen.key) {
+        const originalDraft = draft;
+        const restore = (draft = originalDraft) => {
+            if (draft.key) {
                 const current = this.app.editorCanvas.querySelector('.card-content')?.innerHTML;
                 if (current && this._draftDirty) {
                     this._rememberDraft(section, current);
                     this._draftRecoveryId = null;
                 }
-                this._draftConflicts[section] = chosen.base_rev !== this._draftRevMap[section];
+                this._draftConflicts[section] = draft.base_rev !== this._draftRevMap[section];
+                this._draftRevMap[section] = Number.isInteger(draft.base_rev) ? draft.base_rev : null;
                 this._draftDirty = true;
             }
             this.app.selectedSections = new Set([section]);
             this.app.ui.updateDropdownLabel();
             this.app.editorCanvas.innerHTML = '';
-            this.insertEditorCard(chosen.content, section);
+            this.insertEditorCard(draft.content, section);
             this.addSystemMessage(`已復原「${section}」的自動儲存草稿。按存檔可將它建立為正式版本。`);
         };
 

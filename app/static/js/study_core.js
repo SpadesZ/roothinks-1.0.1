@@ -387,6 +387,8 @@ class StudyCore {
         area.value = record.notes;
         this.notesDirty = true;
         this.notesConflict = record.base_rev !== this.notesRev;
+        this.notesRev = Number.isInteger(record.base_rev) ? record.base_rev : null;
+        this.notesReviewedRev = null;
         this._notesStatus(this.notesConflict ? '草稿已復原；請核對伺服器版本後另存' : '草稿已復原，請確認後儲存', false);
     }
 

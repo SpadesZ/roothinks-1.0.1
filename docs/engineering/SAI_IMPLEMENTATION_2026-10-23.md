@@ -112,3 +112,12 @@
 - 隔離瀏覽器已上傳合成 PDF、匯入同篇搜尋書目、明確連結、填理由與限制、確認 included，來源別名與修訂可見。證據 `output/playwright/literature-human-decision.png`。瀏覽器發現內嵌表格過短會藏操作，已改為頁面自然捲動，待新版畫面複查。
 - 這是 Literature → Manuscript 的垂直實作；COC-02 全模組確認、作者性、中文輸入法及教授審閱完整閉環仍未驗收。
 - 06:10 接續提醒已觸發並移除，避免重複啟動。本 chat 保持同一隔離工作樹與分支繼續。
+
+### Phase A/B 完整回歸第一輪及瀏覽器追加發現
+
+- SHA `f0877399cad836e23554f5e9c4c409e3b326463e`：1,216 通過、3 失敗，413.55 秒。證據 `phase-ab-full-1.xml/.txt/-receipt.json`，未標成通過。
+- 一項舊 smoke 要求 JS 完全不可讀 provenance；SAI UX-03 現要求一般介面能查，改驗主表仍四欄、詳情可查來源、仍無列上傳入口。引用 smoke positive fixture 先明確納入，原引用／決策 assertion 保留。草稿復原的舊靜態呼叫點維持 `draft.content`，不刪其 assertion。
+- 真瀏覽器：A 文獻舊分頁送出遇 409；刷新復原 A 文字、顯示 B 新理由與修訂 3，只有按明確另存才成功。證據 `literature-conflict-recovery.png`。
+- 真手稿瀏覽器發現新增復原選單的 input 事件會排程空白 autosave；已用真實 init 接線 Node 案例重現，監聽器排除表單控制，仍保留正文／程式插入既有路徑。
+- 進一步負向測試重現：復原 stale 副本若借用最新 rev，離頁 beacon 可繞過尚未解決的衝突。手稿與筆記復原現在沿用副本原始 base_rev；未解手稿衝突只留本機副本，不送 beacon，並保留離頁提示。
+- Node：手稿輸入邊界 3、手稿草稿 6、筆記 6、文獻決策 2 情境通過；編輯訊號／library smoke 21 通過。最終完整回歸及修後瀏覽器待完成。

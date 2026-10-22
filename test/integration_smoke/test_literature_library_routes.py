@@ -90,8 +90,8 @@ def test_library_import_list_update_export(monkeypatch, tmp_path):
     assert "Norm Two" not in body
 
 
-def test_library_main_table_hides_provenance_and_row_upload(monkeypatch, tmp_path):
-    """Provenance 留在 API；主表不顯示，也不保留已取消入口的死程式。"""
+def test_library_main_table_keeps_provenance_in_details_and_no_row_upload(monkeypatch, tmp_path):
+    """主表維持四欄；SAI UX-03 要求理由詳情能查看來源，仍不另造列上傳入口。"""
     app, _ = _make_app(monkeypatch, tmp_path)
     client = app.test_client()
 
@@ -100,7 +100,8 @@ def test_library_main_table_hides_provenance_and_row_upload(monkeypatch, tmp_pat
 
     assert ">來源</th>" not in html
     assert 'colspan="4"' in html
-    assert "e.sources" not in js
+    assert 'lib-decision' in js and '<details' in js
+    assert 'e.sources' in js and '變更紀錄' in js
     assert "triggerUpload" not in js
     assert "libHiddenUpload" not in js
 
@@ -198,6 +199,12 @@ def test_citation_suggest_and_decision_ledger(monkeypatch, tmp_path):
             title="Diabetes",
         )
 
+    # 引用建議現採 writing scope；positive fixture 先由作者確認該來源。
+    from app.services.literature_library import LiteratureLibrary
+    library = LiteratureLibrary(str(data_root))
+    library.merge_candidates(pid, [{"title":"Diabetes"}])
+    entry_id = next(iter(library.load(pid)["entries"]))
+    library.update_entry(pid, entry_id, {"paper_id":"paper-1", "screening_status":"included"}, actor="synthetic-professor")
     client = app.test_client()
     suggest = client.post(
         "/manuscript/api/citation/suggest",

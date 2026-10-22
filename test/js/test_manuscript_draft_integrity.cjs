@@ -70,4 +70,19 @@ function setup(rev = 0, stored = new Map()) {
     a.app._handleDraftAck({section: 'intro', req_id: a.events[0].payload.req_id, ok: true, rev: 1});
     assert.ok([...shared.values()].some(value => value.includes('B must survive A ack')));
 }
-console.log('manuscript draft integrity: 5 scenarios passed');
+{
+    const {app, body} = setup(7);
+    const local = {key:'old-recovery', content:'stale recovery', base_rev:0};
+    let restore;
+    app.app.selectedSections = new Set(['intro']);
+    app.app.ui = {updateDropdownLabel() {}};
+    app.app.editorCanvas.querySelector = () => body;
+    app._draftRecoveries = () => [local];
+    app._showDraftRestoreBar = (section, draft, callback) => {restore=callback;};
+    app.insertEditorCard = content => {body.innerHTML=content;};
+    app._offerDraftRestore('intro', {content:'server current'});
+    restore(local);
+    assert.equal(app._draftConflicts.intro, true);
+    assert.equal(app._draftRevMap.intro, 0, '復原舊草稿不可冒用目前伺服器版號');
+}
+console.log('manuscript draft integrity: 6 scenarios passed');

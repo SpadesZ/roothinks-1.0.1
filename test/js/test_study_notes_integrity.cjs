@@ -86,5 +86,17 @@ function reply(status, data) { return {ok: status < 400, status, json: async () 
         assert.equal(area.value, 'user 18 server');
         assert.ok(stored.has('study-notes:17:P-p'));
     }
-    console.log('study notes integrity: 5 scenarios passed');
+    {
+        const {context, app, area, stored} = setup();
+        app.notesRev = 7;
+        app.notesDirty = false;
+        stored.set('study-notes:17:P-p:old', JSON.stringify({notes:'old restored thought',base_rev:0}));
+        const get = context.document.getElementById;
+        context.document.getElementById = id => id==='study-note-recovery' ? {value:'study-notes:17:P-p:old'} : get(id);
+        app.restoreNotesDraft();
+        assert.equal(area.value,'old restored thought');
+        assert.equal(app.notesConflict,true);
+        assert.equal(app.notesRev,0,'復原紀錄的原始版號必須保留，刷新不能解除衝突');
+    }
+    console.log('study notes integrity: 6 scenarios passed');
 })().catch(error => { console.error(error); process.exitCode = 1; });
