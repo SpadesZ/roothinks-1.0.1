@@ -1,0 +1,156 @@
+{
+  "schema_version": 1,
+  "created_utc": "2026-10-22T22:53:02.107308+00:00",
+  "specification_revision": "60cf9f73d15cf0e43927cfe572bf217e4547d943",
+  "tested_revision": "2b502532347d6fb032ca330b9835726d0aa3acad",
+  "code_trees": {
+    "app": "9bf2d57b94cea41707b3e3a12ddd0b66ef939b0e",
+    "test": "e17b46d573dc6df58ee081654b579adfcf51f378",
+    "tests": "d68efcfead770973632d015e7e6f254d2bd484ac"
+  },
+  "regressions": [
+    {
+      "label": "phase-a-full-2",
+      "revision": "6987dae4661a2401f8914b4e8f311c32c593df7a",
+      "status": "passed",
+      "exit_code": 0,
+      "suites": [
+        {
+          "tests": "1206",
+          "failures": "0",
+          "errors": "0",
+          "skipped": "0",
+          "time": "426.534"
+        }
+      ],
+      "receipt_sha256": "8512838fa829d0d7c4958851197dbe8deb343c2107c09498dabe4e0b8fecaa2a",
+      "xml_sha256": "6d4402c14370741f7fdc097826b907456aae1605fe0e0d537f03d41042528318",
+      "log_sha256": "6659444502022af41e7f2af95423f9be0ab1a8e99364c6b6b2eb4517f6f895f6"
+    },
+    {
+      "label": "phase-ab-full-1",
+      "revision": "f0877399cad836e23554f5e9c4c409e3b326463e",
+      "status": "failed",
+      "exit_code": 1,
+      "suites": [
+        {
+          "tests": "1219",
+          "failures": "3",
+          "errors": "0",
+          "skipped": "0",
+          "time": "413.298"
+        }
+      ],
+      "receipt_sha256": "c51092cece0005ef1a5bd7e4e4a95ee59e77c79c1583fe6618d55b1e8c2a7743",
+      "xml_sha256": "0552b42b85361b4d62cfe4c21494943c83960b8d41ed926d9e7b0531a8677f25",
+      "log_sha256": "212ed460c39e00ee72a640bc89b0ea3bc9c0848586250587cfe1d75f223103b4"
+    },
+    {
+      "label": "phase-ab-full-2",
+      "revision": "87fe0251504de32767c49d88d649064dd10bdbff",
+      "status": "passed",
+      "exit_code": 0,
+      "suites": [
+        {
+          "tests": "1219",
+          "failures": "0",
+          "errors": "0",
+          "skipped": "0",
+          "time": "407.160"
+        }
+      ],
+      "receipt_sha256": "6935f4fd0f275cdf6edfa41fada410596b64d07a2788cdef1573ae33fa02f06b",
+      "xml_sha256": "5006f86ee354bec13f9a60fc63f403914f6d2625220c40447c546bf67b14fa94",
+      "log_sha256": "fbf37697adeffcac43dd061eab5e0a8c216e1f605fb47461946905dcc0edad98"
+    },
+    {
+      "label": "phase-ab-final",
+      "revision": "5d4a0d44b0c8d59b69061bed089d5ee18d0da969",
+      "status": "failed",
+      "exit_code": 1,
+      "suites": [
+        {
+          "tests": "1219",
+          "failures": "1",
+          "errors": "0",
+          "skipped": "0",
+          "time": "419.787"
+        }
+      ],
+      "receipt_sha256": "f9cb2626c804987a7fb76a8b5353dbd37e3ccea71e9bb5171d63b029edceb188",
+      "xml_sha256": "641016340259e3931e335b0455f85f36de799b7f4a9ac1e87e6aa9edc60ec564",
+      "log_sha256": "7a6b7d20fe1ad4dc5cabb467c956018108e52308aefaae93ce6aef1d85c1d213"
+    },
+    {
+      "label": "phase-ab-release",
+      "revision": "2b502532347d6fb032ca330b9835726d0aa3acad",
+      "status": "passed",
+      "exit_code": 0,
+      "suites": [
+        {
+          "tests": "1219",
+          "failures": "0",
+          "errors": "0",
+          "skipped": "0",
+          "time": "412.581"
+        }
+      ],
+      "receipt_sha256": "46d79cc932c0de31184682f711c1c3dc209dcee216448cc5d6f3ae6c8c864f54",
+      "xml_sha256": "9b39663c1c070f715dfcd32d519fb42ec03f6174dc7c8f3a643180e46af5199c",
+      "log_sha256": "18787edad9549bfb257c44b1ad62533e87bd4d62aa7fe744f62a3931cb197a8a"
+    }
+  ],
+  "node_scenarios": {
+    "study_notes": 6,
+    "manuscript_draft": 8,
+    "manuscript_input_boundary": 3,
+    "literature_decision": 2
+  },
+  "browser": {
+    "engine": "Chromium",
+    "viewport": [
+      1280,
+      800
+    ],
+    "data": "synthetic only",
+    "artifacts": [
+      {
+        "path": "output/playwright/literature-identity-final.png",
+        "bytes": 104644,
+        "sha256": "f83e75b2df27cd6f77432cd7e9cbb84dc322f6df373ba84c2f6b2954db7f0482"
+      },
+      {
+        "path": "output/playwright/literature-conflict-recovery.png",
+        "bytes": 108071,
+        "sha256": "98e0ba46d2b42e2959cc6e9098dd46bc4cbea2cbffaa65a81644b55c00acbbbe"
+      },
+      {
+        "path": "output/playwright/manuscript-recovery-verified.png",
+        "bytes": 127605,
+        "sha256": "ea054251cac14083e27f75036cf0f7155967067fe5c6c044559a0c78e3935e21"
+      },
+      {
+        "path": "output/playwright/study-conflict-review-verified.png",
+        "bytes": 75336,
+        "sha256": "6980efbfddd8e171508e8f0b36218425a1ab8fa1c61d3f8a854076eb05aac26c"
+      }
+    ]
+  },
+  "boundary_audit": {
+    "original_worktree_clean": true,
+    "original_revision": "60cf9f73d15cf0e43927cfe572bf217e4547d943",
+    "frozen_spec_unchanged": true,
+    "no_code_changes_after_tested_revision": true,
+    "no_private_runtime_paths_in_diff": true,
+    "codegraph_not_tracked": true
+  },
+  "not_verified": [
+    "real scientific quality",
+    "authorship or AI detector rate",
+    "all-module CoC",
+    "cross-process load",
+    "Linux/GCP deployment",
+    "production backup restore",
+    "formal accessibility"
+  ]
+}
