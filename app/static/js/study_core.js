@@ -310,59 +310,137 @@ class StudyCore {
     }
 
     initNotes() {
-        const noteArea = document.getElementById('study-notes');
-        if (noteArea) {
-            this.loadNotes();
-            noteArea.addEventListener('input', () => {
-                clearTimeout(this.saveTimer);
-                this.saveTimer = setTimeout(() => this.saveNotes(), 2000);
-            });
-        }
-    }
-
-    saveNotes() {
-        const noteArea = document.getElementById('study-notes');
-        if (!noteArea) return;
-        const pid = this.resolvePidRuntime();
-        if (!pid) {
-            this.showToast('無法儲存筆記：PID 不存在', 'error');
-            return;
-        }
-        
-        const content = noteArea.value;
-        noteArea.style.borderColor = "#198754"; // Green border feedback
-        
-        fetch('/api/study/notes/save', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ pid: pid, notes: content })
-        }).then(r => r.json()).then(res => {
-            if(res.ok) {
-                console.log("[StudyCore] Notes saved.");
-                setTimeout(() => { noteArea.style.borderColor = ""; }, 500);
-            } else {
-                noteArea.style.borderColor = "#dc3545";
-                this.showToast(`筆記儲存失敗: ${res.msg || 'unknown error'}`, 'error');
-            }
-        }).catch(err => {
-            noteArea.style.borderColor = "#dc3545";
-            this.showToast(`筆記儲存失敗: ${err}`, 'error');
+        const area = document.getElementById('study-notes');
+        if (!area) return;
+        this.notesRev = null;
+        this.notesDirty = false;
+        this.notesConflict = false;
+        this.loadNotes();
+        area.addEventListener('input', () => {
+            this.notesDirty = true;
+            this._rememberNotes();
+            this._notesStatus('尚未儲存', false);
+            clearTimeout(this.saveTimer);
+            if (!this.notesConflict) this.saveTimer = setTimeout(() => this.saveNotes(), 2000);
+        });
+        window.addEventListener('beforeunload', event => {
+            if (!this.notesDirty && !this.notesSavePending) return;
+            this._rememberNotes();
+            event.preventDefault();
+            event.returnValue = '';
         });
     }
 
-    loadNotes() {
-        const noteArea = document.getElementById('study-notes');
-        if (!noteArea) return;
-        const pid = this.resolvePidRuntime();
-        if (!pid) return;
+    _notesKey() {
+        const area = document.getElementById('study-notes');
+        return `study-notes:${area?.dataset.owner || 'local'}:${this.resolvePidRuntime()}`;
+    }
 
-        fetch(`/api/study/notes/load/${pid}`)
-            .then(r => r.json())
-            .then(res => {
-                if(res.ok && res.notes) {
-                    noteArea.value = res.notes;
-                }
+    _rememberNotes() {
+        const area = document.getElementById('study-notes');
+        try {
+            localStorage.setItem(this._notesKey(), JSON.stringify({notes: area.value, base_rev: this.notesRev}));
+        } catch (error) {
+            this.showToast('無法保留本機副本，請下載草稿後再離開。', 'error');
+        }
+    }
+
+    _notesStatus(text, saved) {
+        const status = document.getElementById('study-notes-status');
+        if (status) status.textContent = text;
+        const area = document.getElementById('study-notes');
+        if (area) area.style.borderColor = saved ? '#198754' : '#dc3545';
+    }
+
+    downloadNotesDraft() {
+        const area = document.getElementById('study-notes');
+        const url = URL.createObjectURL(new Blob([area.value], {type: 'text/plain;charset=utf-8'}));
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = 'research-notes.txt';
+        link.click();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+    }
+
+    async saveNotes() {
+        const area = document.getElementById('study-notes');
+        const pid = this.resolvePidRuntime();
+        if (!area || !pid) return;
+        this.notesDirty = true;
+        this._rememberNotes();
+        if (this.notesSavePending) return;
+        if (this.notesRev == null || this.notesConflict) {
+            this._notesStatus('需核對伺服器版本；本機文字已保留', false);
+            return;
+        }
+        const content = area.value;
+        this.notesSavePending = true;
+        this._notesStatus('儲存中…', false);
+        try {
+            const response = await fetch('/api/study/notes/save', {
+                method: 'POST', headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({pid, notes: content, base_rev: this.notesRev})
             });
+            const data = await response.json();
+            if (response.status === 409) this.notesConflict = true;
+            if (!response.ok || !data.ok || !Number.isInteger(data.rev)) {
+                throw new Error(data.conflict ? '版本衝突；請下載本機草稿，再核對伺服器版本。' : (data.msg || '儲存失敗'));
+            }
+            this.notesRev = data.rev;
+            this.notesDirty = area.value !== content;
+            if (!this.notesDirty) {
+                try { localStorage.removeItem(this._notesKey()); } catch (error) {}
+                this._notesStatus('已儲存', true);
+            } else {
+                this._rememberNotes();
+                this._notesStatus('有較新的文字尚未儲存', false);
+            }
+        } catch (error) {
+            this._notesStatus('未儲存；本機文字已保留', false);
+            this.showToast(String(error.message || error), 'error');
+        } finally {
+            this.notesSavePending = false;
+        }
+        if (this.notesDirty && !this.notesConflict && area.value !== content) this.saveNotes();
+    }
+
+    async loadNotes(reload = false) {
+        const area = document.getElementById('study-notes');
+        const pid = this.resolvePidRuntime();
+        if (!area || !pid) return;
+        if (this.notesSavePending) return;
+        if (reload && this.notesDirty && !confirm('將顯示伺服器版本。請先下載要保留的本機文字，確定繼續？')) return;
+        const before = area.value;
+        try {
+            const response = await fetch(`/api/study/notes/load/${encodeURIComponent(pid)}`);
+            const data = await response.json();
+            if (!response.ok || !data.ok || !Number.isInteger(data.rev)) throw new Error('筆記讀取失敗');
+            if (area.value !== before) {
+                this.notesConflict = true;
+                this._rememberNotes();
+                this._notesStatus('讀取期間有新輸入；請先保留本機文字再核對版本', false);
+                return;
+            }
+            let draft = null;
+            try { draft = JSON.parse(localStorage.getItem(this._notesKey()) || 'null'); } catch (error) {}
+            this.notesRev = data.rev;
+            this.notesConflict = false;
+            this.notesDirty = false;
+            if (!reload && draft && typeof draft.notes === 'string' && draft.notes !== data.notes) {
+                area.value = draft.notes;
+                this.notesDirty = true;
+                this.notesConflict = draft.base_rev !== data.rev;
+                this._notesStatus(this.notesConflict ? '已恢復本機草稿；與伺服器有版本衝突' : '已恢復未儲存草稿，請確認後儲存', false);
+            } else {
+                area.value = data.notes || '';
+                try { localStorage.removeItem(this._notesKey()); } catch (error) {}
+                this._notesStatus('已讀取伺服器版本', true);
+            }
+        } catch (error) {
+            this.notesRev = null;
+            this._notesStatus('讀取失敗；保留目前文字', false);
+            this.showToast(String(error.message || error), 'error');
+        }
     }
 
     runTask6() {
@@ -392,14 +470,15 @@ class StudyCore {
         .then(res => {
             this.setLoading(false);
             console.log('[StudyCore] Matrix API response:', res);
-            if (res.ok) {
+            if (res.data && Array.isArray(res.data.comparisons)) {
+                if (!res.ok) this.showToast(res.error || '部分比較未完成；請核對失敗項目。', 'error');
                 console.log('[StudyCore] Matrix data received:', res.data);
                 this.cacheMatrix(res.data, res.matrix_id || null);
                 if (window.studyView) window.studyView.renderMatrix(res.data);
                 this.currentLoadedMatrixId = res.matrix_id || null;
                 this.currentLoadedMatrixName = (res.display_name || '').trim() || this.currentLoadedMatrixId || '';
                 this.loadMatrixHistory();
-                if (res.matrix_id) {
+                if (res.matrix_id && res.saved) {
                     this.showToast(`矩陣已保存 (${res.matrix_id})`, 'success');
                 }
                 if (window.studyView && typeof window.studyView.setDisplayMode === 'function') {

@@ -758,7 +758,7 @@ def build_lock_path(path: str) -> str:
     return os.path.join(lock_root, f"{base}.{digest}.lock")
 
 
-def load_json_locked(path: str, fallback: Any):
+def load_json_locked(path: str, fallback: Any, *, strict: bool = False):
     if not os.path.exists(path):
         return fallback
     lock = FileLock(_lock_path(path), timeout=5)
@@ -770,17 +770,68 @@ def load_json_locked(path: str, fallback: Any):
                 return json.load(f)
     except Exception:
         LOGGER.warning("Failed to read JSON file: %s", path, exc_info=True)
+        if strict:
+            raise
         return fallback
 
 
 def write_json_locked(path: str, obj: Any) -> None:
     os.makedirs(os.path.dirname(path), exist_ok=True)
     lock = FileLock(_lock_path(path), timeout=10)
-    tmp_path = f"{path}.tmp"
     with lock:
-        with open(tmp_path, "w", encoding="utf-8") as f:
+        _write_json_atomic(path, obj)
+
+
+def _write_json_atomic(path: str, obj: Any) -> None:
+    """呼叫端持鎖；失敗保留舊檔並移除未完成的暫存檔。"""
+    tmp_path = None
+    try:
+        with tempfile.NamedTemporaryFile(mode="w", encoding="utf-8", dir=os.path.dirname(path), delete=False) as f:
+            tmp_path = f.name
             json.dump(obj, f, ensure_ascii=False, indent=2)
+            f.flush()
+            os.fsync(f.fileno())
         os.replace(tmp_path, path)
+    finally:
+        if tmp_path and os.path.exists(tmp_path):
+            os.unlink(tmp_path)
+
+
+def update_json_locked(path: str, update, fallback=None):
+    """同一把既有 FileLock 包住讀、修改、原子寫；None 表示不落盤。"""
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with FileLock(_lock_path(path), timeout=10):
+        current = fallback
+        if os.path.exists(path):
+            with open(path, encoding="utf-8") as f:
+                current = json.load(f)
+        updated = update(current)
+        if updated is not None:
+            _write_json_atomic(path, updated)
+        return updated
+
+
+def check_and_save_json(path: str, payload: dict, base_rev, updated_by=None) -> dict:
+    """以現有 _rev 契約保護整段 read/compare/write；破損檔案禁止覆蓋。"""
+    from datetime import datetime, timezone
+    if base_rev is not None and (type(base_rev) is not int or base_rev < 0):
+        raise BadRequest("Invalid base_rev")
+    result = {}
+    def update(current):
+        if not isinstance(current, dict):
+            raise ValueError("Invalid versioned JSON")
+        rev = current.get("_rev", 0)
+        if type(rev) is not int or rev < 0:
+            raise ValueError("Invalid stored revision")
+        if base_rev is not None and base_rev != rev:
+            result.update(ok=False, conflict=True, current_rev=rev, base_rev=base_rev,
+                          updated_by=current.get("_updated_by"), updated_at=current.get("_updated_at"))
+            return None
+        result.update(ok=True, rev=rev + 1)
+        return dict(payload, _rev=rev + 1, _updated_by=updated_by,
+                    _updated_at=datetime.now(timezone.utc).isoformat())
+    update_json_locked(path, update, {})
+    return result
 
 
 def parse_allowed_origins(raw: str) -> list[str]:

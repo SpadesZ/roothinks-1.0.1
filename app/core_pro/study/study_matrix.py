@@ -16,6 +16,16 @@ from app.llm_service.matching_tasks.task_6comp import Comparator
 
 logger = logging.getLogger("StudyMatrix")
 
+def matrix_outcome(comparisons):
+    rows = comparisons if isinstance(comparisons, list) else []
+    success = sum(isinstance(row, dict) and not row.get('error')
+                  and row.get('status') not in {'failed', 'degraded'}
+                  and bool(row.get('analysis') or row.get('comparison_points')) for row in rows)
+    failed = len(rows) - success
+    return {"status": "failed" if not success else ("partial" if failed else "completed"),
+            "success_count": success, "failure_count": failed}
+
+
 class MatrixEngine:
     """
     Study Matrix Engine (v1.6)
@@ -185,49 +195,6 @@ class MatrixEngine:
             if len(final_matrix['comparisons']) > 0:
                 f.write(f"[generate_matrix] First comparison keys: {list(final_matrix['comparisons'][0].keys())}\n")
 
-        # 5. 存檔 (Persist) - [Fix Path & Filename]
-        self._save_matrix_result(pid, papers_data, criteria, final_matrix)
-
-        with open(log_path, 'a', encoding='utf-8') as f:
-            f.write(f"[generate_matrix] COMPLETE - returning matrix\n")
-        
+        # 唯一保存邊界在 route 的不可變歷史紀錄；不再覆蓋舊版 deterministic cache。
+        final_matrix.update(matrix_outcome(results))
         return final_matrix
-
-    def _save_matrix_result(self, pid, papers_data, criteria, matrix_data):
-        """
-        [Helper] 將矩陣結果寫入指定目錄
-        path: data/<pid>/study/papers_comp/<combo_id>.json
-        """
-        try:
-            save_dir = os.path.join(self.data_root, pid, "study", "papers_comp")
-            os.makedirs(save_dir, exist_ok=True)
-
-            # 提取所有參與比較的 Paper ID 並排序 (Canonical ID)
-            all_ids = sorted([p['paper_id'] for p in papers_data])
-            ids_str = "+".join(all_ids)
-            
-            # 處理檔名過長問題 (Windows limit ~250 chars)
-            clean_crit = "".join([c if c.isalnum() or c in (" ", "-", "_") else "_" for c in criteria])
-            if len(clean_crit) > 30:
-                clean_crit = clean_crit[:30] + "_" + hashlib.md5(criteria.encode()).hexdigest()[:6]
-
-            filename = f"{clean_crit}_{ids_str}"
-            if len(filename) > 100:
-                # 若過長，使用 Hash 縮短
-                hash_obj = hashlib.md5(ids_str.encode())
-                ids_hash = hash_obj.hexdigest()[:12] # 取前 12 碼
-                # 保留前兩個 ID 作為識別，加上 Hash
-                prefix = "+".join(all_ids[:2])
-                if len(prefix) > 50: prefix = prefix[:50]
-                filename = f"{clean_crit}_{prefix}_etc_{ids_hash}"
-            
-            # 加上副檔名
-            full_path = os.path.join(save_dir, f"{filename}.json")
-
-            with open(full_path, 'w', encoding='utf-8') as f:
-                json.dump(matrix_data, f, ensure_ascii=False, indent=4)
-                
-            logger.info(f"[Matrix] Saved to: {full_path}")
-            
-        except Exception as e:
-            logger.error(f"[Matrix] Save Error: {e}")

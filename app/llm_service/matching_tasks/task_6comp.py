@@ -95,84 +95,30 @@ class Comparator:
         
         logger.info(f"[Task6.DEBUG] dispatch_task returned: success={success}, response_len={len(response_text) if isinstance(response_text, str) else 'N/A'}")
         
-        # [Fix] ALWAYS prepare fallback data
-        base_len = len(base_pkg.get('text', ''))
-        target_len = len(target_pkg.get('text', ''))
-        
         if not success:
-            _debug_log("[compare_pair] NOT SUCCESS - returning fallback")
-            logger.warning(f"[Task6] LlmBus failed for {target_pkg['id']}: {response_text}")
-            # Use deterministic fallback data when LLM fails
-            base_text = base_pkg.get('text', '') or ''
-            target_text = target_pkg.get('text', '') or ''
-
-            base_tokens = set(re.findall(r"[A-Za-z]{4,}", base_text.lower()))
-            target_tokens = set(re.findall(r"[A-Za-z]{4,}", target_text.lower()))
-            overlap = len(base_tokens & target_tokens)
-            union = len(base_tokens | target_tokens) or 1
-            overlap_ratio = round((overlap / union) * 100, 1)
-
-            base_preview = re.sub(r"\s+", " ", base_text).strip()[:140]
-            target_preview = re.sub(r"\s+", " ", target_text).strip()[:140]
-
-            fallback_result = {
-                "comparison_points": [
-                    {
-                        "dimension": "內容覆蓋範圍",
-                        "baseline_view": f"內容長度: {base_len} 字符",
-                        "target_view": f"內容長度: {target_len} 字符",
-                        "synthesis": "基準與對照可比較，內容規模存在差異。",
-                        "significance": "Low"
-                    },
-                    {
-                        "dimension": "主題重疊度",
-                        "baseline_view": f"關鍵詞數量: {len(base_tokens)}",
-                        "target_view": f"關鍵詞數量: {len(target_tokens)}",
-                        "synthesis": f"兩文關鍵詞重疊率約 {overlap_ratio}%（僅統計字面詞）。",
-                        "significance": "Medium"
-                    }
-                ],
-                "overall_summary": f"暫以規則式比較呈現：{base_pkg['title']} 對照 {target_pkg['title']}。",
-                "target_paper_id": target_pkg['id'],
-                "target_paper_title": target_pkg['title'],
-                "analysis": (
-                    f"【規則式比較】\n"
-                    f"基準論文: {base_pkg['title']}\n"
-                    f"對照論文: {target_pkg['title']}\n"
-                    f"內容長度: {base_len} vs {target_len} 字符\n"
-                    f"主題重疊率: {overlap_ratio}%\n"
-                    f"基準片段: {base_preview}\n"
-                    f"對照片段: {target_preview}"
-                )
+            logger.warning("[Task6] provider failed for %s", target_pkg['id'])
+            # 字面統計只作診斷，不進五維正規化或聲稱可作科學比較。
+            return {
+                "error": "provider_failed", "status": "failed", "quality_mode": "heuristic",
+                "target_paper_id": target_pkg['id'], "target_paper_title": target_pkg['title'],
+                "comparison_points": [], "analysis": "模型比較失敗；僅有字元數診斷，不能作為研究結論。",
+                "diagnostics": {"baseline_chars": len(base_pkg.get('text', '')),
+                                "target_chars": len(target_pkg.get('text', ''))},
             }
-            _debug_log(f"[compare_pair] Returning fallback with keys: {list(fallback_result.keys())}")
-            fallback_result = self._normalize_result(fallback_result, criteria, base_pkg, target_pkg)
-            return fallback_result
-
-        # 3. 解析與清洗
         try:
             data = self._parse_json(response_text)
-            # 注入 Metadata 以便前端渲染
+            if not isinstance(data, dict) or not isinstance(data.get('comparison_points'), list) or not data['comparison_points']:
+                raise ValueError("Missing comparison points")
             data['target_paper_id'] = target_pkg['id']
             data['target_paper_title'] = target_pkg['title']
-
-            return self._normalize_result(data, criteria, base_pkg, target_pkg)
-        except Exception as e:
-            logger.error(f"[Task6] JSON Parse Error: {e}\nRaw: {response_text[:200]}")
-            # Return fallback when parsing fails too
-            err = {
-                "comparison_points": [{
-                    "dimension": "解析失敗",
-                    "baseline_view": base_pkg.get('title', 'N/A'),
-                    "target_view": target_pkg.get('title', 'N/A'),
-                    "synthesis": "無法解析 AI 回應",
-                    "significance": "Low"
-                }],
-                "target_paper_id": target_pkg['id'],
-                "target_paper_title": target_pkg['title'],
-                "analysis": f"[錯誤] 無法解析 AI 分析結果。\n基準: {base_pkg['title']}\n對照: {target_pkg['title']}"
-            }
-            return self._normalize_result(err, criteria, base_pkg, target_pkg)
+            data = self._normalize_result(data, criteria, base_pkg, target_pkg)
+            data.update(status="completed", quality_mode="llm")
+            return data
+        except Exception:
+            logger.exception("[Task6] invalid comparison response")
+            return {"error": "invalid_model_response", "status": "failed", "quality_mode": "unavailable",
+                    "target_paper_id": target_pkg['id'], "comparison_points": [],
+                    "analysis": "模型回應無法解析，未完成科學比較。"}
 
     def _construct_prompt(self, base, target, criteria):
         """

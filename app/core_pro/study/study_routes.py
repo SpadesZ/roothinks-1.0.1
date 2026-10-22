@@ -22,6 +22,8 @@ from app.models import db, Paper, Project
 from app.services.context_chain_service import ContextChainService
 from app.security import (
     enforce_project_ownership,
+    check_and_save_json,
+    update_json_locked,
     get_acl_context,
     load_json_locked,
     safe_join_under,
@@ -31,7 +33,7 @@ from app.security import (
 from app.core_pro.storage_layout import list_literature_papers, resolve_literature_paper_dir
 
 # [Upgrade] 引入新版 AI 引擎 (v2.0)
-from app.core_pro.study.study_matrix import MatrixEngine
+from app.core_pro.study.study_matrix import MatrixEngine, matrix_outcome
 from app.llm_service.matching_tasks.task_7qachat import TutorEngine
 
 # 定義 Blueprint
@@ -48,11 +50,15 @@ context_chain_service = None
 def _enforce_study_project_acl():
     if not request.path.startswith("/api/study/"):
         return None
-    raw_pid = (
-        (request.view_args.get("pid") if isinstance(request.view_args, dict) else None)
-        or request.args.get("pid")
-        or ((request.get_json(silent=True) or {}).get("pid") if request.method in {"POST", "PUT", "PATCH", "DELETE"} else None)
-    )
+    body = request.get_json(silent=True) if request.method in {"POST", "PUT", "PATCH", "DELETE"} else {}
+    if body is not None and not isinstance(body, dict):
+        return jsonify({"ok": False, "msg": "Invalid request"}), 400
+    supplied = [request.view_args.get("pid") if request.view_args else None,
+                request.args.get("pid"), (body or {}).get("pid")]
+    pids = {_normalize_study_pid(value) for value in supplied if value}
+    if len(pids) > 1:
+        return jsonify({"ok": False, "msg": "Conflicting project identifiers"}), 400
+    raw_pid = next((value for value in supplied if value), None)
     if not raw_pid:
         return None
     pid = _normalize_study_pid(raw_pid)
@@ -173,29 +179,17 @@ def _get_latest_matrix_snapshot_path(pid):
 
 
 def _load_study_note_text(pid):
-    """Load study note text with legacy fallback; return empty string on failure."""
-    try:
-        note_path = _get_study_note_path(pid)
-        if os.path.exists(note_path):
-            data = load_json_locked(note_path, {})
-            if isinstance(data, dict):
-                return str(data.get("notes") or "").strip()
-            return str(data or "").strip()
-
-        old_note_path = os.path.join(current_app.root_path, "..", "data", "note", f"{pid}_note.json")
-        if os.path.exists(old_note_path):
-            with open(old_note_path, 'r', encoding='utf-8') as f:
-                old_data = json.load(f)
-            if isinstance(old_data, dict):
-                return str(old_data.get("notes") or "").strip()
-            return str(old_data or "").strip()
-
-        legacy_txt = os.path.join(current_app.root_path, "..", "data", pid, "study_notes.txt")
-        if os.path.exists(legacy_txt):
-            with open(legacy_txt, 'r', encoding='utf-8') as f:
-                return f.read().strip()
-    except Exception:
-        return ""
+    """缺檔可無筆記；讀取失敗不假裝空白，legacy 原文只讀不搬移。"""
+    note_path = _get_study_note_path(pid)
+    old_path = os.path.join(current_app.root_path, "..", "data", "note", f"{pid}_note.json")
+    for path in (note_path, old_path):
+        if os.path.exists(path):
+            data = load_json_locked(path, {}, strict=True)
+            return str(data.get("notes") or "").strip() if isinstance(data, dict) else str(data or "").strip()
+    legacy = os.path.join(current_app.root_path, "..", "data", pid, "study_notes.txt")
+    if os.path.exists(legacy):
+        with open(legacy, encoding="utf-8") as f:
+            return f.read().strip()
     return ""
 
 
@@ -1509,49 +1503,17 @@ def run_matrix_comparison():
         matrix_result = matrix_engine.generate_matrix(pid, papers_payload, criteria)
         elapsed = round(time.time() - start_time, 2)
         
-        # [Debug] Log full matrix_result BEFORE processing
-        logger.warning(f"[compare DEBUG] Initial matrix_result type: {type(matrix_result)}")
-        if isinstance(matrix_result, dict):
-            logger.warning(f"[compare DEBUG] matrix_result keys: {list(matrix_result.keys())}")
-            if 'comparisons' in matrix_result and isinstance(matrix_result['comparisons'], list) and len(matrix_result['comparisons']) > 0:
-                logger.warning(f"[compare DEBUG] First comparison BEFORE processing: {matrix_result['comparisons'][0]}")
-        
-        # [Fix] Ensure all comparisons have 'analysis' field for frontend rendering
-        if "comparisons" in matrix_result and isinstance(matrix_result["comparisons"], list):
-            for comp in matrix_result["comparisons"]:
-                if isinstance(comp, dict) and 'analysis' not in comp:
-                    # Generate fallback analysis from available fields
-                    if 'content' in comp:
-                        comp['analysis'] = comp['content'][:500] if len(str(comp['content'])) > 500 else str(comp['content'])
-                    elif 'error' in comp:
-                        # Even if there's an error, provide something to display
-                        comp['analysis'] = f"[系統訊息] {comp.get('error', '無法進行深度分析')}"
-                    else:
-                        # Default fallback
-                        target_title = comp.get('target_paper_id') or comp.get('target') or 'Unknown'
-                        comp['analysis'] = f"無法為 {target_title} 生成比較分析。"
-                    logger.warning(f"[compare DEBUG] Added analysis field: {list(comp.keys())}")
-        
-        # [Debug] Log AFTER processing
-        if isinstance(matrix_result, dict) and 'comparisons' in matrix_result and isinstance(matrix_result['comparisons'], list) and len(matrix_result['comparisons']) > 0:
-            logger.warning(f"[compare DEBUG] First comparison AFTER processing: {list(matrix_result['comparisons'][0].keys())}")
-        
-        # [Debug] 記錄API返回的結構
-        logger.info(f"[compare] Matrix result keys: {matrix_result.keys() if isinstance(matrix_result, dict) else 'not dict'}")
-        if "comparisons" in matrix_result:
-            comp_count = len(matrix_result["comparisons"]) if isinstance(matrix_result["comparisons"], list) else "not list"
-            logger.info(f"[compare] Comparisons count: {comp_count}")
-            if comp_count and isinstance(matrix_result["comparisons"], list) and len(matrix_result["comparisons"]) > 0:
-                first_comp = matrix_result["comparisons"][0]
-                logger.info(f"[compare] First comparison keys: {first_comp.keys() if isinstance(first_comp, dict) else 'not dict'}")
-                if 'analysis' in first_comp:
-                    logger.info(f"[compare] First analysis available: {str(first_comp['analysis'])[:100]}")
-        
-        if "error" in matrix_result:
-             return jsonify({"ok": False, "error": matrix_result["error"]}), 500
+        if not isinstance(matrix_result, dict):
+            return jsonify({"ok": False, "saved": False, "error": "Invalid comparison result"}), 502
+        outcome = matrix_outcome(matrix_result.get('comparisons'))
+        matrix_result.update(outcome)
+        if outcome['status'] == 'failed':
+            return jsonify({"ok": False, "saved": False, "result_status": "failed",
+                            "error": "所有比較均未完成，原有結果保留。", "data": matrix_result}), 502
 
         # Persist matrix result for history playback.
         display_name = ""
+        matrix_id = None
         try:
             hist_dir = _get_matrix_history_dir(pid)
             matrix_id = f"mx_{int(time.time())}_{os.urandom(4).hex()}"
@@ -1581,18 +1543,22 @@ def run_matrix_comparison():
             snapshot = dict(record)
             write_json_locked(_get_latest_matrix_snapshot_path(pid), snapshot)
         except Exception as persist_err:
-            logger.warning(f"[compare] Matrix persistence failed: {persist_err}")
-            matrix_id = None
+            logger.exception("[compare] Matrix persistence failed")
+            return jsonify({"ok": False, "saved": False, "result_status": outcome['status'],
+                            "error": "比較已完成，但保存未完成；請保留本次結果。",
+                            "data": matrix_result, "matrix_id": matrix_id}), 503
              
         return jsonify(
             {
-                "ok": True,
+                "ok": outcome['status'] == 'completed',
+                "saved": True,
+                "result_status": outcome['status'],
                 "data": matrix_result,
                 "elapsed": elapsed,
                 "matrix_id": matrix_id,
                 "display_name": display_name,
             }
-        )
+        ), (207 if outcome['status'] == 'partial' else 200)
 
     except Exception as e:
         return _internal_error("run_matrix_comparison", e)
@@ -2022,13 +1988,14 @@ def rename_conversation(conv_id):
         if not os.path.exists(conv_path):
             return jsonify({"ok": False, "msg": "Conversation not found"}), 404
         
-        conv_data = load_json_locked(conv_path, {})
-        
-        conv_data['title'] = new_title
-        conv_data['updated_at'] = time.strftime('%Y-%m-%d %H:%M:%S')
-        
-        write_json_locked(conv_path, conv_data)
-        
+        def rename_current(conv_data):
+            if not isinstance(conv_data, dict) or conv_data.get('pid') != pid:
+                raise ValueError("Invalid conversation")
+            conv_data['title'] = new_title
+            conv_data['updated_at'] = time.strftime('%Y-%m-%d %H:%M:%S')
+            return conv_data
+        update_json_locked(conv_path, rename_current)
+
         return jsonify({"ok": True})
     
     except Exception as e:
@@ -2056,6 +2023,8 @@ def chat_with_tutor():
             except BadRequest:
                 return jsonify({"ok": False, "msg": "Invalid conversation id"}), 400
 
+        if not data.get('pid'):
+            return jsonify({"ok": False, "msg": "Missing project id"}), 400
         if not query:
             return jsonify({"ok": False, "msg": "Question is empty"}), 400
         if data.get('pid') and not pid:
@@ -2120,41 +2089,29 @@ def chat_with_tutor():
         # AI 處理
         answer = tutor_engine.process_query(query, context_payload)
         
-        # 如果提供了 conv_id，則保存到對話歷史
+        saved = False
         if conv_id and pid:
             try:
-                conv_dir = _get_conversations_dir(pid)
-                conv_path = os.path.join(conv_dir, f"{conv_id}.json")
-                
-                if os.path.exists(conv_path):
-                    conv_data = load_json_locked(conv_path, {})
-                    
+                conv_path = os.path.join(_get_conversations_dir(pid), f"{conv_id}.json")
+                def append_messages(conv_data):
+                    if not isinstance(conv_data, dict) or conv_data.get('pid') != pid:
+                        raise ValueError("Conversation missing or outside project")
                     now = time.strftime('%Y-%m-%d %H:%M:%S')
-                    
-                    # 添加訊息
-                    conv_data['messages'].append({
-                        "role": "user",
-                        "content": query,
-                        "timestamp": now
-                    })
-                    conv_data['messages'].append({
-                        "role": "assistant",
-                        "content": answer,
-                        "timestamp": now
-                    })
-                    
-                    # 自動生成標題（如果還是預設標題）
+                    conv_data['messages'].extend([
+                        {"role": "user", "content": query, "timestamp": now},
+                        {"role": "assistant", "content": answer, "timestamp": now},
+                    ])
                     if conv_data.get('title') == '新的對話' and len(conv_data['messages']) == 2:
-                        # 用第一個問題的前30字作為標題
-                        conv_data['title'] = query[:30] + ('...' if len(query) > 30 else '')
-                    
+                        conv_data['title'] = query[:30]
                     conv_data['updated_at'] = now
-                    
-                    write_json_locked(conv_path, conv_data)
-            except Exception as e:
-                logger.warning(f"Failed to save chat history: {e}")
-        
-        return jsonify({"ok": True, "answer": answer})
+                    return conv_data
+                update_json_locked(conv_path, append_messages)
+                saved = True
+            except Exception:
+                logger.exception("Failed to save chat history")
+                return jsonify({"ok": False, "saved": False, "answer": answer,
+                                "msg": "回答已產生，但對話未儲存；請保留本次問答後重試。"}), 503
+        return jsonify({"ok": True, "saved": saved, "answer": answer})
 
     except Exception as e:
         return _internal_error("chat_with_tutor", e)
@@ -2169,6 +2126,8 @@ def save_user_notes():
         data = request.get_json(silent=True) or {}
         pid = _normalize_study_pid(data.get('pid'))
         notes = data.get('notes')
+        if not isinstance(notes, str):
+            return jsonify({'ok': False, 'msg': 'Invalid notes'}), 400
         
         if not pid:
             return jsonify({"ok": False, "msg": "Invalid PID"}), 404
@@ -2179,10 +2138,17 @@ def save_user_notes():
             "notes": str(notes or ""),
             "updated_at": time.strftime('%Y-%m-%d %H:%M:%S')
         }
-        # Always overwrite the same note file for the same pid.
-        write_json_locked(note_path, payload)
-            
-        return jsonify({"ok": True})
+        if 'base_rev' not in data or data['base_rev'] is None:
+            return jsonify({"ok": False, "msg": "請重新載入筆記後再儲存"}), 428
+        if type(data['base_rev']) is not int or data['base_rev'] < 0:
+            return jsonify({"ok": False, "msg": "Invalid base_rev"}), 400
+        from flask_login import current_user
+        try:
+            actor = str(current_user.id) if current_user.is_authenticated else None
+        except AttributeError:
+            actor = None
+        result = check_and_save_json(note_path, payload, data['base_rev'], actor)
+        return jsonify(result), (200 if result['ok'] else 409)
     except Exception as e:
         return _internal_error("save_user_notes", e)
 
@@ -2199,10 +2165,12 @@ def load_user_notes(pid):
         note_path = _get_study_note_path(pid)
         
         content = ""
+        revision = 0
         if os.path.exists(note_path):
-            data = load_json_locked(note_path, {})
+            data = load_json_locked(note_path, {}, strict=True)
             if isinstance(data, dict):
                 content = str(data.get("notes") or "")
+                revision = data.get("_rev", 0)
             else:
                 content = str(data or "")
         else:
@@ -2221,15 +2189,8 @@ def load_user_notes(pid):
             if not content and os.path.exists(legacy_path):
                 with open(legacy_path, 'r', encoding='utf-8') as f:
                     content = f.read()
-            # Ensure target note json exists for downstream tooling visibility.
-            payload = {
-                "pid": str(pid),
-                "notes": str(content or ""),
-                "updated_at": time.strftime('%Y-%m-%d %H:%M:%S')
-            }
-            write_json_locked(note_path, payload)
-                
-        return jsonify({"ok": True, "notes": content})
+
+        return jsonify({"ok": True, "notes": content, "rev": revision})
     except Exception as e:
         return _internal_error("load_user_notes", e)
 

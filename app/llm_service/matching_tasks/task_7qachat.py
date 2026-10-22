@@ -66,8 +66,7 @@ class TutorEngine:
         success, response_text = self.bus.dispatch_task(task_name, prompt, max_retries=1)
 
         if not success:
-            logger.error(f"[Task7] LlmBus failed: {response_text}")
-            return "抱歉，AI 家教目前無法連線，請稍後再試。"
+            raise RuntimeError("Tutor provider request failed")
 
         return response_text
 

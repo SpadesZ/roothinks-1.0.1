@@ -111,37 +111,8 @@ def check_and_save_block(
          "current_rev": ..., "base_rev": ...,
          "updated_by": ..., "updated_at": ...}      — 衝突，未落盤
     """
-    current_rev = _read_block_rev(save_path)
-
-    if base_rev is not None and int(base_rev) != current_rev:
-        # 讀取衝突方的 updated_by / updated_at 給前端顯示
-        conflict_by = None
-        conflict_at = None
-        try:
-            data = load_json_locked(save_path, {})
-            if isinstance(data, dict):
-                conflict_by = data.get("_updated_by")
-                conflict_at = data.get("_updated_at")
-        except Exception:
-            pass
-        return {
-            "ok": False,
-            "conflict": True,
-            "current_rev": current_rev,
-            "base_rev": int(base_rev),
-            "updated_by": conflict_by,
-            "updated_at": conflict_at,
-        }
-
-    # 存檔：rev +1
-    new_rev = current_rev + 1
-    now_iso = datetime.now(timezone.utc).isoformat()
-    payload["_rev"] = new_rev
-    payload["_updated_at"] = now_iso
-    payload["_updated_by"] = updated_by
-
-    write_json_locked(save_path, payload)
-    return {"ok": True, "rev": new_rev}
+    from app.security import check_and_save_json
+    return check_and_save_json(save_path, payload, base_rev, updated_by)
 
 
 # ---------------------------------------------------------------------------

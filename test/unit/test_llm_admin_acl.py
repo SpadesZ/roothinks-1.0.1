@@ -45,6 +45,7 @@ def admin_app(tmp_path_factory):
         with app.app_context():
             db.create_all()
             db.session.add(Project(project_id="ADMIN-p", name="Synthetic", status="formal"))
+            db.session.add(Project(project_id="PRIVATE-p", name="Other project", status="formal"))
             for role in ("owner", "editor", "viewer", "coauthor", "mentor", "admin"):
                 user = User(username=role, email=f"{role}@example.invalid",
                             system_role=role if role in {"mentor", "admin"} else "user")
@@ -115,3 +116,17 @@ def test_bearer_requires_explicit_system_permission(admin_app, acl, status):
         assert client.get("/api/llm/connection/list", headers={"Authorization": "Bearer synthetic-token"}).status_code == status
         assert client.get("/setup", headers={"Authorization": "Bearer synthetic-token"}).status_code == status
         assert client.get("/api/llm/connection/list").status_code == 401
+
+
+@pytest.mark.parametrize("body,path,status", [
+    ({"question": "q", "context": {"project_pid": "PRIVATE-p"}}, "/api/study/chat", 400),
+    ({"pid": "PRIVATE-p", "question": "q"}, "/api/study/chat?pid=ADMIN-p", 400),
+    ({"pid": "PRIVATE-p", "question": "q"}, "/api/study/chat", 403),
+])
+def test_study_pid_smuggling_never_reaches_model(admin_app, monkeypatch, body, path, status):
+    from app.core_pro.study import study_routes
+    calls = []
+    monkeypatch.setattr(study_routes.tutor_engine, "process_query", lambda *a: calls.append(a) or "private")
+    response = _client(admin_app, "editor").post(path, json=body)
+    assert response.status_code == status
+    assert calls == []

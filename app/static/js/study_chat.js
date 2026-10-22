@@ -503,46 +503,19 @@ class StudyChat {
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify(payload)
             });
-            console.log('[StudyChat] ✓ 收到 HTTP 響應，狀態碼:', response.status, response.statusText);
-            if (!response.ok) {
-                console.error('[StudyChat] ❌ HTTP Error:', response.status, response.statusText);
-                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-            }
-
-            const text = await response.text(); // 先讀為文本
-            console.log('[StudyChat] ✓ 收到響應文本:', text);
-            try {
-                const res = JSON.parse(text);
-                console.log('[StudyChat] ✓ JSON 解析成功:', res);
-                console.log('[StudyChat] 診斷 - res.ok 類型:', typeof res.ok, '值:', res.ok);
-                console.log('[StudyChat] 診斷 - res.answer 類型:', typeof res.answer, '值:', res.answer);
-                
-                this.removeMessage(loadingId);
-                
-                if (res.ok === true) {
-                    console.log('[StudyChat] ✓ 條件 res.ok === true 成立，現在附加 AI 回應');
-                    if (res.answer) {
-                        console.log('[StudyChat] ✓ API 返回成功，答案長度:', res.answer.length);
-                        this.appendMessage('ai', res.answer);
-                    } else {
-                        console.warn('[StudyChat] ⚠ res.answer 為空');
-                        this.appendMessage('system', "Error: No answer returned from AI");
-                    }
-                } else {
-                    console.warn('[StudyChat] ⚠ API 返回失敗，res.ok 不為 true:', res.msg || res.error);
-                    this.appendMessage('system', "Error: " + (res.msg || res.error || "Unknown error"));
-                }
-            } catch (e) {
-                this.removeMessage(loadingId);
-                console.error('[StudyChat] ❌ JSON Parse Error:', e.message);
-                console.error('[StudyChat] 原始響應文本:', text);
-                this.appendMessage('system', "Server Error: Invalid response (check console)");
+            const res = await response.json();
+            this.removeMessage(loadingId);
+            if (res.answer) this.appendMessage('ai', res.answer);
+            if (!response.ok || res.ok !== true) {
+                this.appendMessage('system', res.msg || res.error || '處理失敗，請保留本次問答。');
+                if (!this.inputEl.value) this.inputEl.value = text;
+            } else if (!res.answer) {
+                this.appendMessage('system', '模型沒有回傳答案。');
             }
         } catch (err) {
             this.removeMessage(loadingId);
-            console.error('[StudyChat] ❌ Fetch 完全失敗:', err.message);
-            console.error('[StudyChat] 完整錯誤堆棧:', err);
-            this.appendMessage('system', "Net Error: " + err.message);
+            this.appendMessage('system', '連線或回應失敗；本次問題已保留。');
+            if (!this.inputEl.value) this.inputEl.value = text;
         } finally {
             this.isSending = false;
         }
