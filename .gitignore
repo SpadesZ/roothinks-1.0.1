@@ -45,6 +45,7 @@ debug_task*_prompt*.txt
 *.jpg
 *.jpeg
 *.pdf
+!docs/spec/roothinks_SAI_v1.1.0_2026-10-23.pdf
 *.pth
 *.pt
 *.onnx

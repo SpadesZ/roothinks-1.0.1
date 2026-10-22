@@ -4,7 +4,7 @@
 ### **AI Research & Medical Literature Workflow Processing System**
 
 [![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.100%2B-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
+[![Flask](https://img.shields.io/badge/Flask-3.x-009688?style=for-the-badge&logo=flask&logoColor=white)](https://flask.palletsprojects.com/)
 [![PyTorch](https://img.shields.io/badge/PyTorch-AI Engine-EE4C2C?style=for-the-badge&logo=pytorch&logoColor=white)](https://pytorch.org/)
 [![EasyOCR](https://img.shields.io/badge/EasyOCR-Layout%20Parse-FF6F00?style=for-the-badge&logo=opencv&logoColor=white)](https://github.com/JaidedAI/EasyOCR)
 [![Docker](https://img.shields.io/badge/Docker-Containerized-2496ED?style=for-the-badge&logo=docker&logoColor=white)](https://www.docker.com/)
@@ -23,7 +23,9 @@
 
 ## 📖 專案簡介 (Project Overview)
 
-**Roothinks** 是一套先進的本地化 AI 科研與文獻工作流系統。專為醫學研究團隊、臨床論文作者與學術分析人員設計。系統整合 **FlowB 文獻處理流水線**、**EasyOCR 版面分析**、**PAQ (Precision Question) 分類矩陣**，以及 **Manuscript 論文寫作工作區**，實現從 Raw PDF 論文解析到 AI 輔助論文撰寫的完整閉環。
+**Roothinks** 是一套本地優先的 AI 科研與文獻工作流系統。系統整合 **FlowB 文獻處理流水線**、**EasyOCR 版面分析**、**PAQ 研究問題建模**，以及 **Manuscript 論文寫作工作區**，支援從 PDF 解析、研讀到手稿編寫。師生回饋、跨模組人類決策與 Submit 投稿版型輸出仍有待補齊的功能。
+
+目前優化依據：[SAI v1.1.0 與現況界線](docs/SAI.md)、[需求驗收矩陣](docs/ACCEPTANCE_MATRIX.md)。規格更新不代表產品已完成實作或部署。
 
 > 💡 **資料邊界與隱私安全**：倉庫源碼預設排除所有本地運行數據、模型權重檔 (`.pth`)、上傳論文與敏感密鑰 (`.env`)，確保團隊協同與合規安全。
 
@@ -35,7 +37,7 @@
 | :--- | :--- | :--- |
 | 📄 **FlowB 文獻處理流水線** | 醫學論文 PDF 智慧解析與結構化 | 整合 EasyOCR 版面分析 (Layout Parsing)、段落切分、多語翻譯與 Context Chain |
 | ✍️ **Manuscript 論文寫作工作區** | AI 輔助論文草稿撰寫與修訂 | 支援段落上下文注入、實證資料引用對齊、圖表整合與寫作規範輔助 |
-| ❓ **PAQ 醫患問題矩陣** | 精準問答 (Precision QA) 互動中樞 | 構建 PAQ 分類法 (Taxonomy) 與知識矩陣，實現高精度臨床問答對接 |
+| ❓ **PAQ 研究問題建模** | 研究定位與問題空間 | 構建分類法 (Taxonomy) 與 Academic Cube，保留作者修改與研究取捨 |
 | 🎓 **Study Matrix 研究導師** | 研究數據載入與矩陣分析 | 提供自動化 Study Index 構建、AI Study Tutor 與文獻數據分析 |
 | 🤖 **LLM / LAVA 引擎調度** | 多大語言模型適配與任務派發 | 統一 LLM Provider Adapter，支援多模型並發調度與狀態監控 |
 
