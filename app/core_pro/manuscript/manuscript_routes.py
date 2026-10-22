@@ -1872,15 +1872,18 @@ def handle_save_block(data):
 
         # 正式版本已建立，草稿完成任務。留著會讓下次開啟時誤判「有未存檔內容」。
         # 只清自己那份：同章節可能有別人正在打字，不能連他的未存檔內容一起刪。
+        draft_rev = None
         try:
             ManuscriptIO.clear_draft(pid, section,
                                      owner_key=_session_uid(),
                                      owner_name=current_username)
+            draft_rev = ManuscriptIO.draft_revision(pid, section, _session_uid())
         except Exception:
             logger.warning("[cmd_save_block] 清除草稿失敗 pid=%s section=%s", pid, section)
 
         emit('save_ack', {
             'target': 'block',
+            'draft_rev': draft_rev,
             'msg': f'Block saved as V{new_ver}',
             'section': save_result.get('section', section),
             'ver': new_ver,
@@ -1970,19 +1973,25 @@ def flush_draft_on_unload():
         except ImportError:
             pass
 
+    if auth_mode == "session" and data.get('base_rev') is None:
+        return jsonify({'success': False, 'message': 'Reload draft before saving'}), 428
     try:
         result = ManuscriptIO.save_draft(
             pid, section,
             data.get('title', 'Untitled_Paper'),
             data.get('content', ''),
             updated_by=current_username,
-            owner_key=_session_uid(),
+            owner_key=_session_uid(), base_rev=data.get('base_rev'),
         )
+        if not result['ok']:
+            return jsonify(dict(result, success=False)), 409
         return jsonify({
-            'success': True,
+            'success': True, 'rev': result['rev'],
             'section': result.get('section', section),
             'saved_at': result.get('saved_at'),
         }), 200
+    except BadRequest:
+        return jsonify({'success': False, 'message': 'Invalid revision'}), 400
     except Exception as e:
         logger.error("[draft/flush] pid=%s section=%s %s", pid, section, e, exc_info=True)
         return jsonify({'success': False, 'message': 'Draft flush failed'}), 500
@@ -1990,55 +1999,31 @@ def flush_draft_on_unload():
 
 @socketio.on('cmd_autosave_block', namespace='/manu_ws')
 def handle_autosave_block(data):
-    """
-    [v1.8] 自動存檔：前端停止編輯 1.5 秒後觸發。
-
-    與 cmd_save_block 的差異是刻意的：
-      - 寫入單一 _draft.json 就地覆寫，**不產生版本**。
-        若每次自動存檔都跳版，一次編輯就會噴出幾十個版本，版本選單失去意義。
-      - 不寫 RevisionLog（每 1.5 秒一筆會把審計表灌爆）。
-      - 不做 _rev 樂觀鎖（高頻觸發會在多人情境噴 save_conflict 風暴），
-        草稿採 last-writer-wins。
-    """
+    """個人草稿保留原隔離；session 客戶端必須比對基礎版號。"""
     data = data or {}
     pid = _resolve_socket_pid_or_emit(data, missing_msg='')
-    if not pid:
+    if not pid or not _ensure_socket_project_access(pid, emit_forbidden_msg=False):
         return
-    if not _ensure_socket_project_access(pid, emit_forbidden_msg=False):
-        return
-
     section = data.get('section', 'general')
     auth_mode = str(current_app.config.get("AUTH_MODE", "none")).strip().lower()
     current_username = None
     if auth_mode == "session":
-        try:
-            from flask_login import current_user
-            if current_user.is_authenticated:
-                current_username = current_user.username
-                if not _socket_can_write_section(current_user.id, pid, section):
-                    # 無權章節的自動存檔安靜略過，不要每 1.5 秒彈一次權限警告。
-                    return
-        except ImportError:
-            pass
-
+        from flask_login import current_user
+        if not current_user.is_authenticated or not _socket_can_write_section(current_user.id, pid, section):
+            emit('autosave_ack', {'ok': False, 'section': section, 'error': 'forbidden', 'req_id': data.get('req_id')})
+            return
+        current_username = current_user.username
+        if data.get('base_rev') is None:
+            emit('autosave_ack', {'ok': False, 'section': section, 'error': 'revision_required', 'req_id': data.get('req_id')})
+            return
     try:
-        # owner_key 用使用者 id 而非顯示名稱：改名不該把自己的草稿弄丟，
-        # 也不會因為兩人同名而互相覆蓋。
         result = ManuscriptIO.save_draft(
-            pid, section,
-            data.get('title', 'Untitled_Paper'),
-            data.get('content', ''),
-            updated_by=current_username,
-            owner_key=_session_uid(),
-        )
-        emit('autosave_ack', {
-            'ok': True,
-            'section': result.get('section', section),
-            'saved_at': result.get('saved_at'),
-        })
-    except Exception as e:
-        logger.error("[cmd_autosave_block] %s", e, exc_info=True)
-        emit('autosave_ack', {'ok': False, 'section': section})
+            pid, section, data.get('title', 'Untitled_Paper'), data.get('content', ''),
+            updated_by=current_username, owner_key=_session_uid(), base_rev=data.get('base_rev'))
+        emit('autosave_ack', dict(result, req_id=data.get('req_id')))
+    except Exception:
+        logger.exception("[cmd_autosave_block] save failed")
+        emit('autosave_ack', {'ok': False, 'section': section, 'req_id': data.get('req_id')})
 
 
 @socketio.on('cmd_load_draft', namespace='/manu_ws')
@@ -2062,7 +2047,7 @@ def handle_load_draft(data):
     draft = ManuscriptIO.load_draft(pid, section,
                                     owner_key=uid,
                                     owner_name=_session_username())
-    emit('draft_loaded', {'ok': draft is not None, 'section': section, 'draft': draft})
+    emit('draft_loaded', {'ok': draft is not None, 'section': section, 'draft': draft, 'draft_rev': ManuscriptIO.draft_revision(pid, section, uid)})
 
 
 @socketio.on('cmd_delete_block_version', namespace='/manu_ws')
@@ -2369,6 +2354,7 @@ def handle_list_blocks(data):
         'draft': ManuscriptIO.load_draft(pid, section,
                                          owner_key=uid,
                                          owner_name=_session_username()),
+        'draft_rev': ManuscriptIO.draft_revision(pid, section, uid),
         'next_ver': ManuscriptIO.next_block_version(pid, section),
     }, **echo))
 

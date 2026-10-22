@@ -55,7 +55,7 @@
                     ? `<span class="badge bg-success-subtle text-success border border-success" title="已連結 PDF pipeline">PDF: ${esc(e.paper_id)}</span>`
                     : '<span class="text-muted small">—</span>';
                 const selectHtml = function (field, options, current) {
-                    return `<select class="form-select form-select-sm lib-status" data-entry="${esc(e.entry_id)}" data-field="${field}">`
+                    return `<select class="form-select form-select-sm lib-status" data-entry="${esc(e.entry_id)}" data-field="${field}" data-rev="${Number(e._rev || 0)}" data-current="${current}">`
                         + options.map(o => `<option value="${o}" ${o === current ? "selected" : ""}>${o}</option>`).join("")
                         + "</select>";
                 };
@@ -68,7 +68,7 @@
             }).join("");
             host.querySelectorAll("select.lib-status").forEach(function (sel) {
                 sel.addEventListener("change", function () {
-                    updateEntry(sel.dataset.entry, sel.dataset.field, sel.value);
+                    updateEntry(sel.dataset.entry, sel.dataset.field, sel.value, sel);
                 });
             });
         } catch (err) {
@@ -76,18 +76,25 @@
         }
     }
 
-    async function updateEntry(entryId, field, value) {
+    async function updateEntry(entryId, field, value, control) {
         const patch = {};
         patch[field] = value;
         try {
             const res = await fetch("/api/literature/library/update", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ pid: pid(), entry_id: entryId, patch: patch }),
+                body: JSON.stringify({ pid: pid(), entry_id: entryId, patch: patch, base_rev: Number(control.dataset.rev) }),
             });
             const data = await res.json();
-            if (data.status !== "success") alert(`更新失敗: ${data.message || "unknown"}`);
+            if (!res.ok || data.status !== "success") {
+                control.value = control.dataset.current;
+                alert(`更新失敗: ${data.message || "unknown"}`);
+            } else {
+                control.dataset.current = value;
+                control.dataset.rev = data.entry._rev;
+            }
         } catch (err) {
+            control.value = control.dataset.current;
             alert(`更新失敗: ${err}`);
         }
     }

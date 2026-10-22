@@ -22,7 +22,8 @@
 #     service 層的 actor 必填是第二道，兩層各擋各的，缺一都會留下缺口。
 # -----------------------------------------------------------------------------
 
-from flask import Response, jsonify, request
+from flask import Response, current_app, jsonify, request
+from werkzeug.exceptions import Conflict
 
 _IMPORT_MAX_ITEMS = 500
 
@@ -89,14 +90,19 @@ def register_library_routes(literature_bp, deps):
             if denied is not None:
                 return denied
             actor = deps.current_screening_actor()
+        if current_app.config.get('AUTH_MODE') == 'session' and data.get('base_rev') is None:
+            return jsonify({"status": "error", "message": "請先載入文獻最新版再儲存。"}), 428
 
         try:
             entry = deps.get_literature_library().update_entry(
                 pid, entry_id, patch,
                 actor=actor,
                 batch_id=str(data.get('batch_id') or '').strip(),
+                base_rev=data.get('base_rev'),
             )
             return jsonify({"status": "success", "entry": entry})
+        except Conflict as conflict:
+            return jsonify({"status": "error", "conflict": True, "message": conflict.description}), 409
         except KeyError:
             return jsonify({"status": "error", "message": "Entry not found"}), 404
         except ValueError as ve:

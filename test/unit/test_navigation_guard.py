@@ -100,12 +100,27 @@ def _beacon(client, section="introduction", content="<p>草稿哨兵 KEEP-1</p>"
     return client.post(
         ENDPOINT,
         data=json.dumps({"pid": PID, "title": "T", "section": section,
-                         "content": content}),
+                         "content": content, "base_rev": 0}),
         content_type="text/plain;charset=UTF-8",
     )
 
 
 class TestDraftIsPreserved:
+    def test_missing_revision_cannot_bypass_conflict_guard(self, app):
+        _mk_user(app, "missingrev", "owner")
+        client = _login(app, "missingrev")
+        response = client.post(ENDPOINT, json={"pid": PID, "section": "introduction", "content": "old client"})
+        assert response.status_code == 428
+
+    def test_stale_beacon_does_not_overwrite_newer_text(self, app, tmp_path):
+        _mk_user(app, "stalerev", "owner")
+        client = _login(app, "stalerev")
+        assert _beacon(client, content="first writer").status_code == 200
+        assert _beacon(client, content="stale tab").status_code == 409
+        drafts = list((tmp_path / PID / "manuscript" / "block" / "introduction").glob("_draft*.json"))
+        assert drafts and "first writer" in drafts[0].read_text(encoding="utf-8")
+        assert "stale tab" not in drafts[0].read_text(encoding="utf-8")
+
     def test_beacon_writes_a_draft(self, app, tmp_path):
         _mk_user(app, "navowner", "owner")
         client = _login(app, "navowner")

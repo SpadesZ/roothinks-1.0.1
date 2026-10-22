@@ -1505,6 +1505,9 @@ def run_matrix_comparison():
         
         if not isinstance(matrix_result, dict):
             return jsonify({"ok": False, "saved": False, "error": "Invalid comparison result"}), 502
+        for comparison in matrix_result.get('comparisons', []):
+            if isinstance(comparison, dict) and not comparison.get('error') and isinstance(comparison.get('content'), str):
+                comparison.setdefault('analysis', comparison['content'])
         outcome = matrix_outcome(matrix_result.get('comparisons'))
         matrix_result.update(outcome)
         if outcome['status'] == 'failed':

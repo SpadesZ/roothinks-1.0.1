@@ -19,6 +19,8 @@ import time
 from flask import current_app, jsonify, request
 from PIL import Image, ImageOps
 from werkzeug.utils import secure_filename
+from filelock import FileLock
+from app.security import build_lock_path
 
 
 def register_batch_routes(literature_bp, deps):
@@ -49,86 +51,99 @@ def register_batch_routes(literature_bp, deps):
             raw_paper_id = re.sub(r"[^A-Za-z0-9_.-]+", "_", raw_paper_id)[:110]
             paper_id = deps._safe_paper_id(raw_paper_id)
 
-            # 同名檔案處理：既有 paper 存在時預設配發新 id（_2, _3...），
-            # 只有明確傳 overwrite=1 才沿用舊 id 覆蓋 PDF。
-            overwrite = str(request.form.get('overwrite') or '').strip().lower() in {'1', 'true', 'yes'}
-            if not overwrite:
-                base_id = paper_id
-                suffix = 2
-                while True:
-                    existing_row = deps.Paper.query.filter_by(paper_id=paper_id, pid=pid).first()
-                    existing_pdf = os.path.exists(
-                        deps.safe_join_under(
-                            deps._get_literature_paper_dir(pid, paper_id, for_write=False),
-                            "00_origins",
-                            "source.pdf",
+            # 單專案鎖包住 ID 分配及原件寫入，避免同名併發 TOCTOU。
+            lock_target = deps.safe_join_under(deps.DATA_ROOT, pid, 'literature', 'upload')
+            with FileLock(build_lock_path(lock_target), timeout=10):
+                # 同名檔案處理：既有 paper 存在時預設配發新 id（_2, _3...），
+                # overwrite 不能破壞既有原件；不同版本分配不同 paper_id。
+                overwrite = str(request.form.get('overwrite') or '').strip().lower() in {'1', 'true', 'yes'}
+                if not overwrite:
+                    base_id = paper_id
+                    suffix = 2
+                    while True:
+                        existing_row = deps.Paper.query.filter_by(paper_id=paper_id, pid=pid).first()
+                        existing_pdf = os.path.exists(
+                            deps.safe_join_under(
+                                deps._get_literature_paper_dir(pid, paper_id, for_write=False),
+                                "00_origins",
+                                "source.pdf",
+                            )
                         )
-                    )
-                    if not existing_row and not existing_pdf:
-                        break
-                    if suffix > 50:
-                        return jsonify({"status": "error", "message": "Too many duplicate filenames"}), 409
-                    paper_id = deps._safe_paper_id(f"{base_id}_{suffix}")
-                    suffix += 1
+                        if not existing_row and not existing_pdf:
+                            break
+                        if suffix > 50:
+                            return jsonify({"status": "error", "message": "Too many duplicate filenames"}), 409
+                        paper_id = deps._safe_paper_id(f"{base_id}_{suffix}")
+                        suffix += 1
 
-            paper_dir = deps._get_literature_paper_dir(pid, paper_id, for_write=True)
-            save_dir = deps.safe_join_under(paper_dir, "00_origins")
-            os.makedirs(save_dir, exist_ok=True)
+                paper_dir = deps._get_literature_paper_dir(pid, paper_id, for_write=True)
+                save_dir = deps.safe_join_under(paper_dir, "00_origins")
+                os.makedirs(save_dir, exist_ok=True)
 
-            save_path = deps.safe_join_under(save_dir, "source.pdf")
-            source_type = 'pdf'
+                save_path = deps.safe_join_under(save_dir, "source.pdf")
+                if os.path.exists(save_path):
+                    return jsonify({"status": "error", "message": "原件已存在，請以新版本上傳。", "paper_id": paper_id}), 409
+                source_type = 'pdf'
 
-            if is_pdf:
-                file.save(save_path)
-            else:
-                with Image.open(file.stream) as img_raw:
-                    img = ImageOps.exif_transpose(img_raw)
-                    if img.mode in ('RGBA', 'LA', 'P'):
-                        img = img.convert('RGB')
-                    elif img.mode != 'RGB':
-                        img = img.convert('RGB')
-                    img.save(save_path, format='PDF', resolution=200.0)
-                source_type = 'image_to_pdf'
+                if is_pdf:
+                    with open(save_path, 'xb') as target:
+                        file.save(target)
+                else:
+                    original_path = deps.safe_join_under(save_dir, 'uploaded_original' + (ext or '.image'))
+                    with open(original_path, 'xb') as target:
+                        file.save(target)
+                    file.stream.seek(0)
+                    with Image.open(file.stream) as img_raw:
+                        img = ImageOps.exif_transpose(img_raw)
+                        if img.mode in ('RGBA', 'LA', 'P'):
+                            img = img.convert('RGB')
+                        elif img.mode != 'RGB':
+                            img = img.convert('RGB')
+                        with open(save_path, 'xb') as target:
+                            img.save(target, format='PDF', resolution=200.0)
+                    source_type = 'image_to_pdf'
 
-            deps.write_json_locked(
-                deps.safe_join_under(save_dir, "metadata.json"),
-                {"original_filename": filename, "upload_time": time.time(), "source_type": source_type},
-            )
+                deps.write_json_locked(
+                    deps.safe_join_under(save_dir, "metadata.json"),
+                    {"original_filename": filename, "upload_time": time.time(), "source_type": source_type},
+                )
 
-            # 選配：連結 library entry（metadata 由 library 管，Paper 只管 PDF/pipeline）
-            entry_id = str(request.form.get('entry_id') or '').strip()
-            entry = None
-            if entry_id:
+                # 選配：連結 library entry（metadata 由 library 管，Paper 只管 PDF/pipeline）
+                entry_id = str(request.form.get('entry_id') or '').strip()
+                entry = None
+                if entry_id:
+                    try:
+                        library = deps.get_literature_library()
+                        entry = library.update_entry(pid, entry_id, {"paper_id": paper_id})
+                    except Exception:
+                        deps.logger.exception("Upload library link failed")
+                        return jsonify({"status": "error", "original_saved": True, "paper_id": paper_id,
+                                        "message": "原件已保存，但文獻連結失敗，請重試連結。"}), 503
                 try:
-                    library = deps.get_literature_library()
-                    entry = library.update_entry(pid, entry_id, {"paper_id": paper_id})
-                except Exception as link_err:
-                    deps.logger.warning(f"[Library] link entry {entry_id} -> {paper_id} failed: {link_err}")
-                    entry = None
-
-            try:
-                existing_paper = deps.Paper.query.filter_by(paper_id=paper_id, pid=pid).first()
-                if not existing_paper:
-                    seed_title = (entry or {}).get("title") or filename
-                    seed_authors = ", ".join((entry or {}).get("authors") or [])[:200]
-                    new_paper = deps.Paper(
-                        paper_id=paper_id,
-                        pid=pid,
-                        title=str(seed_title)[:500],
-                        authors=seed_authors,
-                        journal=str((entry or {}).get("venue") or '')[:200],
-                        publish_date=str((entry or {}).get("year") or ''),
-                        has_source=True,
-                        interpretation_status=deps.Paper.STATUS_PENDING,
-                    )
-                    deps.db.session.add(new_paper)
-                    deps.db.session.commit()
-                    deps.logger.info(f"Paper record created for: {paper_id}")
-            except Exception as e:
-                deps.logger.warning(f"Failed to add paper to DB: {e}")
-
-            deps.logger.info(f"File uploaded: {save_path}")
-            return jsonify({"status": "success", "paper_id": paper_id, "linked_entry_id": entry_id if entry else ""})
+                    existing_paper = deps.Paper.query.filter_by(paper_id=paper_id, pid=pid).first()
+                    if not existing_paper:
+                        seed_title = (entry or {}).get("title") or filename
+                        seed_authors = ", ".join((entry or {}).get("authors") or [])[:200]
+                        new_paper = deps.Paper(
+                            paper_id=paper_id,
+                            pid=pid,
+                            title=str(seed_title)[:500],
+                            authors=seed_authors,
+                            journal=str((entry or {}).get("venue") or '')[:200],
+                            publish_date=str((entry or {}).get("year") or ''),
+                            has_source=True,
+                            interpretation_status=deps.Paper.STATUS_PENDING,
+                        )
+                        deps.db.session.add(new_paper)
+                        deps.db.session.commit()
+                        deps.logger.info(f"Paper record created for: {paper_id}")
+                except Exception:
+                    deps.db.session.rollback()
+                    deps.logger.exception("Failed to register uploaded original")
+                    return jsonify({"status": "error", "original_saved": True, "paper_id": paper_id,
+                                    "message": "原件已保存，但資料登記失敗；請保留此文獻 ID。"}), 503
+                deps.logger.info(f"File uploaded: {save_path}")
+                return jsonify({"status": "success", "paper_id": paper_id, "linked_entry_id": entry_id if entry else ""})
 
     @literature_bp.route('/api/literature/run_batch', methods=['POST'])
     def run_batch():

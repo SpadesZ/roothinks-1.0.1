@@ -472,15 +472,9 @@ class ManuscriptIO:
         content: str,
         updated_by: Optional[str] = None,
         owner_key: Optional[Union[str, int]] = None,
+        base_rev: Optional[int] = None,
     ) -> Dict[str, Any]:
-        """
-        自動存檔：就地覆寫該使用者自己的草稿檔，**不產生版本**。
-
-        刻意不做 _rev 衝突檢查——自動存檔每 1.5 秒可能觸發一次，套用樂觀鎖會在
-        多人情境噴出大量 save_conflict。草稿仍是 last-writer-wins，但因為改成
-        每人一份，「後寫的蓋掉別人的字」不會再發生；同一人開兩個分頁才會互蓋，
-        那是使用者對自己內容的預期行為。
-        """
+        """個人隔離草稿亦支援同帳號分頁 CAS；只有明確 legacy caller 可不帶版號。"""
         dir_path = ManuscriptIO._block_dir(pid, section, create=True)
         save_path = safe_join_under(dir_path, ManuscriptIO._draft_filename(owner_key))
         now_iso = datetime.now(timezone.utc).isoformat()
@@ -495,19 +489,26 @@ class ManuscriptIO:
             '_updated_at': now_iso,
             '_updated_by': updated_by,
         }
-        write_json_locked(save_path, payload)
-        return {"ok": True, "saved_at": now_iso, "section": payload['section']}
+        from app.security import check_and_save_json
+        result = check_and_save_json(save_path, payload, base_rev, updated_by)
+        return dict(result, saved_at=now_iso if result['ok'] else None, section=payload['section'])
+
+    @staticmethod
+    def draft_revision(pid: str, section: str, owner_key=None) -> int:
+        path = safe_join_under(ManuscriptIO._block_dir(pid, section), ManuscriptIO._draft_filename(owner_key))
+        data = load_json_locked(path, {}, strict=True)
+        return int(data.get('_rev', 0))
 
     @staticmethod
     def _read_draft_file(path: str) -> Optional[Dict[str, Any]]:
         if not os.path.exists(path):
             return None
         try:
-            data = load_json_locked(path, None)
+            data = load_json_locked(path, None, strict=True)
             return data if isinstance(data, dict) else None
         except Exception as e:
             logger.error(f"[ManuscriptIO] Draft load failed for {path}: {e}")
-            return None
+            raise
 
     @staticmethod
     def load_draft(
@@ -527,11 +528,11 @@ class ManuscriptIO:
             safe_join_under(dir_path, ManuscriptIO._draft_filename(owner_key))
         )
         if own is not None:
-            return own
+            return None if own.get('_cleared') else own
         if owner_key in (None, ""):
             return None
         legacy = ManuscriptIO._read_draft_file(safe_join_under(dir_path, DRAFT_FILENAME))
-        if legacy is None:
+        if legacy is None or legacy.get('_cleared'):
             return None
         legacy_by = legacy.get("_updated_by")
         if legacy_by is not None and owner_name is not None and legacy_by == owner_name:
@@ -561,10 +562,13 @@ class ManuscriptIO:
 
         ok = True
         for path in targets:
-            if not os.path.exists(path):
-                continue
             try:
-                os.remove(path)
+                from app.security import update_json_locked
+                def clear(current):
+                    if not isinstance(current, dict):
+                        raise ValueError("Invalid draft")
+                    return dict(current, _cleared=True, _rev=int(current.get('_rev', 0)) + 1)
+                update_json_locked(path, clear, {})
             except OSError as e:
                 logger.error(f"[ManuscriptIO] Draft clear failed for {path}: {e}")
                 ok = False

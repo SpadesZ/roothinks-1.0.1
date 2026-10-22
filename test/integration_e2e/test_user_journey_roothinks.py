@@ -178,7 +178,7 @@ def test_roothinks_full_user_journey_e2e(app_bundle, monkeypatch):
     monkeypatch.setattr(
         paq_routes.task2A_paqchat,
         "execute_paq_chat",
-        lambda context, chat_history, user_input: (True, {"reply": "PAQ chat mock reply."}),
+        lambda context, chat_history, user_input, taxonomy_data=None, cube_data=None: (True, {"reply": "PAQ chat mock reply."}),
     )
 
     class FakeTask3Module:
@@ -856,10 +856,12 @@ def test_roothinks_full_user_journey_e2e(app_bundle, monkeypatch):
     )
     assert conv_deleted["ok"] is True
 
+    initial_notes = _json(client.get(f"/api/study/notes/load/{formal_pid}"))
+    assert initial_notes["ok"] is True
     notes_saved = _json(
         client.post(
             "/api/study/notes/save",
-            json={"pid": formal_pid, "notes": "E2E notes body"},
+            json={"pid": formal_pid, "notes": "E2E notes body", "base_rev": initial_notes["rev"]},
         )
     )
     assert notes_saved["ok"] is True

@@ -118,6 +118,7 @@ def _try_include(client, entry_id):
     return client.post("/api/literature/library/update", json={
         "pid": PID,
         "entry_id": entry_id,
+        "base_rev": 0,
         "patch": {"screening_status": "included"},
         "batch_id": "BATCH-HTTP",
     })

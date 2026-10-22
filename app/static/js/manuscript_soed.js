@@ -41,6 +41,12 @@ class ManuSoed {
         this.ackWaitMs = 20000;
         // [v0.9] 衝突防護：記錄目前開啟段落的版本號 { sectionId: rev }
         this._blockRevMap = {};
+        this._draftRevMap = {};
+        this._draftPending = {};
+        this._draftConflicts = {};
+        this._draftSeq = 0;
+        this._draftDirty = false;
+        this._draftDirtySections = {};
         // [v2.0] 切章請求序號與目前生效的請求 { token, section }。
         // 切章是「先要版本清單、再載入版本」的兩段式非同步流程，中途使用者
         // 可以再切好幾次；沒有序號就無法辨識遲到的回應屬於哪一次切換。
@@ -117,7 +123,7 @@ class ManuSoed {
 
         const btnForce = document.createElement('button');
         btnForce.className = 'btn btn-sm btn-danger fw-bold';
-        btnForce.textContent = '覆蓋儲存';
+        btnForce.textContent = '另存新版';
         btnForce.onclick = () => {
             bar.remove();
             // 以 current_rev 為 base_rev 強制重送（明示覆蓋）
@@ -495,6 +501,7 @@ class ManuSoed {
         if (!this.app.pid) return;
         // NOTE(NOTE-023) 程式化渲染畫布不是「使用者在編輯」，不得寫草稿。
         if (this._programmaticRender) return;
+        this._draftDirty = true;
         clearTimeout(this._autosaveTimer);
         this._autosaveTimer = setTimeout(() => this._flushAutosave(), 1500);
 
@@ -537,6 +544,15 @@ class ManuSoed {
         // 只處理目前正在檢視的章節，避免切換章節時把畫布換成別章的草稿。
         if (!this.app.selectedSections.has(section)) return;
 
+        try {
+            const local = JSON.parse(window.localStorage.getItem(this._draftStorageKey(section)) || 'null');
+            if (local && local.content && local.content !== draft.content) {
+                draft = {...draft, content: local.content};
+                this._draftConflicts[section] = local.base_rev !== this._draftRevMap[section];
+                this._draftDirty = true;
+            }
+        } catch (error) {}
+        if (!draft || !draft.content) return;
         this._draftPrompted = this._draftPrompted || {};
         if (this._draftPrompted[section]) return;
         this._draftPrompted[section] = true;
@@ -635,24 +651,65 @@ class ManuSoed {
         card.insertBefore(bar, card.firstChild);
     }
 
+    _handleDraftAck(data) {
+        if (!data) return;
+        const pending = this._draftPending[data.section];
+        if (!pending || data.req_id !== pending.req_id) return;
+        delete this._draftPending[data.section];
+        const card = Array.from(this.app.editorCanvas?.querySelectorAll('.editor-card') || [])
+            .find(card => card.getAttribute('data-section') === data.section);
+        const status = document.getElementById('autosaveStatus');
+        if (!data.ok || !Number.isInteger(data.rev)) {
+            this._draftDirty = true;
+            this._draftConflicts[data.section] = !!data.conflict;
+            if (status) status.textContent = data.conflict ? '版本衝突；本機文字保留，請另存新版' : '自動儲存失敗；本機文字保留';
+            if (data.conflict && card) this._showConflictBar(card, data);
+            return;
+        }
+        this._draftRevMap[data.section] = data.rev;
+        const current = card?.querySelector('.card-content')?.innerHTML;
+        if (current === pending.content) {
+            try { window.localStorage.removeItem(this._draftStorageKey(data.section)); } catch (error) {}
+            delete this._draftDirtySections[data.section];
+            this._draftDirty = Object.keys(this._draftDirtySections).length > 0 || Object.keys(this._draftPending).length > 0 || Object.values(this._draftConflicts).some(Boolean);
+            if (status) status.textContent = this._draftDirty ? '部分章節尚未儲存' : '已自動儲存';
+        } else {
+            this._draftDirty = true;
+            if (status) status.textContent = '有較新文字尚未儲存';
+            this.scheduleAutosave();
+        }
+    }
+
+    _draftStorageKey(section) {
+        const user = document.getElementById('currentUserId')?.value || 'local';
+        return `roothinks:draft:${user}:${this.app.pid}:${section}`;
+    }
+
+    _rememberDraft(section, content) {
+        this._draftDirtySections[section] = true;
+        try { window.localStorage.setItem(this._draftStorageKey(section), JSON.stringify({content, base_rev: this._draftRevMap[section]})); }
+        catch (error) { this.addSystemMessage('無法保留本機草稿，請先複製文字或另存版本。'); }
+    }
+
     _flushAutosave() {
-        const cards = this.app.editorCanvas
-            ? this.app.editorCanvas.querySelectorAll('.editor-card')
-            : [];
-        if (!cards.length) return;
-
-        const title = this.app.paperTitleInput
-            ? this.app.paperTitleInput.value.trim()
-            : 'Untitled_Paper';
-
+        this._autosaveTimer = null;
+        const cards = this.app.editorCanvas?.querySelectorAll('.editor-card') || [];
+        const title = this.app.paperTitleInput?.value.trim() || 'Untitled_Paper';
         cards.forEach(card => {
             const body = card.querySelector('.card-content');
             if (!body) return;
+            const section = card.getAttribute('data-section') || 'general';
+            this._rememberDraft(section, body.innerHTML);
+            if (this._draftPending[section] || this._draftConflicts[section]) return;
+            if (this._draftRevMap[section] == null) {
+                this.app.socket.emit('cmd_load_draft', {pid: this.app.pid, section});
+                return;
+            }
+            const req_id = `draft_${++this._draftSeq}`;
+            this._draftPending[section] = {req_id, content: body.innerHTML};
             this.app.socket.emit('cmd_autosave_block', {
-                pid: this.app.pid,
-                title: title,
-                section: card.getAttribute('data-section') || 'general',
-                content: body.innerHTML,
+                pid: this.app.pid, title, section, content: body.innerHTML,
+                base_rev: this._draftRevMap[section], req_id,
             });
         });
     }
@@ -1432,6 +1489,8 @@ class ManuSoed {
                     this.app.socket.emit('cmd_list_papers', { pid: this.app.pid, title: title });
                 }
             } else if (data.target === 'block') {
+                if (Number.isInteger(data.draft_rev)) this._draftRevMap[data.section] = data.draft_rev;
+                delete this._draftConflicts[data.section];
                 if(this.app.saveStatus) {
                     this.app.saveStatus.innerText = data.msg + " @ " + new Date().toLocaleTimeString();
                 }
@@ -1450,19 +1509,12 @@ class ManuSoed {
         });
 
         // [v1.8] 自動存檔回應：只更新狀態文字，不動版本選單（草稿不是版本）。
-        this.app.socket.on('autosave_ack', (data) => {
-            const statusEl = document.getElementById('autosaveStatus');
-            if (!statusEl) return;
-            if (data && data.ok) {
-                const t = data.saved_at ? new Date(data.saved_at) : new Date();
-                statusEl.textContent = `已自動儲存 ${t.toLocaleTimeString()}`;
-                statusEl.className = 'small text-muted ms-1';
-            } else {
-                statusEl.textContent = '自動儲存失敗';
-                statusEl.className = 'small text-danger ms-1';
-            }
+        this.app.socket.on('autosave_ack', data => this._handleDraftAck(data));
+        this.app.socket.on('draft_loaded', data => {
+            if (!data || data.forbidden || !Number.isInteger(data.draft_rev)) return;
+            if (this._draftRevMap[data.section] == null) this._draftRevMap[data.section] = data.draft_rev;
+            this._offerDraftRestore(data.section, data.draft || {content: ''});
         });
-
         // [v1.8] 刪除版本後刷新選單。
         this.app.socket.on('block_version_deleted', (data) => {
             if (!data) return;
@@ -1580,6 +1632,9 @@ class ManuSoed {
             // 就會把使用者正在編輯的內容洗掉。
             const isSwitch = data.intent === 'section_switch';
             const stale = isSwitch && this._isStaleSectionReq(data);
+            if (!stale && !data.forbidden && Number.isInteger(data.draft_rev) && this._draftRevMap[data.section] == null) {
+                this._draftRevMap[data.section] = data.draft_rev;
+            }
 
             // [v1.8] 同步版本選單（結構化清單，含 from_ver / 作者）。
             // [v2.0] 只在回應屬於目前章節時重畫：modal 可以查別章的版本，
@@ -1595,6 +1650,7 @@ class ManuSoed {
                 this._offerDraftRestore(data.section, data.draft);
             }
 
+            if (!stale && !data.forbidden) this._offerDraftRestore(data.section, data.draft || {content: ''});
             const container = document.getElementById('oldBlockListContainer');
             if (!container) return;
             container.innerHTML = '';

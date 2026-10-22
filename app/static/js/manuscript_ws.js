@@ -344,7 +344,7 @@ class ManuscriptWorkspace {
 
     /** 目前畫布是否有還沒寫進草稿的編輯（autosave 計時器還在跑就算）。 */
     hasUnsavedEdits() {
-        return !!(this.soed && this.soed._autosaveTimer);
+        return !!(this.soed && (this.soed._autosaveTimer || this.soed._draftDirty));
     }
 
     /**
@@ -367,7 +367,10 @@ class ManuscriptWorkspace {
         cards.forEach((card) => {
             const body = card.querySelector('.card-content');
             if (!body) return;
+            const section = card.getAttribute('data-section') || 'general';
+            this.soed?._rememberDraft(section, body.innerHTML);
             const payload = JSON.stringify({
+                base_rev: this.soed?._draftRevMap[section],
                 pid: this.pid,
                 title: title,
                 section: card.getAttribute('data-section') || 'general',

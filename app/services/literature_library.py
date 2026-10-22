@@ -38,6 +38,7 @@ from datetime import datetime, timezone
 from typing import Any, Optional
 
 from filelock import FileLock
+from werkzeug.exceptions import Conflict
 
 from app.security import build_lock_path, validate_id
 
@@ -299,6 +300,7 @@ class LiteratureLibrary:
         *,
         actor: str = "",
         batch_id: str = "",
+        base_rev: Optional[int] = None,
     ) -> dict:
         """
         使用者主導的欄位更新（狀態、備註、paper_id 連結、metadata 補正）。
@@ -312,6 +314,8 @@ class LiteratureLibrary:
         """
         path = self._library_path(pid)
         patch = patch or {}
+        if base_rev is not None and (type(base_rev) is not int or base_rev < 0):
+            raise ValueError("Invalid base_rev")
 
         screening = patch.get("screening_status")
         if screening is not None:
@@ -329,6 +333,11 @@ class LiteratureLibrary:
             entry = data["entries"].get(str(entry_id or ""))
             if entry is None:
                 raise KeyError(f"Library entry not found: {entry_id}")
+            revision = entry.get('_rev', 0)
+            if type(revision) is not int or revision < 0:
+                raise ValueError("Invalid stored revision")
+            if base_rev is not None and revision != base_rev:
+                raise Conflict("文獻決策已更新，請先核對最新版；本次修改未儲存。")
             for key, value in patch.items():
                 if key not in allowed:
                     continue
@@ -349,6 +358,7 @@ class LiteratureLibrary:
                 entry["screening_decided_at"] = _now_iso()
                 entry["screening_batch_id"] = str(batch_id or "").strip()
             entry["updated_at"] = _now_iso()
+            entry['_rev'] = revision + 1
             self._write_unlocked(path, data)
             return dict(entry)
 

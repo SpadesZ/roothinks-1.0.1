@@ -20,7 +20,7 @@ def matrix_outcome(comparisons):
     rows = comparisons if isinstance(comparisons, list) else []
     success = sum(isinstance(row, dict) and not row.get('error')
                   and row.get('status') not in {'failed', 'degraded'}
-                  and bool(row.get('analysis') or row.get('comparison_points')) for row in rows)
+                  and bool(row.get('analysis') or row.get('comparison_points') or row.get('content')) for row in rows)
     failed = len(rows) - success
     return {"status": "failed" if not success else ("partial" if failed else "completed"),
             "success_count": success, "failure_count": failed}
