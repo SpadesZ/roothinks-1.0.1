@@ -36,17 +36,20 @@ task_8drafter.dispatch_task = lambda task,prompt,**k: {'ok':True,'text':json.dum
     'chat_message':'合成模型替身已收到完整主張及條件。','draft_content':'This synthetic claim applies only to the tested sample at 300 K.'})}
 
 PID='SAIBROWSER-p'
+autonomy = '--autonomy' in sys.argv
 with app.app_context():
     db.create_all()
     db.session.add(Project(project_id=PID,name='SAI 合成研究',research_title='Synthetic bounded measurement',status='formal'))
     users={}
-    for name,role,system_role in [('author','editor','user'),('professor','viewer','mentor'),('scoped','coauthor','user')]:
+    identities = [('author','owner','user')] if autonomy else [('author','editor','user'),('professor','viewer','mentor'),('scoped','coauthor','user')]
+    for name,role,system_role in identities:
         user=User(username=name,email=f'{name}@example.invalid',system_role=system_role)
         user.set_password('Synthetic123!')
         db.session.add(user); db.session.flush(); users[name]=user.id
         db.session.add(WorkspaceMember(user_id=user.id,pid=PID,role=role))
-    db.session.add(ChapterAssignment(pid=PID,section_key='introduction',user_id=users['scoped']))
-    db.session.add(MentorLink(mentor_id=users['professor'],mentee_id=users['author']))
+    if not autonomy:
+        db.session.add(ChapterAssignment(pid=PID,section_key='introduction',user_id=users['scoped']))
+        db.session.add(MentorLink(mentor_id=users['professor'],mentee_id=users['author']))
     db.session.commit()
     text='The measured improvement applies only to sample A at 300 K.'
     ManuscriptIO.save_block_version(PID,'introduction','Synthetic bounded measurement',f'<p>{text}</p>',updated_by='author')
@@ -62,5 +65,6 @@ with app.app_context():
         segment_id='s1',text='Sample A improved at 300 K under the same calibration. No other samples were measured.',
         content_hash=hashlib.sha256(b'synthetic').hexdigest(),metadata_json=json.dumps({'page':3,'section':'Results'})))
     db.session.commit()
-print(json.dumps({'url':'http://127.0.0.1:8893','pid':PID,'root':str(root),'users':users}),flush=True)
+app.config['WTF_CSRF_ENABLED'] = autonomy
+print(json.dumps({'url':'http://127.0.0.1:8893','pid':PID,'root':str(root),'users':users,'autonomy':autonomy}),flush=True)
 socketio.run(app,host='127.0.0.1',port=8893,allow_unsafe_werkzeug=True,use_reloader=False,log_output=False)
