@@ -296,12 +296,18 @@ def _shutdown_chat_executor():
 def _enforce_manuscript_acl():
     if not request.path.startswith("/manuscript/api/"):
         return None
-    raw_pid = (
-        request.view_args.get("pid") if isinstance(request.view_args, dict) and request.view_args.get("pid") else None
-    ) or request.args.get("pid") or ((request.get_json(silent=True) or {}).get("pid") if request.method in {"POST", "PUT", "PATCH", "DELETE"} else None)
-    if not raw_pid:
+    body = request.get_json(silent=True)
+    raw_pids = [
+        (request.view_args or {}).get("pid"), *request.args.getlist("pid"),
+        body.get("pid") if isinstance(body, dict) else None,
+    ]
+    raw_pids = [value for value in raw_pids if value is not None]
+    if not raw_pids:
         return None
-    pid = _resolve_formal_project_pid(raw_pid)
+    resolved = [_resolve_formal_project_pid(value) for value in raw_pids]
+    if len(set(resolved)) != 1:
+        return jsonify({"ok": False, "message": "Conflicting project ids"}), 400
+    pid = resolved[0]
     if not pid:
         return jsonify({"ok": False, "message": "Invalid pid"}), 404
 
@@ -1215,7 +1221,11 @@ def serve_image(pid, filename):
             return jsonify({'ok': False, 'message': 'Unauthorized'}), 401
         if not check_ownership(token, formal_pid):
             return jsonify({'ok': False, 'message': 'Forbidden'}), 403
-    data_root = os.path.join(os.getcwd(), 'data')
+    uid = _session_uid()
+    if uid is not None and not _socket_can_read_paper(uid, formal_pid):
+        if not any(row.get('filename') == filename for row in _visible_image_registry(formal_pid)):
+            return jsonify({'ok': False, 'message': 'Forbidden'}), 403
+    data_root = _get_data_root()
     img_dir = safe_join_under(data_root, formal_pid, 'manuscript', 'image')
     return send_from_directory(img_dir, filename, as_attachment=False)
 
@@ -2436,7 +2446,7 @@ def handle_save_image(data):
 
     try:
         fig_id = ManuscriptImage.next_figure_label(pid)
-        meta = ManuscriptImage.save_image_asset(pid, base64_data, filename, fig_id, caption, source)
+        meta = ManuscriptImage.save_image_asset(pid, base64_data, filename, fig_id, caption, source, section=section)
         emit('image_saved', {'ok': True, 'meta': meta})
         emit('sys_msg', {'msg': f"Image successfully registered as {meta['id']}"})
     except ValueError as e:
@@ -2473,7 +2483,7 @@ def handle_get_image_registry(data):
         return
 
     try:
-        registry_list = ManuscriptImage.get_image_registry(pid)
+        registry_list = _visible_image_registry(pid)
         # 同步前端預期的回傳事件名稱
         emit('image_registry_data', {'ok': True, 'registry': registry_list})
     except Exception as e:
@@ -2503,6 +2513,16 @@ def _citation_data_root():
     return resolve_data_root()
 
 
+def _visible_image_registry(pid):
+    """同一份章節範圍用於 Socket 清單及 HTTP 交付；無定位舊圖不推定可讀。"""
+    rows = ManuscriptImage.get_image_registry(pid)
+    uid = _session_uid()
+    if uid is None or _socket_can_read_paper(uid, pid):
+        return rows
+    return [row for row in rows if row.get('section') and
+            _socket_can_read_section(uid, pid, row['section'])]
+
+
 def _evidence_pid_candidates(pid):
     """Literature 以 formal pid（-p）為主索引；查詢時兩個變體都試。"""
     out = [pid]
@@ -2524,6 +2544,9 @@ def citation_suggest_api():
         return jsonify({"success": False, "message": "Invalid pid"}), 404
     if not text:
         return jsonify({"success": False, "message": "Missing text"}), 400
+    uid = _session_uid()
+    if uid is not None and not _socket_can_read_section(uid, pid, section):
+        return jsonify({"success": False, "message": "Forbidden"}), 403
 
     try:
         from app.core_pro.manuscript.citation_suggest import detect_citation_needed, suggest_citations_for_paragraph
@@ -2551,9 +2574,14 @@ def citation_decide_api():
     pid = _resolve_formal_project_pid(data.get('pid'))
     if not pid:
         return jsonify({"success": False, "message": "Invalid pid"}), 404
+    section = str(data.get('section') or '')
+    uid = _session_uid()
+    if uid is not None and not _socket_can_write_section(uid, pid, section):
+        return jsonify({"success": False, "message": "Forbidden"}), 403
 
     try:
         from app.core_pro.manuscript.citation_ledger import record_decision
+        from flask_login import current_user
 
         decision = record_decision(
             _citation_data_root(),
@@ -2565,7 +2593,7 @@ def citation_decide_api():
             claim_text=str(data.get('claim_text') or ''),
             snippet=str(data.get('snippet') or ''),
             segment_ids=data.get('segment_ids') if isinstance(data.get('segment_ids'), list) else [],
-            decided_by=str(data.get('decided_by') or 'user'),
+            decided_by=current_user.email if uid is not None else 'local-user',
         )
         return jsonify({"success": True, "decision": decision})
     except ValueError as ve:
@@ -2580,6 +2608,10 @@ def citation_decisions_api():
     pid = _resolve_formal_project_pid(request.args.get('pid'))
     if not pid:
         return jsonify({"success": False, "message": "Invalid pid"}), 404
+    uid = _session_uid()
+    section = str(request.args.get('section') or '')
+    if uid is not None and section and not _socket_can_read_section(uid, pid, section):
+        return jsonify({"success": False, "message": "Forbidden"}), 403
     try:
         from app.core_pro.manuscript.citation_ledger import list_decisions
 
@@ -2589,6 +2621,9 @@ def citation_decisions_api():
             section_id=str(request.args.get('section') or ''),
             paper_id=str(request.args.get('paper_id') or ''),
         )
+        if uid is not None:
+            decisions = [row for row in decisions if
+                         _socket_can_read_section(uid, pid, row.get('section_id', ''))]
         return jsonify({"success": True, "count": len(decisions), "decisions": decisions})
     except Exception as e:
         logger.error("[citation_decisions_api] %s", e, exc_info=True)
@@ -2624,6 +2659,10 @@ def get_revisions(pid):
             .limit(limit)
             .all()
         )
+        uid = _session_uid()
+        if uid is not None and not _socket_can_read_paper(uid, formal_pid):
+            rows = [row for row in rows if row.entity_type == 'manuscript_block' and
+                    _socket_can_read_section(uid, formal_pid, row.entity_ref)]
         return jsonify({
             "ok": True,
             "pid": formal_pid,

@@ -419,6 +419,9 @@ def update_comment(pid, comment_id):
         row = ChapterComment.query.filter_by(id=comment_id, pid=pid).first()
         if not row:
             return jsonify({"success": False, "message": "Comment not found"}), 404
+        if user is not None and not (_can_read_paper(user.id, pid) if row.scope == 'paper'
+                                     else can_comment_on_section(user.id, pid, row.section_key)):
+            return _forbidden()
 
         data = request.get_json(silent=True) or {}
         is_author = user is None or row.author_id == user.id
@@ -465,6 +468,9 @@ def delete_comment(pid, comment_id):
         row = ChapterComment.query.filter_by(id=comment_id, pid=pid).first()
         if not row:
             return jsonify({"success": False, "message": "Comment not found"}), 404
+        if user is not None and not (_can_read_paper(user.id, pid) if row.scope == 'paper'
+                                     else can_comment_on_section(user.id, pid, row.section_key)):
+            return _forbidden()
 
         if user is not None:
             if row.author_id != user.id and not _is_editor_or_above(user.id, pid):

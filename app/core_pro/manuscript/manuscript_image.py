@@ -142,7 +142,7 @@ class ManuscriptImage:
         return f"img_{largest + 1:03d}"
 
     @staticmethod
-    def save_image_asset(pid: str, base64_data: str, filename: str, fig_id: str, caption: str, source: str = "upload") -> Dict[str, Any]:
+    def save_image_asset(pid: str, base64_data: str, filename: str, fig_id: str, caption: str, source: str = "upload", *, section: str = "") -> Dict[str, Any]:
         """
         將前端傳來的 Base64 數據解碼並寫入 Docker Volume。
         執行流程：
@@ -261,6 +261,7 @@ class ManuscriptImage:
                 "fig_id": fig_id,
                 "caption": caption,
                 "source": source,
+                "section": section,
                 "timestamp": datetime.now().isoformat(),
                 "size_bytes": actual_size,
                 "path": f"/manuscript/image/{formal_pid}/{safe_fname}"
