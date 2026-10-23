@@ -39,6 +39,10 @@
                 button(card,'接受邀請',async () => { await api(`/api/collaboration/invitations/${row.id}/accept`,{token:code.value}); message('已接受。可進入此專案；研究者仍可自行完成研究。'); await loadInbox(); });
                 button(card,'婉拒',async () => { await api(`/api/collaboration/invitations/${row.id}/decline`,{}); await loadInbox(); });
             }
+            if (inbox && row.status === 'accepted') {
+                const reason=document.createElement('input'); reason.className='form-control'; reason.maxLength=1000; reason.placeholder='退出理由'; reason.setAttribute('aria-label','退出理由'); card.append(reason);
+                button(card,'退出此專案',async()=>{await api(`/api/collaboration/invitations/${row.id}/revoke`,{reason:reason.value}); message('已退出。原研究與審閱歷史保留。'); await loadInbox();});
+            }
             if (!inbox && ['pending','accepted'].includes(row.status)) {
                 const reason = document.createElement('input'); reason.className = 'form-control'; reason.maxLength = 1000; reason.placeholder = '撤銷理由'; reason.setAttribute('aria-label','撤銷理由'); card.append(reason);
                 button(card,'撤銷邀請／移除存取',async () => { await api(`/api/collaboration/invitations/${row.id}/revoke`,{reason:reason.value}); message('已撤銷存取。研究檔案與審閱歷史保留。'); await loadProject(); });
@@ -70,8 +74,12 @@
             message('邀請已建立，尚未授權。對方接受後才生效。'); await loadProject();
         } catch(error) { message(error.message); }
     });
-    el('collaboration-pid').value = new URL(location.href).searchParams.get('pid') || '';
+    const selectedProject = new URL(location.href).searchParams.get('pid') || '';
     Promise.all([loadInbox(),api('/api/collaboration/profile').then(result => {
         el('academic-role').value = result.profile.academic_role; el('academic-affiliation').value = result.profile.affiliation;
+    }),Promise.all([api('/api/project/list?status=formal'),api('/api/project/list?status=temp')]).then(lists=>{
+        const projects=new Map(lists.flatMap(result=>result.projects).map(p=>[p.project_id,p]));
+        for(const project of projects.values()) el('collaboration-pid').add(new Option(project.name,project.project_id));
+        if(projects.has(selectedProject)) el('collaboration-pid').value=selectedProject;
     })]).catch(error => message(error.message));
 })();

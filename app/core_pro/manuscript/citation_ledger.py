@@ -22,6 +22,7 @@ import uuid
 from datetime import datetime, timezone
 
 from filelock import FileLock
+from werkzeug.exceptions import Conflict
 
 from app.security import build_lock_path, _write_json_atomic, validate_id
 
@@ -91,6 +92,11 @@ def record_decision(
                 data = loaded
             else:
                 raise ValueError('引用決策紀錄格式損壞；原件保留，未追加或覆寫。')
+        parent = (paragraph_context or {}).get('supersedes')
+        if parent:
+            old = next((r for r in data['decisions'] if r.get('decision_id')==parent and r.get('section_id')==section_id),None)
+            if old is None or any(r.get('paragraph_context',{}).get('supersedes')==parent for r in data['decisions']):
+                raise Conflict('原決策缺少或已被另一個確認接續；請重新載入。')
         data["decisions"].append(decision)
         _write_json_atomic(path,data)
     return decision

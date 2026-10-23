@@ -28,3 +28,7 @@
 - `autonomy-after`：49 項通過；`autonomy-guidance-regression`：128 項通過。
 - 新邀請已驗身分綁定、一次性碼、限期、撤銷、教授唯讀、章節指派、成員移除、歷史保留、CSRF 與惡意 JSON。舊的自動 PI 授權、單方新增指導關係及教授讀全帳號活動的測試契約，依本次 P0 修正改為負向控制；內部活動計算與原跨角色拒絕斷言仍保留。
 - JavaScript 語法已驗；三種實際瀏覽器生命週期、COC-05、REL-05、Linux 與科學基準尚待完成，不能將本段稱為整輪交付。
+- COC-05：`change-impact-integrity` 81 項通過；另 `context-and-ownership` 68 項通過。已驗來源／原 PDF／主張／章節與全文版本／原教授審閱的依賴、不可變更舊紀錄、過時快照拒絕及分別重新確認。舊版本僅推定可能影響，未追蹤範圍明示，未假造完整科學覆蓋。
+- `scoped-evidence-before` 兩項失敗：限定共同作者能列舉未交付來源並猜 ID 確認；已改成只使用本章明確交付且未變更的證據。
+- `invitation-last-owner-before` 重現撤銷已升為最後 owner 的受邀者可使專案無 owner；已在共用撤權函數補最後 owner 保護，並提供受邀者明確退出。
+- REL-05：純檔案第一輪 10 通過／1 略過；真實 schema 又抓到 WAL 快照產生額外 sidecar。`backup-wal-before` 確定重現後，改為目標快照 DELETE journal，來源仍保留 WAL。`backup-wal-fixed` 13 通過／1 略過，包含實際作者決策、稿件、ACL 及審閱回覆還原。新增程序死亡檢查、Linux 及瀏覽器尚待完成。

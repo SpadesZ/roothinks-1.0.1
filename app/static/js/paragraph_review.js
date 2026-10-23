@@ -38,7 +38,7 @@
         <button class="btn btn-primary my-2">確認並保存新決策</button></form>
         <label class="form-label w-100">本次生成使用的決策<select id="prDecision" class="form-select"><option value="">一般寫作（未套用段落決策）</option></select></label>
         <pre id="prDecisionPreview" class="small" style="white-space:pre-wrap"></pre></details>
-        <hr><details open><summary>教授意見與我的回覆</summary><label class="form-label w-100">被審閱的全文版本<select id="prReviewVersion" class="form-select"></select></label><div id="prReviews"></div></details>
+        <hr><p><a id="prImpactLink">查看變更影響與重新確認</a></p><details open><summary>選用教授意見與我的回覆</summary><label class="form-label w-100">被審閱的全文版本<select id="prReviewVersion" class="form-select"></select></label><div id="prReviews"></div></details>
         </div>`;
         document.body.appendChild(panel);
         byId('prEvidence').onchange=previewSource;
@@ -122,6 +122,7 @@
         ensurePanel(); const app=window.wsApp; const token=++sequence;
         const sameTarget=openedPid===app.pid && section===app.collab.currentSection();
         openedPid=app.pid; section=app.collab.currentSection();
+        byId('prImpactLink').href='/manuscript/change-impact?pid='+encodeURIComponent(openedPid);
         byId('prTarget').textContent=`${openedPid} · ${section} · S.Ver ${app.collab.currentSVer() || '尚未保存'}`;
         const selection=String(window.getSelection() || '').trim();
         if (!sameTarget) { byId('prForm').reset(); byId('prParagraph').value=selection; }

@@ -2562,6 +2562,108 @@ def _citation_data_root():
     return resolve_data_root()
 
 
+def _paragraph_evidence_allowed(uid,pid,section,data):
+    """限定作者只可沿用本章已明確交付、且未變動的證據；猜 ID 不能取得整庫資料。"""
+    from app.security import get_workspace_role,is_section_scoped_role
+    from app.core_pro.manuscript.citation_ledger import list_decisions
+    from app.core_pro.manuscript.paragraph_context import _evidence
+    if uid is None or not is_section_scoped_role(get_workspace_role(uid,pid),pid):
+        return True
+    for row in list_decisions(_citation_data_root(),pid,section_id=section):
+        evidence = row.get('paragraph_context',{}).get('evidence',{})
+        if evidence.get('id')==data.get('evidence_id') and evidence.get('entry_id')==data.get('entry_id'):
+            try:
+                return _evidence(_citation_data_root(),pid,evidence['entry_id'],evidence['id'])['fingerprint']==evidence['fingerprint']
+            except (Conflict,BadRequest):
+                return False
+    return False
+
+
+def _visible_change_impact(pid):
+    from app.core_pro.manuscript.change_impact import build_impact
+    uid = _session_uid()
+    return build_impact(_citation_data_root(),pid,can_read_section=lambda s:uid is None or _socket_can_read_section(uid,pid,s),
+        include_papers=uid is None or _socket_can_read_paper(uid,pid))
+
+
+def _impact_request_data():
+    from app import csrf
+    if current_app.config.get('WTF_CSRF_ENABLED',True):
+        csrf.protect()
+    data = request.get_json(silent=True)
+    if not isinstance(data,dict):
+        raise BadRequest('JSON 必須是物件。')
+    return data
+
+
+@bp.route('/api/change-impact',methods=['GET'])
+def change_impact_report():
+    pid = _resolve_formal_project_pid(request.args.get('pid'))
+    if not pid:
+        return jsonify(success=False,message='Invalid pid'),404
+    result = _visible_change_impact(pid)
+    from app.security import get_workspace_role
+    uid = _session_uid()
+    result['can_confirm_paper'] = uid is None or get_workspace_role(uid,pid) in {'editor','owner'}
+    for row in result['reviews']:
+        row['can_reconfirm'] = uid==row['author_id'] and row['reviewer_active']
+    for row in result['claims']:
+        row['can_reconfirm'] = uid is None or _socket_can_write_section(uid,pid,row['section'])
+    return jsonify(result)
+
+
+@bp.route('/change-impact',methods=['GET'])
+def change_impact_page():
+    return render_template('change_impact.html')
+
+
+@bp.route('/api/paragraph/<decision_id>/reconfirm',methods=['POST'])
+def reconfirm_paragraph_context(decision_id):
+    from flask_login import current_user
+    from app.core_pro.manuscript.paragraph_context import confirm_context,get_context
+    data = _impact_request_data()
+    pid = _resolve_formal_project_pid(data.get('pid'))
+    uid = _session_uid()
+    section = str(data.get('section') or '')
+    if not pid:
+        return jsonify(success=False,message='Invalid pid'),404
+    if uid is not None and not _socket_can_write_section(uid,pid,section):
+        return jsonify(success=False,message='Forbidden'),403
+    if data.get('confirmed') is not True:
+        raise BadRequest('請明確確認本段主張及使用界線。')
+    get_context(_citation_data_root(),pid,decision_id,section)
+    if not _paragraph_evidence_allowed(uid,pid,section,data):
+        return jsonify(success=False,message='本章尚未獲授權使用此證據。'),403
+    if data.get('impact_snapshot') != _visible_change_impact(pid)['snapshot']:
+        raise Conflict('變更清單已更新；請重新載入並核對，未保存確認。')
+    decision = confirm_context(_citation_data_root(),pid,data,current_user.email if uid is not None else 'local-user',supersedes=decision_id)
+    return jsonify(success=True,decision=decision),201
+
+
+@bp.route('/api/change-impact/reconfirm',methods=['POST'])
+def reconfirm_affected_outcome():
+    from filelock import FileLock
+    from app.security import build_lock_path,get_workspace_role
+    from app.models import ChapterComment
+    from app.core_pro.manuscript.change_impact import record_outcome_confirmation
+    data = _impact_request_data()
+    pid = _resolve_formal_project_pid(data.get('pid'))
+    uid = _session_uid()
+    if not pid:
+        return jsonify(success=False,message='Invalid pid'),404
+    with FileLock(build_lock_path(os.path.join(_citation_data_root(),pid,'impact-confirmation')),timeout=10):
+        db.session.expire_all()
+        if data.get('kind')=='review':
+            review = ChapterComment.query.filter_by(pid=pid,id=data.get('target_id')).first()
+            if uid is None or review is None or review.author_id!=uid or not (
+                _socket_can_read_paper(uid,pid) if review.scope=='paper' else _socket_can_read_section(uid,pid,review.section_key)):
+                return jsonify(success=False,message='只有仍獲授權的原審閱者能重新確認審閱。'),403
+        elif uid is not None and get_workspace_role(uid,pid) not in {'editor','owner'}:
+            return jsonify(success=False,message='Forbidden'),403
+        event = record_outcome_confirmation(_citation_data_root(),pid,data,uid)
+    return jsonify(success=True,event=event),201
+
+
 @bp.route('/api/paragraph/confirm',methods=['POST'])
 def confirm_paragraph_context():
     from flask_login import current_user
@@ -2573,6 +2675,8 @@ def confirm_paragraph_context():
         return jsonify(success=False,message='Invalid pid'),404
     if uid is not None and not _socket_can_write_section(uid,pid,str(data.get('section') or '')):
         return jsonify(success=False,message='Forbidden'),403
+    if not _paragraph_evidence_allowed(uid,pid,str(data.get('section') or ''),data):
+        return jsonify(success=False,message='本章尚未獲授權使用此證據。'),403
     decision = confirm_context(_citation_data_root(),pid,data,current_user.email if uid is not None else 'local-user')
     return jsonify(success=True,decision=decision),201
 
@@ -2590,6 +2694,22 @@ def paragraph_context_choices():
         return jsonify(success=False,message='Invalid pid'),404
     if uid is not None and not _socket_can_read_section(uid,pid,section):
         return jsonify(success=False,message='Forbidden'),403
+    from app.security import get_workspace_role,is_section_scoped_role
+    if uid is not None and is_section_scoped_role(get_workspace_role(uid,pid),pid):
+        rows = [r for r in list_decisions(_citation_data_root(),pid,section_id=section) if r.get('paragraph_context')]
+        sources = {}
+        for row in rows:
+            evidence = row['paragraph_context']['evidence']
+            sources[evidence['id']] = dict(entry_id=evidence['entry_id'],evidence_id=evidence['id'],title=evidence['paper_id'],
+                reading_note=evidence.get('reading_note',''),selection_reason=evidence.get('selection_reason',''),
+                text=evidence['text'],locator=json.dumps(evidence['locator'],ensure_ascii=False))
+            try:
+                validate_context(_citation_data_root(),pid,row)
+                row['issues'] = []
+            except (Conflict,BadRequest) as exc:
+                row['issues'] = [exc.description]
+        return jsonify(success=True,sources=list(sources.values()),decisions=rows,source_scope='explicit_section_evidence_only',
+            versions=ManuscriptIO.list_block_versions(pid,section))
     entries = [e for e in LiteratureLibrary(_citation_data_root()).list_entries(pid) if
                e.get('screening_status')=='included' and e.get('screening_decided_by') and not e.get('linked_to')]
     sources = []
@@ -2607,7 +2727,7 @@ def paragraph_context_choices():
             row['issues'] = []
         except (Conflict,BadRequest) as exc:
             row['issues'] = [exc.description]
-    return jsonify(success=True,sources=sources,decisions=rows)
+    return jsonify(success=True,sources=sources,decisions=rows,versions=ManuscriptIO.list_block_versions(pid,section))
 
 
 def _visible_image_registry(pid):

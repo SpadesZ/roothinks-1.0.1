@@ -5,6 +5,7 @@
 # 驗證：python -m pytest test/unit/test_sai_review_workflow.py -q
 import hashlib
 import json
+import os
 
 from werkzeug.exceptions import BadRequest, Conflict
 from app.models import EvidenceSegment
@@ -47,6 +48,18 @@ def _evidence(data_root,pid,entry_id,evidence_id):
     segment = EvidenceSegment.query.filter_by(id=evidence_id,project_id=pid,paper_id=entry.get('paper_id')).first()
     if not segment or not segment.text.strip():
         raise Conflict('證據來源缺少或不屬於這筆文獻。')
+    from app.core_pro.storage_layout import resolve_literature_paper_dir
+    from app.security import safe_join_under
+    for source in entry.get('uploaded_sources',[]):
+        original = safe_join_under(resolve_literature_paper_dir(data_root,pid,source['paper_id']), '00_origins','source.pdf')
+        if not os.path.isfile(original):
+            raise Conflict('原始 PDF 缺少；不能只沿用索引確認。')
+        digest = hashlib.sha256()
+        with open(original,'rb') as handle:
+            for chunk in iter(lambda:handle.read(1024*1024),b''):
+                digest.update(chunk)
+        if digest.hexdigest() != source.get('sha256'):
+            raise Conflict('原始 PDF 指紋已改變；請保留原件並重新登記及索引。')
     try:
         locator = json.loads(segment.metadata_json or '{}')
     except ValueError:
@@ -61,7 +74,7 @@ def _evidence(data_root,pid,entry_id,evidence_id):
     return evidence
 
 
-def confirm_context(data_root,pid,data,actor):
+def confirm_context(data_root,pid,data,actor,*,supersedes=None):
     if data.get('confirmed') is not True:
         raise BadRequest('請明確確認本段主張及使用界線。')
     if str(data.get('contradictions') or '').strip():
@@ -81,6 +94,12 @@ def confirm_context(data_root,pid,data,actor):
     evidence = _evidence(data_root,pid,_field(data,'entry_id',120),data.get('evidence_id'))
     contract.update(section=section,s_ver=version,paragraph_text=paragraph,paragraph_hash=fingerprint(paragraph),
         section_hash=fingerprint(content),evidence=evidence,scientific_status='author_confirmed_not_independently_validated')
+    if supersedes:
+        old = get_context(data_root,pid,supersedes,section)
+        from app.core_pro.manuscript.coc_bundle import resolve_section_version
+        if resolve_section_version(pid,section)[0] != version:
+            raise Conflict('請對目前已保存的最新章節版本重新確認；本次未追加。')
+        contract.update(supersedes=old['decision_id'],change_reason=_field(data,'change_reason',1000))
     contract['fingerprint'] = fingerprint(contract)
     return record_decision(data_root,pid,section_id=section,status='accepted',entry_id=evidence['entry_id'],
         paper_id=evidence['paper_id'],claim_text=contract['claim'],snippet=evidence['text'],
@@ -95,19 +114,39 @@ def get_context(data_root,pid,decision_id,section=None):
     return row
 
 
-def validate_context(data_root,pid,row):
-    context = row['paragraph_context']
-    content = _section_snapshot(pid,context['section'],context['s_ver'])
-    if fingerprint(content) != context['section_hash']:
-        raise Conflict('原段落版本已變更；請重新確認。')
+def context_issues(data_root,pid,row,*,rows=None):
+    """彙整所有可觀測變動；不判斷科學支持，也不改寫歷史。"""
+    issues = []
+    context = row.get('paragraph_context')
+    if not isinstance(context,dict) or not all(key in context for key in ('section','s_ver','section_hash','evidence')):
+        return [dict(code='context_corrupt',message='原決策結構不完整；請核對歷史，不可推定已確認。')]
+    try:
+        content = _section_snapshot(pid,context['section'],context['s_ver'])
+        if fingerprint(content) != context['section_hash']:
+            issues.append(dict(code='version_modified',message='原段落版本已變更；請重新確認。'))
+    except (Conflict,BadRequest) as exc:
+        issues.append(dict(code='version_missing',message=exc.description))
     from app.core_pro.manuscript.coc_bundle import resolve_section_version
     latest,_ = resolve_section_version(pid,context['section'])
     if latest != context['s_ver']:
-        raise Conflict('章節已有新版本；請對新版本重新確認段落。')
-    current = _evidence(data_root,pid,context['evidence']['entry_id'],context['evidence']['id'])
-    if current['fingerprint'] != context['evidence']['fingerprint']:
-        raise Conflict('證據來源或作者採用理由已變更；請重新確認。')
-    return context
+        issues.append(dict(code='section_advanced',message='章節已有新版本；請對新版本重新確認段落。'))
+    try:
+        current = _evidence(data_root,pid,context['evidence']['entry_id'],context['evidence']['id'])
+        if current['fingerprint'] != context['evidence']['fingerprint']:
+            issues.append(dict(code='source_changed',message='證據來源或作者採用理由已變更；請重新確認。'))
+    except (Conflict,BadRequest) as exc:
+        issues.append(dict(code='source_unavailable',message=exc.description))
+    rows = list_decisions(data_root,pid) if rows is None else rows
+    if any(r.get('paragraph_context',{}).get('supersedes')==row['decision_id'] for r in rows):
+        issues.append(dict(code='decision_superseded',message='已有作者重新確認的後續決策；不可沿用舊確認。'))
+    return issues
+
+
+def validate_context(data_root,pid,row):
+    issues = context_issues(data_root,pid,row)
+    if issues:
+        raise Conflict('；'.join(issue['message'] for issue in issues))
+    return row['paragraph_context']
 
 
 def prompt_block(context):

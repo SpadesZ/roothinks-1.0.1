@@ -72,6 +72,9 @@ def _serialize(row):
 def remove_project_access(pid, user_id, reason='成員已被移除'):
     """呼叫者必須已取得 membership_lock 並驗 owner／自行退出；不提交，與撤銷事件同交易。"""
     aliases = _normalize_pid_aliases(pid)
+    if WorkspaceMember.query.filter(WorkspaceMember.user_id==user_id,WorkspaceMember.pid.in_(aliases),WorkspaceMember.role=='owner').first():
+        if not WorkspaceMember.query.filter(WorkspaceMember.user_id!=user_id,WorkspaceMember.pid.in_(aliases),WorkspaceMember.role=='owner').first():
+            raise Conflict('最後一位專案擁有者不可被移除；請先明確移交管理權。')
     WorkspaceMember.query.filter(WorkspaceMember.user_id==user_id, WorkspaceMember.pid.in_(aliases)).delete(synchronize_session=False)
     ChapterAssignment.query.filter(ChapterAssignment.user_id==user_id, ChapterAssignment.pid.in_(aliases)).delete(synchronize_session=False)
     for row in ProjectInvitation.query.filter(ProjectInvitation.pid.in_(aliases),
@@ -180,7 +183,8 @@ def invitation_action(iid,action):
         if not isinstance(data,dict):
             raise BadRequest('JSON 必須是物件。')
         if action == 'revoke':
-            _owner(row.pid)
+            if current_user.id != row.accepted_by:
+                _owner(row.pid)
             if row.status not in {'pending','accepted'}:
                 raise Conflict('此邀請已結束。')
             reason = str(data.get('reason') or '').strip()

@@ -1,0 +1,36 @@
+{# 目的：將來源變更、受影響版本及人類重新核對放在同一流程；不自動改稿或要求教授。 #}
+{% include '_header.html' %}
+<main class="container py-4" style="max-width:1100px">
+  <h1 class="h3">變更影響與重新確認</h1>
+  <p>原來源、主張、稿件和審閱都會保留。重新確認會追加紀錄。你仍可自行寫作、保存、修訂與匯出；教授審閱完全選用。</p>
+  <input type="hidden" id="impact-csrf" value="{{ csrf_token() }}">
+  <form id="impact-project-form" class="d-flex gap-2 mb-3"><label for="impact-project" class="visually-hidden">研究專案</label><select id="impact-project" class="form-select" required><option value="">選擇研究專案</option></select><button class="btn btn-outline-primary text-nowrap">重新檢查變更</button></form>
+  <p id="impact-message" role="status" aria-live="polite"></p>
+  <p class="small text-muted">此清單涵蓋已建立的依賴關係。未追蹤的內容不代表正確；來源能定位與科學主張成立，仍是不同的檢查。</p>
+  <section id="impact-editor" class="card p-3 mb-3" hidden aria-labelledby="impact-editor-heading">
+    <h2 id="impact-editor-heading" class="h5">重新核對段落主張</h2>
+    <form id="impact-claim-form">
+      <p id="impact-edit-section"></p>
+      <label class="d-block mb-2">已保存的章節版本<select id="impact-version" class="form-select" required></select></label>
+      <label class="d-block mb-2">該版本的實際段落<textarea id="impact-paragraph" class="form-control" required maxlength="8000"></textarea></label>
+      <label class="d-block mb-2">本段目的<textarea id="impact-purpose" class="form-control" required maxlength="4000"></textarea></label>
+      <label class="d-block mb-2">本段主張<textarea id="impact-claim" class="form-control" required maxlength="4000"></textarea></label>
+      <label class="d-block mb-2">已獲授權的來源證據<select id="impact-evidence" class="form-select" required></select></label>
+      <pre id="impact-evidence-preview" class="border p-2 small" style="white-space:pre-wrap;max-height:250px;overflow:auto"></pre>
+      <button id="impact-reload-evidence" type="button" class="btn btn-sm btn-outline-secondary mb-2">重新載入證據，保留我填的判斷</button>
+      <label class="d-block mb-2">適用條件<textarea id="impact-conditions" class="form-control" required maxlength="4000"></textarea></label>
+      <label class="d-block mb-2">不能聲稱的事<textarea id="impact-forbidden" class="form-control" required maxlength="4000"></textarea></label>
+      <label class="d-block mb-2">尚未解決的矛盾或缺漏<textarea id="impact-contradictions" class="form-control" maxlength="4000"></textarea></label>
+      <label class="d-block mb-2">重新核對理由<textarea id="impact-reason" class="form-control" required maxlength="1000"></textarea></label>
+      <label class="d-block mb-2"><input id="impact-confirmed" type="checkbox" required> 我已重新核對本段、來源與適用界線</label>
+      <button class="btn btn-primary">追加新的作者確認</button>
+    </form>
+  </section>
+  <h2 class="h5">段落主張</h2><div id="impact-claims"></div>
+  <h2 class="h5 mt-4">稿件版本</h2><div id="impact-papers"></div>
+  <h2 class="h5 mt-4">選用審閱</h2><div id="impact-reviews"></div>
+  <p id="impact-coverage" class="small text-muted mt-3"></p>
+</main>
+<script src="{{ url_for('static',filename='js/change_impact.js') }}" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
+</body></html>

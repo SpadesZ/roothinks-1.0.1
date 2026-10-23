@@ -682,6 +682,8 @@ class ManuscriptIO:
         }
 
         try:
+            from app.core_pro.manuscript.change_impact import capture_dependencies
+            payload['context_decisions'] = capture_dependencies(_get_data_root(),pid,payload['sections'])
             write_json_locked(save_path, payload)
         except Exception as e:
             # 清掉 claim 階段留下的 0 byte 佔位檔。

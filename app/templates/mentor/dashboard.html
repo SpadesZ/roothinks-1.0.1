@@ -27,8 +27,8 @@
     {% if not current_user.is_mentor %}
     <div class="alert alert-warning">
         <i class="bi bi-info-circle me-1"></i>
-        你的帳號不具備 <strong>mentor</strong> 身分，因此看不到指導對象的資料。
-        請聯絡系統管理者把 <code>users.system_role</code> 設為 <code>mentor</code>。
+        教授審閱為選用流程。你可以在<a href="/collaboration">學術背景、協作與邀請</a>填寫背景或接受專案邀請。
+        學術職銜不會授予研究資料權限；獨立研究不需要教授帳號。
     </div>
     {% else %}
 
@@ -36,10 +36,9 @@
         <h4 class="fw-bold mb-0">
             <i class="bi bi-file-earmark-text text-info me-2"></i>2C Review 工作台
         </h4>
-        <div class="input-group input-group-sm" style="width: 380px;">
-            <span class="input-group-text">新增指導對象</span>
-            <input type="text" class="form-control" id="menteeEmailInput" placeholder="mentee@example.com">
-            <button class="btn btn-primary" onclick="mentorApp.addMentee()">加入</button>
+        <div class="d-flex gap-2 flex-wrap">
+            <a href="/collaboration" class="btn btn-sm btn-outline-primary">管理專案邀請</a>
+            <a href="/manuscript/change-impact" class="btn btn-sm btn-outline-secondary">來源變更與審閱重核</a>
         </div>
     </div>
     <div class="alert alert-danger py-2 small" id="mentorError" style="display:none;"></div>
