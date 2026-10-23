@@ -2573,9 +2573,10 @@ def _paragraph_evidence_allowed(uid,pid,section,data):
         evidence = row.get('paragraph_context',{}).get('evidence',{})
         if evidence.get('id')==data.get('evidence_id') and evidence.get('entry_id')==data.get('entry_id'):
             try:
-                return _evidence(_citation_data_root(),pid,evidence['entry_id'],evidence['id'])['fingerprint']==evidence['fingerprint']
+                if _evidence(_citation_data_root(),pid,evidence['entry_id'],evidence['id'])['fingerprint']==evidence['fingerprint']:
+                    return True
             except (Conflict,BadRequest):
-                return False
+                continue
     return False
 
 

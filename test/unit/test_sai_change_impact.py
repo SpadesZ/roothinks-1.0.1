@@ -148,6 +148,23 @@ def test_scoped_author_cannot_guess_unassigned_evidence(workflow,private_source)
     assert 'PRIVATE_UNASSIGNED_SOURCE' not in response.get_data(as_text=True)
 
 
+def test_scoped_author_can_use_newly_reconfirmed_evidence_after_source_change(workflow):
+    from app import db
+    from app.models import EvidenceSegment
+    bundle,_,sid = workflow
+    old = confirm(workflow).json['decision']
+    with bundle[0].app_context():
+        db.session.get(EvidenceSegment,sid).text = 'Corrected source: sample A at 300 K only.'
+        db.session.commit()
+    assert client(bundle,'coauthor').post('/manuscript/api/paragraph/confirm',json=payload(workflow)).status_code == 403
+    fresh = report(workflow).json
+    saved = client(bundle,'editor').post(f'/manuscript/api/paragraph/{old["decision_id"]}/reconfirm',
+        json=payload(workflow,impact_snapshot=fresh['snapshot']))
+    assert saved.status_code == 201,saved.json
+    response = client(bundle,'coauthor').post('/manuscript/api/paragraph/confirm',json=payload(workflow))
+    assert response.status_code == 201,response.json
+
+
 def test_impact_report_and_reconfirmation_keep_project_acl(workflow):
     assert report(workflow,'outsider').status_code == 403
     old = confirm(workflow).json['decision']
