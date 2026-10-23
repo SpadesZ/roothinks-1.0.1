@@ -11,7 +11,7 @@ from app.security import get_workspace_role, is_section_scoped_role, can_read_se
 from app.core_pro.manuscript.citation_ledger import list_decisions
 from app.core_pro.manuscript.coc_bundle import html_to_text
 from app.core_pro.manuscript.manuscript_io import ManuscriptIO
-from app.core_pro.manuscript.paragraph_context import context_issues, fingerprint
+from app.core_pro.manuscript.paragraph_context import context_issues, fingerprint, _evidence, _section_snapshot
 
 
 def capture_dependencies(data_root,pid,sections):
@@ -61,8 +61,17 @@ def build_impact(data_root,pid,*,can_read_section=lambda _:True,include_papers=T
         issues = context_issues(data_root,pid,row,rows=rows)
         state = 'superseded' if any(i['code']=='decision_superseded' for i in issues) else ('needs_reconfirmation' if issues else 'current')
         did = row['decision_id']
+        current_inputs = {}
+        for key,read in (
+            ('evidence',lambda:_evidence(data_root,pid,context['evidence']['entry_id'],context['evidence']['id'])['fingerprint']),
+            ('section',lambda:fingerprint(_section_snapshot(pid,context['section'],context['s_ver']))),
+        ):
+            try:
+                current_inputs[key] = read()
+            except (Conflict,BadRequest) as exc:
+                current_inputs[key] = dict(unavailable=exc.description)
         claims[did] = dict(decision_id=did,section=row['section_id'],version=context.get('s_ver'),status=state,
-            issues=issues,context=context,confirmed_by=row['decided_by'])
+            issues=issues,context=context,confirmed_by=row['decided_by'],current_inputs=current_inputs)
         source = context.get('evidence',{})
         source_key, evidence_key = str(source.get('entry_id','unknown')), str(source.get('id','unknown'))
         sources[source_key] = dict(entry_id=source_key,paper_id=source.get('paper_id'),original_registered=bool(source.get('uploaded_sources')))
@@ -122,7 +131,6 @@ def build_impact(data_root,pid,*,can_read_section=lambda _:True,include_papers=T
                 target['reviewer_active'] = False
         target['identity']['reviewer_active'] = target['reviewer_active']
         if review.scope!='paper':
-            from app.core_pro.manuscript.paragraph_context import _section_snapshot
             try:
                 target['text'] = _section_snapshot(pid,review.section_key,review.s_ver)
             except (Conflict,BadRequest):

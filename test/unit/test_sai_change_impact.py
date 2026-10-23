@@ -100,6 +100,25 @@ def test_stale_impact_snapshot_is_not_silently_reconfirmed(workflow):
     assert response.status_code == 409,response.json
 
 
+def test_already_changed_source_changes_again_before_reconfirmation(workflow):
+    from app import db
+    from app.models import EvidenceSegment
+    old=confirm(workflow).json['decision']
+    with workflow[0][0].app_context():
+        db.session.get(EvidenceSegment,workflow[2]).text='First correction at 300 K.'
+        db.session.commit()
+    from app.core_pro.manuscript.change_impact import build_impact
+    with workflow[0][0].app_context():
+        snapshot=build_impact(str(workflow[0][2]),PID)['snapshot']
+    with workflow[0][0].app_context():
+        db.session.get(EvidenceSegment,workflow[2]).text='Second correction at 310 K.'
+        db.session.commit()
+    response=client(workflow[0],'editor').post(f'/manuscript/api/paragraph/{old["decision_id"]}/reconfirm',
+        json=payload(workflow,impact_snapshot=snapshot))
+    assert response.status_code==409,response.json
+    assert report(workflow).json['snapshot']!=snapshot
+
+
 def test_new_paper_records_decision_dependencies_without_rewriting_old_version(workflow):
     from app.core_pro.manuscript.manuscript_io import ManuscriptIO
     old = confirm(workflow).json['decision']

@@ -99,6 +99,9 @@
             const data=await api(`/manuscript/api/paragraph/context?pid=${encodeURIComponent(pid)}&section=${encodeURIComponent(editing.section)}`);
             if(report.pid!==pid || editing?.decision_id!==decisionId) return;
             choices=data.sources; editingSnapshot=snapshot;
+            const version=el('impact-version').value;
+            el('impact-version').replaceChildren(...data.versions.map(v=>new Option(`章節 ${v.ver}`,v.ver)));
+            if(data.versions.some(v=>v.ver===version)) el('impact-version').value=version;
             el('impact-evidence').replaceChildren(...choices.map((source,index)=>new Option(source.title+' · '+source.evidence_id,String(index))));
             preview(); el('impact-confirmed').checked=false; message('證據已重新載入。請閱讀後核對你的主張與條件，再確認。');
         } catch(error) { message(error.message); }
