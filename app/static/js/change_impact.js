@@ -94,8 +94,11 @@
     el('impact-evidence').addEventListener('change',preview);
     el('impact-reload-evidence').addEventListener('click',async()=>{
         if(!editing || !report) return;
-        const pid=report.pid, decisionId=editing.decision_id, snapshot=report.snapshot;
+        const pid=report.pid, decisionId=editing.decision_id;
         try {
+            await loadReport();
+            if(report.pid!==pid || editing?.decision_id!==decisionId) return;
+            const snapshot=report.snapshot;
             const data=await api(`/manuscript/api/paragraph/context?pid=${encodeURIComponent(pid)}&section=${encodeURIComponent(editing.section)}`);
             if(report.pid!==pid || editing?.decision_id!==decisionId) return;
             choices=data.sources; editingSnapshot=snapshot;
