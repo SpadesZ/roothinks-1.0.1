@@ -28,6 +28,7 @@ import sqlite3
 import sys
 import tempfile
 import time
+import weakref
 from datetime import datetime, timedelta, timezone
 
 from cryptography.fernet import Fernet
@@ -416,6 +417,21 @@ def create_app(test_config=None):
         app.config["AUTH_MODE"] = "none"
     if app.config.get("TESTING") and not os.environ.get("SOCKETIO_ASYNC_MODE"):
         app.config["SOCKETIO_ASYNC_MODE"] = "threading"
+
+    # 在 schema／runtime 寫入前登記生命週期鎖；停機快照與新 app 啟動互斥。
+    # ponytail: 保證只涵蓋同一資料根目錄與配合此版本的單機程序；外部 DB 明確拒絕完整備份。
+    main_path = _configured_sqlite_path(app)
+    if main_path and not str(app.config.get('SQLALCHEMY_DATABASE_URI','')).endswith(':memory:'):
+        from app.research_backup import acquire_runtime_lease
+        root = os.path.dirname(main_path)
+        database_paths = [main_path]
+        for bind in app.config.get('SQLALCHEMY_BINDS',{}).values():
+            uri = str(bind.get('url') if isinstance(bind,dict) else bind)
+            database_paths.append(os.path.abspath(uri[len('sqlite:///'):]) if uri.startswith('sqlite:///') and not uri.endswith(':memory:')
+                                  else os.path.dirname(root))
+        lease = acquire_runtime_lease(root,database_paths=database_paths)
+        app.extensions['research_runtime_lease'] = lease
+        weakref.finalize(app,lease.release)
 
     # Runtime logging + CPU limits (available to Flow A / translation workers).
     log_info = setup_system_logging(root_dir)
