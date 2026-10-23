@@ -1,0 +1,1784 @@
+{
+  "schema": 1,
+  "base_sha": "d36cb9c18c944ac0d9d3cac0912702f29790c096",
+  "tested_code_sha": "aa3fbaebd3fe9f6bdf8f9d1e1e55ea291acc5e23",
+  "branch": "codex/sai-verification-review",
+  "source_hash_basis": "Working-tree bytes; line endings may differ on another OS. Git blob OIDs also supplied.",
+  "code_diff_from_frozen_revision": false,
+  "environment": "Windows; Python 3.12; synthetic SQLite/files; offline provider substitutes",
+  "boundaries": {
+    "merged_main": false,
+    "deployed": false,
+    "production_data_used": false,
+    "upstream_modified": false,
+    "scientific_acceptance": "OPEN",
+    "full_security_acceptance": "OPEN",
+    "distributed_concurrency_acceptance": "OPEN"
+  },
+  "local_artifact_directory": "%TEMP%/roothinks-sai-review-20261023",
+  "javascript_checks": {
+    "code_sha": "7475f71d348926693881ecd9a2296b9c35f79aed",
+    "results": [
+      {
+        "command": [
+          "node",
+          "--check",
+          "app/static/js/literature_app.js"
+        ],
+        "exit_code": 0,
+        "output": "",
+        "error": ""
+      },
+      {
+        "command": [
+          "node",
+          "--check",
+          "app/static/js/literature_library.js"
+        ],
+        "exit_code": 0,
+        "output": "",
+        "error": ""
+      },
+      {
+        "command": [
+          "node",
+          "--check",
+          "app/static/js/literature_origins.js"
+        ],
+        "exit_code": 0,
+        "output": "",
+        "error": ""
+      },
+      {
+        "command": [
+          "node",
+          "--check",
+          "app/static/js/manuscript_soed.js"
+        ],
+        "exit_code": 0,
+        "output": "",
+        "error": ""
+      },
+      {
+        "command": [
+          "node",
+          "--check",
+          "app/static/js/mentor.js"
+        ],
+        "exit_code": 0,
+        "output": "",
+        "error": ""
+      },
+      {
+        "command": [
+          "node",
+          "--check",
+          "app/static/js/paragraph_review.js"
+        ],
+        "exit_code": 0,
+        "output": "",
+        "error": ""
+      },
+      {
+        "command": [
+          "node",
+          "--check",
+          "test/js/test_mentor_review_race.cjs"
+        ],
+        "exit_code": 0,
+        "output": "",
+        "error": ""
+      },
+      {
+        "command": [
+          "node",
+          "test/js/test_literature_decision_integrity.cjs"
+        ],
+        "exit_code": 0,
+        "output": "literature decision integrity: 2 scenarios passed",
+        "error": ""
+      },
+      {
+        "command": [
+          "node",
+          "test/js/test_manuscript_draft_integrity.cjs"
+        ],
+        "exit_code": 0,
+        "output": "manuscript draft integrity: 8 scenarios passed",
+        "error": ""
+      },
+      {
+        "command": [
+          "node",
+          "test/js/test_manuscript_input_boundary.cjs"
+        ],
+        "exit_code": 0,
+        "output": "manuscript input boundary: 3 scenarios passed",
+        "error": ""
+      },
+      {
+        "command": [
+          "node",
+          "test/js/test_mentor_review_race.cjs"
+        ],
+        "exit_code": 0,
+        "output": "mentor review race: ok",
+        "error": ""
+      },
+      {
+        "command": [
+          "node",
+          "test/js/test_pi_role_matching.js"
+        ],
+        "exit_code": 0,
+        "output": "PAQ PI role behavior: passed",
+        "error": ""
+      },
+      {
+        "command": [
+          "node",
+          "test/js/test_study_notes_integrity.cjs"
+        ],
+        "exit_code": 0,
+        "output": "study notes integrity: 6 scenarios passed",
+        "error": ""
+      }
+    ]
+  },
+  "javascript_unchanged_since_checked_revision": true,
+  "runs": [
+    {
+      "label": "baseline-targeted",
+      "git_sha_at_start": "d36cb9c18c944ac0d9d3cac0912702f29790c096",
+      "status": "passed",
+      "exit_code": 0,
+      "suites": [
+        {
+          "tests": "136",
+          "errors": "0",
+          "failures": "0",
+          "skipped": "0",
+          "time": "148.472"
+        }
+      ],
+      "command": [
+        "python",
+        "-m",
+        "pytest",
+        "test/unit/test_chapter_perm.py",
+        "test/unit/test_coc_acl.py",
+        "test/unit/test_mentor_scope.py",
+        "test/unit/test_upload_preservation.py",
+        "test/unit/test_comment_versioning.py",
+        "test/unit/test_prompt_budget.py",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "--tb=short",
+        "--show-capture=no"
+      ],
+      "started_utc": "2026-10-23T03:07:54.620027+00:00",
+      "ended_utc": "2026-10-23T03:10:29.604687+00:00",
+      "receipt_sha256": "b3a428a17263e64fa9e2c65f416a6abcf9b535a23d3eda55e0f7e3920ea372a5",
+      "source_changes_at_start": [],
+      "evidence_class": "regression_or_positive_control",
+      "local_txt_sha256": "2fed1e8786c1623639057baf8d7320c0c3c17784550f85a14397c5ec520e53fe",
+      "local_xml_sha256": "9acdecd6852c518e351fac38a3003831647f343399e2967646add3168577a51e"
+    },
+    {
+      "label": "channels-before",
+      "git_sha_at_start": "d36cb9c18c944ac0d9d3cac0912702f29790c096",
+      "status": "failed",
+      "exit_code": 1,
+      "suites": [
+        {
+          "tests": "21",
+          "errors": "0",
+          "failures": "13",
+          "skipped": "0",
+          "time": "8.326"
+        }
+      ],
+      "command": [
+        "python",
+        "-m",
+        "pytest",
+        "test/unit/test_sai_channel_acl.py",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "--tb=short",
+        "--show-capture=no"
+      ],
+      "started_utc": "2026-10-23T03:13:12.229232+00:00",
+      "ended_utc": "2026-10-23T03:13:22.616443+00:00",
+      "receipt_sha256": "528792bbdd597860ff176dec687077a284511ce836585ade9ce45a24063254d5",
+      "source_changes_at_start": [
+        "test/unit/test_sai_channel_acl.py"
+      ],
+      "evidence_class": "defect_reproduction",
+      "local_txt_sha256": "e99100c22d17acf3a4293336d634cdbf653f09202e1200dd291b57881386fecf",
+      "local_xml_sha256": "d1ed80989b2ff9e8f7745cef1553886dd35e18a42526331c84d8210efcd476e2"
+    },
+    {
+      "label": "channels-after",
+      "git_sha_at_start": "d36cb9c18c944ac0d9d3cac0912702f29790c096",
+      "status": "passed",
+      "exit_code": 0,
+      "suites": [
+        {
+          "tests": "21",
+          "errors": "0",
+          "failures": "0",
+          "skipped": "0",
+          "time": "7.501"
+        }
+      ],
+      "command": [
+        "python",
+        "-m",
+        "pytest",
+        "test/unit/test_sai_channel_acl.py",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "--tb=short",
+        "--show-capture=no"
+      ],
+      "started_utc": "2026-10-23T03:21:46.687237+00:00",
+      "ended_utc": "2026-10-23T03:22:00.497780+00:00",
+      "receipt_sha256": "4ea27600dded47e553547ad223bd5eafa163237d9f732b2499ec09b7c0a09b56",
+      "source_changes_at_start": [
+        "app/core_pro/manuscript/chapter_routes.py",
+        "app/core_pro/manuscript/manuscript_image.py",
+        "app/core_pro/manuscript/manuscript_routes.py",
+        "test/unit/test_sai_channel_acl.py"
+      ],
+      "evidence_class": "regression_or_positive_control",
+      "local_txt_sha256": "b4156a9aa33a5f49d035984529ffc9565af10e65fed9991f4ac9b5b03131ba03",
+      "local_xml_sha256": "5d6e0441811b401046f64a74ca249f959268e03fb5ca26326b71205418a348e5"
+    },
+    {
+      "label": "acl-regression",
+      "git_sha_at_start": "d36cb9c18c944ac0d9d3cac0912702f29790c096",
+      "status": "passed",
+      "exit_code": 0,
+      "suites": [
+        {
+          "tests": "203",
+          "errors": "0",
+          "failures": "0",
+          "skipped": "0",
+          "time": "150.909"
+        }
+      ],
+      "command": [
+        "python",
+        "-m",
+        "pytest",
+        "test/unit/test_sai_channel_acl.py",
+        "test/unit/test_chapter_perm.py",
+        "test/unit/test_coc_acl.py",
+        "test/unit/test_mentor_scope.py",
+        "test/unit/test_comment_versioning.py",
+        "test/unit/test_manuscript_docx_export.py",
+        "test/unit/test_manuscript_image_acl.py",
+        "test/unit/test_manuscript_image_upload.py",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "--tb=short",
+        "--show-capture=no"
+      ],
+      "started_utc": "2026-10-23T03:22:33.026316+00:00",
+      "ended_utc": "2026-10-23T03:25:06.457686+00:00",
+      "receipt_sha256": "7ccd1b6bd1c319990b5de01b823c51c17eceb020b71fd73bcd2a5f82a659c18b",
+      "source_changes_at_start": [
+        "app/core_pro/manuscript/chapter_routes.py",
+        "app/core_pro/manuscript/manuscript_image.py",
+        "app/core_pro/manuscript/manuscript_routes.py",
+        "test/unit/test_sai_channel_acl.py"
+      ],
+      "evidence_class": "regression_or_positive_control",
+      "local_txt_sha256": "32108199afc5576144dfa990df9434890309f159846acde39172d1039a9eb599",
+      "local_xml_sha256": "d070946718b0a70ac33ff9306c1c2e807076e2b33bfc017036bdb81e7ec3ea4a"
+    },
+    {
+      "label": "process-stress",
+      "git_sha_at_start": "d36cb9c18c944ac0d9d3cac0912702f29790c096",
+      "status": "failed",
+      "exit_code": 1,
+      "suites": [
+        {
+          "tests": "4",
+          "errors": "0",
+          "failures": "2",
+          "skipped": "0",
+          "time": "67.236"
+        }
+      ],
+      "command": [
+        "python",
+        "-m",
+        "pytest",
+        "test/unit/test_sai_process_revision.py",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "--tb=short",
+        "--show-capture=no"
+      ],
+      "started_utc": "2026-10-23T03:23:42.839972+00:00",
+      "ended_utc": "2026-10-23T03:24:52.189926+00:00",
+      "receipt_sha256": "799b27b8cc5b2973840bcb629aa98d894a2312a80a324cfe01ea8199602b3f26",
+      "source_changes_at_start": [
+        "app/core_pro/manuscript/chapter_routes.py",
+        "app/core_pro/manuscript/manuscript_image.py",
+        "app/core_pro/manuscript/manuscript_routes.py",
+        "test/unit/test_sai_channel_acl.py",
+        "test/unit/test_sai_process_revision.py"
+      ],
+      "evidence_class": "defect_reproduction",
+      "local_txt_sha256": "ca6926c0d492a7d41ba9ee768084aca4b0cf77556f022353f2be6e36f70e4a88",
+      "local_xml_sha256": "b9b0f673240c56687910b0b6d1697b8ee6c890c9402b7af347a1d539ab912cff"
+    },
+    {
+      "label": "process-diagnosis",
+      "git_sha_at_start": "d36cb9c18c944ac0d9d3cac0912702f29790c096",
+      "status": "passed",
+      "exit_code": 0,
+      "suites": [
+        {
+          "tests": "4",
+          "errors": "0",
+          "failures": "0",
+          "skipped": "0",
+          "time": "20.139"
+        }
+      ],
+      "command": [
+        "python",
+        "-m",
+        "pytest",
+        "test/unit/test_sai_process_revision.py",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "--tb=short",
+        "--show-capture=no"
+      ],
+      "started_utc": "2026-10-23T03:25:48.701249+00:00",
+      "ended_utc": "2026-10-23T03:26:11.223117+00:00",
+      "receipt_sha256": "8c3c0dcc82763af8a8bd64772aa1d5446d75154f40678f78687d6d094ef09b3d",
+      "source_changes_at_start": [
+        "app/core_pro/manuscript/chapter_routes.py",
+        "app/core_pro/manuscript/manuscript_image.py",
+        "app/core_pro/manuscript/manuscript_routes.py",
+        "test/unit/test_upload_preservation.py",
+        "test/unit/test_sai_channel_acl.py",
+        "test/unit/test_sai_process_revision.py"
+      ],
+      "evidence_class": "regression_or_positive_control",
+      "local_txt_sha256": "75ab7b6b501b98325b0ccd85f53ca10db96cb4cdbb566907c0aa12b0d476d26a",
+      "local_xml_sha256": "67cebe2136518c272396f8fea54f3fce9935faecd36e8ea88b2b8fe80c849945"
+    },
+    {
+      "label": "process-repeat",
+      "git_sha_at_start": "a15291dc3f2dcfbf48d730c7b213e577f53d4fbc",
+      "status": "failed",
+      "exit_code": 1,
+      "suites": [
+        {
+          "tests": "4",
+          "errors": "0",
+          "failures": "2",
+          "skipped": "0",
+          "time": "109.898"
+        }
+      ],
+      "command": [
+        "python",
+        "-m",
+        "pytest",
+        "test/unit/test_sai_process_revision.py",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "--tb=short",
+        "--show-capture=no"
+      ],
+      "started_utc": "2026-10-23T03:28:36.797751+00:00",
+      "ended_utc": "2026-10-23T03:30:28.368608+00:00",
+      "receipt_sha256": "ea9dba7ff353bdfa241152dbbf61952ddeebd82278dbca326d05f44cd1611c95",
+      "source_changes_at_start": [
+        "app/core_pro/literature/literature_batch_routes.py",
+        "test/unit/test_upload_preservation.py",
+        "test/unit/test_sai_process_revision.py"
+      ],
+      "evidence_class": "defect_reproduction",
+      "local_txt_sha256": "e12b64d51a1fb5d8e4fa3459888d626e659de81a00e34ea61949ced55c34417f",
+      "local_xml_sha256": "e10ada87e140ffc44f17e498393ca21375b39ef8e2b292c533ac6e5c32abdfdc"
+    },
+    {
+      "label": "process-fixed",
+      "git_sha_at_start": "a15291dc3f2dcfbf48d730c7b213e577f53d4fbc",
+      "status": "passed",
+      "exit_code": 0,
+      "suites": [
+        {
+          "tests": "17",
+          "errors": "0",
+          "failures": "0",
+          "skipped": "0",
+          "time": "21.744"
+        }
+      ],
+      "command": [
+        "python",
+        "-m",
+        "pytest",
+        "test/unit/test_sai_process_revision.py",
+        "test/unit/test_edit_conflict.py",
+        "test/unit/test_draft_revision_integrity.py",
+        "test/unit/test_literature_decision_revision.py",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "--tb=short",
+        "--show-capture=no"
+      ],
+      "started_utc": "2026-10-23T03:32:16.801334+00:00",
+      "ended_utc": "2026-10-23T03:32:40.179379+00:00",
+      "receipt_sha256": "c590c935fba4404097b6d40f997df01a42a79e85a105705768fbe23f4d47e260",
+      "source_changes_at_start": [
+        "app/core_pro/literature/literature_batch_routes.py",
+        "app/security.py",
+        "test/unit/test_upload_preservation.py",
+        "test/unit/test_sai_process_revision.py"
+      ],
+      "evidence_class": "regression_or_positive_control",
+      "local_txt_sha256": "77dd936a60d3ba608625c114f6dc6151f0eb0abbe5e9bda9cb32e0027a58c392",
+      "local_xml_sha256": "b74ef6e559272d7b7d7605bec1660bd69415d3367e312fc2f7fa706294bb1f01"
+    },
+    {
+      "label": "upload-before",
+      "git_sha_at_start": "d36cb9c18c944ac0d9d3cac0912702f29790c096",
+      "status": "failed",
+      "exit_code": 1,
+      "suites": [
+        {
+          "tests": "8",
+          "errors": "0",
+          "failures": "4",
+          "skipped": "0",
+          "time": "10.225"
+        }
+      ],
+      "command": [
+        "python",
+        "-m",
+        "pytest",
+        "test/unit/test_upload_preservation.py",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "--tb=short",
+        "--show-capture=no"
+      ],
+      "started_utc": "2026-10-23T03:24:45.191476+00:00",
+      "ended_utc": "2026-10-23T03:24:58.080812+00:00",
+      "receipt_sha256": "59cfd7a089e5705affdbe75ef4888b7abfca41e3c5715a2cd227dcd36808754b",
+      "source_changes_at_start": [
+        "app/core_pro/manuscript/chapter_routes.py",
+        "app/core_pro/manuscript/manuscript_image.py",
+        "app/core_pro/manuscript/manuscript_routes.py",
+        "test/unit/test_upload_preservation.py",
+        "test/unit/test_sai_channel_acl.py",
+        "test/unit/test_sai_process_revision.py"
+      ],
+      "evidence_class": "defect_reproduction",
+      "local_txt_sha256": "6288c0b42b8851d41314c940ad511ebdb00d073546b8dbdfec0a4a6978e3d4cd",
+      "local_xml_sha256": "7a9dfca8036c1f9d9bc9db3fc6cf388e71713623517d8d5ab06cff3fa23d3b0b"
+    },
+    {
+      "label": "upload-after",
+      "git_sha_at_start": "a15291dc3f2dcfbf48d730c7b213e577f53d4fbc",
+      "status": "passed",
+      "exit_code": 0,
+      "suites": [
+        {
+          "tests": "8",
+          "errors": "0",
+          "failures": "0",
+          "skipped": "0",
+          "time": "11.833"
+        }
+      ],
+      "command": [
+        "python",
+        "-m",
+        "pytest",
+        "test/unit/test_upload_preservation.py",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "--tb=short",
+        "--show-capture=no"
+      ],
+      "started_utc": "2026-10-23T03:27:55.735457+00:00",
+      "ended_utc": "2026-10-23T03:28:09.637215+00:00",
+      "receipt_sha256": "f6fafe9d66dee0741c1e3a23114816044bfa062b1a5d7082eeb4d001f8b9a02c",
+      "source_changes_at_start": [
+        "app/core_pro/literature/literature_batch_routes.py",
+        "test/unit/test_upload_preservation.py",
+        "test/unit/test_sai_process_revision.py"
+      ],
+      "evidence_class": "regression_or_positive_control",
+      "local_txt_sha256": "21b6411343bfc4bd0c55d82e759d9fd05661a3ffb959518f148360f5c5aa6223",
+      "local_xml_sha256": "8e14c335b4031cb39769e03e69f9135084a5d57cd7ac8f18d4c33ad8af3b8c32"
+    },
+    {
+      "label": "recovery-acl",
+      "git_sha_at_start": "a15291dc3f2dcfbf48d730c7b213e577f53d4fbc",
+      "status": "passed",
+      "exit_code": 0,
+      "suites": [
+        {
+          "tests": "34",
+          "errors": "0",
+          "failures": "0",
+          "skipped": "0",
+          "time": "13.438"
+        }
+      ],
+      "command": [
+        "python",
+        "-m",
+        "pytest",
+        "test/unit/test_upload_preservation.py",
+        "test/unit/test_sai_channel_acl.py",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "--tb=short",
+        "--show-capture=no"
+      ],
+      "started_utc": "2026-10-23T03:33:57.561407+00:00",
+      "ended_utc": "2026-10-23T03:34:12.983840+00:00",
+      "receipt_sha256": "09f50ceba132ee2ed5765d87d42a83f94ed46eddb377b39619c9dff28ae38e2e",
+      "source_changes_at_start": [
+        "app/core_pro/literature/literature_batch_routes.py",
+        "app/core_pro/literature/literature_routes.py",
+        "app/security.py",
+        "app/static/js/literature_app.js",
+        "app/static/js/literature_library.js",
+        "app/static/js/literature_origins.js",
+        "test/unit/test_sai_channel_acl.py",
+        "test/unit/test_upload_preservation.py",
+        "test/unit/test_sai_process_revision.py"
+      ],
+      "evidence_class": "regression_or_positive_control",
+      "local_txt_sha256": "c65fb152c478cec441a07dd386f349f76227b199c9a6ea43d9070311231535ef",
+      "local_xml_sha256": "31b22d6278338d747d57faecf0b3948c9f519ea129720e2f801ca7566d3816f9"
+    },
+    {
+      "label": "workflow-before",
+      "git_sha_at_start": "a15291dc3f2dcfbf48d730c7b213e577f53d4fbc",
+      "status": "failed",
+      "exit_code": 2,
+      "suites": [
+        {
+          "tests": "1",
+          "errors": "1",
+          "failures": "0",
+          "skipped": "0",
+          "time": "0.783"
+        }
+      ],
+      "command": [
+        "python",
+        "-m",
+        "pytest",
+        "test/unit/test_sai_review_workflow.py",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "--tb=short",
+        "--show-capture=no"
+      ],
+      "started_utc": "2026-10-23T03:35:18.472744+00:00",
+      "ended_utc": "2026-10-23T03:35:20.956362+00:00",
+      "receipt_sha256": "0fe5cbda345a8b4d121332ce9b6582dd62717a1d5dbb06db47321b96c41e7b4e",
+      "source_changes_at_start": [
+        "app/core_pro/literature/literature_batch_routes.py",
+        "app/core_pro/literature/literature_routes.py",
+        "app/security.py",
+        "app/static/js/literature_app.js",
+        "app/static/js/literature_library.js",
+        "app/static/js/literature_origins.js",
+        "test/unit/test_sai_channel_acl.py",
+        "test/unit/test_upload_preservation.py",
+        "test/unit/test_sai_process_revision.py",
+        "test/unit/test_sai_review_workflow.py"
+      ],
+      "evidence_class": "collection_import_error_corrected",
+      "local_txt_sha256": "fce6b7b20f10211b8d3b793d40892b9c78862dcc632457d4595e19948cef6197",
+      "local_xml_sha256": "54884c2c2581cc5d2a6214b87088986183c74dd7c66c89f5659145fc8b4956c3"
+    },
+    {
+      "label": "workflow-baseline",
+      "git_sha_at_start": "dd456aa57ac502e207182af24d441c07dd17afcc",
+      "status": "failed",
+      "exit_code": 1,
+      "suites": [
+        {
+          "tests": "11",
+          "errors": "0",
+          "failures": "11",
+          "skipped": "0",
+          "time": "6.552"
+        }
+      ],
+      "command": [
+        "python",
+        "-m",
+        "pytest",
+        "test/unit/test_sai_review_workflow.py",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "--tb=short",
+        "--show-capture=no"
+      ],
+      "started_utc": "2026-10-23T03:35:59.780764+00:00",
+      "ended_utc": "2026-10-23T03:36:08.486473+00:00",
+      "receipt_sha256": "7596ee8a7eaf74938cd347178af252cd022e40b1780009472756e76a61ea6a6e",
+      "source_changes_at_start": [
+        "test/unit/test_sai_review_workflow.py"
+      ],
+      "evidence_class": "missing_workflow_capability_reproduced",
+      "local_txt_sha256": "8a97f08ccfeeed35afaee0d61d31fd9026228d2a864f89eae13a3d36769e3bcd",
+      "local_xml_sha256": "4e7d8048e64b7e45dc1925368898f2b5fadcf870e612e463b46d6d0c864a7d69"
+    },
+    {
+      "label": "workflow-first",
+      "git_sha_at_start": "dd456aa57ac502e207182af24d441c07dd17afcc",
+      "status": "passed",
+      "exit_code": 0,
+      "suites": [
+        {
+          "tests": "75",
+          "errors": "0",
+          "failures": "0",
+          "skipped": "0",
+          "time": "75.087"
+        }
+      ],
+      "command": [
+        "python",
+        "-m",
+        "pytest",
+        "test/unit/test_sai_review_workflow.py",
+        "test/unit/test_prompt_budget.py",
+        "test/unit/test_comment_versioning.py",
+        "test/unit/test_mentor_scope.py",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "--tb=short",
+        "--show-capture=no"
+      ],
+      "started_utc": "2026-10-23T03:41:31.722763+00:00",
+      "ended_utc": "2026-10-23T03:42:49.632412+00:00",
+      "receipt_sha256": "38834d4e91ac4fc76aed525f357bb39181757738eda6b4df14c764023b000fd5",
+      "source_changes_at_start": [
+        "app/core_pro/manuscript/chapter_routes.py",
+        "app/core_pro/manuscript/citation_ledger.py",
+        "app/core_pro/manuscript/context_audit.py",
+        "app/core_pro/manuscript/manuscript_routes.py",
+        "app/llm_service/matching_tasks/task_8drafter.py",
+        "app/mentor/routes.py",
+        "app/models.py",
+        "app/core_pro/manuscript/paragraph_context.py",
+        "test/unit/test_sai_review_workflow.py"
+      ],
+      "evidence_class": "regression_or_positive_control",
+      "local_txt_sha256": "0f09ace13b46d0982ef063375dbe94fe316e0c52628f4c560bec9d5a4cd44fc2",
+      "local_xml_sha256": "225bdd875c2f7e4325bbd06eac99916ab52290dfa04e3182c0ec1f47dd834a8f"
+    },
+    {
+      "label": "workflow-expanded",
+      "git_sha_at_start": "dd456aa57ac502e207182af24d441c07dd17afcc",
+      "status": "failed",
+      "exit_code": 1,
+      "suites": [
+        {
+          "tests": "38",
+          "errors": "0",
+          "failures": "1",
+          "skipped": "0",
+          "time": "23.962"
+        }
+      ],
+      "command": [
+        "python",
+        "-m",
+        "pytest",
+        "test/unit/test_sai_review_workflow.py",
+        "test/unit/test_sai_channel_acl.py",
+        "test/integration_e2e/test_user_journey_roothinks.py",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "--tb=short",
+        "--show-capture=no"
+      ],
+      "started_utc": "2026-10-23T03:48:50.776689+00:00",
+      "ended_utc": "2026-10-23T03:49:17.487681+00:00",
+      "receipt_sha256": "299e2eb1db635e69c8210e52be70c58fa07fc950151eb73a158ff6aabe9546c7",
+      "source_changes_at_start": [
+        "app/core_pro/manuscript/chapter_routes.py",
+        "app/core_pro/manuscript/citation_ledger.py",
+        "app/core_pro/manuscript/context_audit.py",
+        "app/core_pro/manuscript/manuscript_routes.py",
+        "app/core_pro/manuscript/manuscript_ruling.py",
+        "app/llm_service/matching_tasks/task_8drafter.py",
+        "app/mentor/routes.py",
+        "app/models.py",
+        "app/static/js/manuscript_soed.js",
+        "app/static/js/mentor.js",
+        "app/templates/manuscript_workspace.html",
+        "test/integration_e2e/test_user_journey_roothinks.py",
+        "test/js/test_mentor_review_race.cjs",
+        "app/core_pro/manuscript/paragraph_context.py",
+        "app/static/js/paragraph_review.js",
+        "migrations/versions/0003_chapter_review_events.py",
+        "test/unit/test_sai_review_workflow.py"
+      ],
+      "evidence_class": "defect_reproduction",
+      "local_txt_sha256": "2aecc1b66e7f46c734857923bf4545cd24b91ae323b0706d14168dd4945684ab",
+      "local_xml_sha256": "2afd4aef727e7d3302effbf773126788ebc3f3cf2d22f0563ee30a3a52703599"
+    },
+    {
+      "label": "e2e-root-fixed",
+      "git_sha_at_start": "dd456aa57ac502e207182af24d441c07dd17afcc",
+      "status": "passed",
+      "exit_code": 0,
+      "suites": [
+        {
+          "tests": "1",
+          "errors": "0",
+          "failures": "0",
+          "skipped": "0",
+          "time": "12.518"
+        }
+      ],
+      "command": [
+        "python",
+        "-m",
+        "pytest",
+        "test/integration_e2e/test_user_journey_roothinks.py",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "--tb=short",
+        "--show-capture=no"
+      ],
+      "started_utc": "2026-10-23T03:54:26.503653+00:00",
+      "ended_utc": "2026-10-23T03:54:41.805011+00:00",
+      "receipt_sha256": "772aa100512c12feceff1c263f31ae29035a31df2721919bf0dccf13bf877cfe",
+      "source_changes_at_start": [
+        "app/core_pro/manuscript/chapter_routes.py",
+        "app/core_pro/manuscript/citation_ledger.py",
+        "app/core_pro/manuscript/context_audit.py",
+        "app/core_pro/manuscript/manuscript_routes.py",
+        "app/core_pro/manuscript/manuscript_ruling.py",
+        "app/core_pro/study/study_routes.py",
+        "app/llm_service/matching_tasks/task_8drafter.py",
+        "app/mentor/routes.py",
+        "app/models.py",
+        "app/static/js/manuscript_soed.js",
+        "app/static/js/mentor.js",
+        "app/templates/manuscript_workspace.html",
+        "test/integration_e2e/test_user_journey_roothinks.py",
+        "test/js/test_mentor_review_race.cjs",
+        "app/core_pro/manuscript/paragraph_context.py",
+        "app/static/js/paragraph_review.js",
+        "migrations/versions/0003_chapter_review_events.py",
+        "test/integration_e2e/sai_browser_fixture.py",
+        "test/unit/test_sai_review_workflow.py"
+      ],
+      "evidence_class": "regression_or_positive_control",
+      "local_txt_sha256": "2e827c230661e99d2639b59745e347f64a14b09712c707f7834ae8c9466586f6",
+      "local_xml_sha256": "bf25cf1b409082a0dcb39bf11632ade05d6533492c6bd32266e98543f46d3af6"
+    },
+    {
+      "label": "adversarial-review",
+      "git_sha_at_start": "dd456aa57ac502e207182af24d441c07dd17afcc",
+      "status": "passed",
+      "exit_code": 0,
+      "suites": [
+        {
+          "tests": "16",
+          "errors": "0",
+          "failures": "0",
+          "skipped": "0",
+          "time": "8.799"
+        }
+      ],
+      "command": [
+        "python",
+        "-m",
+        "pytest",
+        "test/unit/test_sai_review_workflow.py",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "--tb=short",
+        "--show-capture=no"
+      ],
+      "started_utc": "2026-10-23T03:55:30.300085+00:00",
+      "ended_utc": "2026-10-23T03:55:41.367938+00:00",
+      "receipt_sha256": "a912740e3cc0fe4f9ff482c5929d51d28dc31b685839f99e67c573788a2937a2",
+      "source_changes_at_start": [
+        "app/core_pro/manuscript/chapter_routes.py",
+        "app/core_pro/manuscript/citation_ledger.py",
+        "app/core_pro/manuscript/context_audit.py",
+        "app/core_pro/manuscript/manuscript_routes.py",
+        "app/core_pro/manuscript/manuscript_ruling.py",
+        "app/core_pro/study/study_routes.py",
+        "app/llm_service/matching_tasks/task_8drafter.py",
+        "app/mentor/routes.py",
+        "app/models.py",
+        "app/static/js/manuscript_soed.js",
+        "app/static/js/mentor.js",
+        "app/templates/manuscript_workspace.html",
+        "test/integration_e2e/test_user_journey_roothinks.py",
+        "test/js/test_mentor_review_race.cjs",
+        "app/core_pro/manuscript/paragraph_context.py",
+        "app/static/js/paragraph_review.js",
+        "migrations/versions/0003_chapter_review_events.py",
+        "test/integration_e2e/sai_browser_fixture.py",
+        "test/unit/test_sai_review_workflow.py"
+      ],
+      "evidence_class": "regression_or_positive_control",
+      "local_txt_sha256": "45a2f3928e5574ee6c2c76d290c6c3dee3d7a1d4e8252bbf42e359f4befd30d7",
+      "local_xml_sha256": "95cf04445568ec6e5a84391a20a31c5dd4e3ed1060362fbb60aabdf24184fe65"
+    },
+    {
+      "label": "blocked-state-before",
+      "git_sha_at_start": "d4e189ce2e91db94d50c91f8618b81a02244d783",
+      "status": "failed",
+      "exit_code": 1,
+      "suites": [
+        {
+          "tests": "1",
+          "errors": "0",
+          "failures": "1",
+          "skipped": "0",
+          "time": "5.654"
+        }
+      ],
+      "command": [
+        "python",
+        "-m",
+        "pytest",
+        "test/unit/test_sai_review_workflow.py",
+        "-k",
+        "confirmed_contract_reaches",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "--tb=short",
+        "--show-capture=no"
+      ],
+      "started_utc": "2026-10-23T04:00:06.262415+00:00",
+      "ended_utc": "2026-10-23T04:00:14.002085+00:00",
+      "receipt_sha256": "4d6b4207c2e7e51781807fc079f46bd25bfb1ac7565fa0848c8daf0b5f3e76e4",
+      "source_changes_at_start": [
+        "app/core_pro/manuscript/chapter_routes.py",
+        "app/core_pro/manuscript/citation_ledger.py",
+        "app/core_pro/manuscript/context_audit.py",
+        "app/core_pro/manuscript/manuscript_routes.py",
+        "app/core_pro/manuscript/manuscript_ruling.py",
+        "app/llm_service/matching_tasks/task_8drafter.py",
+        "app/mentor/routes.py",
+        "app/models.py",
+        "app/static/js/manuscript_soed.js",
+        "app/static/js/mentor.js",
+        "app/templates/manuscript_workspace.html",
+        "test/js/test_mentor_review_race.cjs",
+        "app/core_pro/manuscript/paragraph_context.py",
+        "app/static/js/paragraph_review.js",
+        "migrations/versions/0003_chapter_review_events.py",
+        "test/integration_e2e/sai_browser_fixture.py",
+        "test/unit/test_sai_review_workflow.py"
+      ],
+      "evidence_class": "defect_reproduction",
+      "local_txt_sha256": "d195a9588effdbc2a364c787a3349fcdf41f7ac959e49b9e3cb3f0d66fbf9966",
+      "local_xml_sha256": "5b50636b76a2e6906c8d596e82240311f826cc30a09c2f9ff0aa2871ed78934f"
+    },
+    {
+      "label": "blocked-state-after",
+      "git_sha_at_start": "d4e189ce2e91db94d50c91f8618b81a02244d783",
+      "status": "passed",
+      "exit_code": 0,
+      "suites": [
+        {
+          "tests": "23",
+          "errors": "0",
+          "failures": "0",
+          "skipped": "0",
+          "time": "10.302"
+        }
+      ],
+      "command": [
+        "python",
+        "-m",
+        "pytest",
+        "test/unit/test_sai_review_workflow.py",
+        "test/unit/test_manuscript_chat_ack.py",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "--tb=short",
+        "--show-capture=no"
+      ],
+      "started_utc": "2026-10-23T04:00:27.396087+00:00",
+      "ended_utc": "2026-10-23T04:00:39.666595+00:00",
+      "receipt_sha256": "f919d350d8456cab9973f23f54fd6f3f9d1849e410294d0e4946b1e32b329dcc",
+      "source_changes_at_start": [
+        "app/core_pro/manuscript/chapter_routes.py",
+        "app/core_pro/manuscript/citation_ledger.py",
+        "app/core_pro/manuscript/context_audit.py",
+        "app/core_pro/manuscript/manuscript_routes.py",
+        "app/core_pro/manuscript/manuscript_ruling.py",
+        "app/llm_service/matching_tasks/task_8drafter.py",
+        "app/mentor/routes.py",
+        "app/models.py",
+        "app/static/js/manuscript_soed.js",
+        "app/static/js/mentor.js",
+        "app/templates/manuscript_workspace.html",
+        "test/js/test_mentor_review_race.cjs",
+        "app/core_pro/manuscript/paragraph_context.py",
+        "app/static/js/paragraph_review.js",
+        "migrations/versions/0003_chapter_review_events.py",
+        "test/integration_e2e/sai_browser_fixture.py",
+        "test/unit/test_sai_review_workflow.py"
+      ],
+      "evidence_class": "regression_or_positive_control",
+      "local_txt_sha256": "d3f9444c90115f908a187dbc93ace92138d3d111ddfed4e5327e022ac730b732",
+      "local_xml_sha256": "dcce7ba67729c56ac7af187edb0cf72c4ac71809fc9b78e7f671356f7c3e34dd"
+    },
+    {
+      "label": "recovery-link-adversarial",
+      "git_sha_at_start": "d4e189ce2e91db94d50c91f8618b81a02244d783",
+      "status": "passed",
+      "exit_code": 0,
+      "suites": [
+        {
+          "tests": "9",
+          "errors": "0",
+          "failures": "0",
+          "skipped": "0",
+          "time": "11.337"
+        }
+      ],
+      "command": [
+        "python",
+        "-m",
+        "pytest",
+        "test/unit/test_upload_preservation.py",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "--tb=short",
+        "--show-capture=no"
+      ],
+      "started_utc": "2026-10-23T04:04:04.018175+00:00",
+      "ended_utc": "2026-10-23T04:04:17.205673+00:00",
+      "receipt_sha256": "ace8f85bd0cb27b56720f3f0f87ed068cd51dbe38c41995de2ae83fb523181af",
+      "source_changes_at_start": [
+        "app/core_pro/manuscript/chapter_routes.py",
+        "app/core_pro/manuscript/citation_ledger.py",
+        "app/core_pro/manuscript/context_audit.py",
+        "app/core_pro/manuscript/manuscript_routes.py",
+        "app/core_pro/manuscript/manuscript_ruling.py",
+        "app/llm_service/matching_tasks/task_8drafter.py",
+        "app/mentor/routes.py",
+        "app/models.py",
+        "app/static/js/manuscript_soed.js",
+        "app/static/js/mentor.js",
+        "app/templates/manuscript_workspace.html",
+        "test/js/test_mentor_review_race.cjs",
+        "test/unit/test_upload_preservation.py",
+        "app/core_pro/manuscript/paragraph_context.py",
+        "app/static/js/paragraph_review.js",
+        "migrations/versions/0003_chapter_review_events.py",
+        "test/integration_e2e/sai_browser_fixture.py",
+        "test/unit/test_sai_review_workflow.py"
+      ],
+      "evidence_class": "regression_or_positive_control",
+      "local_txt_sha256": "2e6a0966985bb50940f7dbab40724d9abe8d61f0789619bb00257ccd13d55e6c",
+      "local_xml_sha256": "d958eb74c3cc615f1de7eccfd7c73b80f519bfca51ea89ca7a2bc0020429b82c"
+    },
+    {
+      "label": "review-concurrency-migration",
+      "git_sha_at_start": "d4e189ce2e91db94d50c91f8618b81a02244d783",
+      "status": "failed",
+      "exit_code": 1,
+      "suites": [
+        {
+          "tests": "18",
+          "errors": "0",
+          "failures": "1",
+          "skipped": "0",
+          "time": "9.952"
+        }
+      ],
+      "command": [
+        "python",
+        "-m",
+        "pytest",
+        "test/unit/test_sai_review_workflow.py",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "--tb=short",
+        "--show-capture=no"
+      ],
+      "started_utc": "2026-10-23T04:05:28.840671+00:00",
+      "ended_utc": "2026-10-23T04:05:43.609397+00:00",
+      "receipt_sha256": "1c97911c522285ead880e27887cc328593d0414f2edc5536836f45db1a2a5f14",
+      "source_changes_at_start": [
+        "app/core_pro/manuscript/chapter_routes.py",
+        "app/core_pro/manuscript/citation_ledger.py",
+        "app/core_pro/manuscript/context_audit.py",
+        "app/core_pro/manuscript/manuscript_routes.py",
+        "app/core_pro/manuscript/manuscript_ruling.py",
+        "app/llm_service/matching_tasks/task_8drafter.py",
+        "app/mentor/routes.py",
+        "app/models.py",
+        "app/static/js/manuscript_soed.js",
+        "app/static/js/mentor.js",
+        "app/templates/manuscript_workspace.html",
+        "test/js/test_mentor_review_race.cjs",
+        "test/unit/test_upload_preservation.py",
+        "app/core_pro/manuscript/paragraph_context.py",
+        "app/static/js/paragraph_review.js",
+        "migrations/versions/0003_chapter_review_events.py",
+        "test/integration_e2e/sai_browser_fixture.py",
+        "test/unit/test_sai_review_workflow.py"
+      ],
+      "evidence_class": "optional_alembic_unavailable_table_path_tested_separately",
+      "local_txt_sha256": "114d717cfd7104cc92c2bed57957470b7caff64c495d41d5b08f16302a56a665",
+      "local_xml_sha256": "3c974bb6579f2fa180f8ddb41df73e1b0183c8f9d90e8a363a90a50433d4e051"
+    },
+    {
+      "label": "review-table-and-concurrency",
+      "git_sha_at_start": "d4e189ce2e91db94d50c91f8618b81a02244d783",
+      "status": "passed",
+      "exit_code": 0,
+      "suites": [
+        {
+          "tests": "18",
+          "errors": "0",
+          "failures": "0",
+          "skipped": "0",
+          "time": "10.211"
+        }
+      ],
+      "command": [
+        "python",
+        "-m",
+        "pytest",
+        "test/unit/test_sai_review_workflow.py",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "--tb=short",
+        "--show-capture=no"
+      ],
+      "started_utc": "2026-10-23T04:06:55.098282+00:00",
+      "ended_utc": "2026-10-23T04:07:07.394101+00:00",
+      "receipt_sha256": "0dc50ec604164c72b3ff368cda436863868e58b9d9155a7b900474cc672e9c5c",
+      "source_changes_at_start": [
+        "app/core_pro/manuscript/chapter_routes.py",
+        "app/core_pro/manuscript/citation_ledger.py",
+        "app/core_pro/manuscript/context_audit.py",
+        "app/core_pro/manuscript/manuscript_routes.py",
+        "app/core_pro/manuscript/manuscript_ruling.py",
+        "app/llm_service/matching_tasks/task_8drafter.py",
+        "app/mentor/routes.py",
+        "app/models.py",
+        "app/static/js/manuscript_soed.js",
+        "app/static/js/mentor.js",
+        "app/templates/manuscript_workspace.html",
+        "test/js/test_mentor_review_race.cjs",
+        "test/unit/test_study_save_integrity.py",
+        "test/unit/test_upload_preservation.py",
+        "app/core_pro/manuscript/paragraph_context.py",
+        "app/static/js/paragraph_review.js",
+        "migrations/versions/0003_chapter_review_events.py",
+        "test/integration_e2e/sai_browser_fixture.py",
+        "test/unit/test_sai_review_workflow.py"
+      ],
+      "evidence_class": "regression_or_positive_control",
+      "local_txt_sha256": "c32ad28c5ca24c9d3c3187b7612bfb4c14d16c6530a444b54ddf42f8c1504107",
+      "local_xml_sha256": "d60264dc45177885b9a43fe9a2a9ffcc494608261f9994642e4c79ca778097f4"
+    },
+    {
+      "label": "study-root-regression",
+      "git_sha_at_start": "d4e189ce2e91db94d50c91f8618b81a02244d783",
+      "status": "passed",
+      "exit_code": 0,
+      "suites": [
+        {
+          "tests": "16",
+          "errors": "0",
+          "failures": "0",
+          "skipped": "0",
+          "time": "11.472"
+        }
+      ],
+      "command": [
+        "python",
+        "-m",
+        "pytest",
+        "test/unit/test_study_save_integrity.py",
+        "test/integration_e2e/test_user_journey_roothinks.py",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "--tb=short",
+        "--show-capture=no"
+      ],
+      "started_utc": "2026-10-23T04:06:15.687676+00:00",
+      "ended_utc": "2026-10-23T04:06:29.627923+00:00",
+      "receipt_sha256": "431b14b832ccd3df8930c472fe1731ee1308f23351763df220cf50689ef56455",
+      "source_changes_at_start": [
+        "app/core_pro/manuscript/chapter_routes.py",
+        "app/core_pro/manuscript/citation_ledger.py",
+        "app/core_pro/manuscript/context_audit.py",
+        "app/core_pro/manuscript/manuscript_routes.py",
+        "app/core_pro/manuscript/manuscript_ruling.py",
+        "app/llm_service/matching_tasks/task_8drafter.py",
+        "app/mentor/routes.py",
+        "app/models.py",
+        "app/static/js/manuscript_soed.js",
+        "app/static/js/mentor.js",
+        "app/templates/manuscript_workspace.html",
+        "test/js/test_mentor_review_race.cjs",
+        "test/unit/test_study_save_integrity.py",
+        "test/unit/test_upload_preservation.py",
+        "app/core_pro/manuscript/paragraph_context.py",
+        "app/static/js/paragraph_review.js",
+        "migrations/versions/0003_chapter_review_events.py",
+        "test/integration_e2e/sai_browser_fixture.py",
+        "test/unit/test_sai_review_workflow.py"
+      ],
+      "evidence_class": "regression_or_positive_control",
+      "local_txt_sha256": "50c21dee4e6e105ca61f0a8dc8d49d7c7ca90520f01f01af086f3ee0d9c484fa",
+      "local_xml_sha256": "74b00fb4483c50518abc26be2198f5f56c33b9f0b4365f019340ff77d7dcdc8f"
+    },
+    {
+      "label": "vertical-final-targeted",
+      "git_sha_at_start": "d4e189ce2e91db94d50c91f8618b81a02244d783",
+      "status": "interrupted_no_completion_evidence",
+      "exit_code": null,
+      "suites": [],
+      "command": [
+        "python",
+        "-m",
+        "pytest",
+        "test/unit/test_sai_review_workflow.py",
+        "test/unit/test_prompt_budget.py",
+        "test/unit/test_comment_versioning.py",
+        "test/unit/test_mentor_scope.py",
+        "test/unit/test_manuscript_chat_ack.py",
+        "test/unit/test_study_save_integrity.py",
+        "test/unit/test_upload_preservation.py",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "--tb=short",
+        "--show-capture=no"
+      ],
+      "started_utc": "2026-10-23T04:09:13.307632+00:00",
+      "ended_utc": null,
+      "receipt_sha256": "f5a54f1df0f03b27fbecd186cc04170cdcb2338d41f17426d139bb3fbd09a1dd",
+      "source_changes_at_start": [
+        "app/core_pro/manuscript/chapter_routes.py",
+        "app/core_pro/manuscript/citation_ledger.py",
+        "app/core_pro/manuscript/context_audit.py",
+        "app/core_pro/manuscript/manuscript_routes.py",
+        "app/core_pro/manuscript/manuscript_ruling.py",
+        "app/llm_service/matching_tasks/task_8drafter.py",
+        "app/mentor/routes.py",
+        "app/models.py",
+        "app/static/js/manuscript_soed.js",
+        "app/static/js/mentor.js",
+        "app/templates/manuscript_workspace.html",
+        "test/js/test_mentor_review_race.cjs",
+        "test/unit/test_study_save_integrity.py",
+        "test/unit/test_upload_preservation.py",
+        "app/core_pro/manuscript/paragraph_context.py",
+        "app/static/js/paragraph_review.js",
+        "migrations/versions/0003_chapter_review_events.py",
+        "test/integration_e2e/sai_browser_fixture.py",
+        "test/unit/test_sai_review_workflow.py"
+      ],
+      "evidence_class": "interrupted_excluded_from_pass_evidence",
+      "local_txt_sha256": "f7a77cb7b99b814b6095d61956e7c020905a8cb44c103be537115b3fe6c2e1da"
+    },
+    {
+      "label": "vertical-resumed",
+      "git_sha_at_start": "d4e189ce2e91db94d50c91f8618b81a02244d783",
+      "status": "passed",
+      "exit_code": 0,
+      "suites": [
+        {
+          "tests": "115",
+          "errors": "0",
+          "failures": "0",
+          "skipped": "0",
+          "time": "456.064"
+        }
+      ],
+      "command": [
+        "python",
+        "-m",
+        "pytest",
+        "test/unit/test_sai_review_workflow.py",
+        "test/unit/test_prompt_budget.py",
+        "test/unit/test_comment_versioning.py",
+        "test/unit/test_mentor_scope.py",
+        "test/unit/test_manuscript_chat_ack.py",
+        "test/unit/test_study_save_integrity.py",
+        "test/unit/test_upload_preservation.py",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "--tb=short",
+        "--show-capture=no"
+      ],
+      "started_utc": "2026-10-23T08:26:52.869940+00:00",
+      "ended_utc": "2026-10-23T08:34:32.937017+00:00",
+      "receipt_sha256": "218e869f46ef9780d013b9beac117863352180fd0dd1a7741bba2b2c92613837",
+      "source_changes_at_start": [
+        "app/core_pro/manuscript/chapter_routes.py",
+        "app/core_pro/manuscript/citation_ledger.py",
+        "app/core_pro/manuscript/context_audit.py",
+        "app/core_pro/manuscript/manuscript_routes.py",
+        "app/core_pro/manuscript/manuscript_ruling.py",
+        "app/llm_service/matching_tasks/task_8drafter.py",
+        "app/mentor/routes.py",
+        "app/models.py",
+        "app/static/js/manuscript_soed.js",
+        "app/static/js/mentor.js",
+        "app/templates/manuscript_workspace.html",
+        "test/js/test_mentor_review_race.cjs",
+        "test/unit/test_study_save_integrity.py",
+        "test/unit/test_upload_preservation.py",
+        "app/core_pro/manuscript/paragraph_context.py",
+        "app/static/js/paragraph_review.js",
+        "migrations/versions/0003_chapter_review_events.py",
+        "test/integration_e2e/sai_browser_fixture.py",
+        "test/unit/test_sai_review_workflow.py"
+      ],
+      "evidence_class": "regression_or_positive_control",
+      "local_txt_sha256": "d5a1b4fa3ce82347f1445c82a2255156270686276ffbe096f2799b4690ce8935",
+      "local_xml_sha256": "1ba7b935b0d4eca3e9cbbdeb5051136c494cf2b5a5c8e00adc729c7a9d764c80"
+    },
+    {
+      "label": "ledger-shape-before",
+      "git_sha_at_start": "d4e189ce2e91db94d50c91f8618b81a02244d783",
+      "status": "failed",
+      "exit_code": 1,
+      "suites": [
+        {
+          "tests": "8",
+          "errors": "0",
+          "failures": "2",
+          "skipped": "0",
+          "time": "7.174"
+        }
+      ],
+      "command": [
+        "python",
+        "-m",
+        "pytest",
+        "tests/test_citation_ledger.py",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "--tb=short",
+        "--show-capture=no"
+      ],
+      "started_utc": "2026-10-23T08:34:50.627004+00:00",
+      "ended_utc": "2026-10-23T08:35:00.089171+00:00",
+      "receipt_sha256": "9a4918320ca7d6d3291180addb31e3b563d5999c69f1a4ea79f87bab68d57e49",
+      "source_changes_at_start": [
+        "app/core_pro/manuscript/chapter_routes.py",
+        "app/core_pro/manuscript/citation_ledger.py",
+        "app/core_pro/manuscript/context_audit.py",
+        "app/core_pro/manuscript/manuscript_routes.py",
+        "app/core_pro/manuscript/manuscript_ruling.py",
+        "app/llm_service/matching_tasks/task_8drafter.py",
+        "app/mentor/routes.py",
+        "app/models.py",
+        "app/static/js/manuscript_soed.js",
+        "app/static/js/mentor.js",
+        "app/templates/manuscript_workspace.html",
+        "test/js/test_mentor_review_race.cjs",
+        "test/unit/test_study_save_integrity.py",
+        "test/unit/test_upload_preservation.py",
+        "tests/test_citation_ledger.py",
+        "app/core_pro/manuscript/paragraph_context.py",
+        "app/static/js/paragraph_review.js",
+        "migrations/versions/0003_chapter_review_events.py",
+        "test/integration_e2e/sai_browser_fixture.py",
+        "test/unit/test_sai_review_workflow.py"
+      ],
+      "evidence_class": "defect_reproduction",
+      "local_txt_sha256": "cb98a0478e7774d5a0ae2c250b31795c6e4fddf1e0f3ba91dbd5622babb00c4c",
+      "local_xml_sha256": "6db189174fccf508abea43f48a84d0983145a1bf3f5664453905fdff9026990e"
+    },
+    {
+      "label": "ledger-shape-after",
+      "git_sha_at_start": "d4e189ce2e91db94d50c91f8618b81a02244d783",
+      "status": "passed",
+      "exit_code": 0,
+      "suites": [
+        {
+          "tests": "28",
+          "errors": "0",
+          "failures": "0",
+          "skipped": "0",
+          "time": "13.336"
+        }
+      ],
+      "command": [
+        "python",
+        "-m",
+        "pytest",
+        "tests/test_citation_ledger.py",
+        "test/unit/test_sai_review_workflow.py",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "--tb=short",
+        "--show-capture=no"
+      ],
+      "started_utc": "2026-10-23T08:37:11.045256+00:00",
+      "ended_utc": "2026-10-23T08:37:26.937030+00:00",
+      "receipt_sha256": "a10a2382aaff0ff18381722c9bc0a9684ac908c9e6027b00e1cd11b917b553c7",
+      "source_changes_at_start": [
+        "app/core_pro/manuscript/chapter_routes.py",
+        "app/core_pro/manuscript/citation_ledger.py",
+        "app/core_pro/manuscript/context_audit.py",
+        "app/core_pro/manuscript/manuscript_routes.py",
+        "app/core_pro/manuscript/manuscript_ruling.py",
+        "app/llm_service/matching_tasks/task_8drafter.py",
+        "app/mentor/routes.py",
+        "app/models.py",
+        "app/static/js/manuscript_soed.js",
+        "app/static/js/mentor.js",
+        "app/templates/manuscript_workspace.html",
+        "test/js/test_mentor_review_race.cjs",
+        "test/unit/test_study_save_integrity.py",
+        "test/unit/test_upload_preservation.py",
+        "tests/test_citation_ledger.py",
+        "app/core_pro/manuscript/paragraph_context.py",
+        "app/static/js/paragraph_review.js",
+        "migrations/versions/0003_chapter_review_events.py",
+        "test/integration_e2e/sai_browser_fixture.py",
+        "test/unit/test_sai_review_workflow.py"
+      ],
+      "evidence_class": "regression_or_positive_control",
+      "local_txt_sha256": "b7997e1198919d385dcf4616bb4a3a28a8f1a04eea3e0cbd8d22af434f61e40d",
+      "local_xml_sha256": "605b00bf9232f4a1e9c814b265d13a4ced2784b9243c3ca8c31d34d8123c220e"
+    },
+    {
+      "label": "full-regression",
+      "git_sha_at_start": "d4e189ce2e91db94d50c91f8618b81a02244d783",
+      "status": "failed",
+      "exit_code": 1,
+      "suites": [
+        {
+          "tests": "1245",
+          "errors": "0",
+          "failures": "4",
+          "skipped": "0",
+          "time": "456.177"
+        }
+      ],
+      "command": [
+        "python",
+        "-m",
+        "pytest",
+        "test/unit",
+        "tests",
+        "test/integration_e2e",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "--tb=short",
+        "--show-capture=no"
+      ],
+      "started_utc": "2026-10-23T03:57:20.662742+00:00",
+      "ended_utc": "2026-10-23T04:05:01.493918+00:00",
+      "receipt_sha256": "bde5673384ad2c6f801c899d1fc8699cdbb54a21d2d2934f9b60e15fd5ecae8b",
+      "source_changes_at_start": [
+        "app/core_pro/manuscript/chapter_routes.py",
+        "app/core_pro/manuscript/citation_ledger.py",
+        "app/core_pro/manuscript/context_audit.py",
+        "app/core_pro/manuscript/manuscript_routes.py",
+        "app/core_pro/manuscript/manuscript_ruling.py",
+        "app/llm_service/matching_tasks/task_8drafter.py",
+        "app/mentor/routes.py",
+        "app/models.py",
+        "app/static/js/manuscript_soed.js",
+        "app/static/js/mentor.js",
+        "app/templates/manuscript_workspace.html",
+        "test/js/test_mentor_review_race.cjs",
+        "app/core_pro/manuscript/paragraph_context.py",
+        "app/static/js/paragraph_review.js",
+        "migrations/versions/0003_chapter_review_events.py",
+        "test/integration_e2e/sai_browser_fixture.py",
+        "test/unit/test_sai_review_workflow.py"
+      ],
+      "evidence_class": "fixture_database_configuration_error_corrected",
+      "local_txt_sha256": "239012b6d6f2ddbf9258bf5eb9a50bea87546673efe22495ef7bb00b367ecaf1",
+      "local_xml_sha256": "d4be2049cf1884b6359fedf743075d2bf330ddd0a489f0d7b37888ad5bd97305"
+    },
+    {
+      "label": "final-full-regression",
+      "git_sha_at_start": "7475f71d348926693881ecd9a2296b9c35f79aed",
+      "status": "failed",
+      "exit_code": 1,
+      "suites": [
+        {
+          "tests": "1252",
+          "errors": "0",
+          "failures": "1",
+          "skipped": "0",
+          "time": "760.459"
+        }
+      ],
+      "command": [
+        "python",
+        "-m",
+        "pytest",
+        "test/unit",
+        "tests",
+        "test/integration_e2e",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "--tb=short",
+        "--show-capture=no"
+      ],
+      "started_utc": "2026-10-23T10:52:20.388414+00:00",
+      "ended_utc": "2026-10-23T11:05:07.111083+00:00",
+      "receipt_sha256": "a69f6df8c7852477b2a796ea1777523e5659394536b170bfff20bd27f4e3b701",
+      "source_changes_at_start": [],
+      "evidence_class": "late_cross_process_double_winner_reproduced",
+      "local_txt_sha256": "45e95d2a3013d2c6d49698d366c73ce09a4bb622332ab827e26b6f57f39d3892",
+      "local_xml_sha256": "4d4da1306d12267ba195eb4a3c11c5335bbba13a1061110bbe454b341b1778a8"
+    },
+    {
+      "label": "lock-alias-before",
+      "git_sha_at_start": "7475f71d348926693881ecd9a2296b9c35f79aed",
+      "status": "failed",
+      "exit_code": 1,
+      "suites": [
+        {
+          "tests": "2",
+          "errors": "0",
+          "failures": "2",
+          "skipped": "0",
+          "time": "13.767"
+        }
+      ],
+      "command": [
+        "python",
+        "-m",
+        "pytest",
+        "test/unit/test_sai_process_revision.py",
+        "-k",
+        "aliases",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "--tb=short",
+        "--show-capture=no"
+      ],
+      "started_utc": "2026-10-23T11:09:31.999609+00:00",
+      "ended_utc": "2026-10-23T11:09:48.540909+00:00",
+      "receipt_sha256": "bac2f7069fb2cb23e2d8aea9433d764280c804c8249568fe7d241d452705fe30",
+      "source_changes_at_start": [
+        "test/unit/test_sai_process_revision.py"
+      ],
+      "evidence_class": "defect_reproduction",
+      "local_txt_sha256": "08427d92714e4086357f43f03b93c574b34fc70ad5165968a0017433849bf064",
+      "local_xml_sha256": "55ab67182c93b08728c784739a99b2fff3189b67780e0717e8e585ecdf5ab0f2"
+    },
+    {
+      "label": "lock-alias-after",
+      "git_sha_at_start": "7475f71d348926693881ecd9a2296b9c35f79aed",
+      "status": "passed",
+      "exit_code": 0,
+      "suites": [
+        {
+          "tests": "36",
+          "errors": "0",
+          "failures": "0",
+          "skipped": "0",
+          "time": "71.264"
+        }
+      ],
+      "command": [
+        "python",
+        "-m",
+        "pytest",
+        "test/unit/test_sai_process_revision.py",
+        "test/unit/test_edit_conflict.py",
+        "test/unit/test_draft_revision_integrity.py",
+        "test/unit/test_literature_decision_revision.py",
+        "test/unit/test_upload_preservation.py",
+        "tests/test_citation_ledger.py",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "--tb=short",
+        "--show-capture=no"
+      ],
+      "started_utc": "2026-10-23T11:10:47.876146+00:00",
+      "ended_utc": "2026-10-23T11:12:02.151379+00:00",
+      "receipt_sha256": "6def3717f29caed2e8e21d99377af2ce10684d2ff668d81ba6d26607bbdb4f93",
+      "source_changes_at_start": [
+        "app/security.py",
+        "test/unit/test_sai_process_revision.py"
+      ],
+      "evidence_class": "regression_or_positive_control",
+      "local_txt_sha256": "9447f478b1bd9346bcd8bdfef0d69d76b033dbf7d4636121da577524f2604c47",
+      "local_xml_sha256": "1d7b02b21072f1e67ed902e148e48ddfed7f78364f7a4cbf98263b0ce553c786"
+    },
+    {
+      "label": "post-alias-full-regression",
+      "git_sha_at_start": "aa3fbaebd3fe9f6bdf8f9d1e1e55ea291acc5e23",
+      "status": "passed",
+      "exit_code": 0,
+      "suites": [
+        {
+          "tests": "1254",
+          "errors": "0",
+          "failures": "0",
+          "skipped": "0",
+          "time": "830.785"
+        }
+      ],
+      "command": [
+        "python",
+        "-m",
+        "pytest",
+        "test/unit",
+        "tests",
+        "test/integration_e2e",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "--tb=short",
+        "--show-capture=no"
+      ],
+      "started_utc": "2026-10-23T11:13:07.601451+00:00",
+      "ended_utc": "2026-10-23T11:27:12.179889+00:00",
+      "receipt_sha256": "9a85dccd97b119581a7ebc2d4d1fb8744a26ff408081e0a601019d64cf9adcaf",
+      "source_changes_at_start": [],
+      "evidence_class": "final_frozen_code_full_regression",
+      "local_txt_sha256": "8f422b55ce9bdb85867498cb7e8de2a2dd8e4c9c3c7aeca64a8828ca79d419ea",
+      "local_xml_sha256": "45bfbdeb92996715fb91e4b20d1a80ddc93ca4658a896b0e44f32f1e2f0e622c"
+    }
+  ],
+  "source_files": [
+    {
+      "path": "app/core_pro/literature/literature_batch_routes.py",
+      "working_tree_sha256": "72cd7d909b073e81f98205f0967cc609b7bdaf329705a79b759b6d8108cfb12e",
+      "git_blob_oid": "4aad8923b0b9048fb3cf1e5e6f887e71069f172c"
+    },
+    {
+      "path": "app/core_pro/literature/literature_routes.py",
+      "working_tree_sha256": "072e1cf63fec6fbd64607c3d414cab8845fd18c6f27700dafee4cb7d866995b5",
+      "git_blob_oid": "b061f30b34ef63f432f2e6d08e99afb0c4ee5cab"
+    },
+    {
+      "path": "app/core_pro/manuscript/chapter_routes.py",
+      "working_tree_sha256": "91832d70dc21d9631d1d631e7d47a0163c21699af148ea4690aaffdc202f4b21",
+      "git_blob_oid": "ab1ed1098c00af8a3a6472035e7156ed10a2be3e"
+    },
+    {
+      "path": "app/core_pro/manuscript/citation_ledger.py",
+      "working_tree_sha256": "2de10828ef0e52f700512882c18753201b182d34bcf63003ba008ec1bf77191d",
+      "git_blob_oid": "c13da4b0b639c80e3434e71f44a1565ee2da9f46"
+    },
+    {
+      "path": "app/core_pro/manuscript/context_audit.py",
+      "working_tree_sha256": "3db08ed3aa3fbe64f6f38f61ac9818e1799c8285c0fb228f19e51880a1edaa08",
+      "git_blob_oid": "10f21098704a7c5b82acb92d1dc5c99d39fb9e86"
+    },
+    {
+      "path": "app/core_pro/manuscript/manuscript_image.py",
+      "working_tree_sha256": "f303adc4ba6e73be71d859632066921473b895756000f9fa28cd929eacabf653",
+      "git_blob_oid": "285bc2a117c08e39a10daecc514fc28eed2726e3"
+    },
+    {
+      "path": "app/core_pro/manuscript/manuscript_routes.py",
+      "working_tree_sha256": "e49a2a2e2092a59f9dd41a8db56145a5824282ab0dde3d2ee3defcebcecfb792",
+      "git_blob_oid": "3965263c7b7596418ab45576ec6028235eadc0a7"
+    },
+    {
+      "path": "app/core_pro/manuscript/manuscript_ruling.py",
+      "working_tree_sha256": "de0bef8bb72f548d4fe86485e49fe53e9e1580a617b704558aee4605da36fc44",
+      "git_blob_oid": "23b12d2c976d075eb7d908816d172c79061a5b12"
+    },
+    {
+      "path": "app/core_pro/manuscript/paragraph_context.py",
+      "working_tree_sha256": "00c3b025cb010809c4ef079fd58b72e08c3a002dc46e0cb461dede5a5d33e8a6",
+      "git_blob_oid": "7cb8eb10403db671f9722613b475076907e17867"
+    },
+    {
+      "path": "app/core_pro/study/study_routes.py",
+      "working_tree_sha256": "be1f40759e6d326dbf20487d223a056c15d03c45cdd2f13b3a9d663a635d24a9",
+      "git_blob_oid": "fead2bf960f5d1870f5e7aadcbda5e865f6e6b2b"
+    },
+    {
+      "path": "app/llm_service/matching_tasks/task_8drafter.py",
+      "working_tree_sha256": "5619f49c568f6c2076484a45592d8d193fab8eb812014b66bafcfe6de095f51e",
+      "git_blob_oid": "ab0b575c7e7c1725e292e10b66482d0c704b68b7"
+    },
+    {
+      "path": "app/mentor/routes.py",
+      "working_tree_sha256": "c292710b768b915e03f1bd5f7addc66f38b7f6f0ef642886a0998424f7a82a15",
+      "git_blob_oid": "8f0741c82a0117c212cd18b9011b393f26466f84"
+    },
+    {
+      "path": "app/models.py",
+      "working_tree_sha256": "52b3d4c2bf72b4701c7a880ac6cbde8bd101199be73557c34a017ae4ef43344c",
+      "git_blob_oid": "3d0e286146acbee41651ea5fd07de400dd1918eb"
+    },
+    {
+      "path": "app/security.py",
+      "working_tree_sha256": "58fdfa97a1a8c022a0c95b04f5fe422d4c34b0c3ebd6c6dfae753e49b95a7aaa",
+      "git_blob_oid": "3cd0103a6e0221a397dc5709c3a086b289415eef"
+    },
+    {
+      "path": "app/static/js/literature_app.js",
+      "working_tree_sha256": "68eb7cfd25fbe5ee2ddb02e1affdf33f1798dc67ce6b9ace98baf1c32c2f887c",
+      "git_blob_oid": "b442c731b815c3efd5e9dc2956d75098cdefeb83"
+    },
+    {
+      "path": "app/static/js/literature_library.js",
+      "working_tree_sha256": "3d2875ff248b101762ade4edb64f5d5b0ac6de55c13e4819f2a69c6fe471a775",
+      "git_blob_oid": "a8abc9691a705ac66070b98b74443f6d8be6b8b3"
+    },
+    {
+      "path": "app/static/js/literature_origins.js",
+      "working_tree_sha256": "82a1158913d2620055d92b783b50237289f060aac4a6663318f71a12136d23f4",
+      "git_blob_oid": "6eab5dfa9d2a6bd01948eff30b8ffd07b77a0c2e"
+    },
+    {
+      "path": "app/static/js/manuscript_soed.js",
+      "working_tree_sha256": "ef03b198aa508235059c1c21e4375b0a170eed89d261691e108ccbd404dc8d8f",
+      "git_blob_oid": "8ed7338701eb76138115ad98cfc9286d282c0a35"
+    },
+    {
+      "path": "app/static/js/mentor.js",
+      "working_tree_sha256": "f0b72f7b6147f91748655f460de33124f3b001b353abf70fbca50f1c397e697a",
+      "git_blob_oid": "6504c4e088649f1bbd723f912bc399954be69241"
+    },
+    {
+      "path": "app/static/js/paragraph_review.js",
+      "working_tree_sha256": "c37240ab306348ba8e868a8f97b8fad6e95e34dc52c6517df88e8f55fe8cc9bf",
+      "git_blob_oid": "c74be3b7a04a163b717f9949ab4429904e2df437"
+    },
+    {
+      "path": "app/templates/manuscript_workspace.html",
+      "working_tree_sha256": "f6d2aa666570118969e0eff3e5dfd9691b77aa2c45ff30fc6bc30599c1fb041e",
+      "git_blob_oid": "79c42a6003c722ee10f384223b993ddd1f255962"
+    },
+    {
+      "path": "migrations/versions/0003_chapter_review_events.py",
+      "working_tree_sha256": "37430ae782d129ca67e155cb1a43479602ecb17e0fdae56ef725c51414bcacdf",
+      "git_blob_oid": "08522a91e930395b6d256df02d256da4b98489dc"
+    },
+    {
+      "path": "test/integration_e2e/sai_browser_fixture.py",
+      "working_tree_sha256": "7e397286f0344daedd2c7062a8e0d297103e19b82b8ae133a4e5fb0c22147815",
+      "git_blob_oid": "69be1245425c00cf843c16cbe76a165fd77798ec"
+    },
+    {
+      "path": "test/integration_e2e/test_user_journey_roothinks.py",
+      "working_tree_sha256": "89d80f1fc6bff861e3a986f8faa1548ae2aafbe924be4f9624e909755b0fdbde",
+      "git_blob_oid": "ceecda802f168e723313d6b8aa9161845e59d200"
+    },
+    {
+      "path": "test/js/test_mentor_review_race.cjs",
+      "working_tree_sha256": "459f426b67be7e1f87d148764d7e096d1842810ba09dde5ce2d6f9abbafc4185",
+      "git_blob_oid": "810f2679b899ad1f26b5563477517598ccad943c"
+    },
+    {
+      "path": "test/unit/test_sai_channel_acl.py",
+      "working_tree_sha256": "bd49fd2fab0f50821497b8488ff723cff044a4f81aab5f4302083fcfc74b7856",
+      "git_blob_oid": "6a7e3933d091373c1867f9fa5363f31a4592b8f5"
+    },
+    {
+      "path": "test/unit/test_sai_process_revision.py",
+      "working_tree_sha256": "8b2d253e4919f7198936f71c0322e6ddcd022a291f5e1c5cb26bca8bc2150205",
+      "git_blob_oid": "71278b5301e62d4c77264490be62abb03f632b33"
+    },
+    {
+      "path": "test/unit/test_sai_review_workflow.py",
+      "working_tree_sha256": "4af9e7cdd310f68a47f29259031cd1712d359513d4e93149000a331604e5734d",
+      "git_blob_oid": "2c2060e9cff1c5aa7539dfa9a3785227fb885abe"
+    },
+    {
+      "path": "test/unit/test_study_save_integrity.py",
+      "working_tree_sha256": "bb1b32a16e7ff6cca7514ae65cfed089bc11408070e897fefd08b29377d3884c",
+      "git_blob_oid": "845a001471029c341b498c2f7ad2da479667c4e2"
+    },
+    {
+      "path": "test/unit/test_upload_preservation.py",
+      "working_tree_sha256": "f5d220125271406657c895297fd9386d15ab9614b19850abf532f05df97dec07",
+      "git_blob_oid": "8624e70de0956c148328e18ad20beca2f596cff6"
+    },
+    {
+      "path": "tests/test_citation_ledger.py",
+      "working_tree_sha256": "f49128dd6ec234317dc2db2e24a5a0ebdf1578a1ed9c5a65bc2db2efc146994a",
+      "git_blob_oid": "68a29ca28f67f11f3307e8bceb17419893328579"
+    }
+  ],
+  "browser_screenshots": [
+    {
+      "path": "docs/engineering/evidence/sai-professor-confirmed.png",
+      "sha256": "332d4e9a887dd3f161a13366f46447a01b508c005b3dc45a34845cab58e7d9d2",
+      "bytes": 116854,
+      "local_only": true,
+      "reason": "Existing PNG ignore rule preserved; no binary committed"
+    },
+    {
+      "path": "docs/engineering/evidence/sai-scoped-denied.png",
+      "sha256": "94576ea847436a475c718248dc2b5596e78c3d75add3e585984f18fa0178baf1",
+      "bytes": 11127,
+      "local_only": true,
+      "reason": "Existing PNG ignore rule preserved; no binary committed"
+    },
+    {
+      "path": "docs/engineering/evidence/sai-scoped-workspace.png",
+      "sha256": "88f995213a72b4f7f02e9c9c2b813e0c17f2a3ccae9423bd36d7601f0265578f",
+      "bytes": 103221,
+      "local_only": true,
+      "reason": "Existing PNG ignore rule preserved; no binary committed"
+    }
+  ]
+}
