@@ -45,6 +45,7 @@ import logging
 import os
 import re
 import tempfile
+import time
 from ipaddress import ip_address
 from typing import Any, Dict, Iterable, Optional, Tuple
 
@@ -791,7 +792,16 @@ def _write_json_atomic(path: str, obj: Any) -> None:
             json.dump(obj, f, ensure_ascii=False, indent=2)
             f.flush()
             os.fsync(f.fileno())
-        os.replace(tmp_path, path)
+        # Windows 的掃描器／短暫讀取 handle 會阻止 replace。持原鎖有限重試；
+        # 永久拒絕仍拋錯並保留 canonical，不以刪舊檔繞過。
+        for attempt in range(6):
+            try:
+                os.replace(tmp_path, path)
+                break
+            except PermissionError as exc:
+                if getattr(exc, 'winerror', None) not in {5, 32, 33} or attempt == 5:
+                    raise
+                time.sleep(.01 * 2 ** attempt)
     finally:
         if tmp_path and os.path.exists(tmp_path):
             os.unlink(tmp_path)
