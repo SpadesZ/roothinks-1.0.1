@@ -752,6 +752,10 @@ def build_lock_path(path: str) -> str:
     This avoids writing *.lock inside bind-mounted /app/data where permission may differ.
     """
     target = os.path.realpath(str(path or ""))
+    # 同一 Windows 檔案不能因 realpath 的長路徑前綴／大小寫產生兩把鎖。
+    # safe_join_under 已處理相同別名語意；這裡必須在計算鎖指紋前沿用。
+    if os.name == 'nt':
+        target = os.path.normcase(_strip_extended_prefix(target))
     base = re.sub(r"[^a-zA-Z0-9_.-]+", "_", os.path.basename(target) or "lock_target")
     digest = hashlib.sha1(target.encode("utf-8")).hexdigest()[:16]
     lock_root = _resolve_lock_root()

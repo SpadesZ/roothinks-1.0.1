@@ -19,6 +19,21 @@ def worker(spec):
     from app.services.literature_library import LiteratureLibrary
     from werkzeug.exceptions import Conflict
     mio._get_data_root = lambda: str(root)
+    if spec['kind']=='draft_aliases':
+        from app import security
+        realpath=security.os.path.realpath
+        atomic=security._write_json_atomic
+        def aliased(path,*args,**kwargs):
+            value=realpath(path,*args,**kwargs)
+            if str(path).endswith('_draft__17.json'):
+                value=security._strip_extended_prefix(value)
+                return '\\\\?\\'+value if spec['slot']%2 else value
+            return value
+        def delayed(path,obj):
+            time.sleep(.05)
+            return atomic(path,obj)
+        security.os.path.realpath=aliased
+        security._write_json_atomic=delayed
     (root/f"ready-{spec['slot']}").write_text(str(os.getpid()))
     deadline = time.monotonic()+45
     while not (root/'go').exists():
@@ -37,7 +52,7 @@ def worker(spec):
             if spec['kind'] == 'notes':
                 result = check_and_save_json(str(root/'notes.json'), {'content':str(os.getpid())}, rev,
                                              updated_by=str(os.getpid()), history_dir=str(root/'history'))
-            elif spec['kind'] == 'draft':
+            elif spec['kind'] in ('draft','draft_aliases'):
                 result = mio.ManuscriptIO.save_draft('PROC-p','introduction','Synthetic',str(os.getpid()),
                                                       owner_key=17,base_rev=rev)
             else:
@@ -55,7 +70,8 @@ def worker(spec):
     (root/f"result-{spec['slot']}.json").write_text(json.dumps({'pid':os.getpid(),'results':results}))
 
 
-@pytest.mark.parametrize('kind',['notes','draft','library'])
+@pytest.mark.parametrize('kind',['notes','draft','library',pytest.param('draft_aliases',
+    marks=pytest.mark.skipif(os.name!='nt',reason='Windows 路徑別名語意'))])
 def test_multiple_process_writers_have_one_winner_per_revision(tmp_path,monkeypatch,kind):
     from app.services.literature_library import LiteratureLibrary
     monkeypatch.setenv('LOCK_ROOT',str(tmp_path/'locks'))
@@ -88,7 +104,7 @@ def test_multiple_process_writers_have_one_winner_per_revision(tmp_path,monkeypa
         if kind == 'notes':
             assert json.loads((tmp_path/'notes.json').read_text())['_rev'] == 3
             assert {p.stem for p in (tmp_path/'history').glob('*.json')} == {'1','2'}
-        elif kind == 'draft':
+        elif kind in ('draft','draft_aliases'):
             from app.core_pro.manuscript import manuscript_io as mio
             monkeypatch.setattr(mio,'_get_data_root',lambda:str(tmp_path))
             assert mio.ManuscriptIO.draft_revision('PROC-p','introduction',owner_key=17) == 3
@@ -159,3 +175,17 @@ def test_windows_replace_denial_is_bounded_and_preserves_old_file(tmp_path,monke
         security._write_json_atomic(str(target),{'content':'new'})
         assert len(calls) == 3 and json.loads(target.read_text())['content'] == 'new'
     assert list(tmp_path.iterdir()) == [target]
+
+
+@pytest.mark.skipif(os.name!='nt',reason='Windows 路徑別名語意')
+def test_extended_prefix_and_case_aliases_share_the_same_lock(tmp_path,monkeypatch):
+    from app import security
+    target=str(tmp_path/'Notes.json')
+    realpath=security.os.path.realpath
+    canonical=realpath(target)
+    keys=[]
+    for spelling in (canonical,'\\\\?\\'+canonical,canonical.upper()):
+        with monkeypatch.context() as patch:
+            patch.setattr(security.os.path,'realpath',lambda *a,**k:spelling)
+            keys.append(security.build_lock_path(target))
+    assert len(set(keys))==1
