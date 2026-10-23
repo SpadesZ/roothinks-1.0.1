@@ -33,7 +33,7 @@ def _json(resp, expected_code=200):
 @pytest.fixture()
 def app_bundle(monkeypatch, tmp_path):
     project_root = Path(__file__).resolve().parents[2]
-    data_root = project_root / "data"
+    data_root = tmp_path / "data"
     data_root.mkdir(parents=True, exist_ok=True)
     monkeypatch.setenv("FLASK_ENV", "development")
     monkeypatch.delenv("APP_ENV", raising=False)
@@ -70,6 +70,9 @@ def app_bundle(monkeypatch, tmp_path):
             "SQLALCHEMY_BINDS": {"manuscript": f"sqlite:///{manu_db}"},
         }
     )
+    from app.core_pro.literature import literature_routes
+    monkeypatch.setattr(literature_routes,'DATA_ROOT',str(data_root))
+    monkeypatch.setattr(literature_routes,'literature_library_service',None)
 
     with app.app_context():
         db.drop_all()

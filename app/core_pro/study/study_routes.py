@@ -20,6 +20,7 @@ from urllib.parse import quote
 from werkzeug.exceptions import BadRequest, Forbidden
 from app.models import db, Paper, Project
 from app.services.context_chain_service import ContextChainService
+from app.services.formal_project_sync import resolve_data_root
 from app.security import (
     enforce_project_ownership,
     check_and_save_json,
@@ -75,8 +76,8 @@ def _enforce_study_project_acl():
 
 def get_context_chain_service():
     global context_chain_service
-    if context_chain_service is None:
-        data_root = os.path.join(current_app.root_path, "..", "data")
+    data_root = resolve_data_root()
+    if context_chain_service is None or context_chain_service.data_root != data_root:
         context_chain_service = ContextChainService(data_root=data_root)
     return context_chain_service
 
@@ -140,7 +141,7 @@ def _get_matrix_history_dir(pid):
     pid = _normalize_study_pid(pid)
     if not pid:
         raise ValueError("Invalid PID")
-    data_root = os.path.abspath(os.path.join(current_app.root_path, "..", "data"))
+    data_root = resolve_data_root()
     base_dir = safe_join_under(data_root, pid, "study", "matrix_history")
     os.makedirs(base_dir, exist_ok=True)
     return base_dir
@@ -151,7 +152,7 @@ def _get_legacy_papers_comp_dir(pid):
     pid = _normalize_study_pid(pid)
     if not pid:
         raise ValueError("Invalid PID")
-    data_root = os.path.abspath(os.path.join(current_app.root_path, "..", "data"))
+    data_root = resolve_data_root()
     return safe_join_under(data_root, pid, "study", "papers_comp")
 
 
@@ -161,7 +162,7 @@ def _get_study_note_path(pid):
     if not pid:
         raise ValueError("Invalid PID")
     pid_safe = re.sub(r"[^A-Za-z0-9._-]+", "_", str(pid))
-    data_root = os.path.abspath(os.path.join(current_app.root_path, "..", "data"))
+    data_root = resolve_data_root()
     study_dir = safe_join_under(data_root, pid, "study")
     os.makedirs(study_dir, exist_ok=True)
     return safe_join_under(study_dir, f"{pid_safe}_note.json")
@@ -172,7 +173,7 @@ def _get_latest_matrix_snapshot_path(pid):
     pid = _normalize_study_pid(pid)
     if not pid:
         raise ValueError("Invalid PID")
-    data_root = os.path.abspath(os.path.join(current_app.root_path, "..", "data"))
+    data_root = resolve_data_root()
     study_dir = safe_join_under(data_root, pid, "study")
     os.makedirs(study_dir, exist_ok=True)
     return safe_join_under(study_dir, "latest_matrix.json")
@@ -181,12 +182,12 @@ def _get_latest_matrix_snapshot_path(pid):
 def _load_study_note_text(pid):
     """缺檔可無筆記；讀取失敗不假裝空白，legacy 原文只讀不搬移。"""
     note_path = _get_study_note_path(pid)
-    old_path = os.path.join(current_app.root_path, "..", "data", "note", f"{pid}_note.json")
+    old_path = os.path.join(resolve_data_root(), "note", f"{pid}_note.json")
     for path in (note_path, old_path):
         if os.path.exists(path):
             data = load_json_locked(path, {}, strict=True)
             return str(data.get("notes") or "").strip() if isinstance(data, dict) else str(data or "").strip()
-    legacy = os.path.join(current_app.root_path, "..", "data", pid, "study_notes.txt")
+    legacy = os.path.join(resolve_data_root(), pid, "study_notes.txt")
     if os.path.exists(legacy):
         with open(legacy, encoding="utf-8") as f:
             return f.read().strip()
@@ -560,7 +561,7 @@ def _resolve_fulltext_display_title(pid: str, paper_id: str, payload: dict | Non
 
     try:
         paper_dir = resolve_literature_paper_dir(
-            os.path.abspath(os.path.join(current_app.root_path, "..", "data")),
+            resolve_data_root(),
             pid,
             paper_id,
             for_write=False,
@@ -909,7 +910,7 @@ def _inject_segmentation_equation_fallback(content_pages, data_root: str, pid: s
 
 
 def _study_media_cache_dir(pid: str) -> str:
-    data_root = os.path.abspath(os.path.join(current_app.root_path, "..", "data"))
+    data_root = resolve_data_root()
     media_dir = safe_join_under(data_root, pid, "study", "media_analysis")
     os.makedirs(media_dir, exist_ok=True)
     return media_dir
@@ -1038,7 +1039,7 @@ def _generate_media_analysis_with_llm(kind: str, page: int, seq_id: str, caption
 
 def _collect_media_records(pid: str, paper_id: str, kind_raw: str) -> list[dict]:
     kind, folder, type_name = _normalize_media_kind(kind_raw)
-    data_root = os.path.abspath(os.path.join(current_app.root_path, "..", "data"))
+    data_root = resolve_data_root()
     seg_dir = safe_join_under(data_root, pid, "literature", "segmentation", folder)
 
     def _resolve_png_local(seq_id: str, png_raw: str) -> str:
@@ -1344,7 +1345,7 @@ def get_paper_list(pid):
         if not pid:
             return jsonify({"ok": False, "msg": "Invalid PID"}), 404
 
-        data_root = os.path.abspath(os.path.join(current_app.root_path, "..", "data"))
+        data_root = resolve_data_root()
         project_dir = safe_join_under(data_root, pid)
         if not os.path.exists(project_dir):
             return jsonify({"ok": True, "papers": []})
@@ -1431,7 +1432,7 @@ def run_matrix_comparison():
         if not target_ids or len(target_ids) < 2:
             return jsonify({"ok": False, "error": "請至少選擇 2 篇文獻進行比較。"}), 400
 
-        data_root = os.path.abspath(os.path.join(current_app.root_path, "..", "data"))
+        data_root = resolve_data_root()
         papers_payload = []
         
         for p_id_obj in target_ids:
@@ -1812,7 +1813,7 @@ def _get_conversations_dir(pid):
     pid = _normalize_study_pid(pid)
     if not pid:
         raise ValueError("Invalid PID")
-    data_root = os.path.abspath(os.path.join(current_app.root_path, "..", "data"))
+    data_root = resolve_data_root()
     base_dir = safe_join_under(data_root, pid, "study", "conversations")
     os.makedirs(base_dir, exist_ok=True)
     return base_dir
@@ -2178,7 +2179,7 @@ def load_user_notes(pid):
                 content = str(data or "")
         else:
             # Backward compatibility: legacy shared note dir and txt file.
-            old_note_path = os.path.join(current_app.root_path, "..", "data", "note", f"{pid}_note.json")
+            old_note_path = os.path.join(resolve_data_root(), "note", f"{pid}_note.json")
             if os.path.exists(old_note_path):
                 with open(old_note_path, 'r', encoding='utf-8') as f:
                     old_data = json.load(f)
@@ -2188,7 +2189,7 @@ def load_user_notes(pid):
                         content = str(old_data or "")
 
             # Legacy plain-text notes under project dir.
-            legacy_path = os.path.join(current_app.root_path, "..", "data", pid, "study_notes.txt")
+            legacy_path = os.path.join(resolve_data_root(), pid, "study_notes.txt")
             if not content and os.path.exists(legacy_path):
                 with open(legacy_path, 'r', encoding='utf-8') as f:
                     content = f.read()
@@ -2223,7 +2224,7 @@ def get_fulltext(pid, paper_id):
         except BadRequest:
             return jsonify({"ok": False, "msg": "Invalid paper_id"}), 400
 
-        data_root = os.path.abspath(os.path.join(current_app.root_path, "..", "data"))
+        data_root = resolve_data_root()
         project_dir = safe_join_under(data_root, pid)
         paper_dir = resolve_literature_paper_dir(
             data_root,
@@ -2613,7 +2614,7 @@ def get_media_asset(pid, paper_id, seq_id):
         except BadRequest:
             return "Invalid kind", 400
 
-        data_root = os.path.abspath(os.path.join(current_app.root_path, "..", "data"))
+        data_root = resolve_data_root()
         try:
             vns_path = safe_join_under(data_root, pid, "literature", "segmentation", f"{pid}_vns.json")
             vns_payload = load_json_locked(vns_path, {})
