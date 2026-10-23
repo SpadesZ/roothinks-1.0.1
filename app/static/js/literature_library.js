@@ -25,6 +25,17 @@
 
     let loadedEntries = [];
 
+    window.recoverLiteratureUpload = async function (failure, projectId) {
+        if (!failure.original_saved || !confirm(`原件 ${failure.paper_id} 已保留。現在只補登記？原件不會重寫；未完成的文獻連結請到清單核對。`)) return;
+        const response = await fetch('/api/literature/recover_upload', {
+            method:'POST', headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({pid:projectId,paper_id:failure.paper_id})
+        });
+        const result = await response.json();
+        alert(response.ok ? `補登記完成：${result.paper_id}。請核對文獻連結與納入理由。` : (result.message || '補登記失敗；原件仍保留。'));
+        if (response.ok && projectId === pid()) await loadLibrary();
+    };
+
     function draftKey(entryId) {
         const owner = document.getElementById('libraryPanel')?.dataset.owner || 'local';
         return `literature-decision:${owner}:${pid()}:${entryId}`;

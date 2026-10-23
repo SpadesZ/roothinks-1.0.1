@@ -265,7 +265,10 @@ class LiteratureOriginsHandler {
                 this.app.log(`[Error] Server Error: ${xhr.status}`);
                 let message = `上傳未完成 (${xhr.status})`;
                 try { const failure = JSON.parse(xhr.responseText); message = failure.message || message;
-                    if (failure.original_saved) message += ` 原件已保留：${failure.paper_id}`;
+                    if (failure.original_saved) {
+                        message += ` 原件已保留：${failure.paper_id}`;
+                        window.recoverLiteratureUpload?.(failure,formData.get('pid'));
+                    }
                 } catch (error) {}
                 alert(message);
             }

@@ -91,3 +91,61 @@ def test_pdf_first_creates_candidate_and_hash(uploads):
     assert entries[0]['screening_status'] == 'candidate'
     import hashlib
     assert entries[0]['uploaded_sources'][0]['sha256'] == hashlib.sha256(b'%PDF-candidate-source').hexdigest()
+
+
+def recover(app,paper_id,**extra):
+    return app.test_client().post('/api/literature/recover_upload',json={'pid':PID,'paper_id':paper_id,**extra})
+
+
+def test_partial_stream_failure_never_publishes_source(uploads,monkeypatch):
+    from werkzeug.datastructures import FileStorage
+    app,routes,root = uploads
+    app.config['PROPAGATE_EXCEPTIONS'] = False
+    def partial(self,target,*args,**kwargs):
+        target.write(b'%PDF-incomplete')
+        raise OSError('synthetic interrupted stream')
+    monkeypatch.setattr(FileStorage,'save',partial)
+    response = upload(app,b'%PDF-complete')
+    assert response.status_code == 503
+    assert response.json['original_saved'] is False
+    assert not list(root.glob('**/source.pdf'))
+    with app.app_context():
+        assert routes.Paper.query.count() == 0
+
+
+@pytest.mark.parametrize('stage',['db','library'])
+def test_registration_failure_can_recover_same_identity_without_rewriting(uploads,monkeypatch,stage):
+    from pathlib import Path
+    from app.services.literature_library import LiteratureLibrary
+    app,routes,root = uploads
+    with monkeypatch.context() as patch:
+        def fail(*a,**k):
+            raise RuntimeError('synthetic registration failure')
+        if stage == 'db':
+            patch.setattr(routes.db.session,'commit',fail)
+        else:
+            patch.setattr(LiteratureLibrary,'register_upload',fail)
+        response = upload(app,b'%PDF-recover-original')
+    assert response.status_code == 503 and response.json['original_saved']
+    paper_id = response.json['paper_id']
+    source = next(root.glob('**/source.pdf'))
+    before = (source.read_bytes(),source.stat().st_mtime_ns)
+    one = recover(app,paper_id)
+    two = recover(app,paper_id)
+    assert one.status_code == two.status_code == 200
+    assert one.json['paper_id'] == two.json['paper_id'] == paper_id
+    assert (source.read_bytes(),source.stat().st_mtime_ns) == before
+    with app.app_context():
+        assert routes.Paper.query.filter_by(pid=PID,paper_id=paper_id).count() == 1
+        rows = routes.get_literature_library().list_entries(PID)
+        assert len(rows) == 1 and rows[0]['screening_status'] == 'candidate'
+
+
+def test_recovery_rejects_changed_original_and_missing_manifest(uploads):
+    app,routes,root = uploads
+    response = upload(app,b'%PDF-immutable')
+    source = next(root.glob('**/source.pdf'))
+    source.write_bytes(b'%PDF-tampered')
+    assert recover(app,response.json['paper_id']).status_code == 409
+    (source.parent/'metadata.json').unlink()
+    assert recover(app,response.json['paper_id']).status_code == 409

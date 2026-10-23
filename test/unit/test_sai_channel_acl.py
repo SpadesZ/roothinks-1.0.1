@@ -119,6 +119,17 @@ def test_query_body_project_smuggling_is_rejected(channel_app):
     assert not (root/OTHER/'manuscript/citation_ledger.json').exists()
 
 
+@pytest.mark.parametrize('role',['viewer','coauthor','outsider'])
+def test_recovery_requires_project_editor(channel_app,role):
+    response = client(channel_app,role).post('/api/literature/recover_upload',json={'pid':PID,'paper_id':'missing'})
+    assert response.status_code == 403
+
+
+def test_recovery_project_smuggling_rejected(channel_app):
+    response = client(channel_app,'editor').post(f'/api/literature/recover_upload?pid={PID}',json={'pid':OTHER,'paper_id':'missing'})
+    assert response.status_code == 400
+
+
 def test_suggestion_denial_precedes_retrieval(channel_app,monkeypatch):
     from app.core_pro.manuscript import citation_suggest
     calls = []

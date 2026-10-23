@@ -16,15 +16,71 @@ import os
 import re
 import threading
 import time
+import tempfile
 
 from flask import current_app, jsonify, request
 from PIL import Image, ImageOps
 from werkzeug.utils import secure_filename
 from filelock import FileLock
 from app.security import build_lock_path
+from werkzeug.exceptions import Conflict
 
 
 def register_batch_routes(literature_bp, deps):
+    def register_original(pid, paper_id, entry_id='', base_rev=None):
+        """原件不可變；恢復只補登記。完成後重試不得重設作者已選的新 PDF。"""
+        save_dir = deps.safe_join_under(deps._get_literature_paper_dir(pid, paper_id, for_write=False), '00_origins')
+        source_path = deps.safe_join_under(save_dir,'source.pdf')
+        metadata_path = deps.safe_join_under(save_dir,'metadata.json')
+        meta = deps.load_json_locked(metadata_path,{},strict=True)
+        if not meta.get('sha256') or not os.path.isfile(source_path):
+            raise Conflict('缺少完整原件或來源指紋，無法自動恢復。')
+        with open(source_path,'rb') as source:
+            digest = hashlib.file_digest(source,'sha256').hexdigest()
+        if digest != meta['sha256']:
+            raise Conflict('原件指紋已變更；停止登記並保留現況。')
+        library = deps.get_literature_library()
+        if meta.get('registration') == 'complete':
+            if entry_id and entry_id != meta.get('linked_entry_id'):
+                raise Conflict('此次登記已完成；變更文獻連結請使用文獻清單。')
+            return meta['linked_entry_id']
+        if not deps.Paper.query.filter_by(paper_id=paper_id,pid=pid).first():
+            deps.db.session.add(deps.Paper(paper_id=paper_id,pid=pid,title=meta['original_filename'][:500],
+                has_source=True,interpretation_status=deps.Paper.STATUS_PENDING))
+            deps.db.session.commit()
+        entry = library.register_upload(pid,paper_id,meta['original_filename'],source_sha256=digest,
+                                        actor=meta.get('uploaded_by',''))
+        if entry_id:
+            if base_rev is None and current_app.config.get('AUTH_MODE') == 'session':
+                raise ValueError('連結文獻需要載入的版號，原件已保留。')
+            entry = library.update_entry(pid,entry_id,{'paper_id':paper_id},actor=deps.current_screening_actor(),base_rev=base_rev)
+        meta.update(registration='complete',linked_entry_id=entry['entry_id'])
+        deps.write_json_locked(metadata_path,meta)
+        return entry['entry_id']
+
+    @literature_bp.route('/api/literature/recover_upload', methods=['POST'])
+    def recover_upload():
+        data = request.get_json(silent=True) or {}
+        pid = deps._normalize_literature_pid(data.get('pid'))
+        if not pid:
+            return jsonify(status='error',message='Invalid pid'),404
+        paper_id = deps._safe_paper_id(data.get('paper_id'))
+        lock_target = deps.safe_join_under(deps.DATA_ROOT,pid,'literature','upload')
+        try:
+            with FileLock(build_lock_path(lock_target),timeout=10):
+                entry_id = register_original(pid,paper_id,str(data.get('entry_id') or ''),data.get('base_rev'))
+            return jsonify(status='success',paper_id=paper_id,linked_entry_id=entry_id)
+        except Conflict as exc:
+            deps.db.session.rollback()
+            return jsonify(status='error',paper_id=paper_id,message=exc.description),409
+        except (ValueError,TypeError) as exc:
+            deps.db.session.rollback()
+            return jsonify(status='error',paper_id=paper_id,message=str(exc)),400
+        except Exception:
+            deps.db.session.rollback()
+            deps.logger.exception('Upload recovery failed')
+            return jsonify(status='error',paper_id=paper_id,message='補登記未完成；原件維持原狀。'),503
+
     @literature_bp.route('/api/literature/upload', methods=['POST'])
     def upload_file():
         if 'file' not in request.files:
@@ -86,75 +142,49 @@ def register_batch_routes(literature_bp, deps):
                     return jsonify({"status": "error", "message": "原件已存在，請以新版本上傳。", "paper_id": paper_id}), 409
                 source_type = 'pdf'
 
-                if is_pdf:
-                    with open(save_path, 'xb') as target:
-                        file.save(target)
-                else:
-                    original_path = deps.safe_join_under(save_dir, 'uploaded_original' + (ext or '.image'))
-                    with open(original_path, 'xb') as target:
-                        file.save(target)
-                    file.stream.seek(0)
-                    with Image.open(file.stream) as img_raw:
-                        img = ImageOps.exif_transpose(img_raw)
-                        if img.mode in ('RGBA', 'LA', 'P'):
-                            img = img.convert('RGB')
-                        elif img.mode != 'RGB':
-                            img = img.convert('RGB')
-                        with open(save_path, 'xb') as target:
-                            img.save(target, format='PDF', resolution=200.0)
-                    source_type = 'image_to_pdf'
-
-                deps.write_json_locked(
-                    deps.safe_join_under(save_dir, "metadata.json"),
-                    {"original_filename": filename, "upload_time": time.time(), "source_type": source_type},
-                )
+                try:
+                    # 同檔案系統先完成、fsync，再用 exclusive hard-link 發布，永不覆寫原件。
+                    with tempfile.TemporaryDirectory(prefix='upload-',dir=save_dir) as staging:
+                        staged = os.path.join(staging,'source.pdf')
+                        incoming = staged if is_pdf else os.path.join(staging,'original')
+                        with open(incoming,'xb') as target:
+                            file.save(target)
+                            target.flush()
+                            os.fsync(target.fileno())
+                        if not is_pdf:
+                            original_path = deps.safe_join_under(save_dir,'uploaded_original'+(ext or '.image'))
+                            os.link(incoming,original_path)
+                            with Image.open(incoming) as raw:
+                                img = ImageOps.exif_transpose(raw).convert('RGB')
+                                with open(staged,'xb') as target:
+                                    img.save(target,format='PDF',resolution=200.0)
+                                    target.flush()
+                                    os.fsync(target.fileno())
+                            source_type = 'image_to_pdf'
+                        with open(staged,'rb') as source:
+                            digest = hashlib.file_digest(source,'sha256').hexdigest()
+                        deps.write_json_locked(deps.safe_join_under(save_dir,'metadata.json'),{
+                            'original_filename':filename,'upload_time':time.time(),'source_type':source_type,
+                            'sha256':digest,'size_bytes':os.path.getsize(staged),
+                            'uploaded_by':deps.current_screening_actor(),'registration':'pending',
+                            'requested_entry_id':str(request.form.get('entry_id') or ''),
+                        })
+                        os.link(staged,save_path)
+                except Exception:
+                    deps.logger.exception('Original publication failed')
+                    return jsonify(status='error',original_saved=os.path.isfile(save_path),paper_id=paper_id,
+                                   message='原件寫入未完成；未登記為可處理 PDF。'),503
 
                 entry_id = str(request.form.get('entry_id') or '').strip()
-                entry = None
                 try:
-                    existing_paper = deps.Paper.query.filter_by(paper_id=paper_id, pid=pid).first()
-                    if not existing_paper:
-                        seed_title = (entry or {}).get("title") or filename
-                        seed_authors = ", ".join((entry or {}).get("authors") or [])[:200]
-                        new_paper = deps.Paper(
-                            paper_id=paper_id,
-                            pid=pid,
-                            title=str(seed_title)[:500],
-                            authors=seed_authors,
-                            journal=str((entry or {}).get("venue") or '')[:200],
-                            publish_date=str((entry or {}).get("year") or ''),
-                            has_source=True,
-                            interpretation_status=deps.Paper.STATUS_PENDING,
-                        )
-                        deps.db.session.add(new_paper)
-                        deps.db.session.commit()
-                        deps.logger.info(f"Paper record created for: {paper_id}")
-                except Exception:
-                    deps.db.session.rollback()
-                    deps.logger.exception("Failed to register uploaded original")
-                    return jsonify({"status": "error", "original_saved": True, "paper_id": paper_id,
-                                    "message": "原件已保存，但資料登記失敗；請保留此文獻 ID。"}), 503
-                try:
-                    with open(save_path, 'rb') as source:
-                        digest = hashlib.sha256()
-                        for chunk in iter(lambda: source.read(1024 * 1024), b''):
-                            digest.update(chunk)
-                    library = deps.get_literature_library()
-                    actor = deps.current_screening_actor()
-                    entry = library.register_upload(pid, paper_id, filename, source_sha256=digest.hexdigest(), actor=actor)
-                    if entry_id:
-                        raw_rev = request.form.get('base_rev')
-                        if raw_rev is None and current_app.config.get('AUTH_MODE') == 'session':
-                            raise ValueError("連結文獻需要載入的版號，原件已保留。")
-                        entry = library.update_entry(pid, entry_id, {"paper_id": paper_id}, actor=actor,
-                                                     base_rev=int(raw_rev) if raw_rev is not None else None)
-                    entry_id = entry['entry_id']
+                    raw_rev = request.form.get('base_rev')
+                    entry_id = register_original(pid,paper_id,entry_id,int(raw_rev) if raw_rev is not None else None)
                 except Exception:
                     deps.logger.exception("Upload library registration/link failed")
                     return jsonify({"status": "error", "original_saved": True, "paper_id": paper_id,
                                     "message": "原件已保存；文獻登記或連結未完成，請保留此 ID 並核對文獻清單。"}), 503
                 deps.logger.info(f"File uploaded: {save_path}")
-                return jsonify({"status": "success", "paper_id": paper_id, "linked_entry_id": entry_id if entry else ""})
+                return jsonify({"status": "success", "paper_id": paper_id, "linked_entry_id": entry_id})
 
     @literature_bp.route('/api/literature/run_batch', methods=['POST'])
     def run_batch():

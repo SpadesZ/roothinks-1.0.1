@@ -681,6 +681,7 @@ window.literatureApp = {
                 window.literatureLibrary?.loadLibrary();
             } else {
                 alert('上傳失敗: ' + data.message);
+                window.recoverLiteratureUpload?.(data,formData.get('pid'));
             }
         })
         .catch(err => {

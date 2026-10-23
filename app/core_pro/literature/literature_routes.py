@@ -229,6 +229,12 @@ def _enforce_literature_project_acl():
     if not request.path.startswith("/api/literature/"):
         return None
 
+    body = request.get_json(silent=True)
+    supplied = [(request.view_args or {}).get('pid'), *request.args.getlist('pid'),
+                *request.form.getlist('pid'), body.get('pid') if isinstance(body,dict) else None]
+    supplied = [p for p in supplied if p is not None]
+    if len({_normalize_literature_pid(p) for p in supplied}) > 1:
+        return jsonify(status='error',message='Conflicting project ids'),400
     raw_pid = None
     if isinstance(request.view_args, dict):
         raw_pid = request.view_args.get("pid")
