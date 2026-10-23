@@ -110,8 +110,10 @@ def _relative(name):
 def _walk(root):
     if _junction(root):
         raise BackupError('快照內容根目錄不可是連結。')
+    def unreadable(error):
+        raise error
     directories,files = [],{}
-    for current,names,leaves in os.walk(root,followlinks=False):
+    for current,names,leaves in os.walk(root,followlinks=False,onerror=unreadable):
         parent = Path(current)
         for name in list(names):
             path = parent/name

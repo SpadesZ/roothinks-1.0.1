@@ -239,3 +239,21 @@ def test_external_database_cannot_be_silently_omitted_from_complete_backup(tmp_p
     with pytest.raises(BackupError):
         create_backup(source,tmp_path/'must-not-publish')
     assert not (tmp_path/'must-not-publish').exists()
+
+
+def test_unreadable_research_directory_never_publishes_incomplete_backup(tmp_path,monkeypatch):
+    import os
+    from pathlib import Path
+    source=tmp_path/'source'
+    files=seed(source)
+    scandir=os.scandir
+    def denied(path):
+        if Path(path)==source/'SOLO-p/study':
+            raise PermissionError('Synthetic unreadable research directory')
+        return scandir(path)
+    monkeypatch.setattr(os,'scandir',denied)
+    with pytest.raises(BackupError):
+        create_backup(source,tmp_path/'must-not-be-complete')
+    assert not (tmp_path/'must-not-be-complete/manifest.json').exists()
+    for name,content in files.items():
+        assert (source/name).read_bytes()==content
