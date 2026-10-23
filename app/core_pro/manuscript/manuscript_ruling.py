@@ -310,6 +310,9 @@ class ManuscriptRuling:
             "injected_context_fingerprints": [x.get("fingerprint") for x in injected_context_items],
             "context_audit_path": context_audit_path,
             "context_sources": source_manifest,
+            "context_items": injected_context_items,
+            "coc_source_items": coc_source_items,
+            "budget_notes": budget_notes,
             "has_grounding": has_grounding,
         }
 

@@ -52,6 +52,7 @@ from uuid import uuid4
 from flask import Blueprint, jsonify, render_template, request, send_file
 from flask_login import current_user, login_required
 from werkzeug.exceptions import BadRequest
+from werkzeug.exceptions import Conflict
 
 from app import db
 from app.mentor import mentor_bp
@@ -67,6 +68,7 @@ from app.models import (
     User,
     UserSession,
     WorkspaceMember,
+    ChapterComment,
     _as_utc,
 )
 from app.security import (
@@ -164,6 +166,21 @@ def _has_shared_review_project(mentor_id: int, mentee_id: int) -> bool:
 
 def _review_item_dict(row: MentorReviewItem) -> dict:
     payload = row.to_dict()
+    comment = ChapterComment.query.filter(ChapterComment.pid==row.pid,
+        db.or_(ChapterComment.anchor==f'mentor:{row.id}',ChapterComment.anchor.like(f'mentor:{row.id}|%'))).first()
+    payload['comment'] = comment.to_dict() if comment else None
+    if comment and '|decision:' in str(comment.anchor):
+        from app.core_pro.manuscript.manuscript_io import _get_data_root
+        from app.core_pro.manuscript.paragraph_context import get_context, validate_context
+        try:
+            payload['paragraph_decision'] = get_context(_get_data_root(),row.pid,comment.anchor.split('|decision:')[1])
+            try:
+                validate_context(_get_data_root(),row.pid,payload['paragraph_decision'])
+                payload['context_issues'] = []
+            except (Conflict,BadRequest) as exc:
+                payload['context_issues'] = [exc.description]
+        except Conflict:
+            payload['context_issue'] = '段落決策缺少；原意見仍保留。'
     if row.kind == MentorReviewItem.KIND_RESOURCE_PDF:
         payload["download_url"] = f"/api/mentor/review-items/{row.id}/download"
     return payload
@@ -607,6 +624,22 @@ def create_mentor_comment(mentee_id):
 # ---------------------------------------------------------------------------
 
 
+@mentor_api_bp.route('/my-reviews/<pid>',methods=['GET'])
+@login_required
+def my_versioned_reviews(pid):
+    from app.core_pro.manuscript.manuscript_io import ManuscriptIO
+    role = get_workspace_role(current_user.id,pid)
+    if role is None or is_section_scoped_role(role,pid):
+        return _forbidden()
+    rows = MentorReviewItem.query.filter_by(mentee_id=current_user.id,pid=pid).order_by(MentorReviewItem.created_at).all()
+    rows = [r for r in rows if MentorLink.query.filter_by(mentor_id=r.mentor_id,mentee_id=current_user.id).first()
+            and get_workspace_role(r.mentor_id,pid) is not None
+            and not is_section_scoped_role(get_workspace_role(r.mentor_id,pid),pid)]
+    if request.args.get('version'):
+        rows = [r for r in rows if r.paper_version==request.args['version'] or not r.paper_version]
+    return jsonify(success=True,versions=ManuscriptIO.list_paper_versions(pid),items=[_review_item_dict(r) for r in rows])
+
+
 @mentor_api_bp.route("/mentees/<int:mentee_id>/reviews/<pid>", methods=["GET"])
 @login_required
 def get_review_workbench(mentee_id, pid):
@@ -618,7 +651,10 @@ def get_review_workbench(mentee_id, pid):
     from app.core_pro.manuscript.manuscript_io import ManuscriptIO
 
     versions = ManuscriptIO.list_paper_versions(clean_pid)
-    latest_meta = versions[0] if versions else None
+    selected = request.args.get('version')
+    if selected and selected not in {v.get('g_ver') for v in versions}:
+        raise Conflict('選取的稿件版本不存在。')
+    latest_meta = next((v for v in versions if v.get('g_ver')==selected),None) if selected else (versions[0] if versions else None)
     manuscript = None
     if latest_meta:
         loaded = ManuscriptIO.load_paper_version(clean_pid, latest_meta.get("g_ver"))
@@ -645,11 +681,28 @@ def get_review_workbench(mentee_id, pid):
         .order_by(MentorComment.created_at.asc())
         .all()
     )
+    diff = ''
+    compare = request.args.get('compare')
+    if compare:
+        from difflib import unified_diff
+        from app.core_pro.manuscript.coc_bundle import html_to_text
+        if compare not in {v.get('g_ver') for v in versions}:
+            raise Conflict('比對版本不存在。')
+        other = ManuscriptIO.load_paper_version(clean_pid,compare)
+        diff = '\n'.join(unified_diff(html_to_text((manuscript or {}).get('content','')).splitlines(),
+            html_to_text(other.get('content','')).splitlines(),fromfile=(manuscript or {}).get('version',''),tofile=compare,lineterm=''))
+    from app.core_pro.manuscript.citation_ledger import list_decisions
+    from app.core_pro.manuscript.manuscript_io import _get_data_root
+    section_versions = (loaded or {}).get('sections',{}) if latest_meta else {}
+    decisions = [r for r in list_decisions(_get_data_root(),clean_pid) if r.get('paragraph_context') and
+        section_versions.get(r['section_id'])==r['paragraph_context']['s_ver']]
     return jsonify({
         "success": True,
         "pid": clean_pid,
         "manuscript": manuscript,
         "versions": versions,
+        "diff":diff,
+        "paragraph_decisions":decisions,
         "items": [_review_item_dict(row) for row in rows],
         "legacy_comments": [row.to_dict() for row in legacy],
     })
@@ -667,6 +720,19 @@ def create_review_item(mentee_id, pid):
     data = request.form if is_multipart else (request.get_json(silent=True) or {})
     kind = str(data.get("kind") or "").strip()
     paper_version = str(data.get("paper_version") or "").strip()[:20] or None
+    from app.core_pro.manuscript.manuscript_io import ManuscriptIO, _get_data_root
+    versions = ManuscriptIO.list_paper_versions(clean_pid)
+    paper_version = paper_version or (versions[0].get('g_ver') if versions else None)
+    if not paper_version or paper_version not in {v.get('g_ver') for v in versions}:
+        raise Conflict('請選取實際存在的稿件版本。')
+    anchor_decision = str(data.get('decision_id') or '').strip()
+    if anchor_decision:
+        from app.core_pro.manuscript.paragraph_context import get_context
+        decision = get_context(_get_data_root(),clean_pid,anchor_decision)
+        contract = decision['paragraph_context']
+        paper = ManuscriptIO.load_paper_version(clean_pid,paper_version)
+        if paper.get('sections',{}).get(contract['section']) != contract['s_ver']:
+            raise Conflict('段落決策不屬於所選全文版本。')
 
     if kind not in MentorReviewItem.KINDS:
         return jsonify({"success": False, "message": "Unsupported review item type"}), 400
@@ -731,6 +797,10 @@ def create_review_item(mentee_id, pid):
 
     try:
         db.session.add(row)
+        db.session.flush()
+        db.session.add(ChapterComment(pid=clean_pid,scope='paper',section_key='__paper__',g_ver=paper_version,
+            author_id=current_user.id,body=row.body or row.title or row.url or row.file_name,
+            anchor=f'mentor:{row.id}'+(f'|decision:{anchor_decision}' if anchor_decision else '')))
         db.session.commit()
     except Exception:
         db.session.rollback()
@@ -750,11 +820,19 @@ def download_review_pdf(item_id):
     row = db.session.get(MentorReviewItem, item_id)
     if row is None or row.kind != MentorReviewItem.KIND_RESOURCE_PDF:
         return jsonify({"success": False, "message": "Resource not found"}), 404
-    guard, _target = _require_review_project(row.mentee_id, row.pid)
-    if guard is not None:
-        return guard
-    if row.mentor_id != current_user.id:
-        return _forbidden()
+    if current_user.id == row.mentee_id:
+        if not MentorLink.query.filter_by(mentor_id=row.mentor_id,mentee_id=row.mentee_id).first():
+            return _forbidden()
+        for uid in (row.mentor_id,row.mentee_id):
+            role = get_workspace_role(uid,row.pid)
+            if role is None or is_section_scoped_role(role,row.pid):
+                return _forbidden()
+    else:
+        guard, _target = _require_review_project(row.mentee_id, row.pid)
+        if guard is not None:
+            return guard
+        if row.mentor_id != current_user.id:
+            return _forbidden()
 
     from app.core_pro.manuscript.manuscript_io import _get_data_root
 

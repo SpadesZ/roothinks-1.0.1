@@ -17,7 +17,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 def study_app(monkeypatch, tmp_path):
     from app.core_pro.study import study_routes as routes
     app = Flask(__name__)
-    app.config.update(TESTING=True, LOCK_ROOT=str(tmp_path / "locks"))
+    app.config.update(TESTING=True, LOCK_ROOT=str(tmp_path / "locks"),
+                      SQLALCHEMY_DATABASE_URI=f'sqlite:///{tmp_path / "app.db"}')
     (tmp_path / "app").mkdir()
     app.root_path = str(tmp_path / "app")
     monkeypatch.setattr(routes, "_normalize_study_pid", lambda pid: str(pid or ""))

@@ -40,6 +40,7 @@ import os
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
+from uuid import uuid4
 
 from app.core_pro.manuscript.context_inject import build_context_pack_metadata
 
@@ -79,7 +80,7 @@ def write_context_audit(
     root = Path(data_root or "data") / "manuscript_context_audit" / _safe_name(project_id) / _safe_name(section_id)
     root.mkdir(parents=True, exist_ok=True)
     now = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
-    path = root / f"{now}.json"
+    path = root / f"{now}_{uuid4().hex}.json"
     tmp_path = path.with_suffix(".tmp")
     pack = build_context_pack_metadata(context_items)
     payload: dict[str, Any] = {

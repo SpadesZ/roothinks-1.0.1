@@ -604,8 +604,8 @@ class ChapterComment(db.Model):
     """
     章節留言。viewer 以上皆可留言，含未被指派該章節的 coauthor。
 
-    anchor 欄位預留給未來「錨定到選取文字」的顆粒度；目前一律 None，
-    留言以整章一串呈現。
+    一般留言沿用整章／全文版本；mentor:<id>|decision:<id> 連結同一教授意見
+    與不可變段落決策。後續回覆存於追加事件，不改寫原始意見。
     """
 
     __tablename__ = "chapter_comments"
@@ -650,6 +650,8 @@ class ChapterComment(db.Model):
 
     author = db.relationship("User", foreign_keys=[author_id])
 
+    review_events = db.relationship('ChapterReviewEvent',order_by='ChapterReviewEvent.revision',lazy='selectin')
+
     def to_dict(self) -> dict:
         return {
             "id": self.id,
@@ -664,6 +666,9 @@ class ChapterComment(db.Model):
             "author": self.author.username if self.author else None,
             "body": self.body,
             "anchor": self.anchor,
+            "revision": len(self.review_events),
+            "state": (self.review_events[-1].action if self.review_events else 'pending').replace('respond','responded').replace('confirm','confirmed'),
+            "events": [event.to_dict() for event in self.review_events],
             "resolved": self.resolved,
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
@@ -750,6 +755,26 @@ class MetadataIndex(db.Model):
     index_content = db.Column(db.String(255), nullable=False)
     
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+
+
+class ChapterReviewEvent(db.Model):
+    """既有 ChapterComment 的追加回覆歷史；唯一版號約束避免跨程序覆蓋。"""
+    __tablename__ = 'chapter_review_events'
+    id = db.Column(db.Integer,primary_key=True)
+    comment_id = db.Column(db.Integer,db.ForeignKey('chapter_comments.id'),nullable=False,index=True)
+    revision = db.Column(db.Integer,nullable=False)
+    actor_id = db.Column(db.Integer,db.ForeignKey('users.id'),nullable=False)
+    action = db.Column(db.String(20),nullable=False)
+    body = db.Column(db.Text,nullable=False)
+    target_version = db.Column(db.String(20),nullable=True)
+    revision_location = db.Column(db.Text,nullable=True)
+    target_hash = db.Column(db.String(64),nullable=True)
+    created_at = db.Column(db.DateTime,nullable=False,default=lambda:datetime.now(timezone.utc))
+    __table_args__ = (db.UniqueConstraint('comment_id','revision',name='uq_chapter_review_revision'),)
+
+    def to_dict(self):
+        return {key:getattr(self,key) for key in ('id','revision','actor_id','action','body',
+            'target_version','revision_location','target_hash')} | {'created_at':self.created_at.isoformat()}
 
 
 class EvidenceSegment(db.Model):

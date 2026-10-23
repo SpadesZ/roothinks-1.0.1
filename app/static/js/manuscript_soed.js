@@ -2003,6 +2003,7 @@ class ManuSoed {
         if (this.app.currentAttachment) { displayPrompt += `<br><small class="text-warning"><i class="bi bi-paperclip"></i> 附加檔案: ${this.app.currentAttachment.name}</small>`; }
         this.addBubble('user', displayPrompt);
         const payload = { msg: txt, context: this._draftTextForPrompt(), target_lang: targetLang, attachment: this.app.currentAttachment, import_type: this.app.currentImportType, pid: this.app.pid, title: this.app.paperTitleInput.value.trim(), section: targetSection };
+        payload.paragraph_decision_id = window.paragraphReview?.decisionFor(targetSection);
         this.app.socket.emit('chat_message', payload);
         this.requestPending = true;
         this._setJobControls(true, false);
@@ -2025,7 +2026,7 @@ class ManuSoed {
         const currentTitle = this.app.paperTitleInput.value.trim() || 'Untitled';
         const refineMsg = `請撰寫草稿：一篇論文 ${targetLabel}，title是『${currentTitle}』，${targetLabel}字數300字`;
         this.addBubble('user', `[Auto Draft Command] <br><span class="text-info">${refineMsg}</span>`);
-        this.app.socket.emit('chat_message', { msg: refineMsg, context: this._draftTextForPrompt(), target_lang: targetLang, pid: this.app.pid, title: currentTitle, section: targetSection });
+        this.app.socket.emit('chat_message', { msg: refineMsg, context: this._draftTextForPrompt(), target_lang: targetLang, pid: this.app.pid, title: currentTitle, section: targetSection, paragraph_decision_id:window.paragraphReview?.decisionFor(targetSection) });
         this.requestPending = true;
         this._setJobControls(true, false);
         this.showTypingIndicator();

@@ -184,7 +184,10 @@ class MentorDashboard {
                     ${options}
                 </select>
                 <span class="text-muted small" id="reviewVersionMeta"></span>
+                <label class="small" for="reviewVersionSelect">審閱版本</label><select id="reviewVersionSelect" class="form-select form-select-sm" style="width:120px"></select>
+                <label class="small" for="reviewCompareSelect">比較版本</label><select id="reviewCompareSelect" class="form-select form-select-sm" style="width:120px"></select>
             </div>
+            <pre id="reviewVersionDiff" class="small border p-2" style="white-space:pre-wrap;max-height:200px;overflow:auto"></pre>
             <div class="row g-3">
                 <div class="col-xl-8">
                     <div class="border rounded bg-light overflow-hidden">
@@ -199,6 +202,8 @@ class MentorDashboard {
                 <div class="col-xl-4">
                     <div class="border rounded p-3 mb-3">
                         <h6 class="fw-bold">提供意見／建議</h6>
+                        <label class="small" for="reviewDecisionSelect">定位本段主張與證據</label><select id="reviewDecisionSelect" class="form-select form-select-sm mb-2"></select>
+                        <pre id="reviewDecisionPreview" class="small" style="white-space:pre-wrap;max-height:200px;overflow:auto"></pre>
                         <select class="form-select form-select-sm mb-2" id="reviewFeedbackKind">
                             <option value="comment">意見</option>
                             <option value="suggestion">建議</option>
@@ -226,9 +231,16 @@ class MentorDashboard {
         document.getElementById('reviewProjectSelect').addEventListener('change', event => {
             this.loadReview(event.target.value);
         });
+        document.getElementById('reviewVersionSelect').onchange=()=>this.loadReview(this.currentPid,document.getElementById('reviewVersionSelect').value);
+        document.getElementById('reviewCompareSelect').onchange=()=>this.loadReview(this.currentPid,this._paperVersion(),document.getElementById('reviewCompareSelect').value);
+        document.getElementById('reviewDecisionSelect').onchange=()=>{
+            const decision=(this.currentReview.paragraph_decisions || []).find(d=>d.decision_id===document.getElementById('reviewDecisionSelect').value);
+            const c=decision?.paragraph_context;
+            document.getElementById('reviewDecisionPreview').textContent=c ? `主張：${c.claim}\n條件：${c.conditions}\n禁止延伸：${c.forbidden}\n${c.evidence.source_id}：${c.evidence.text}` : '';
+        };
     }
 
-    async loadReview(pid) {
+    async loadReview(pid,version='',compare='') {
         if (!pid || !this.currentId) return;
         const requestSeq = ++this.reviewRequestSeq;
         const menteeId = this.currentId;
@@ -236,7 +248,7 @@ class MentorDashboard {
         this.showError('');
         try {
             const data = await this._fetchJson(
-                `/api/mentor/mentees/${menteeId}/reviews/${encodeURIComponent(pid)}`
+                `/api/mentor/mentees/${menteeId}/reviews/${encodeURIComponent(pid)}?version=${encodeURIComponent(version)}&compare=${encodeURIComponent(compare)}`
             );
             // NOTE(NOTE-003): A 晚回不得覆蓋 B，否則畫面與後續寫入 PID 會分裂。
             if (
@@ -245,6 +257,14 @@ class MentorDashboard {
                 || this.currentPid !== pid
             ) return;
             this.currentReview = data;
+            const options=(data.versions || []).map(v=>`<option value="${this.escape(v.g_ver)}">${this.escape(v.g_ver)}</option>`).join('');
+            document.getElementById('reviewVersionSelect').innerHTML=options;
+            document.getElementById('reviewVersionSelect').value=data.manuscript?.version || '';
+            document.getElementById('reviewCompareSelect').innerHTML='<option value="">選擇比較版本</option>'+options;
+            document.getElementById('reviewCompareSelect').value=compare;
+            document.getElementById('reviewVersionDiff').textContent=data.diff || '選擇另一版本以查看文字差異。';
+            document.getElementById('reviewDecisionSelect').innerHTML='<option value="">整篇意見（未定位段落）</option>'+(data.paragraph_decisions || []).map(d=>`<option value="${this.escape(d.decision_id)}">${this.escape(d.paragraph_context.claim)}</option>`).join('');
+            document.getElementById('reviewDecisionPreview').textContent='';
             this._renderManuscript(data.manuscript);
             this._renderItems(data.items || [], data.legacy_comments || []);
         } catch (err) {
@@ -307,11 +327,19 @@ class MentorDashboard {
             <div class="border rounded p-2 mb-2">
                 <div class="d-flex justify-content-between gap-2">
                     <span class="badge ${item.kind === 'suggestion' ? 'bg-success' : 'bg-primary'}">
-                        ${item.kind === 'suggestion' ? '建議' : '意見'}${item.paper_version ? ` · ${this.escape(item.paper_version)}` : ''}
+                        ${item.kind === 'suggestion' ? '建議' : '意見'}${item.paper_version ? ` · ${this.escape(item.paper_version)}` : ' · 未標版本（待核對）'}
                     </span>
                     <span class="text-muted" style="font-size:.72rem;">${this.fmtDate(item.created_at)}</span>
                 </div>
                 <div class="small mt-2" style="white-space:pre-wrap;">${this.escape(item.body)}</div>
+                ${item.context_issues?.length ? `<p class="small text-warning-emphasis">需重核：${this.escape(item.context_issues.join('；'))}。以下保留原確認快照。</p>` : ''}
+                ${item.paragraph_decision ? `<details class="small"><summary>被審閱的段落主張與條件</summary><pre style="white-space:pre-wrap">主張：${this.escape(item.paragraph_decision.paragraph_context.claim)}\n條件：${this.escape(item.paragraph_decision.paragraph_context.conditions)}\n禁止延伸：${this.escape(item.paragraph_decision.paragraph_context.forbidden)}\n證據：${this.escape(item.paragraph_decision.paragraph_context.evidence.text)}</pre></details>` : ''}
+                ${item.comment ? `<div class="small mt-2">審閱狀態：${this.escape(item.comment.state)} · 版號 ${item.comment.revision}</div>
+                ${item.comment.events.map(e=>`<p class="small mt-2" style="white-space:pre-wrap">${this.escape(e.action)} · ${this.escape(e.target_version)}\n${this.escape(e.body)}\n修訂位置：${this.escape(e.revision_location)}</p>`).join('')}
+                ${item.comment.state==='responded' ? `<button class="btn btn-sm btn-outline-secondary" data-review-compare="${item.id}">比對作者修訂</button>
+                <label class="small d-block">教授決定理由<textarea class="form-control form-control-sm" id="reviewReason${item.comment.id}" maxlength="4000"></textarea></label>
+                <button class="btn btn-sm btn-success mt-1" data-review-confirm="${item.id}">確認已處理</button>
+                <button class="btn btn-sm btn-outline-warning mt-1" data-review-changes="${item.id}">要求再修</button>` : ''}` : ''}
             </div>`).join('');
         const legacyHtml = legacyComments.map(item => `
             <div class="border rounded p-2 mb-2 bg-light">
@@ -336,6 +364,22 @@ class MentorDashboard {
             ${legacyHtml}
             <h6 class="fw-bold small mt-4">提供的資源</h6>
             <div class="list-group">${resourceHtml || '<div class="text-muted small">尚無資源。</div>'}</div>`;
+        target.querySelectorAll('[data-review-compare]').forEach(button=>button.onclick=()=>{
+            const item=items.find(i=>String(i.id)===button.dataset.reviewCompare);
+            this.loadReview(this.currentPid,item.paper_version,item.comment.events.at(-1).target_version);
+        });
+        for (const [attribute,action] of [['reviewConfirm','confirm'],['reviewChanges','request_changes']]) {
+            target.querySelectorAll(action==='confirm' ? '[data-review-confirm]' : '[data-review-changes]').forEach(button=>button.onclick=async()=>{
+                const item=items.find(i=>String(i.id)===button.dataset[attribute]);
+                const comment=item.comment;
+                try {
+                    await this._fetchJson(`/manuscript/api/chapter/${encodeURIComponent(this.currentPid)}/comments/${comment.id}/events`,{
+                        method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action,base_rev:comment.revision,
+                            body:document.getElementById(`reviewReason${comment.id}`).value})});
+                    await this.loadReview(this.currentPid,this._paperVersion());
+                } catch(error) {this.showError(error.message);}
+            });
+        }
     }
 
     _itemUrl() {
@@ -359,10 +403,11 @@ class MentorDashboard {
                     kind: document.getElementById('reviewFeedbackKind').value,
                     body,
                     paper_version: this._paperVersion(),
+                    decision_id: document.getElementById('reviewDecisionSelect').value,
                 }),
             });
             bodyEl.value = '';
-            await this.loadReview(this.currentPid);
+            await this.loadReview(this.currentPid,this._paperVersion());
         } catch (err) {
             this.showError(err.message);
         }
@@ -385,7 +430,7 @@ class MentorDashboard {
             });
             urlEl.value = '';
             document.getElementById('reviewResourceTitle').value = '';
-            await this.loadReview(this.currentPid);
+            await this.loadReview(this.currentPid,this._paperVersion());
         } catch (err) {
             this.showError(err.message);
         }
@@ -403,7 +448,7 @@ class MentorDashboard {
             await this._fetchJson(this._itemUrl(), {method: 'POST', body: form});
             input.value = '';
             document.getElementById('reviewResourceTitle').value = '';
-            await this.loadReview(this.currentPid);
+            await this.loadReview(this.currentPid,this._paperVersion());
         } catch (err) {
             this.showError(err.message);
         }

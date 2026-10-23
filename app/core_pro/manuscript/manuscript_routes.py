@@ -63,6 +63,7 @@ from flask import Blueprint, render_template, request, send_from_directory, json
 from app import socketio, db
 from flask_socketio import emit, join_room
 from socketio.exceptions import ConnectionRefusedError
+from werkzeug.exceptions import BadRequest, Conflict
 from app.llm_service.matching_tasks.task_8drafter import Task8Drafter
 from app.core_pro.manuscript.manuscript_io import ManuscriptIO, _get_data_root
 from app.core_pro.manuscript.manuscript_image import ManuscriptImage
@@ -516,11 +517,17 @@ def _process_chat_job(app_obj, sid, job_id, payload):
                 coc_items=payload.get('coc_items', []),
                 coc_notes=payload.get('coc_notes', []),
                 remaining_budget=payload.get('remaining_budget'),
+                required_context=payload.get('required_context',''),
             )
 
             if _is_cancelled(job_id):
                 return
 
+            if not isinstance(ai_response,dict) or ai_response.get('type')=='error':
+                socketio.emit('job_error',{'job_id':job_id,'stage':'error',
+                    'message':str(ai_response.get('content') or '生成未完成。') if isinstance(ai_response,dict) else '生成回應格式錯誤。'},
+                    to=sid,namespace='/manu_ws')
+                return
             _emit_job_progress(sid, job_id, 'finalizing', 'Persisting response.', 85)
 
             msg_type = ai_response.get('type', 'text') if isinstance(ai_response, dict) else 'text'
@@ -1433,6 +1440,8 @@ def _pack_prompt_context(
     total_budget: int,
     section: str,
     job_id: str,
+    required_context: str = '',
+    required_item: dict | None = None,
 ) -> tuple[str, int, list[str], list[dict]]:
     """
     全域 token 預算 packer（NOTE-012）。
@@ -1473,6 +1482,11 @@ def _pack_prompt_context(
     packer_notes: list[str] = []
     parts: list[str] = []
     used_tokens = 0
+    if required_context:
+        used_tokens = _estimate_tokens(required_context)
+        if used_tokens > total_budget:
+            raise Conflict('預算不足以保留完整主張、證據與限制；請縮小本段範圍。')
+        parts.append(required_context)
 
     # ── 1. 前端未存草稿（優先） ──
     # _MAX_CHAT_CONTEXT_CHARS 的靜默截斷已在 handle_chat 發生，這裡補紀錄。
@@ -1520,7 +1534,21 @@ def _pack_prompt_context(
     coc_text = str(coc_bundle.get("text") or "").strip()
     if coc_text:
         available = total_budget - used_tokens
-        clipped_coc = _truncate_to_budget(coc_text, available)
+        blocks = coc_bundle.get('blocks')
+        if blocks:
+            kept = []
+            for block in blocks:
+                candidate = '\n\n'.join(b['text'] for b in kept+[block])
+                if _estimate_tokens(candidate) <= available:
+                    kept.append(block)
+                else:
+                    packer_notes.append(f"skipped:coc:{block.get('tier')}:完整區塊超出預算")
+            clipped_coc = '\n\n'.join(b['text'] for b in kept)
+            coc_bundle = dict(coc_bundle,items=[i for b in kept for i in b.get('items',[])])
+        else:
+            clipped_coc = _truncate_to_budget(coc_text, available)
+            if clipped_coc != coc_text:
+                coc_bundle = dict(coc_bundle,items=[])
         if len(clipped_coc) < len(coc_text):
             packer_notes.append(
                 f"truncated:coc_context:tokens_available={available}"
@@ -1538,7 +1566,10 @@ def _pack_prompt_context(
     remaining_budget = max(0, total_budget - used_tokens)
 
     packed = "\n\n".join(p for p in parts if p)
-    return packed, remaining_budget, packer_notes, list(coc_bundle.get("items") or [])
+    items = list(coc_bundle.get('items') or [])
+    if required_item:
+        items.insert(0,required_item)
+    return packed, remaining_budget, packer_notes, items
 
 
 _COC_CURRENT_SECTION_TIER = "current_section"
@@ -1699,6 +1730,16 @@ def handle_chat(data):
         # 實際生成跑在 _CHAT_EXECUTOR 的 worker thread，那裡沒有 current_user，
         # 在下游才判權限會拿不到身分而預設放行。
         coc_bundle = _build_coc_for_request(pid, section)
+        required_context = ''
+        required_item = None
+        if data.get('paragraph_decision_id'):
+            from app.core_pro.manuscript.paragraph_context import get_context, validate_context, prompt_block
+            decision = get_context(_citation_data_root(),pid,str(data['paragraph_decision_id']),section)
+            contract = validate_context(_citation_data_root(),pid,decision)
+            required_context = prompt_block(contract)
+            required_item = {'source_type':'author_paragraph_context','source_id':decision['decision_id'],
+                             'fingerprint':contract['fingerprint'],'paper_id':contract['evidence']['paper_id'],
+                             'segment_id':contract['evidence']['segment_id']}
 
         # 使用者訊息寫不進聊天歷史，不該連帶讓整個草稿請求消失：
         # 使用者要的是草稿，歷史少一筆可以事後補，靜默吞掉請求不行。
@@ -1775,14 +1816,19 @@ def handle_chat(data):
             total_budget=_PROMPT_MAX_TOKENS,
             section=section,
             job_id=job_id,
+            required_context=required_context,
+            required_item=required_item,
         )
         # 字元層截斷發生在 packer 之前，packer 看不到，必須在這裡併回來，
         # 否則作者尾端的內容會靜默消失且 audit 上沒有任何痕跡。
         packer_notes = pre_pack_notes + packer_notes
         if packer_notes:
             logger.info("[manu_chat] Packer 裁切紀錄 id=%s notes=%s", job_id, packer_notes)
+        emit('context_manifest',{'items':coc_items,'notes':(coc_bundle.get('notes') or [])+packer_notes,
+                                'paragraph_decision_id':data.get('paragraph_decision_id')})
 
         payload = {
+            'required_context':required_context,
             'user_msg': user_msg,
             'context_text': context_text,
             # 去重後的來源清單，不是原始 bundle 的 —— 見 _pack_prompt_context 的回傳說明。
@@ -1800,6 +1846,9 @@ def handle_chat(data):
             's_ver': s_ver,
         }
         _CHAT_EXECUTOR.submit(_process_chat_job, app_obj, sid, job_id, payload)
+    except (BadRequest, Conflict) as exc:
+        _delete_job_state(job_id)
+        emit('job_error',{'job_id':job_id,'stage':'error','message':exc.description})
     except Exception:
         # ack 之後才炸的話前端已經在等這個 job_id，一定要補一個終止事件，
         # 否則就退化回「永遠轉圈」——這正是本次修的病。
@@ -2511,6 +2560,54 @@ def _citation_data_root():
     from app.services.formal_project_sync import resolve_data_root
 
     return resolve_data_root()
+
+
+@bp.route('/api/paragraph/confirm',methods=['POST'])
+def confirm_paragraph_context():
+    from flask_login import current_user
+    from app.core_pro.manuscript.paragraph_context import confirm_context
+    data = request.get_json(silent=True) or {}
+    pid = _resolve_formal_project_pid(data.get('pid'))
+    uid = _session_uid()
+    if not pid:
+        return jsonify(success=False,message='Invalid pid'),404
+    if uid is not None and not _socket_can_write_section(uid,pid,str(data.get('section') or '')):
+        return jsonify(success=False,message='Forbidden'),403
+    decision = confirm_context(_citation_data_root(),pid,data,current_user.email if uid is not None else 'local-user')
+    return jsonify(success=True,decision=decision),201
+
+
+@bp.route('/api/paragraph/context',methods=['GET'])
+def paragraph_context_choices():
+    from app.models import EvidenceSegment
+    from app.services.literature_library import LiteratureLibrary
+    from app.core_pro.manuscript.citation_ledger import list_decisions
+    from app.core_pro.manuscript.paragraph_context import validate_context
+    pid = _resolve_formal_project_pid(request.args.get('pid'))
+    section = str(request.args.get('section') or '')
+    uid = _session_uid()
+    if not pid:
+        return jsonify(success=False,message='Invalid pid'),404
+    if uid is not None and not _socket_can_read_section(uid,pid,section):
+        return jsonify(success=False,message='Forbidden'),403
+    entries = [e for e in LiteratureLibrary(_citation_data_root()).list_entries(pid) if
+               e.get('screening_status')=='included' and e.get('screening_decided_by') and not e.get('linked_to')]
+    sources = []
+    for entry in entries:
+        if not entry.get('paper_id'):
+            continue
+        for segment in EvidenceSegment.query.filter_by(project_id=pid,paper_id=entry['paper_id']).all():
+            sources.append({'entry_id':entry['entry_id'],'evidence_id':segment.id,'title':entry.get('title'),
+                'reading_note':entry.get('reading_note',''),'selection_reason':entry.get('screening_note',''),
+                'text':segment.text,'locator':segment.metadata_json})
+    rows = [r for r in list_decisions(_citation_data_root(),pid,section_id=section) if r.get('paragraph_context')]
+    for row in rows:
+        try:
+            validate_context(_citation_data_root(),pid,row)
+            row['issues'] = []
+        except (Conflict,BadRequest) as exc:
+            row['issues'] = [exc.description]
+    return jsonify(success=True,sources=sources,decisions=rows)
 
 
 def _visible_image_registry(pid):

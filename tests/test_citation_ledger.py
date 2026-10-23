@@ -9,6 +9,19 @@
 
 import pytest
 
+
+@pytest.mark.parametrize('content',['{"decisions":"corrupt-but-valid-json"}','[]'])
+def test_invalid_ledger_shape_is_preserved_and_reported(tmp_path,content):
+    from app.core_pro.manuscript.citation_ledger import record_decision,list_decisions
+    target=tmp_path/'SHAPE-p'/'manuscript'/'citation_ledger.json'
+    target.parent.mkdir(parents=True)
+    target.write_text(content,encoding='utf-8')
+    with pytest.raises(ValueError):
+        record_decision(str(tmp_path),'SHAPE-p',section_id='introduction',status='accepted',paper_id='synthetic')
+    assert target.read_text(encoding='utf-8')==content
+    with pytest.raises(ValueError):
+        list_decisions(str(tmp_path),'SHAPE-p')
+
 from app.core_pro.manuscript.citation_ledger import list_decisions, record_decision
 
 

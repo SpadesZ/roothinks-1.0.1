@@ -149,3 +149,30 @@ def test_recovery_rejects_changed_original_and_missing_manifest(uploads):
     assert recover(app,response.json['paper_id']).status_code == 409
     (source.parent/'metadata.json').unlink()
     assert recover(app,response.json['paper_id']).status_code == 409
+
+
+def test_link_failure_preserves_candidate_and_recovery_never_reactivates_old_pdf(uploads):
+    app,routes,root = uploads
+    with app.app_context():
+        library = routes.get_literature_library()
+        library.merge_candidates(PID,[{'title':'Search identity','doi':'10.1234/recovery'}])
+        target = next(e for e in library.list_entries(PID) if e.get('doi'))
+        library.update_entry(PID,target['entry_id'],{'reading_note':'newer revision'},actor='author',base_rev=0)
+    failed = upload(app,b'%PDF-first',entry_id=target['entry_id'],base_rev='0')
+    assert failed.status_code == 503 and failed.json['original_saved']
+    first_id = failed.json['paper_id']
+    with app.app_context():
+        rows = library.list_entries(PID)
+        assert next(e for e in rows if e.get('paper_id')==first_id)['screening_status']=='candidate'
+    linked = recover(app,first_id,entry_id=target['entry_id'],base_rev=1)
+    assert linked.status_code == 200
+    second = upload(app,b'%PDF-second')
+    assert second.status_code == 200
+    with app.app_context():
+        current = library.load(PID)['entries'][target['entry_id']]
+        updated = library.update_entry(PID,target['entry_id'],{'paper_id':second.json['paper_id']},actor='author',base_rev=current['_rev'])
+    assert recover(app,first_id).status_code == 200
+    with app.app_context():
+        now = library.load(PID)['entries'][target['entry_id']]
+        assert now['paper_id']==second.json['paper_id'] and now['_rev']==updated['_rev']
+    assert len(list(root.glob('**/source.pdf')))==2

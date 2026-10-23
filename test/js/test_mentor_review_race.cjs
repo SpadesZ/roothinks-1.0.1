@@ -10,6 +10,11 @@ const fs = require('node:fs');
 const vm = require('node:vm');
 
 global.window = {};
+const nodes=new Map();
+global.document={getElementById:id=>{
+    if (!nodes.has(id)) nodes.set(id,{innerHTML:'',value:'',textContent:''});
+    return nodes.get(id);
+}};
 vm.runInThisContext(
     fs.readFileSync('app/static/js/mentor.js', 'utf8'),
     {filename: 'app/static/js/mentor.js'},
@@ -27,7 +32,7 @@ function deferred() {
     const rendered = [];
     app.currentId = 42;
     app.showError = () => {};
-    app._fetchJson = url => requests[url.endsWith('/A') ? 'A' : 'B'].promise;
+    app._fetchJson = url => requests[new URL(url,'http://synthetic').pathname.endsWith('/A') ? 'A' : 'B'].promise;
     app._renderManuscript = manuscript => rendered.push(manuscript.pid);
     app._renderItems = () => {};
 

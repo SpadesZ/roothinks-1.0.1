@@ -46,15 +46,21 @@
 #   python -m pytest test/unit/test_chapter_perm.py -q
 # ------------------------------------------------------------------------------
 import logging
+import os
 
 from flask import current_app, jsonify, request
-from werkzeug.exceptions import BadRequest
+from werkzeug.exceptions import BadRequest, Conflict
+from sqlalchemy.exc import IntegrityError
+from filelock import FileLock
 
 from app import db
 from app.core_pro.manuscript.manuscript_routes import bp, _resolve_formal_project_pid
 from app.models import (
     ChapterAssignment,
     ChapterComment,
+    ChapterReviewEvent,
+    MentorReviewItem,
+    MentorLink,
     ProjectCollabSetting,
     ROLE_ORDER,
     ROLE_EDITOR,
@@ -71,6 +77,7 @@ from app.security import (
     get_workspace_role,
     validate_id,
     visible_sections,
+    build_lock_path,
 )
 
 logger = logging.getLogger("chapter_routes")
@@ -422,6 +429,8 @@ def update_comment(pid, comment_id):
         if user is not None and not (_can_read_paper(user.id, pid) if row.scope == 'paper'
                                      else can_comment_on_section(user.id, pid, row.section_key)):
             return _forbidden()
+        if str(row.anchor or '').startswith('mentor:') or row.review_events:
+            return jsonify(success=False,message='版本審閱請追加回覆或教授決定；原始意見不可改寫。'),409
 
         data = request.get_json(silent=True) or {}
         is_author = user is None or row.author_id == user.id
@@ -471,6 +480,8 @@ def delete_comment(pid, comment_id):
         if user is not None and not (_can_read_paper(user.id, pid) if row.scope == 'paper'
                                      else can_comment_on_section(user.id, pid, row.section_key)):
             return _forbidden()
+        if str(row.anchor or '').startswith('mentor:') or row.review_events:
+            return jsonify(success=False,message='審閱歷史不可刪除。'),409
 
         if user is not None:
             if row.author_id != user.id and not _is_editor_or_above(user.id, pid):
@@ -490,6 +501,96 @@ def delete_comment(pid, comment_id):
 # ---------------------------------------------------------------------------
 # 前端權限查詢
 # ---------------------------------------------------------------------------
+
+
+@bp.route('/api/chapter/<pid>/comments/<int:comment_id>/events',methods=['POST'])
+def append_review_event(pid,comment_id):
+    """同一 ChapterComment 的追加作者回覆／原審閱者確認；DB 唯一版號為最後防線。"""
+    from app.core_pro.manuscript.manuscript_io import ManuscriptIO, _get_data_root
+    from app.core_pro.manuscript.coc_bundle import html_to_text
+    from app.core_pro.manuscript.paragraph_context import fingerprint
+    pid = _resolve_pid(pid)
+    user = _session_user()
+    if user is None:
+        return _forbidden()
+    data = request.get_json(silent=True) or {}
+    if type(data.get('base_rev')) is not int or data['base_rev'] < 0:
+        raise BadRequest('請先載入審閱版號。')
+    lock_target = os.path.join(_get_data_root(),pid,'review',str(comment_id))
+    try:
+        with FileLock(build_lock_path(lock_target),timeout=10):
+            db.session.expire_all()
+            row = ChapterComment.query.filter_by(id=comment_id,pid=pid).first()
+            if not row:
+                return jsonify(success=False,message='Comment not found'),404
+            if not (_can_read_paper(user.id,pid) if row.scope=='paper' else can_comment_on_section(user.id,pid,row.section_key)):
+                return _forbidden()
+            if not (row.g_ver if row.scope=='paper' else row.s_ver):
+                raise Conflict('舊意見未標版本，不能推定本次審閱版本。')
+            is_reviewer = row.author_id == user.id
+            can_respond = (not is_reviewer) and (_is_editor_or_above(user.id,pid) if row.scope=='paper'
+                                                else can_write_section(user.id,pid,row.section_key))
+            if str(row.anchor or '').startswith('mentor:'):
+                review_id = int(row.anchor.split('|')[0].split(':')[1])
+                review = db.session.get(MentorReviewItem,review_id)
+                if not review or not MentorLink.query.filter_by(mentor_id=review.mentor_id,mentee_id=review.mentee_id).first():
+                    return _forbidden()
+                if not _can_read_paper(review.mentor_id,pid) or not _can_read_paper(review.mentee_id,pid):
+                    return _forbidden()
+                is_reviewer = user.id == review.mentor_id
+                can_respond = user.id == review.mentee_id and _is_editor_or_above(user.id,pid)
+            events = row.review_events
+            if data['base_rev'] != len(events):
+                raise Conflict('此意見已有新回覆；請載入後核對，本次未保存。')
+            action = data.get('action')
+            if action not in {'respond','confirm','request_changes'}:
+                raise BadRequest('Invalid review action')
+            if (action=='respond' and not can_respond) or (action!='respond' and not is_reviewer):
+                return _forbidden()
+            body = str(data.get('body') or '').strip()
+            if not body or len(body)>_MAX_COMMENT_LEN:
+                raise BadRequest('請填寫完整回覆／決定理由（上限 4000 字）。')
+            target_version = None
+            location = None
+            target_hash = None
+            if action=='respond':
+                target_version = str(data.get('target_version') or '')
+                target = (ManuscriptIO.load_paper_version(pid,target_version) if row.scope=='paper' else
+                          ManuscriptIO.load_block(pid,row.section_key,f'V{_safe_ver(target_version)}.json'))
+                if not target:
+                    raise Conflict('回覆所連結的修訂版本不存在。')
+                if row.scope=='paper' and target.get('g_ver') != target_version:
+                    raise Conflict('回覆版本必須是實際完整版本號。')
+                location = str(data.get('revision_location') or '').strip()
+                content = html_to_text(target.get('content',''))
+                if not location or len(location)>4000 or location not in content:
+                    raise Conflict('修訂定位不在所選版本；請貼上實際修訂段落。')
+                target_hash = fingerprint(content)
+            else:
+                if not events or events[-1].action != 'respond':
+                    raise Conflict('作者尚未提出新的版本回覆。')
+                if action=='confirm' and '|decision:' in str(row.anchor or ''):
+                    from app.core_pro.manuscript.paragraph_context import get_context, _evidence
+                    decision = get_context(_get_data_root(),pid,row.anchor.split('|decision:')[1])
+                    evidence = decision['paragraph_context']['evidence']
+                    current = _evidence(_get_data_root(),pid,evidence['entry_id'],evidence['id'])
+                    if current['fingerprint'] != evidence['fingerprint']:
+                        raise Conflict('證據來源已變更；請重新確認段落及審閱，不能沿用舊來源結案。')
+                response = events[-1]
+                target = (ManuscriptIO.load_paper_version(pid,response.target_version) if row.scope=='paper' else
+                          ManuscriptIO.load_block(pid,row.section_key,f'V{response.target_version}.json'))
+                if not target or fingerprint(html_to_text(target.get('content',''))) != response.target_hash:
+                    raise Conflict('作者回覆所指版本已缺少或變更；不能確認。')
+                target_version,location,target_hash = response.target_version,response.revision_location,response.target_hash
+            db.session.add(ChapterReviewEvent(comment_id=row.id,revision=len(events)+1,actor_id=user.id,
+                action=action,body=body,target_version=target_version,revision_location=location,target_hash=target_hash))
+            row.resolved = action=='confirm'
+            db.session.commit()
+            db.session.expire(row,['review_events'])
+            return jsonify(success=True,thread=row.to_dict()),201
+    except IntegrityError:
+        db.session.rollback()
+        raise Conflict('審閱已更新；請重新載入。')
 
 
 @bp.route("/api/chapter/<pid>/my-permissions", methods=["GET"])

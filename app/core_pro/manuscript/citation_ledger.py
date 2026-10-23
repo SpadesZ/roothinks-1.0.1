@@ -23,7 +23,7 @@ from datetime import datetime, timezone
 
 from filelock import FileLock
 
-from app.security import build_lock_path
+from app.security import build_lock_path, _write_json_atomic, validate_id
 
 LEDGER_SCHEMA_VERSION = 1
 DECISION_STATUSES = ("accepted", "rejected")
@@ -33,9 +33,11 @@ def _now_iso() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
-def _ledger_path(data_root: str, pid: str) -> str:
+def _ledger_path(data_root: str, pid: str, *, create=True) -> str:
+    pid = validate_id(pid,'project_id')
     target_dir = os.path.join(data_root, pid, "manuscript")
-    os.makedirs(target_dir, exist_ok=True)
+    if create:
+        os.makedirs(target_dir, exist_ok=True)
     return os.path.join(target_dir, "citation_ledger.json")
 
 
@@ -55,6 +57,7 @@ def record_decision(
     snippet: str = "",
     segment_ids: list[str] | None = None,
     decided_by: str = "user",
+    paragraph_context: dict | None = None,
 ) -> dict:
     if status not in DECISION_STATUSES:
         raise ValueError(f"Invalid decision status: {status}")
@@ -75,6 +78,8 @@ def record_decision(
         "decided_by": str(decided_by or "user").strip() or "user",
         "decided_at": _now_iso(),
     }
+    if paragraph_context is not None:
+        decision['paragraph_context'] = paragraph_context
 
     path = _ledger_path(data_root, pid)
     with FileLock(build_lock_path(path), timeout=10):
@@ -84,24 +89,23 @@ def record_decision(
                 loaded = json.load(f)
             if isinstance(loaded, dict) and isinstance(loaded.get("decisions"), list):
                 data = loaded
+            else:
+                raise ValueError('引用決策紀錄格式損壞；原件保留，未追加或覆寫。')
         data["decisions"].append(decision)
-        tmp_path = f"{path}.tmp"
-        with open(tmp_path, "w", encoding="utf-8") as f:
-            json.dump(data, f, ensure_ascii=False, indent=2)
-        os.replace(tmp_path, path)
+        _write_json_atomic(path,data)
     return decision
 
 
 def list_decisions(data_root: str, pid: str, *, section_id: str = "", paper_id: str = "") -> list[dict]:
-    path = _ledger_path(data_root, pid)
+    path = _ledger_path(data_root, pid, create=False)
     if not os.path.exists(path):
         return []
     with FileLock(build_lock_path(path), timeout=10):
         with open(path, "r", encoding="utf-8") as f:
             data = json.load(f)
-    decisions = data.get("decisions") if isinstance(data, dict) else []
+    decisions = data.get("decisions") if isinstance(data, dict) else None
     if not isinstance(decisions, list):
-        return []
+        raise ValueError('引用決策紀錄格式損壞；不能當成沒有決策。')
     out = []
     for decision in decisions:
         if not isinstance(decision, dict):

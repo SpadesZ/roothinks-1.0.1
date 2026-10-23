@@ -269,6 +269,7 @@
                     <button class="btn btn-sm btn-outline-success shadow-sm fw-bold" onclick="window.manuscriptCitation.open()" title="依選取段落取得引用建議（來自 Literature 證據，需人工確認）">
                         <i class="bi bi-quote"></i> 引用
                     </button>
+                    <button class="btn btn-sm btn-outline-primary" onclick="window.paragraphReview.open()">主張與審閱</button>
 
                     <div class="vr mx-1"></div>
 
@@ -653,6 +654,7 @@
     <script src="{{ url_for('static', filename='js/manuscript_progress.js') }}?v=0.1"></script>
     <script src="{{ url_for('static', filename='js/manuscript_ws.js') }}?v=5.5"></script>
     <script src="{{ url_for('static', filename='js/manuscript_citation.js') }}?v=0.1"></script>
+    <script src="{{ url_for('static', filename='js/paragraph_review.js') }}?v=1"></script>
 
 </body>
 </html>
