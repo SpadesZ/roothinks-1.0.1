@@ -179,7 +179,7 @@ class ManuUI {
                 throw new Error(data.message || `Bootstrap failed: ${res.status}`);
             }
 
-            if (Array.isArray(data.sections) && data.sections.length > 0) {
+            if (Array.isArray(data.sections)) {
                 this.app.sections = data.sections.map((s) => ({
                     id: s.id,
                     label: s.label,
@@ -405,8 +405,12 @@ class ManuUI {
     }
 
     renderSectionDropdown() {
-        const activeId = Array.from(this.app.selectedSections)[0] || 'abstract';
         const excludeList = ['title', 'author', 'keyword'];
+        const visible = this.app.sections.filter(sec => !excludeList.includes(sec.id));
+        const previous = Array.from(this.app.selectedSections)[0];
+        const activeId = visible.some(sec => sec.id === previous) ? previous
+            : (visible.find(sec => sec.id === 'abstract') || visible[0])?.id || '';
+        this.app.selectedSections = new Set(activeId ? [activeId] : []);
         this.updateDropdownLabel();
 
         if (this.app.sectionDropdownMenu) {
@@ -433,7 +437,7 @@ class ManuUI {
             if(currentVal && this.app.sections.find(s => s.id === currentVal) && !excludeList.includes(currentVal)) {
                 this.app.drafterTargetSection.value = currentVal;
             } else {
-                this.app.drafterTargetSection.value = 'abstract';
+                this.app.drafterTargetSection.value = activeId;
             }
         }
     }
