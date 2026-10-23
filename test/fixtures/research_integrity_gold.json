@@ -1,0 +1,5 @@
+{
+  "schema_version":1,
+  "required_conditions":{"measurement":["sample A","300 K","10 GHz","chip facet"],"simulation":["device B","simulation","1550 nm"]},
+  "verdicts":{"bounded":"supported","all_samples":"unsupported","missing_temperature":"missing_condition","forged_locator":"supported","simulation_as_measurement":"unsupported","missing_evidence":"unavailable_evidence"}
+}

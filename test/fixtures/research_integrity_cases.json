@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "synthetic_only": true,
+  "sources": [
+    {"id":"measurement","paper_id":"bench-measurement","title":"SYNTHETIC bounded measurement","source_id":"synthetic:measurement:p3","page":3,"text":"SYNTHETIC DATA: sample A at 300 K and 10 GHz showed a 3 dB improvement measured at the chip facet reference plane. Other samples and temperatures were not tested."},
+    {"id":"simulation","paper_id":"bench-simulation","title":"SYNTHETIC simulation only","source_id":"synthetic:simulation:p7","page":7,"text":"SYNTHETIC DATA: device B was simulated at 1550 nm. The predicted loss was 0.1 dB. No physical device was fabricated or measured."}
+  ],
+  "cases": [
+    {"id":"bounded","source":"measurement","claim":"The measured improvement for sample A was 3 dB at 300 K and 10 GHz, referenced to the chip facet.","conditions":"sample A; 300 K; 10 GHz; chip facet","forbidden":"Do not extend to other samples or temperatures."},
+    {"id":"all_samples","source":"measurement","claim":"All samples improve by 3 dB at every temperature.","conditions":"sample A; 300 K; 10 GHz; chip facet","forbidden":"Do not extend to other samples or temperatures."},
+    {"id":"missing_temperature","source":"measurement","claim":"The measured improvement for sample A was 3 dB at 10 GHz, referenced to the chip facet.","conditions":"sample A; 10 GHz; chip facet","forbidden":"Do not infer untested temperatures."},
+    {"id":"forged_locator","source":"measurement","claim":"Sample A showed a 3 dB improvement at 300 K and 10 GHz at the chip facet reference plane.","conditions":"sample A; 300 K; 10 GHz; chip facet","forbidden":"No other samples or temperatures.","locator":{"page":999}},
+    {"id":"simulation_as_measurement","source":"simulation","claim":"The fabricated device B experimentally measured a loss of 0.1 dB at 1550 nm.","conditions":"device B; simulation; 1550 nm","forbidden":"Simulation must not be described as experimental measurement."},
+    {"id":"missing_evidence","source":"measurement","claim":"A result without an available source.","conditions":"sample A; 300 K; 10 GHz; chip facet","forbidden":"Do not invent missing evidence.","missing_evidence":true}
+  ]
+}
