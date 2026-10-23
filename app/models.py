@@ -154,8 +154,14 @@ class User(UserMixin, db.Model):
 
     @property
     def is_mentor(self) -> bool:
-        """是否具備 mentor 視角（admin 一併涵蓋）。mentor 同時保有一般 user 身分。"""
-        return self.system_role in {SYSTEM_ROLE_MENTOR, SYSTEM_ROLE_ADMIN}
+        """顯示審閱工作台；學術身分與已接受邀請均不取代專案 ACL。"""
+        if self.system_role in {SYSTEM_ROLE_MENTOR, SYSTEM_ROLE_ADMIN}:
+            return True
+        if not self.id:
+            return False
+        profile = db.session.get(AcademicProfile, self.id)
+        return bool((profile and profile.academic_role == 'professor') or
+                    ProjectInvitation.query.filter_by(accepted_by=self.id, kind='professor', status='accepted').first())
 
     def to_dict(self) -> dict:
         """轉為安全的 dict；不包含 password_hash。"""
@@ -244,11 +250,44 @@ class WorkspaceMember(db.Model):
 SESSION_IDLE_TIMEOUT_SEC = 300
 
 
+class AcademicProfile(db.Model):
+    """自行填寫的學術背景；不驗證職銜、不授予專案或系統權限。"""
+    __tablename__ = 'academic_profiles'
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), primary_key=True)
+    academic_role = db.Column(db.String(20), nullable=False, default='researcher')
+    affiliation = db.Column(db.String(200), nullable=False, default='')
+
+    def to_dict(self):
+        return dict(academic_role=self.academic_role, affiliation=self.affiliation, verification='self_declared')
+
+
+class ProjectInvitation(db.Model):
+    """限一專案的雙方確認；撤銷不刪除邀請或研究歷史，事件保存在 RevisionLog。"""
+    __tablename__ = 'project_invitations'
+    id = db.Column(db.String(32), primary_key=True)
+    pid = db.Column(db.String(20), nullable=False, index=True)
+    invited_email = db.Column(db.String(254), nullable=False, index=True)
+    created_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    accepted_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
+    kind = db.Column(db.String(20), nullable=False)
+    role = db.Column(db.String(10), nullable=False)
+    sections_json = db.Column(db.Text, nullable=False, default='[]')
+    token_hash = db.Column(db.String(64), nullable=False)
+    status = db.Column(db.String(20), nullable=False, default='pending')
+    expires_at = db.Column(db.DateTime, nullable=False)
+    created_at = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
+
+    def to_dict(self):
+        return dict(id=self.id, pid=self.pid, invited_email=self.invited_email, created_by=self.created_by,
+                    accepted_by=self.accepted_by, kind=self.kind, role=self.role, sections=json.loads(self.sections_json),
+                    status=self.status, expires_at=self.expires_at.isoformat(), created_at=self.created_at.isoformat())
+
+
 class MentorLink(db.Model):
     """
     mentor → mentee 歸屬。與 WorkspaceMember 不同：那是「人↔專案」，這是「人↔人」。
 
-    mentor 由自己輸入 mentee 的 email 建立歸屬（本輪不做 admin 介面）。
+    新關係由 owner 的教授邀請及受邀者接受建立；舊關係保留但不替代專案 ACL。
     """
 
     __tablename__ = "mentor_links"

@@ -104,6 +104,8 @@ def _link(app, mentor_id, mentee_id):
     with app.app_context():
         db.session.add(MentorLink(mentor_id=mentor_id, mentee_id=mentee_id))
         db.session.commit()
+    # 本輪授權契約要求關係及專案 ACL；正常 fixture 明確提供共享專案。
+    _grant_shared_project(app,mentor_id,mentee_id,f"SCOPE{mentor_id}-{mentee_id}-p")
 
 
 def _grant_shared_project(app, mentor_id, mentee_id, pid="SHARED-p"):
@@ -246,16 +248,16 @@ class TestMentorAlsoUser:
 
 
 class TestAddMentee:
-    def test_add_by_email(self, app, make_user):
-        mentor_id = make_user("m8", "mentor")
-        mentee_id = make_user("s8")
-        _grant_shared_project(app, mentor_id, mentee_id, "ADD8-p")
+    def test_add_by_email_requires_invitation_acceptance(self, app, make_user):
+        mentor_id = make_user('m8','mentor')
+        mentee_id = make_user('s8')
+        _grant_shared_project(app,mentor_id,mentee_id,'ADD8-p')
         client = app.test_client()
-        _login(client, "m8")
-
-        resp = client.post("/api/mentor/mentees", json={"email": "s8@test.local"})
-        assert resp.status_code == 201
-        assert resp.get_json()["mentee"]["mentee_email"] == "s8@test.local"
+        _login(client,'m8')
+        assert client.post('/api/mentor/mentees',json={'email':'s8@test.local'}).status_code == 409
+        from app.models import MentorLink
+        with app.app_context():
+            assert MentorLink.query.filter_by(mentor_id=mentor_id,mentee_id=mentee_id).first() is None
 
     def test_add_requires_shared_full_2c_project(self, app, make_user):
         make_user("m8denied", "mentor")
@@ -266,10 +268,10 @@ class TestAddMentee:
         resp = client.post(
             "/api/mentor/mentees", json={"email": "s8denied@test.local"}
         )
-        assert resp.status_code == 403
+        assert resp.status_code == 409
         assert client.get("/api/mentor/mentees").get_json()["mentees"] == []
 
-    def test_admin_can_add_without_shared_project(self, app, make_user):
+    def test_admin_cannot_create_guidance_without_acceptance(self, app, make_user):
         make_user("admin8", "admin")
         make_user("sadmin8")
         client = app.test_client()
@@ -278,15 +280,15 @@ class TestAddMentee:
         resp = client.post(
             "/api/mentor/mentees", json={"email": "sadmin8@test.local"}
         )
-        assert resp.status_code == 201
+        assert resp.status_code == 409
 
-    def test_add_unknown_email_404(self, app, make_user):
+    def test_unknown_email_has_same_invitation_response(self, app, make_user):
         make_user("m9", "mentor")
         client = app.test_client()
         _login(client, "m9")
         assert client.post(
             "/api/mentor/mentees", json={"email": "ghost@test.local"}
-        ).status_code == 404
+        ).status_code == 409
 
     def test_cannot_add_self(self, app, make_user):
         make_user("m10", "mentor")
@@ -302,10 +304,10 @@ class TestAddMentee:
         client = app.test_client()
         _login(client, "m11")
 
+        _link(app, mentor_id, mentee_id)
         first = client.post("/api/mentor/mentees", json={"email": "s11@test.local"})
         second = client.post("/api/mentor/mentees", json={"email": "s11@test.local"})
-        assert first.status_code == 201
-        assert second.status_code == 200
+        assert first.status_code == second.status_code == 200
         assert len(client.get("/api/mentor/mentees").get_json()["mentees"]) == 1
 
 
@@ -377,6 +379,11 @@ class TestActivityTracking:
         _login(client, "m12")
         data = client.get(f"/api/mentor/mentees/{mentee_id}").get_json()
 
+        assert data['stats']['available'] is False
+        assert data['sessions'] == []
+        from app.mentor.routes import _activity_stats
+        with app.app_context():
+            data['stats'] = _activity_stats(mentee_id)
         assert data["stats"]["online_now"] is False
         # 停留時間以最後一次心跳為準（約 1 小時），不把閒置的 2 小時算進去。
         assert 3500 <= data["stats"]["total_seconds"] <= 3700
@@ -394,7 +401,10 @@ class TestActivityTracking:
         client = app.test_client()
         _login(client, "m13")
         data = client.get(f"/api/mentor/mentees/{mentee_id}").get_json()
-        assert data["stats"]["login_count"] == 3
+        assert data['stats']['available'] is False
+        from app.mentor.routes import _activity_stats
+        with app.app_context():
+            assert _activity_stats(mentee_id)['login_count'] == 3
 
 
 # ---------------------------------------------------------------------------
@@ -515,12 +525,16 @@ class TestMenteeDetail:
 
         client = app.test_client()
         _login(client, "m20")
+        with app.app_context():
+            db.session.add(WorkspaceMember(user_id=mentor_id,pid='DETAIL-p',role='viewer'))
+            db.session.commit()
         data = client.get(f"/api/mentor/mentees/{mentee_id}").get_json()
+        detail = next(p for p in data['projects'] if p['pid']=='DETAIL-p')
 
         assert data["mentee"]["email"] == "s20@test.local"
-        assert data["projects"][0]["pid"] == "DETAIL-p"
-        assert data["projects"][0]["role"] == "editor"
-        assert data["projects"][0]["name"] == "題目"
+        assert detail["pid"] == "DETAIL-p"
+        assert detail["role"] == "editor"
+        assert detail["name"] == "題目"
         assert "stats" in data and "study_notes" in data
 
     def test_detail_does_not_leak_password_hash(self, app, make_user):

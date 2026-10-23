@@ -211,7 +211,20 @@ def test_resource_author_download_and_revocation(workflow):
         link = MentorLink.query.filter_by(mentor_id=ids['owner'],mentee_id=ids['editor']).first()
         db.session.delete(link)
         db.session.commit()
-    assert client(bundle,'editor').get(url).status_code == 403
+    # 本輪契約：移除指導關係不使研究者失去已收到的原證據；教授仍須當下授權。
+    assert client(bundle,'editor').get(url).data == raw
+    assert mentor.get(url).status_code == 403
+    assert client(bundle,'viewer').get(url).status_code == 403
+    from app.models import WorkspaceMember
+    with app.app_context():
+        member = WorkspaceMember.query.filter_by(user_id=ids['editor'],pid=PID).one()
+        member.role = 'coauthor'
+        db.session.commit()
+        try:
+            assert client(bundle,'editor').get(url).status_code == 403
+        finally:
+            member.role = 'editor'
+            db.session.commit()
 
 
 def test_changed_evidence_cannot_be_silently_closed_by_professor(workflow):

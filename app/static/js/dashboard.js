@@ -481,7 +481,7 @@ function openCreateModal(pid = null, readOnly = false) {
         document.getElementById('c_keywords').value = project.keywords || '';
         document.getElementById('c_context').value = project.context_background || project.background || '';
 
-        if (project.members && project.members.length > 0) project.members.forEach(m => addMemberRow(m)); else addMemberRow();
+        if (project.members && project.members.length > 0) project.members.forEach(m => addMemberRow(m));
 
     } else {
         isEdit = false;
@@ -492,7 +492,7 @@ function openCreateModal(pid = null, readOnly = false) {
             btnEl.className = 'btn btn-primary px-4';
             btnEl.innerHTML = '<i class="bi bi-rocket-takeoff"></i> 建立專案 (Create)';
         }
-        addMemberRow();
+        // 獨立研究預設不要求署名或教授；需要時使用 Add Person。
     }
     
     applyReadOnlyState(form, readOnly);
@@ -538,7 +538,7 @@ function openCreateFormalModal(pid = null, readOnly = false) {
         document.getElementById('c_context').value = project.context_background || project.background || '';
         document.getElementById('c_ai_summary').value = project.ai_summary || '等待系統執行摘要...';
 
-        if (project.members && project.members.length > 0) project.members.forEach(m => addMemberRow(m)); else addMemberRow();
+        if (project.members && project.members.length > 0) project.members.forEach(m => addMemberRow(m));
 
     } else {
         isEdit = false;
@@ -551,7 +551,7 @@ function openCreateFormalModal(pid = null, readOnly = false) {
             btnEl.className = 'btn btn-success px-4';
             btnEl.innerHTML = '<i class="bi bi-rocket-takeoff"></i> 建立正式專案 (Create Formal)';
         }
-        addMemberRow();
+        // 獨立研究預設不要求署名或教授；需要時使用 Add Person。
     }
     
     applyReadOnlyState(form, readOnly);
@@ -586,10 +586,7 @@ function addMemberRow(data = null) {
         } catch (e) { return def; }
     };
 
-    const role = data ? data.role : '主持人 (Principal Investigator)';
-    // 系統權限與論文署名角色是兩回事，分開儲存於 access_role。
-    const storedAccessRole = (data && data.access_role) ? data.access_role : '';
-    const accessRole = storedAccessRole || (isAcademicLead(role) ? 'editor' : '');
+    const role = data ? data.role : '主貢獻人員 (Principal Contributor)';
     const title = data ? data.title : '';
     const enSurname = data ? safeGet(data, 'name.en.surname') : '';
     const enGiven = data ? safeGet(data, 'name.en.given') : '';
@@ -660,28 +657,7 @@ function addMemberRow(data = null) {
                 </div>
             </div>
 
-            <!-- [collab] 一般署名角色與系統權限分開；PI／Co-PI 例外，
-                 依產品規則最低為 editor（全章節讀寫）。 -->
-            <div class="row g-2 mb-2 border rounded p-2" style="background:#f1f8ff;">
-                <div class="col-md-6">
-                    <label class="small fw-bold text-primary">
-                        <i class="bi bi-shield-lock me-1"></i>系統權限 (System Access)
-                    </label>
-                    <select class="form-select form-select-sm access-select">
-                        <option value="" ${!accessRole ? 'selected' : ''}>不授予（僅列名）</option>
-                        <option value="viewer" ${accessRole === 'viewer' ? 'selected' : ''}>檢視者 — 唯讀，看得到所有章節</option>
-                        <option value="coauthor" ${accessRole === 'coauthor' ? 'selected' : ''}>限定編輯 — 只讀寫被指派的章節</option>
-                        <option value="editor" ${accessRole === 'editor' ? 'selected' : ''}>總編輯 — 讀寫所有章節</option>
-                        <option value="owner" ${accessRole === 'owner' ? 'selected' : ''}>擁有者 — 全部權限，可管理成員</option>
-                    </select>
-                </div>
-                <div class="col-md-6 d-flex align-items-end">
-                    <div class="text-muted" style="font-size:.72rem;">
-                        依下方第一個 Email 對應已註冊帳號授權。<br>
-                        PI／Co-PI 最低為總編輯；未註冊 Email 會略過。
-                    </div>
-                </div>
-            </div>
+            <p class="small text-muted">署名不授予存取權。請到「協作與邀請」管理教授與團隊權限。</p>
 
             <div class="row g-2 mb-2 bg-light p-1 rounded">
                 <div class="col-12"><small class="fw-bold text-dark">英文姓名 (English Name - Primary)</small></div>
@@ -750,19 +726,7 @@ function addMemberRow(data = null) {
     `;
     container.appendChild(div);
 
-    const roleSelect = div.querySelector('.role-select');
-    const accessSelect = div.querySelector('.access-select');
-    const enforceLeadAccess = () => {
-        const lead = isAcademicLead(roleSelect.value);
-        Array.from(accessSelect.options).forEach((option) => {
-            option.disabled = lead && ['', 'viewer', 'coauthor'].includes(option.value);
-        });
-        if (lead && !['editor', 'owner'].includes(accessSelect.value)) {
-            accessSelect.value = 'editor';
-        }
-    };
-    roleSelect.addEventListener('change', enforceLeadAccess);
-    enforceLeadAccess();
+
 }
 
 function addEmailField(btn) {
@@ -849,10 +813,8 @@ async function submitCreate() {
             if(input.value.trim()) emails.push(input.value.trim());
         });
 
-        const accessSel = card.querySelector('.access-select');
         members.push({
             role: card.querySelector('.role-select').value,
-            access_role: accessSel ? accessSel.value : '',
             title: card.querySelector('.title-input').value.trim(),
             name: {
                 en: {
@@ -880,21 +842,15 @@ async function submitCreate() {
         });
     }
 
-    // v1.9: 主持人驗證與後端一致——恰一位主持人,且姓名(英文或原文)至少填一種。
-    // 舊版額外硬要求單位 L1,但 UI 未標必填,移除以免使用者被莫名擋下。
+    // 署名與教授選用；保留「至多一位 PI」的既有資料一致性限制。
     const pis = members.filter(m => isPrincipalInvestigator(m.role));
-    if (pis.length === 0) {
-        showCreateFormError("請在成員中指定一位「主持人 (Principal Investigator)」並填寫姓名。");
+    if (pis.length > 1) {
+        showCreateFormError('主持人至多一位；獨立研究不需要教授或主持人。');
         return;
-    } else if (pis.length !== 1) {
-        showCreateFormError("必須且只能有一位「主持人 (Principal Investigator)」。");
-        return;
-    } else {
-        const pi = pis[0];
-        const hasEnName = pi.name.en.surname || pi.name.en.given;
-        const hasOrgName = pi.name.original.surname || pi.name.original.given;
-        if (!(hasEnName || hasOrgName)) {
-            showCreateFormError("請填寫主持人的姓名(英文或原文至少一種)。");
+    }
+    for (const m of members) {
+        if (!(m.name.en.surname || m.name.en.given || m.name.original.surname || m.name.original.given)) {
+            showCreateFormError('請填寫列名者姓名，或移除空白署名。');
             return;
         }
     }

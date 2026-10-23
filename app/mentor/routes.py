@@ -118,7 +118,7 @@ def _require_mentee(mentee_id: int):
     link = MentorLink.query.filter_by(
         mentor_id=current_user.id, mentee_id=mentee_id
     ).first()
-    if link is None:
+    if link is None or not _has_shared_review_project(current_user.id, mentee_id):
         # 不區分「沒這個人」與「不是我的 mentee」，避免用列舉試出他人歸屬。
         return _forbidden(), None
 
@@ -129,7 +129,7 @@ def _require_mentee(mentee_id: int):
 
 
 def _require_review_project(mentee_id: int, pid: str):
-    """確認歸屬，且雙方都獲授權讀該專案 2C 全篇；admin 可跨專案審閱。"""
+    """確認歸屬，且雙方都獲授權讀該專案 2C 全篇；系統管理身分不替代專案授權。"""
     # NOTE(NOTE-001): MentorLink 不是內容 ACL；目標專案必須再次驗雙方 membership。
     guard, mentee = _require_mentee(mentee_id)
     if guard is not None:
@@ -142,10 +142,9 @@ def _require_review_project(mentee_id: int, pid: str):
     role = get_workspace_role(mentee_id, clean_pid)
     if role is None or is_section_scoped_role(role, clean_pid):
         return _forbidden(), None
-    if current_user.system_role != SYSTEM_ROLE_ADMIN:
-        reviewer_role = get_workspace_role(current_user.id, clean_pid)
-        if reviewer_role is None or is_section_scoped_role(reviewer_role, clean_pid):
-            return _forbidden(), None
+    reviewer_role = get_workspace_role(current_user.id, clean_pid)
+    if reviewer_role is None or is_section_scoped_role(reviewer_role, clean_pid):
+        return _forbidden(), None
     return None, (mentee, clean_pid)
 
 
@@ -153,19 +152,22 @@ def _has_shared_review_project(mentor_id: int, mentee_id: int) -> bool:
     """MentorLink 只表達關係；真正的 2C 授權必須來自共同 workspace。"""
     mentor_rows = WorkspaceMember.query.filter_by(user_id=mentor_id).all()
     mentor_pids = {
-        row.pid for row in mentor_rows
+        row.pid.removesuffix("-p") for row in mentor_rows
         if not is_section_scoped_role(row.role, row.pid)
     }
     if not mentor_pids:
         return False
     return any(
-        row.pid in mentor_pids and not is_section_scoped_role(row.role, row.pid)
+        row.pid.removesuffix("-p") in mentor_pids and not is_section_scoped_role(row.role, row.pid)
         for row in WorkspaceMember.query.filter_by(user_id=mentee_id).all()
     )
 
 
 def _review_item_dict(row: MentorReviewItem) -> dict:
     payload = row.to_dict()
+    reviewer_role = get_workspace_role(row.mentor_id,row.pid)
+    payload['reviewer_active'] = bool(reviewer_role and not is_section_scoped_role(reviewer_role,row.pid) and
+        MentorLink.query.filter_by(mentor_id=row.mentor_id,mentee_id=row.mentee_id).first())
     comment = ChapterComment.query.filter(ChapterComment.pid==row.pid,
         db.or_(ChapterComment.anchor==f'mentor:{row.id}',ChapterComment.anchor.like(f'mentor:{row.id}|%'))).first()
     payload['comment'] = comment.to_dict() if comment else None
@@ -242,17 +244,14 @@ def _mentee_projects(user_id: int) -> list:
     rows = WorkspaceMember.query.filter_by(user_id=user_id).all()
     out = []
     for row in rows:
-        project = Project.query.filter_by(project_id=row.pid).first()
+        from app.project_portfolio.collaboration import canonical_project
+        project = Project.query.filter_by(project_id=canonical_project(row.pid)).first()
         reviewer_role = get_workspace_role(current_user.id, row.pid)
-        reviewer_can_read_2c = (
-            current_user.system_role == SYSTEM_ROLE_ADMIN
-            or (
-                reviewer_role is not None
-                and not is_section_scoped_role(reviewer_role, row.pid)
-            )
-        )
+        reviewer_can_read_2c = reviewer_role is not None and not is_section_scoped_role(reviewer_role, row.pid)
+        if not reviewer_can_read_2c or is_section_scoped_role(row.role, row.pid):
+            continue
         out.append({
-            "pid": row.pid,
+            "pid": project.project_id if project else row.pid,
             "role": row.role,
             "reviewable_2c": (
                 reviewer_can_read_2c
@@ -343,11 +342,11 @@ def list_mentees():
     links = MentorLink.query.filter_by(mentor_id=current_user.id).all()
     out = []
     for link in links:
+        if not _has_shared_review_project(current_user.id, link.mentee_id):
+            continue
         payload = link.to_dict()
-        payload["stats"] = _activity_stats(link.mentee_id)
-        payload["project_count"] = WorkspaceMember.query.filter_by(
-            user_id=link.mentee_id
-        ).count()
+        payload["stats"] = {"available": False, "reason": "project_scope_only"}
+        payload["project_count"] = len(_mentee_projects(link.mentee_id))
         payload["open_tasks"] = MentorTask.query.filter_by(
             mentee_id=link.mentee_id, mentor_id=current_user.id
         ).filter(MentorTask.status != MentorTask.STATUS_DONE).count()
@@ -364,32 +363,17 @@ def add_mentee():
         return guard
 
     data = request.get_json(silent=True) or {}
-    email = str(data.get("email") or "").strip()
+    email = User.normalize_email(data.get('email'))
     if not email:
-        return jsonify({"success": False, "message": "email is required"}), 400
-
-    target = User.find_by_email(email)
-    if not target:
-        return jsonify({"success": False, "message": f"找不到 Email 為「{email}」的帳號"}), 404
-    if target.id == current_user.id:
-        return jsonify({"success": False, "message": "不能把自己加為 mentee"}), 400
-
-    if (
-        current_user.system_role != SYSTEM_ROLE_ADMIN
-        and not _has_shared_review_project(current_user.id, target.id)
-    ):
-        return _forbidden()
-
-    existing = MentorLink.query.filter_by(
-        mentor_id=current_user.id, mentee_id=target.id
-    ).first()
-    if existing:
-        return jsonify({"success": True, "mentee": existing.to_dict()}), 200
-
-    link = MentorLink(mentor_id=current_user.id, mentee_id=target.id)
-    db.session.add(link)
-    db.session.commit()
-    return jsonify({"success": True, "mentee": link.to_dict()}), 201
+        return jsonify(success=False,message='email is required'),400
+    if email == current_user.email:
+        return jsonify(success=False,message='不能把自己加為 mentee'),400
+    existing = MentorLink.query.join(User, User.id==MentorLink.mentee_id).filter(
+        MentorLink.mentor_id==current_user.id, User.email==email).first()
+    if existing and _has_shared_review_project(current_user.id,existing.mentee_id):
+        return jsonify(success=True,mentee=existing.to_dict()),200
+    # 不區分未知帳號／非共享專案；新關係只能由專案邀請雙方確認。
+    return jsonify(success=False, message='請由專案擁有者在「協作與邀請」發出教授邀請，並由受邀帳號確認。'),409
 
 
 @mentor_api_bp.route("/mentees/<int:mentee_id>", methods=["DELETE"])
@@ -443,14 +427,8 @@ def mentee_detail(mentee_id):
             "email": mentee.email,
             "system_role": mentee.system_role,
         },
-        "stats": _activity_stats(mentee_id),
-        "sessions": [
-            s.to_dict()
-            for s in UserSession.query.filter_by(user_id=mentee_id)
-            .order_by(UserSession.login_at.desc())
-            .limit(20)
-            .all()
-        ],
+        "stats": {"available": False, "reason": "project_scope_only"},
+        "sessions": [],
         "projects": projects,
         "revisions": revisions,
         "study_notes": notes,
@@ -632,9 +610,7 @@ def my_versioned_reviews(pid):
     if role is None or is_section_scoped_role(role,pid):
         return _forbidden()
     rows = MentorReviewItem.query.filter_by(mentee_id=current_user.id,pid=pid).order_by(MentorReviewItem.created_at).all()
-    rows = [r for r in rows if MentorLink.query.filter_by(mentor_id=r.mentor_id,mentee_id=current_user.id).first()
-            and get_workspace_role(r.mentor_id,pid) is not None
-            and not is_section_scoped_role(get_workspace_role(r.mentor_id,pid),pid)]
+    # 研究者保有已收到的原審閱。撤銷教授只撤權；以 reviewer_active 明示歷史狀態，不隱藏原件。
     if request.args.get('version'):
         rows = [r for r in rows if r.paper_version==request.args['version'] or not r.paper_version]
     return jsonify(success=True,versions=ManuscriptIO.list_paper_versions(pid),items=[_review_item_dict(r) for r in rows])
@@ -821,12 +797,9 @@ def download_review_pdf(item_id):
     if row is None or row.kind != MentorReviewItem.KIND_RESOURCE_PDF:
         return jsonify({"success": False, "message": "Resource not found"}), 404
     if current_user.id == row.mentee_id:
-        if not MentorLink.query.filter_by(mentor_id=row.mentor_id,mentee_id=row.mentee_id).first():
+        role = get_workspace_role(current_user.id,row.pid)
+        if role is None or is_section_scoped_role(role,row.pid):
             return _forbidden()
-        for uid in (row.mentor_id,row.mentee_id):
-            role = get_workspace_role(uid,row.pid)
-            if role is None or is_section_scoped_role(role,row.pid):
-                return _forbidden()
     else:
         guard, _target = _require_review_project(row.mentee_id, row.pid)
         if guard is not None:

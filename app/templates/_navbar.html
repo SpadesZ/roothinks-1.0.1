@@ -103,6 +103,7 @@
                     </a>
                     {% endif %}
                     {% if current_user.is_authenticated %}
+                    <a href="/collaboration?pid={{ request.args.get('pid','')|urlencode }}" class="btn btn-outline-light btn-sm ms-1">協作與邀請</a>
                     <div class="dropdown ms-2">
                         <button class="btn btn-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
                             <i class="bi bi-person-circle"></i> {{ current_user.username }}

@@ -42,7 +42,8 @@ from app.models import (
     ROLE_ORDER,
 )
 from app.project_portfolio.project_routes import bp
-from app.security import enforce_project_ownership, require_workspace_role, validate_id
+from app.security import enforce_project_ownership, require_workspace_role, validate_id, _normalize_pid_aliases
+from app.project_portfolio.collaboration import serialized_membership, remove_project_access
 
 logger = logging.getLogger("member_routes")
 
@@ -55,7 +56,7 @@ def _last_owner_check(pid: str, exclude_user_id: int = None) -> bool:
     回傳 True 代表「若排除 exclude_user_id 後只剩 0 位 owner」（最後 owner 保護觸發）。
     exclude_user_id=None 表示不排除任何人。
     """
-    query = WorkspaceMember.query.filter_by(pid=pid, role=ROLE_OWNER)
+    query = WorkspaceMember.query.filter(WorkspaceMember.pid.in_(_normalize_pid_aliases(pid)), WorkspaceMember.role==ROLE_OWNER)
     owners = query.all()
     if exclude_user_id is None:
         return len(owners) == 0
@@ -100,6 +101,7 @@ def list_members(pid):
 # POST /api/project/<pid>/members
 # ---------------------------------------------------------------------------
 @bp.route("/<pid>/members", methods=["POST"])
+@serialized_membership
 def add_member(pid):
     """owner only：新增或更新成員角色。"""
     try:
@@ -128,12 +130,13 @@ def add_member(pid):
             return jsonify({"success": False, "message": f"User '{identifier}' not found"}), 404
         username = target_user.username
 
-        existing = WorkspaceMember.query.filter_by(user_id=target_user.id, pid=pid).first()
+        existing = WorkspaceMember.query.filter(WorkspaceMember.user_id==target_user.id, WorkspaceMember.pid.in_(_normalize_pid_aliases(pid))).first()
         if existing:
             # 若從 owner 降級，需保護最後 owner
             if existing.role == ROLE_OWNER and role != ROLE_OWNER:
                 if _last_owner_check(pid, exclude_user_id=target_user.id):
                     return jsonify({"error": "last_owner", "success": False}), 400
+            WorkspaceMember.query.filter(WorkspaceMember.user_id==target_user.id, WorkspaceMember.pid.in_(_normalize_pid_aliases(pid))).update({WorkspaceMember.role:role},synchronize_session=False)
             existing.role = role
             db.session.commit()
             return jsonify({"success": True, "member": existing.to_dict()}), 200
@@ -159,6 +162,7 @@ def add_member(pid):
 # DELETE /api/project/<pid>/members/<username>
 # ---------------------------------------------------------------------------
 @bp.route("/<pid>/members/<username>", methods=["DELETE"])
+@serialized_membership
 def remove_member(pid, username):
     """
     owner only，或成員自行退出（viewer/editor 退出自己）。
@@ -190,7 +194,7 @@ def remove_member(pid, username):
         if not target_user:
             return jsonify({"success": False, "message": f"User '{username}' not found"}), 404
 
-        member = WorkspaceMember.query.filter_by(user_id=target_user.id, pid=pid).first()
+        member = WorkspaceMember.query.filter(WorkspaceMember.user_id==target_user.id, WorkspaceMember.pid.in_(_normalize_pid_aliases(pid))).first()
         if not member:
             return jsonify({"success": False, "message": "Member not found"}), 404
 
@@ -198,7 +202,7 @@ def remove_member(pid, username):
         if member.role == ROLE_OWNER and _last_owner_check(pid, exclude_user_id=target_user.id):
             return jsonify({"error": "last_owner", "success": False}), 400
 
-        db.session.delete(member)
+        remove_project_access(pid,target_user.id)
         db.session.commit()
         return jsonify({"success": True}), 200
 
@@ -218,6 +222,7 @@ def remove_member(pid, username):
 # PATCH /api/project/<pid>/members/<username>
 # ---------------------------------------------------------------------------
 @bp.route("/<pid>/members/<username>", methods=["PATCH"])
+@serialized_membership
 def update_member_role(pid, username):
     """owner only：修改成員角色。最後一位 owner 不可降級。"""
     try:
@@ -236,7 +241,7 @@ def update_member_role(pid, username):
         if not target_user:
             return jsonify({"success": False, "message": f"User '{username}' not found"}), 404
 
-        member = WorkspaceMember.query.filter_by(user_id=target_user.id, pid=pid).first()
+        member = WorkspaceMember.query.filter(WorkspaceMember.user_id==target_user.id, WorkspaceMember.pid.in_(_normalize_pid_aliases(pid))).first()
         if not member:
             return jsonify({"success": False, "message": "Member not found"}), 404
 
@@ -245,6 +250,7 @@ def update_member_role(pid, username):
             if _last_owner_check(pid, exclude_user_id=target_user.id):
                 return jsonify({"error": "last_owner", "success": False}), 400
 
+        WorkspaceMember.query.filter(WorkspaceMember.user_id==target_user.id, WorkspaceMember.pid.in_(_normalize_pid_aliases(pid))).update({WorkspaceMember.role:role},synchronize_session=False)
         member.role = role
         db.session.commit()
         return jsonify({"success": True, "member": member.to_dict()}), 200

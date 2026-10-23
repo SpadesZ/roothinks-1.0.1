@@ -61,17 +61,15 @@ def test_two_real_pis_are_rejected():
     assert "Found 2" in msg
 
 
-def test_zero_pi_is_rejected():
+def test_zero_pi_is_valid_for_independent_research():
     ok, msg = ProjectService._validate_members([member(CO_PI), member(COLLAB, "A")])
-    assert not ok
-    assert "Found 0" in msg
+    assert ok, msg
 
 
-def test_co_pi_alone_does_not_count_as_pi():
+def test_co_pi_alone_does_not_require_another_pi():
     """只有 Co-PI 時 PI 數應為 0，不是 1。"""
     ok, msg = ProjectService._validate_members([member(CO_PI)])
-    assert not ok
-    assert "Found 0" in msg
+    assert ok, msg
 
 
 @pytest.mark.parametrize("role", [CO_PI, CONTRIB, CORRESP, COLLAB, SUPPORT])

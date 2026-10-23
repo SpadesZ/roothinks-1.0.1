@@ -95,21 +95,22 @@
             byId('prReviews').innerHTML=items.length ? items.map(item=>{
                 const c=item.comment;
                 return `<article class="border rounded p-2 my-2"><strong>${esc(item.mentor)} · ${esc(item.paper_version || '未標版本（不能推定）')}</strong><p style="white-space:pre-wrap">${esc(item.body || item.title)}</p>
+                ${item.reviewer_active === false ? '<p class="text-muted">教授目前無存取權；保留原意見、證據與回覆歷史。寫作與匯出可照常進行。</p>' : ''}
                 ${item.context_issues?.length ? `<p class="text-warning-emphasis">需重核：${esc(item.context_issues.join('；'))}。以下保留原確認快照。</p>` : ''}
                 ${item.download_url ? `<a href="${esc(item.download_url)}">下載教授附件</a>` : ''}
                 ${item.url ? `<a href="${esc(item.url)}" target="_blank" rel="noopener noreferrer">開啟資源</a>` : ''}
                 ${item.paragraph_decision ? `<details><summary>本段主張與證據</summary><pre style="white-space:pre-wrap">${esc(describe(item.paragraph_decision.paragraph_context))}</pre></details>` : ''}
                 ${c ? `<p>狀態：${esc(c.state)} · 審閱版號 ${c.revision}</p>${c.events.map(e=>`<p class="small">${esc(e.action)} · ${esc(e.target_version)}<br>${esc(e.body)}<br>修訂位置：${esc(e.revision_location)}</p>`).join('')}
-                <form data-thread="${c.id}" data-rev="${c.revision}"><label class="w-100">回覆<textarea name="body" class="form-control" required maxlength="4000"></textarea></label>
+                <form data-thread="${c.id}" data-rev="${c.revision}"><fieldset ${item.reviewer_active === false ? 'disabled' : ''}><label class="w-100">回覆<textarea name="body" class="form-control" required maxlength="4000"></textarea></label>
                 <label class="w-100">修訂全文版本<select name="version" class="form-select">${result.versions.map(v=>`<option>${esc(v.g_ver)}</option>`).join('')}</select></label>
-                <label class="w-100">修訂位置（貼上該版本實際段落）<textarea name="location" class="form-control" required maxlength="4000"></textarea></label><button class="btn btn-sm btn-primary my-2">追加作者回覆</button></form>` : '<p>舊意見尚未連結版本留言。</p>'}</article>`;
-            }).join('') : '<p class="small">此版本尚無給你的教授意見。舊版意見請切換版本查看。</p>';
+                <label class="w-100">修訂位置（貼上該版本實際段落）<textarea name="location" class="form-control" required maxlength="4000"></textarea></label><button class="btn btn-sm btn-primary my-2">追加作者回覆</button></fieldset></form>` : '<p>舊意見尚未連結版本留言。</p>'}</article>`;
+            }).join('') : '<p class="small">教授審閱為選用；此版本尚無意見。寫作、保存、修訂與匯出可照常進行。舊版意見請切換版本查看。</p>';
             byId('prReviews').querySelectorAll('form').forEach(form=>form.onsubmit=async event=>{
                 event.preventDefault(); const project=openedPid;
                 try { await api(`/manuscript/api/chapter/${encodeURIComponent(project)}/comments/${form.dataset.thread}/events`,{
                     action:'respond',base_rev:Number(form.dataset.rev),body:form.elements.body.value,
                     target_version:form.elements.version.value,revision_location:form.elements.location.value});
-                    if (project===openedPid) { status('回覆已保存，等待原教授確認。'); await loadReviews(); }
+                    if (project===openedPid) { status('回覆已保存。原教授可稍後處理；寫作與匯出可照常進行。'); await loadReviews(); }
                 } catch(error) {status(error.message);}
             });
         } catch(error) { status(error.message); }

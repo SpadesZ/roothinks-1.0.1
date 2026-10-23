@@ -16,7 +16,7 @@
 #   - get_projects(status, user_id) -> list[dict]
 #   - delete_project(pid) -> (bool, str)
 # 安全邊界:
-#   - 成員資料 members JSON 欄位僅允許 list of dict，PI 唯一性強制驗證。
+#   - members 僅保存署名，PI 選用且至多一位；不可推導或補發操作權限。
 #   - WorkspaceMember 的 role 只能是 'owner'|'editor'|'viewer'。
 # 維護提醒:
 #   - [Batch B] get_projects 新增 user_id 參數；AUTH_MODE=session 時過濾。
@@ -97,101 +97,14 @@ class ProjectService:
 
 
     @staticmethod
-    def _is_academic_lead(member):
-        """PI／Co-PI 是論文領導角色，系統權限最低必須能編輯全部章節。"""
-        role = str((member or {}).get('role') or '').strip()
-        return (
-            role.startswith('主持人')
-            or role.startswith('共同主持人')
-            or 'co-pi' in role.casefold()
-        )
-
-    @staticmethod
     def _sync_members_access(pid, members):
-        """
-        [collab] 依人員組織的 email 同步系統權限（WorkspaceMember）。
-
-        為什麼需要這個：人員組織（Table 2）與成員管理是兩套並存的介面，
-        前者原本純粹是論文署名資料、完全不給權限，使用者很容易誤以為
-        填了 email 就等於把人加進專案。現在讓 access_role 有欄位可填，
-        並在此把它落實到真正的權限表。
-
-        規則：
-        - 一般成員 access_role 空白 → 僅列名，不動既有權限（也不移除）。
-        - PI／Co-PI → 最低 editor（全章節讀寫）；既有 owner 不得被降級。
-        - email 找不到已註冊帳號 → 略過並記錄，不中斷存檔
-          （對方可能還沒註冊，之後可用「成員管理」邀請）。
-        - 已存在的 membership 只更新角色，不重複建立。
-        - **絕不在此移除 membership**：避免有人改了人員組織就無聲踢掉協作者；
-          移除一律走「成員管理」明確操作。
-
-        回傳 (授權筆數, 略過的 email 清單) 供呼叫端提示使用者。
-        """
-        from app.models import User, WorkspaceMember, ROLE_EDITOR, ROLE_ORDER
-
-        granted, skipped = 0, []
-        if not isinstance(members, list):
-            return granted, skipped
-
-        for m in members:
-            if not isinstance(m, dict):
-                continue
-            access_role = str(m.get('access_role') or '').strip().lower()
-            is_lead = ProjectService._is_academic_lead(m)
-            if access_role and access_role not in ROLE_ORDER:
-                logger.warning("[members-access] 未知角色 %s，略過", access_role)
-                access_role = ''
-            if is_lead and ROLE_ORDER.get(access_role, 0) < ROLE_ORDER[ROLE_EDITOR]:
-                access_role = ROLE_EDITOR
-            if not access_role:
-                continue
-
-            emails = m.get('emails') or []
-            if isinstance(emails, str):
-                emails = [emails]
-            email = next((str(e).strip() for e in emails if str(e).strip()), '')
-            if not email:
-                continue
-
-            user = User.find_by_email(email)
-            if user is None:
-                skipped.append(email)
-                continue
-
-            existing = WorkspaceMember.query.filter_by(user_id=user.id, pid=pid).first()
-            if existing:
-                desired_role = access_role
-                if is_lead and ROLE_ORDER.get(existing.role or '', 0) > ROLE_ORDER[desired_role]:
-                    desired_role = existing.role
-                if existing.role != desired_role:
-                    existing.role = desired_role
-                    granted += 1
-            else:
-                db.session.add(
-                    WorkspaceMember(user_id=user.id, pid=pid, role=access_role)
-                )
-                granted += 1
-
-        if granted or skipped:
-            db.session.commit()
-        return granted, skipped
+        """舊呼叫相容：署名／access_role 僅為歷史資料，不再授權；使用明確成員或邀請流程。"""
+        return 0, []
 
     @staticmethod
     def ensure_academic_lead_access():
-        """補齊既有專案的 PI／Co-PI 全內容編輯權；可安全重複執行。"""
-        granted = 0
-        skipped = set()
-        for project in Project.query.all():
-            leads = [
-                m for m in (project.members or [])
-                if isinstance(m, dict) and ProjectService._is_academic_lead(m)
-            ]
-            if not leads:
-                continue
-            count, missing = ProjectService._sync_members_access(project.project_id, leads)
-            granted += count
-            skipped.update(missing)
-        return granted, sorted(skipped)
+        """舊啟動相容：禁止由學術署名恢復已撤銷的權限；不改既有 membership。"""
+        return 0, []
 
     @staticmethod
     def _validate_members(members):
@@ -212,8 +125,8 @@ class ProjectService:
             if m.get('role', '').startswith('主持人'):
                 pi_count += 1
         
-        if pi_count != 1:
-            return False, f"Exactly one Principal Investigator (PI) is required. Found {pi_count}."
+        if pi_count > 1:
+            return False, f"At most one Principal Investigator (PI) is allowed. Found {pi_count}."
             
         return True, ""
 
@@ -286,25 +199,6 @@ class ProjectService:
                 # 無 session context（如 CLI / dev 模式）靜默跳過，不中斷建立流程
                 logger.debug("No session user for membership write; skipping.")
 
-            # [collab] 建立時就把人員組織的 access_role 落實成權限。
-            # 放在 owner membership 之後：建立者若同時列在人員組織中，
-            # 其 access_role 會覆蓋自動給的 owner —— 這是刻意的，
-            # 使用者明確填寫的值優先於系統預設。
-            try:
-                granted, skipped = ProjectService._sync_members_access(
-                    new_project.project_id, members
-                )
-                if skipped:
-                    logger.info(
-                        "[members-access] 建立 %s：授權 %d 人，%d 個 Email 尚未註冊",
-                        new_project.project_id, granted, len(skipped),
-                    )
-            except Exception:
-                logger.warning(
-                    "[members-access] 建立時同步權限失敗 pid=%s",
-                    new_project.project_id, exc_info=True,
-                )
-
             return new_project, "Created"
 
         except Exception as e:
@@ -341,14 +235,6 @@ class ProjectService:
 
             db.session.commit()
 
-            # [collab] 存檔後把人員組織的 access_role 落實成真正的權限。
-            if 'members' in data:
-                granted, skipped = ProjectService._sync_members_access(
-                    project.project_id, data['members']
-                )
-                if skipped:
-                    return True, ("Updated（已授權 %d 人；下列 Email 尚未註冊而略過：%s）"
-                                  % (granted, ", ".join(skipped)))
             return True, "Updated"
         except Exception as e:
             db.session.rollback()

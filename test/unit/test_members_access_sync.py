@@ -3,22 +3,8 @@
 # 版本: v1.0
 # 模組定位:
 #   「人員組織 email 授予系統權限」的行為測試。
-# 主要責任:
-#   1. access_role 有填且 email 對得到帳號 → 建立/更新 WorkspaceMember。
-#   2. 一般成員 access_role 空白 → 僅列名；PI／Co-PI 最低為 editor。
-#   3. email 未註冊 → 略過並回報，不中斷存檔。
-#   4. 絕不在此移除既有 membership（移除只走「成員管理」）。
-# 呼叫來源:
-#   pytest。不被應用程式碼 import。
-# 安全邊界:
-#   - 這條路徑會發放專案權限，等同邀請功能；除產品明定的 PI／Co-PI
-#     最低 editor 外，其餘角色只依明確填寫的 access_role 授權。
-# 維護提醒:
-#   - 人員組織與成員管理是兩套並存介面；此同步刻意「只增不減」，
-#     避免有人編輯人員組織就無聲踢掉協作者。
-# 驗證方式:
-#   python -m pytest test/unit/test_members_access_sync.py -q
-# ------------------------------------------------------------------------------
+# 邊界：填 PI／Co-PI、email 或 access_role 不再發權；既有 membership 不變。
+# 驗證：python -m pytest test/unit/test_members_access_sync.py -q
 import sys
 from pathlib import Path
 
@@ -41,6 +27,8 @@ def app(monkeypatch, tmp_path):
     monkeypatch.setenv("LOCK_ROOT", str(lock_root))
 
     from app import create_app, db
+    from app.llm_service.llm_model import LLMModel
+    monkeypatch.setattr(LLMModel, "get_db_path", staticmethod(lambda: str(tmp_path / "models.db")))
 
     application = create_app({
         "TESTING": True,
@@ -88,123 +76,50 @@ def _sync(app, members):
         return ProjectService._sync_members_access(PID, members)
 
 
-class TestMembersAccessSync:
-    def test_grants_role_by_email(self, app):
-        uid = _mkuser(app, "acc1")
-        granted, skipped = _sync(app, [_member("acc1@test.local", "coauthor")])
-        from app.security import get_workspace_role
-        with app.app_context():
-            assert granted == 1 and skipped == []
-            assert get_workspace_role(uid, PID) == "coauthor"
+# 本輪產品契約取代舊的「署名自動授權」要求；保留角色／email／現有權限的負向控制。
+@pytest.mark.parametrize('academic_role', ['主持人 (Principal Investigator)', '共同主持人 (Co-PI)', '合作人員'])
+@pytest.mark.parametrize('access_role', ['', 'viewer', 'coauthor', 'editor', 'owner', 'superadmin'])
+def test_academic_metadata_never_grants_access(app, academic_role, access_role):
+    uid = _mkuser(app, 'academic')
+    assert _sync(app, [_member('academic@test.local', access_role, academic_role=academic_role)]) == (0, [])
+    from app.security import get_workspace_role
+    with app.app_context():
+        assert get_workspace_role(uid, PID) is None
 
-    def test_blank_access_role_grants_nothing(self, app):
-        uid = _mkuser(app, "acc2")
-        granted, skipped = _sync(app, [_member("acc2@test.local", "")])
-        from app.security import get_workspace_role
-        with app.app_context():
-            assert granted == 0
-            assert get_workspace_role(uid, PID) is None
 
-    def test_unregistered_email_is_skipped_not_fatal(self, app):
-        granted, skipped = _sync(app, [_member("ghost@test.local", "editor")])
-        assert granted == 0
-        assert skipped == ["ghost@test.local"]
+@pytest.mark.parametrize('existing_role', ['owner', 'editor', 'viewer', 'coauthor'])
+def test_academic_metadata_preserves_existing_permissions(app, existing_role):
+    uid = _mkuser(app, 'existing')
+    from app import db
+    from app.models import WorkspaceMember
+    from app.security import get_workspace_role
+    with app.app_context():
+        db.session.add(WorkspaceMember(user_id=uid, pid=PID, role=existing_role))
+        db.session.commit()
+    _sync(app, [_member('existing@test.local', 'owner')])
+    _sync(app, [_member('existing@test.local', '')])
+    with app.app_context():
+        assert get_workspace_role(uid, PID) == existing_role
 
-    def test_updates_existing_role(self, app):
-        uid = _mkuser(app, "acc3")
-        _sync(app, [_member("acc3@test.local", "viewer")])
-        _sync(app, [_member("acc3@test.local", "editor")])
-        from app.security import get_workspace_role
-        with app.app_context():
-            assert get_workspace_role(uid, PID) == "editor"
 
-    def test_never_removes_membership(self, app):
-        """把 access_role 清空不得踢掉既有協作者——移除只走成員管理。"""
-        uid = _mkuser(app, "acc4")
-        _sync(app, [_member("acc4@test.local", "editor")])
-        _sync(app, [_member("acc4@test.local", "")])
-        from app.security import get_workspace_role
-        with app.app_context():
-            assert get_workspace_role(uid, PID) == "editor"
+def test_unknown_and_multiple_emails_cannot_create_members(app):
+    a, b = _mkuser(app, 'first'), _mkuser(app, 'second')
+    member = _member('first@test.local', 'owner')
+    member['emails'].extend(['second@test.local', 'unknown@test.local'])
+    assert _sync(app, [member, _member('', 'editor')]) == (0, [])
+    from app.models import WorkspaceMember
+    with app.app_context():
+        assert WorkspaceMember.query.filter(WorkspaceMember.user_id.in_([a,b])).count() == 0
 
-    def test_unknown_role_ignored(self, app):
-        uid = _mkuser(app, "acc5")
-        granted, _ = _sync(app, [_member("acc5@test.local", "superadmin")])
-        from app.security import get_workspace_role
-        with app.app_context():
-            assert granted == 0
-            assert get_workspace_role(uid, PID) is None
 
-    def test_uses_first_email_only(self, app):
-        uid_a = _mkuser(app, "acca")
-        uid_b = _mkuser(app, "accb")
-        m = _member("acca@test.local", "viewer")
-        m["emails"].append("accb@test.local")
-        _sync(app, [m])
-        from app.security import get_workspace_role
-        with app.app_context():
-            assert get_workspace_role(uid_a, PID) == "viewer"
-            assert get_workspace_role(uid_b, PID) is None
-
-    def test_multiple_members(self, app):
-        a = _mkuser(app, "m1")
-        b = _mkuser(app, "m2")
-        granted, _ = _sync(app, [
-            _member("m1@test.local", "owner"),
-            _member("m2@test.local", "coauthor"),
-        ])
-        from app.security import get_workspace_role
-        with app.app_context():
-            assert granted == 2
-            assert get_workspace_role(a, PID) == "owner"
-            assert get_workspace_role(b, PID) == "coauthor"
-
-    def test_no_email_is_skipped(self, app):
-        granted, skipped = _sync(app, [_member("", "editor")])
-        assert granted == 0 and skipped == []
-
-    @pytest.mark.parametrize("academic_role", [
-        "主持人 (Principal Investigator)",
-        "共同主持人 (Co-PI)",
-    ])
-    def test_pi_and_copi_get_full_section_editing(self, app, academic_role):
-        uid = _mkuser(app, "lead_" + ("pi" if academic_role.startswith("主持人") else "copi"))
-        email = "lead_pi@test.local" if academic_role.startswith("主持人") else "lead_copi@test.local"
-        granted, skipped = _sync(app, [
-            _member(email, "coauthor", academic_role=academic_role),
-        ])
-        from app.security import get_workspace_role
-        with app.app_context():
-            assert granted == 1 and skipped == []
-            assert get_workspace_role(uid, PID) == "editor"
-
-    def test_pi_minimum_does_not_downgrade_owner(self, app):
-        uid = _mkuser(app, "leadowner")
-        _sync(app, [_member("leadowner@test.local", "owner")])
-        _sync(app, [_member(
-            "leadowner@test.local",
-            "",
-            academic_role="主持人 (Principal Investigator)",
-        )])
-        from app.security import get_workspace_role
-        with app.app_context():
-            assert get_workspace_role(uid, PID) == "owner"
-
-    def test_existing_projects_can_be_backfilled_idempotently(self, app):
-        uid = _mkuser(app, "oldcopi")
-        member = _member(
-            "oldcopi@test.local",
-            "",
-            academic_role="共同主持人 (Co-PI)",
-        )
-        from app import db
-        from app.models import Project
-        from app.project_portfolio.project_service import ProjectService
-        with app.app_context():
-            project = Project.query.filter_by(project_id=PID).one()
-            project.members = [member]
-            db.session.commit()
-            assert ProjectService.ensure_academic_lead_access() == (1, [])
+def test_startup_compatibility_cannot_regrant_removed_academic(app):
+    uid = _mkuser(app, 'removed')
+    from app import db
+    from app.models import Project, WorkspaceMember
+    from app.project_portfolio.project_service import ProjectService
+    with app.app_context():
+        Project.query.filter_by(project_id=PID).one().members = [_member('removed@test.local', 'owner', academic_role='共同主持人 (Co-PI)')]
+        db.session.commit()
+        for _ in range(2):
             assert ProjectService.ensure_academic_lead_access() == (0, [])
-            from app.security import get_workspace_role
-            assert get_workspace_role(uid, PID) == "editor"
+            assert WorkspaceMember.query.filter_by(user_id=uid,pid=PID).first() is None
