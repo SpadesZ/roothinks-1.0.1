@@ -21,6 +21,7 @@ async function main(){
     await page.locator('#sectionDropdownBtn').click();await page.locator('[data-section-id=introduction]').click();await page.locator('#editorCanvas .card-content').waitFor();
     const original=await page.locator('#editorCanvas').innerText();
     await page.locator('#btnScientificReview').click();await page.locator('#sciEvidence option').first().waitFor({state:'attached'});
+    await page.waitForFunction(()=>document.querySelector('#scientificPanel').classList.contains('show')&&!document.querySelector('#scientificPanel').classList.contains('showing'));
     assert.equal(await page.locator('#scientificPanel .offcanvas-body > p').first().evaluate(n=>{const r=n.getBoundingClientRect();return n.contains(document.elementFromPoint(r.x+r.width/2,r.y+r.height/2));}),true,'自主性說明不能被工作列遮住');
     const claim='Every device experimentally improved at all temperatures.';
     await page.locator('#sciText').fill(claim);await page.locator('#sciEvidence').selectOption({index:0});
