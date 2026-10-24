@@ -4,7 +4,20 @@
 
 此表為優化實作的驗收依據。Batch A/B 及段落主張 → 證據條件 → 版本師生審閱工程切片已實作；各列標明實際範圍。未執行的案例保留未驗證，不以完整回歸數量推定全需求通過。更新證據時記錄實作 SHA、環境、命令／操作、結果與限制。
 
-## 本輪 I07：科學完整性建議
+## 本輪 I08：凍結回歸與科學診斷
+
+起點 `582e646`；實作凍結 `fd5559d1767c500ff9fdbe09a4ca5d490408c9f9`；分支 `codex/sai-i08-reliability`。本輪完整回歸均在對應凍結版本執行，之後實作不變。見 [I08 交付](engineering/SAI_I08_DELIVERY_2026-10-24.md)、[機器證據](engineering/SAI_I08_EVIDENCE_2026-10-24.json)、[專家標註指南](engineering/I08_LABELING_GUIDE.md)。
+
+| 項目 | 本輪實際證據 | 未完成／限制 |
+|---|---|---|
+| 最終工程回歸 | `582e646`：1,353 通過／1 略過；`fd5559d`：1,377 通過／2 略過，均 0 失敗；最終版 Linux 72 通過／2 Windows 專用略過；9 支 Node、5 支語法、三流程及科學真瀏覽器通過 | Windows symlink 權限限制由 Linux 執行；正式 DB 不引入隔離站。非全面安全認證 |
+| COL-01、REL-03/04/05 | 真跨程序撤銷、排隊／HTTP／Socket 拒絕；修復重新登入 401，保留 CSRF／密碼及舊 Socket 拒絕；真報告 commit 故障 rollback 與原稿交付；Linux CAS／硬退出／備份還原 | 分散式原子撤權、多主機及真斷電未驗 |
+| SCI-ADV、REL-06：檢索 | 相同 300 dev claims；R0A0 與凍結基準逐例一致；BM25 前三句定位 recall 53.55% → 56.56%、precision 34.69% → 36.64% | 已曝光 dev 的診斷，僅提供來源內的候選句排名，不代表全庫／跨域或科學推論品質 |
+| SCI-ADV：關係比較 | 獨立逐候選比較、主客體／否定／弱語氣／條件、mixed 提示及對抗控制；A1 主要分類較差，保留為比較能力，未取代主摘要 | 主要分類 UNKNOWN 仍 99%；一般語意科學有效性未通過 |
+| 專家評估準備 | 12 篇授權文獻、6 pilot／6 sealed holdout，30／26 個待審候選；兩份 pilot 空白副本，來源分割無交集，標註／裁決全空 | 專家 0、保管人未指定；真 gold、一致率、門檻及 holdout 分數全部 NOT MEASURED |
+| P0-AUT、COC-03/04、COL-02 | 獨立／選用教授／團隊、移除教授保留歷史、無證據仍保存／修訂／匯出，全部維持真瀏覽器回歸 | 未新增教授或科學核准前提；真人可用性仍待驗 |
+
+## I07 歷史：科學完整性建議
 
 規格增加 [v1.1.2](spec/roothinks_SAI_v1.1.2_2026-10-24.md)，起點 `52f7287`，分支 `codex/sai-scientific-advisory`。科學比較工作流與安全切片有條件通過；**科學判讀品質未通過**。逐項證據、完整回歸與保留失敗見 [I07 交付](engineering/SAI_SCIENTIFIC_ADVISORY_DELIVERY_2026-10-24.md)及[機器證據](engineering/SAI_SCIENTIFIC_ADVISORY_EVIDENCE_2026-10-24.json)。
 

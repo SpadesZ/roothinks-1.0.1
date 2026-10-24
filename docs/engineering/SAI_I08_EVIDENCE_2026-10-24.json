@@ -1,0 +1,2800 @@
+{
+  "base_sha": "582e646d1be389d50a612bba8470a476e9dfcc99",
+  "code_sha": "fd5559d1767c500ff9fdbe09a4ca5d490408c9f9",
+  "branch": "codex/sai-i08-reliability",
+  "engineering_verdict": "Measured Windows/Linux authorization, recovery and advisory slice passed; not a full security certification",
+  "scientific_verdict": "NOT ACCEPTED: retrieval improved on diagnostic dev; primary semantic classification remains 99% unknown; expert holdout NOT MEASURED",
+  "commits": [
+    "fd5559d1767c500ff9fdbe09a4ca5d490408c9f9 feat: separate evidence ranking from bounded advisory relation comparisons",
+    "fa3efacea3bb973a01e3447f07b3b5ef5d7817a1 fix: allow safe reauthentication after cross-process session revocation",
+    "6b907ffd88b8a2215b828c8673f27980390dd9b9 fix: verify nested article license URLs and preserve preparation failures",
+    "08ec4631d7e51f96e4fcc7ad5b90334038dcea19 fix: support verified public seeds when literature search is unavailable",
+    "68f8241f7dcc78f5d58609345ed3e3976550c1e9 docs: freeze I08 diagnostic comparison and sealed expert labeling protocol"
+  ],
+  "windows": {
+    "i08-582-full": {
+      "sha": "582e646d1be389d50a612bba8470a476e9dfcc99",
+      "started_utc": "2026-10-24T10:35:25.202608+00:00",
+      "command": [
+        "C:\\Users\\Franky Kuo\\Desktop\\ai-system-test\\roothinks-R-10005\\roothinks\\.venv\\Scripts\\python.exe",
+        "-m",
+        "pytest",
+        "test/unit",
+        "tests",
+        "test/integration_e2e",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "--tb=short",
+        "--show-capture=no",
+        "--junitxml",
+        "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-i08-20261024\\i08-582-full.xml"
+      ],
+      "status": "passed",
+      "dirty_files": [],
+      "exit_code": 0,
+      "ended_utc": "2026-10-24T10:50:49.319493+00:00",
+      "suites": [
+        {
+          "name": "pytest",
+          "errors": "0",
+          "failures": "0",
+          "skipped": "1",
+          "tests": "1354",
+          "time": "913.510",
+          "timestamp": "2026-10-24T18:35:27.584058+08:00",
+          "hostname": "DESKTOP-P3N737E"
+        }
+      ],
+      "artifacts": {
+        "i08-582-full.txt": {
+          "sha256": "a38e0bcaab7984f24dabaac2f1d44bfedf49380701ae5f6949a9c92c2cebfb7d",
+          "bytes": 3997
+        },
+        "i08-582-full.xml": {
+          "sha256": "e8b120957e00af4b94002124abb9a7040611cb3898c403c9c8cb3dd695a08f09",
+          "bytes": 184904
+        }
+      },
+      "skip_reasons": [
+        {
+          "name": "test_symlink_source_cannot_leak_outside_file",
+          "reason": "此 Windows 帳號不允許建立符號連結；Linux 必須執行同一案例"
+        }
+      ]
+    },
+    "i08-components-before": {
+      "sha": "08ec4631d7e51f96e4fcc7ad5b90334038dcea19",
+      "started_utc": "2026-10-24T11:00:30.192264+00:00",
+      "command": [
+        "C:\\Users\\Franky Kuo\\Desktop\\ai-system-test\\roothinks-R-10005\\roothinks\\.venv\\Scripts\\python.exe",
+        "-m",
+        "pytest",
+        "test/unit/test_scientific_components.py",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "--tb=short",
+        "--show-capture=no",
+        "--junitxml",
+        "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-i08-20261024\\i08-components-before.xml"
+      ],
+      "status": "failed",
+      "dirty_files": [
+        "?? test/unit/test_scientific_components.py"
+      ],
+      "exit_code": 1,
+      "ended_utc": "2026-10-24T11:00:47.629305+00:00",
+      "suites": [
+        {
+          "name": "pytest",
+          "errors": "0",
+          "failures": "15",
+          "skipped": "0",
+          "tests": "15",
+          "time": "13.393",
+          "timestamp": "2026-10-24T19:00:33.527059+08:00",
+          "hostname": "DESKTOP-P3N737E"
+        }
+      ],
+      "artifacts": {
+        "i08-components-before.txt": {
+          "sha256": "bee4857d0b5a956ee3356f5877f92da19d9041194ad4ace562491b00ce6c4989",
+          "bytes": 11010
+        },
+        "i08-components-before.xml": {
+          "sha256": "13778e97afa0c2685a1d63839427e563d25fbebe9b0e534b9b7becd0725c74fc",
+          "bytes": 11536
+        }
+      },
+      "skip_reasons": []
+    },
+    "i08-components-first": {
+      "sha": "6b907ffd88b8a2215b828c8673f27980390dd9b9",
+      "started_utc": "2026-10-24T11:12:08.423802+00:00",
+      "command": [
+        "C:\\Users\\Franky Kuo\\Desktop\\ai-system-test\\roothinks-R-10005\\roothinks\\.venv\\Scripts\\python.exe",
+        "-m",
+        "pytest",
+        "test/unit/test_scientific_components.py",
+        "test/unit/test_scientific_advisory.py",
+        "test/unit/test_scientific_review_workflow.py",
+        "test/unit/test_expert_holdout.py",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "--tb=short",
+        "--show-capture=no",
+        "--junitxml",
+        "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-i08-20261024\\i08-components-first.xml"
+      ],
+      "status": "passed",
+      "dirty_files": [
+        " M app/core_pro/manuscript/scientific_advisory.py",
+        " M scripts/scientific_benchmark.py",
+        "?? scripts/scientific_compare.py",
+        "?? test/unit/test_scientific_components.py"
+      ],
+      "exit_code": 0,
+      "ended_utc": "2026-10-24T11:12:25.963430+00:00",
+      "suites": [
+        {
+          "name": "pytest",
+          "errors": "0",
+          "failures": "0",
+          "skipped": "0",
+          "tests": "43",
+          "time": "15.039",
+          "timestamp": "2026-10-24T19:12:09.897155+08:00",
+          "hostname": "DESKTOP-P3N737E"
+        }
+      ],
+      "artifacts": {
+        "i08-components-first.txt": {
+          "sha256": "4f84b0617f54112166919410376f6e3f24d88b61f6a3fe950ea41340f3900761",
+          "bytes": 731
+        },
+        "i08-components-first.xml": {
+          "sha256": "c61bd682ea4661c7ccc32a91e53975729b6f31024c125ab75dd593d40f6aeb54",
+          "bytes": 8317
+        }
+      },
+      "skip_reasons": []
+    },
+    "i08-components-selected": {
+      "sha": "6b907ffd88b8a2215b828c8673f27980390dd9b9",
+      "started_utc": "2026-10-24T11:18:43.295322+00:00",
+      "command": [
+        "C:\\Users\\Franky Kuo\\Desktop\\ai-system-test\\roothinks-R-10005\\roothinks\\.venv\\Scripts\\python.exe",
+        "-m",
+        "pytest",
+        "test/unit/test_scientific_components.py",
+        "test/unit/test_scientific_advisory.py",
+        "test/unit/test_scientific_review_workflow.py",
+        "test/unit/test_scientific_benchmark.py",
+        "test/unit/test_expert_holdout.py",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "--tb=short",
+        "--show-capture=no",
+        "--junitxml",
+        "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-i08-20261024\\i08-components-selected.xml"
+      ],
+      "status": "passed",
+      "dirty_files": [
+        " M app/core_pro/manuscript/scientific_advisory.py",
+        " M app/static/js/scientific_review.js",
+        " M app/templates/manuscript_workspace.html",
+        " M scripts/scientific_benchmark.py",
+        "?? scripts/scientific_compare.py",
+        "?? test/unit/test_scientific_components.py"
+      ],
+      "exit_code": 0,
+      "ended_utc": "2026-10-24T11:19:11.162422+00:00",
+      "suites": [
+        {
+          "name": "pytest",
+          "errors": "0",
+          "failures": "0",
+          "skipped": "0",
+          "tests": "47",
+          "time": "14.137",
+          "timestamp": "2026-10-24T19:18:44.733369+08:00",
+          "hostname": "DESKTOP-P3N737E"
+        }
+      ],
+      "artifacts": {
+        "i08-components-selected.txt": {
+          "sha256": "3c846180e2f6f1582c44f1291c20167fd9e1c3e5915a7e4659a0abf9103b69a2",
+          "bytes": 868
+        },
+        "i08-components-selected.xml": {
+          "sha256": "b06f090919b753f54da47664c5867ea8eab841a60c088a4a177828381f3b8585",
+          "bytes": 9079
+        }
+      },
+      "skip_reasons": []
+    },
+    "i08-final-full": {
+      "sha": "fd5559d1767c500ff9fdbe09a4ca5d490408c9f9",
+      "started_utc": "2026-10-24T11:30:16.269150+00:00",
+      "command": [
+        "C:\\Users\\Franky Kuo\\Desktop\\ai-system-test\\roothinks-R-10005\\roothinks\\.venv\\Scripts\\python.exe",
+        "-m",
+        "pytest",
+        "test/unit",
+        "tests",
+        "test/integration_e2e",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "--tb=short",
+        "--show-capture=no",
+        "--junitxml",
+        "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-i08-20261024\\i08-final-full.xml"
+      ],
+      "status": "passed",
+      "dirty_files": [],
+      "exit_code": 0,
+      "ended_utc": "2026-10-24T11:42:10.800940+00:00",
+      "suites": [
+        {
+          "name": "pytest",
+          "errors": "0",
+          "failures": "0",
+          "skipped": "2",
+          "tests": "1379",
+          "time": "709.518",
+          "timestamp": "2026-10-24T19:30:17.738071+08:00",
+          "hostname": "DESKTOP-P3N737E"
+        }
+      ],
+      "artifacts": {
+        "i08-final-full.txt": {
+          "sha256": "f705e085d67a5fb769785ba527c3004286aff2fb22d9ab28c60ac98e53b88ebd",
+          "bytes": 4127
+        },
+        "i08-final-full.xml": {
+          "sha256": "d1ef411a0048fcb108952d493288b4ecf0e608db951ee9e394ba652c9c0eb906",
+          "bytes": 190073
+        }
+      },
+      "skip_reasons": [
+        {
+          "name": "test_symlink_source_cannot_leak_outside_file",
+          "reason": "此 Windows 帳號不允許建立符號連結；Linux 必須執行同一案例"
+        },
+        {
+          "name": "test_real_db_is_untouched_by_create_app",
+          "reason": "這台機器沒有正式 data/roothinks.db"
+        }
+      ]
+    },
+    "i08-holdout-tool": {
+      "sha": "582e646d1be389d50a612bba8470a476e9dfcc99",
+      "started_utc": "2026-10-24T10:52:09.271475+00:00",
+      "command": [
+        "C:\\Users\\Franky Kuo\\Desktop\\ai-system-test\\roothinks-R-10005\\roothinks\\.venv\\Scripts\\python.exe",
+        "-m",
+        "pytest",
+        "test/unit/test_expert_holdout.py",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "--tb=short",
+        "--show-capture=no",
+        "--junitxml",
+        "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-i08-20261024\\i08-holdout-tool.xml"
+      ],
+      "status": "passed",
+      "dirty_files": [
+        "?? docs/engineering/I08_EVALUATION_PROTOCOL.md",
+        "?? scripts/prepare_expert_holdout.py",
+        "?? test/unit/test_expert_holdout.py"
+      ],
+      "exit_code": 0,
+      "ended_utc": "2026-10-24T10:52:12.161380+00:00",
+      "suites": [
+        {
+          "name": "pytest",
+          "errors": "0",
+          "failures": "0",
+          "skipped": "0",
+          "tests": "4",
+          "time": "0.519",
+          "timestamp": "2026-10-24T18:52:11.045563+08:00",
+          "hostname": "DESKTOP-P3N737E"
+        }
+      ],
+      "artifacts": {
+        "i08-holdout-tool.txt": {
+          "sha256": "5ba51be21cdb329d684e35ff650200980158eecf06932afd2164283951e850fd",
+          "bytes": 100
+        },
+        "i08-holdout-tool.xml": {
+          "sha256": "73816bb6af69a5efa8c1e61962f4d69c62080589ec43a5ab7b2d5cb31d2d9b3f",
+          "bytes": 886
+        }
+      },
+      "skip_reasons": []
+    },
+    "i08-independent-fixed": {
+      "sha": "6b907ffd88b8a2215b828c8673f27980390dd9b9",
+      "started_utc": "2026-10-24T11:26:44.556139+00:00",
+      "command": [
+        "C:\\Users\\Franky Kuo\\Desktop\\ai-system-test\\roothinks-R-10005\\roothinks\\.venv\\Scripts\\python.exe",
+        "-m",
+        "pytest",
+        "test/unit/test_scientific_operational.py",
+        "test/unit/test_scientific_security.py",
+        "test/unit/test_sai_channel_acl.py",
+        "test/unit/test_sai_autonomy.py",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "--tb=short",
+        "--show-capture=no",
+        "--junitxml",
+        "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-i08-20261024\\i08-independent-fixed.xml"
+      ],
+      "status": "passed",
+      "dirty_files": [
+        " M app/__init__.py",
+        " M app/core_pro/manuscript/scientific_advisory.py",
+        " M app/static/js/scientific_review.js",
+        " M app/templates/manuscript_workspace.html",
+        " M scripts/scientific_benchmark.py",
+        "?? scripts/scientific_compare.py",
+        "?? test/unit/test_scientific_components.py",
+        "?? test/unit/test_scientific_operational.py"
+      ],
+      "exit_code": 0,
+      "ended_utc": "2026-10-24T11:27:10.843993+00:00",
+      "suites": [
+        {
+          "name": "pytest",
+          "errors": "0",
+          "failures": "0",
+          "skipped": "0",
+          "tests": "39",
+          "time": "23.985",
+          "timestamp": "2026-10-24T19:26:45.893362+08:00",
+          "hostname": "DESKTOP-P3N737E"
+        }
+      ],
+      "artifacts": {
+        "i08-independent-fixed.txt": {
+          "sha256": "c6ee7e329da0295830785b954f7c1ba1bfe24b367e3dae4727c54454fbada15b",
+          "bytes": 827
+        },
+        "i08-independent-fixed.xml": {
+          "sha256": "afb139b9d86916b96132a1986d2d1be3752fe37df7027c640946fc1dee6430ca",
+          "bytes": 5559
+        }
+      },
+      "skip_reasons": []
+    },
+    "i08-independent-operational": {
+      "sha": "6b907ffd88b8a2215b828c8673f27980390dd9b9",
+      "started_utc": "2026-10-24T11:22:19.452784+00:00",
+      "command": [
+        "C:\\Users\\Franky Kuo\\Desktop\\ai-system-test\\roothinks-R-10005\\roothinks\\.venv\\Scripts\\python.exe",
+        "-m",
+        "pytest",
+        "test/unit/test_scientific_operational.py",
+        "test/unit/test_scientific_security.py",
+        "test/unit/test_backup_research_state.py",
+        "test/unit/test_sai_process_revision.py",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "--tb=short",
+        "--show-capture=no",
+        "--junitxml",
+        "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-i08-20261024\\i08-independent-operational.xml"
+      ],
+      "status": "failed",
+      "dirty_files": [
+        " M app/core_pro/manuscript/scientific_advisory.py",
+        " M app/static/js/scientific_review.js",
+        " M app/templates/manuscript_workspace.html",
+        " M scripts/scientific_benchmark.py",
+        "?? scripts/scientific_compare.py",
+        "?? test/unit/test_scientific_components.py",
+        "?? test/unit/test_scientific_operational.py"
+      ],
+      "exit_code": 1,
+      "ended_utc": "2026-10-24T11:23:14.362453+00:00",
+      "suites": [
+        {
+          "name": "pytest",
+          "errors": "0",
+          "failures": "1",
+          "skipped": "0",
+          "tests": "19",
+          "time": "52.552",
+          "timestamp": "2026-10-24T19:22:20.935815+08:00",
+          "hostname": "DESKTOP-P3N737E"
+        }
+      ],
+      "artifacts": {
+        "i08-independent-operational.txt": {
+          "sha256": "31f76e6382f59de3bdbee87419878da7b09524eff70d7b26e49b9a39bd6dc106",
+          "bytes": 1727
+        },
+        "i08-independent-operational.xml": {
+          "sha256": "8c6c9a93039244a7ab5c3b9847ff68a602b4f706eb666de2dd12d94bdef7d70a",
+          "bytes": 4101
+        }
+      },
+      "skip_reasons": []
+    }
+  },
+  "linux": [
+    {
+      "status": "harness_failed_before_pytest",
+      "source_manifest": {
+        "sha256": "aa96a82058ffb3a690977b3060381d0dca72493b4e2f1472512cce834e7db26f",
+        "code_sha": "fd5559d1767c500ff9fdbe09a4ca5d490408c9f9",
+        "checked": 384,
+        "changed": []
+      },
+      "run": "linux",
+      "artifacts": {
+        "linux-i08.txt": {
+          "sha256": "a8ea26b825460a4132c8959e414b5344be94aaab83203f011e71f2792a3b85bf",
+          "bytes": 387
+        }
+      },
+      "docker_command": {
+        "sha": "fd5559d1767c500ff9fdbe09a4ca5d490408c9f9",
+        "image": "sha256:47d74fc67670303dfa0c3916ed00bbfe935c20890eddf3a0446679b253f4baf9",
+        "command": [
+          "docker",
+          "run",
+          "--rm",
+          "--pull=never",
+          "--name",
+          "roothinks-i08-verification",
+          "--network",
+          "none",
+          "--read-only",
+          "--cpus",
+          "2",
+          "--memory",
+          "4g",
+          "--pids-limit",
+          "256",
+          "--cap-drop",
+          "ALL",
+          "--security-opt",
+          "no-new-privileges",
+          "--tmpfs",
+          "/tmp:rw,exec,size=2g",
+          "--tmpfs",
+          "/sandbox:rw,exec,size=512m",
+          "--mount",
+          "type=bind,source=C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-i08-20261024\\linux\\source,target=/source,readonly",
+          "--mount",
+          "type=bind,source=C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-linux-20261024\\wheels,target=/wheels,readonly",
+          "--mount",
+          "type=bind,source=C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-i08-20261024\\linux\\evidence,target=/evidence",
+          "--entrypoint",
+          "python",
+          "sha256:47d74fc67670303dfa0c3916ed00bbfe935c20890eddf3a0446679b253f4baf9",
+          "-c",
+          "import shutil,runpy,sys; shutil.copytree('/source','/sandbox',dirs_exist_ok=True); sys.argv=['/sandbox/run_i08.py',*sys.argv[1:]]; runpy.run_path('/sandbox/run_i08.py',run_name='__main__')",
+          "linux-i08",
+          "test/unit/test_scientific_operational.py",
+          "test/unit/test_scientific_security.py",
+          "test/unit/test_backup_research_state.py",
+          "test/unit/test_sai_process_revision.py",
+          "test/unit/test_research_backup.py",
+          "test/unit/test_scientific_advisory.py",
+          "test/unit/test_scientific_components.py",
+          "test/unit/test_expert_holdout.py"
+        ]
+      }
+    },
+    {
+      "label": "linux-i08",
+      "platform": "Linux-6.6.87.2-microsoft-standard-WSL2-x86_64-with-glibc2.41",
+      "python": "3.10.20",
+      "sqlite": "3.46.1",
+      "started_utc": "2026-10-24T11:45:28.664348+00:00",
+      "status": "failed",
+      "targets": [
+        "test/unit/test_scientific_operational.py",
+        "test/unit/test_scientific_security.py",
+        "test/unit/test_backup_research_state.py",
+        "test/unit/test_sai_process_revision.py",
+        "test/unit/test_research_backup.py",
+        "test/unit/test_scientific_advisory.py",
+        "test/unit/test_scientific_components.py",
+        "test/unit/test_expert_holdout.py"
+      ],
+      "source_manifest": {
+        "sha256": "aa96a82058ffb3a690977b3060381d0dca72493b4e2f1472512cce834e7db26f",
+        "code_sha": "fd5559d1767c500ff9fdbe09a4ca5d490408c9f9",
+        "checked": 384,
+        "changed": []
+      },
+      "exit_code": 1,
+      "ended_utc": "2026-10-24T11:48:02.944194+00:00",
+      "suites": [
+        {
+          "name": "pytest",
+          "errors": "0",
+          "failures": "3",
+          "skipped": "2",
+          "tests": "74",
+          "time": "153.612",
+          "timestamp": "2026-10-24T11:45:29.077691+00:00",
+          "hostname": "bb93dedfb378"
+        }
+      ],
+      "run": "linux-v2",
+      "skip_reasons": [
+        {
+          "name": "test_multiple_process_writers_have_one_winner_per_revision[draft_aliases]",
+          "reason": "Windows 路徑別名語意"
+        },
+        {
+          "name": "test_extended_prefix_and_case_aliases_share_the_same_lock",
+          "reason": "Windows 路徑別名語意"
+        }
+      ],
+      "artifacts": {
+        "linux-i08-receipt.json": {
+          "sha256": "65928127982641c16a5ff49a3a9793cb9e07757c80aa64748bfc0b525e4f3fba",
+          "bytes": 61608
+        },
+        "linux-i08.txt": {
+          "sha256": "bd9c5f38728d4a311b6a3aa1b31927cd2da2ddf9b7297c0004c679814dd6a4ef",
+          "bytes": 2543
+        },
+        "linux-i08.xml": {
+          "sha256": "41eeeac2939e54c4ed8744610f8a279d905675e696620021b8dafb7b288005f4",
+          "bytes": 15359
+        }
+      },
+      "docker_command": {
+        "sha": "fd5559d1767c500ff9fdbe09a4ca5d490408c9f9",
+        "image": "sha256:47d74fc67670303dfa0c3916ed00bbfe935c20890eddf3a0446679b253f4baf9",
+        "command": [
+          "docker",
+          "run",
+          "--rm",
+          "--pull=never",
+          "--name",
+          "roothinks-i08-verification",
+          "--network",
+          "none",
+          "--read-only",
+          "--cpus",
+          "2",
+          "--memory",
+          "4g",
+          "--pids-limit",
+          "256",
+          "--cap-drop",
+          "ALL",
+          "--security-opt",
+          "no-new-privileges",
+          "--tmpfs",
+          "/tmp:rw,exec,size=2g",
+          "--tmpfs",
+          "/sandbox:rw,exec,size=512m",
+          "--mount",
+          "type=bind,source=C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-i08-20261024\\linux-v2\\source,target=/source,readonly",
+          "--mount",
+          "type=bind,source=C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-linux-20261024\\wheels,target=/wheels,readonly",
+          "--mount",
+          "type=bind,source=C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-i08-20261024\\linux-v2\\evidence,target=/evidence",
+          "--entrypoint",
+          "python",
+          "sha256:47d74fc67670303dfa0c3916ed00bbfe935c20890eddf3a0446679b253f4baf9",
+          "-c",
+          "import shutil,runpy,sys; from pathlib import Path\nfor p in Path('/source').rglob('*'):\n if p.is_file():\n  q=Path('/sandbox')/p.relative_to('/source');q.parent.mkdir(parents=True,exist_ok=True);shutil.copyfile(p,q)\nsys.argv=['/sandbox/run_i08.py',*sys.argv[1:]];runpy.run_path('/sandbox/run_i08.py',run_name='__main__')",
+          "linux-i08",
+          "test/unit/test_scientific_operational.py",
+          "test/unit/test_scientific_security.py",
+          "test/unit/test_backup_research_state.py",
+          "test/unit/test_sai_process_revision.py",
+          "test/unit/test_research_backup.py",
+          "test/unit/test_scientific_advisory.py",
+          "test/unit/test_scientific_components.py",
+          "test/unit/test_expert_holdout.py"
+        ]
+      }
+    },
+    {
+      "label": "linux-i08",
+      "platform": "Linux-6.6.87.2-microsoft-standard-WSL2-x86_64-with-glibc2.41",
+      "python": "3.10.20",
+      "sqlite": "3.46.1",
+      "started_utc": "2026-10-24T11:52:17.236584+00:00",
+      "status": "passed",
+      "targets": [
+        "test/unit/test_scientific_operational.py",
+        "test/unit/test_scientific_security.py",
+        "test/unit/test_backup_research_state.py",
+        "test/unit/test_sai_process_revision.py",
+        "test/unit/test_research_backup.py",
+        "test/unit/test_scientific_advisory.py",
+        "test/unit/test_scientific_components.py",
+        "test/unit/test_expert_holdout.py"
+      ],
+      "source_manifest": {
+        "sha256": "aa96a82058ffb3a690977b3060381d0dca72493b4e2f1472512cce834e7db26f",
+        "code_sha": "fd5559d1767c500ff9fdbe09a4ca5d490408c9f9",
+        "checked": 384,
+        "changed": []
+      },
+      "exit_code": 0,
+      "ended_utc": "2026-10-24T11:52:53.505904+00:00",
+      "suites": [
+        {
+          "name": "pytest",
+          "errors": "0",
+          "failures": "0",
+          "skipped": "2",
+          "tests": "74",
+          "time": "35.872",
+          "timestamp": "2026-10-24T11:52:17.456190+00:00",
+          "hostname": "c0181d0913a6"
+        }
+      ],
+      "run": "linux-v3",
+      "skip_reasons": [
+        {
+          "name": "test_multiple_process_writers_have_one_winner_per_revision[draft_aliases]",
+          "reason": "Windows 路徑別名語意"
+        },
+        {
+          "name": "test_extended_prefix_and_case_aliases_share_the_same_lock",
+          "reason": "Windows 路徑別名語意"
+        }
+      ],
+      "artifacts": {
+        "linux-i08-receipt.json": {
+          "sha256": "affb81aa33ceed29c7c942817bf2e718139deb3930317241d88854749c4b5cab",
+          "bytes": 61607
+        },
+        "linux-i08.txt": {
+          "sha256": "a80750e77e8e165526d22b21b6aec46a71acd4e0d76ee6fd6d7d037cf9416434",
+          "bytes": 557
+        },
+        "linux-i08.xml": {
+          "sha256": "80bf3963dfaba8a7d3a91c473d4331c72e1d7ca7012b70bc06c6f058ed62a122",
+          "bytes": 13258
+        }
+      },
+      "docker_command": {
+        "sha": "fd5559d1767c500ff9fdbe09a4ca5d490408c9f9",
+        "image": "sha256:47d74fc67670303dfa0c3916ed00bbfe935c20890eddf3a0446679b253f4baf9",
+        "command": [
+          "docker",
+          "run",
+          "--rm",
+          "--pull=never",
+          "--name",
+          "roothinks-i08-verification",
+          "--network",
+          "none",
+          "--read-only",
+          "--cpus",
+          "2",
+          "--memory",
+          "4g",
+          "--pids-limit",
+          "256",
+          "--cap-drop",
+          "ALL",
+          "--security-opt",
+          "no-new-privileges",
+          "--tmpfs",
+          "/tmp:rw,exec,size=2g",
+          "--tmpfs",
+          "/sandbox:rw,exec,size=512m",
+          "--mount",
+          "type=bind,source=C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-i08-20261024\\linux-v3\\source,target=/source,readonly",
+          "--mount",
+          "type=bind,source=C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-linux-20261024\\wheels,target=/wheels,readonly",
+          "--mount",
+          "type=bind,source=C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-i08-20261024\\linux-v3\\evidence,target=/evidence",
+          "--entrypoint",
+          "python",
+          "sha256:47d74fc67670303dfa0c3916ed00bbfe935c20890eddf3a0446679b253f4baf9",
+          "-c",
+          "import shutil,runpy,sys; from pathlib import Path\nfor p in Path('/source').rglob('*'):\n if p.is_file():\n  q=Path('/sandbox')/p.relative_to('/source');q.parent.mkdir(parents=True,exist_ok=True);shutil.copyfile(p,q)\nsys.argv=['/sandbox/run_i08.py',*sys.argv[1:]];runpy.run_path('/sandbox/run_i08.py',run_name='__main__')",
+          "linux-i08",
+          "test/unit/test_scientific_operational.py",
+          "test/unit/test_scientific_security.py",
+          "test/unit/test_backup_research_state.py",
+          "test/unit/test_sai_process_revision.py",
+          "test/unit/test_research_backup.py",
+          "test/unit/test_scientific_advisory.py",
+          "test/unit/test_scientific_components.py",
+          "test/unit/test_expert_holdout.py"
+        ]
+      }
+    }
+  ],
+  "node": {
+    "behavior": [
+      {
+        "file": "test\\js\\test_csrf_transport.cjs",
+        "exit_code": 0,
+        "output": "CSRF transport: 5 scenarios passed\n"
+      },
+      {
+        "file": "test\\js\\test_literature_decision_integrity.cjs",
+        "exit_code": 0,
+        "output": "literature decision integrity: 2 scenarios passed\n"
+      },
+      {
+        "file": "test\\js\\test_manuscript_draft_integrity.cjs",
+        "exit_code": 0,
+        "output": "manuscript draft integrity: 8 scenarios passed\n"
+      },
+      {
+        "file": "test\\js\\test_manuscript_input_boundary.cjs",
+        "exit_code": 0,
+        "output": "manuscript input boundary: 3 scenarios passed\n"
+      },
+      {
+        "file": "test\\js\\test_manuscript_visible_section.cjs",
+        "exit_code": 0,
+        "output": "visible section initialization: 3 scenarios passed\n"
+      },
+      {
+        "file": "test\\js\\test_mentor_review_race.cjs",
+        "exit_code": 0,
+        "output": "mentor review race: ok\n"
+      },
+      {
+        "file": "test\\js\\test_origins_upload_csrf.cjs",
+        "exit_code": 0,
+        "output": "Origins XHR upload: CSRF, original, project preserved\n"
+      },
+      {
+        "file": "test\\js\\test_pi_role_matching.js",
+        "exit_code": 0,
+        "output": "PAQ PI role behavior: passed\n"
+      },
+      {
+        "file": "test\\js\\test_study_notes_integrity.cjs",
+        "exit_code": 0,
+        "output": "study notes integrity: 6 scenarios passed\n"
+      }
+    ],
+    "syntax": [
+      {
+        "file": "app/static/js/csrf.js",
+        "exit_code": 0
+      },
+      {
+        "file": "app/static/js/scientific_review.js",
+        "exit_code": 0
+      },
+      {
+        "file": "app/static/js/manuscript_collab.js",
+        "exit_code": 0
+      },
+      {
+        "file": "app/static/js/literature_origins.js",
+        "exit_code": 0
+      },
+      {
+        "file": "test/integration_e2e/sai_scientific_browser.cjs",
+        "exit_code": 0
+      }
+    ]
+  },
+  "browser": [
+    {
+      "folder": "output\\playwright\\autonomy-2026-10-24T11-33-15-472Z",
+      "evidence": {
+        "run": "autonomy-2026-10-24T11-33-15-472Z",
+        "sha": "fd5559d1767c500ff9fdbe09a4ca5d490408c9f9",
+        "checks": [
+          {
+            "name": "independent_no_professor",
+            "pid": "H8TIZ5-p",
+            "sectionVersions": [
+              "0.1",
+              "0.2"
+            ],
+            "passed": true
+          },
+          {
+            "name": "impact_explicit_author_paper_original_reviewer_reconfirmation",
+            "passed": true,
+            "review": 1
+          },
+          {
+            "name": "optional_professor_invite_review_response_remove",
+            "reviewId": 1,
+            "passed": true
+          },
+          {
+            "name": "team_scoped_save_export_denial_exit_history",
+            "passed": true
+          }
+        ],
+        "errors": [],
+        "status": "passed"
+      },
+      "artifacts": {
+        "after-professor-removal.docx": "087b80c10e3e229e6ba3973fc8926c540d3d0272e8b26df8f4414a7703dfa2f6",
+        "collaboration-owner.png": "5cb6f9ffb7852b70618b357c90de87e69972e27ae9d523ba8f12fef68caa8964",
+        "collaboration-owner.yml": "4fb1fbca44f1060cd01bc2422523846dc0002f8f816ac0ab68ed2205eb9469d7",
+        "impact-author-paper-reconfirmed.png": "57cb74e2e061c7684cab97ddc4ada2bde34ff5c6c07e67047026fa7b073f5c9f",
+        "impact-author-paper-reconfirmed.yml": "66e19e89cd062309144faa9961be809933a0567ee374442e019dfb3f58138357",
+        "impact-professor-reconfirmed.png": "ba23d4f9276b0563d3d43dbdca2dc93396240805bfb6abb294b5f1c9115e4a10",
+        "impact-professor-reconfirmed.yml": "73dcf93027833c7223097c5e125fb39ae7e925daf49f0fd52984643f777f7b70",
+        "impact-stale-retains-input.png": "81919c4f1dfe0f211d1b7d81a89ececd26cee57ebf245da4f6243a5ffd184172",
+        "impact-stale-retains-input.yml": "6d8a81bfac60accc7a87797c30d8a544039a3c32264143e6200d7ce556d9a72f",
+        "independent-dashboard.png": "107c9cefd9bdec423332faea2e29f706c95394a6fa2e68962f9f2492a393936a",
+        "independent-dashboard.yml": "f3baa7d6824708769feaa7f3b427ebe4bf131a2db7c0e0e7b874fa8d2e5ef1ef",
+        "independent-saved-exported.png": "433920ecee05df3ddedbd44465cfd850d6fae011e82967d14ab3f22e1eb840fe",
+        "independent-saved-exported.yml": "3e9db207c7344abe48a961e2d70822301e2ddd967fb946282f61064af09b1eed",
+        "independent.docx": "f121e474e2af5f5a064c42060e332228bc7e2f610efb4bef22b41941c29bfd5a",
+        "professor-confirmed.png": "82650d37ef85b32888abc1f25712bae4d85084a9e85352e04f32b372f282419b",
+        "professor-confirmed.yml": "12466c04b6311dea4239ab07e1e93988ea08d009632d7b1ccaac3137eb6445eb",
+        "professor-removed-history.png": "7e79ec82dc12394683a9722575c2d3f7d342ab5a430300c3dd157f2f580c5214",
+        "professor-removed-history.yml": "e8a2a800f879ee46298301bd607de3896ec47a11298c7259025c6394122f8771",
+        "professor-workbench.png": "efd7c706b8e554aaecb2614c235e419b79dbeb82b009e3a1b91c5f4f1db0ef08",
+        "professor-workbench.yml": "baad6d64ab0df364f8afcdff6ce8f266a3e9b1a61365fb417564ba2a50071cec",
+        "receipt.json": "a9629e0418a56aae75d45828434720bd8e7ee1da27e956fcca251afeda0233a0",
+        "register-professor-autonomy-2026-10-24T11-33-15-472Z.png": "09c46092162c5f981bdaf910e70513df787fce1d1cb3fb1078dd696b48740ee3",
+        "register-professor-autonomy-2026-10-24T11-33-15-472Z.yml": "8d0abeb74519e723ea754739fd5248936df126e8ad768c2fcefaa8e089c37d05",
+        "register-team-autonomy-2026-10-24T11-33-15-472Z.png": "09c46092162c5f981bdaf910e70513df787fce1d1cb3fb1078dd696b48740ee3",
+        "register-team-autonomy-2026-10-24T11-33-15-472Z.yml": "8d0abeb74519e723ea754739fd5248936df126e8ad768c2fcefaa8e089c37d05",
+        "team-scoped-writing.png": "2456171e4b1a55f51069a1e4ff79529b6f411922cc476670ce953dc60743dba7",
+        "team-scoped-writing.yml": "5d9e6225d7b35db3e605655b680f8e0a47e01fc13091c29bf7eb16b383a704f6"
+      }
+    },
+    {
+      "folder": "output\\playwright\\scientific-2026-10-24T11-35-53-260Z",
+      "evidence": {
+        "sha": "fd5559d1767c500ff9fdbe09a4ca5d490408c9f9",
+        "checks": [
+          "actionable_source_comparison_original_unchanged",
+          "stale_409_refresh_reason_preserved_append_response",
+          "unknown_advisory_does_not_block_save_export",
+          "mobile_panel_fits_viewport",
+          "generated_report_not_mislabeled_in_other_chapter",
+          "csrf_xhr_upload_original_registered_no_parsing_claim"
+        ],
+        "errors": [],
+        "status": "passed"
+      },
+      "artifacts": {
+        "advisory-nonblocking.docx": "4635ce1565f3b6d2cfd34129c3eb5f0bbd445ce9e2cfb3a73d900027113cfbd4",
+        "claim-evidence-comparison.png": "f75bc033bcaa5390c6c7558c97a0269ffabb83fb932cdba212b4f7864c2803d6",
+        "claim-evidence-comparison.yml": "c2764a5141ec31f19058e8b39e3da1a7b726d597ce9f72e9b40f22e954cf1633",
+        "csrf-xhr-upload-registered.png": "793fdaeca62bd9e5102ba7eba94c3944c3dee415fb46447935fe9f23c40ad2a9",
+        "csrf-xhr-upload-registered.yml": "2a8165863e0c7ffc48eff75f32a7e6ead85df8fe065eadd9a39daa4caeb8eef6",
+        "evidence.json": "7d880765eea20c65219d5a28e99946f92548b2a8456d0632d5b86dbd644c2e99",
+        "generated-report-chapter-boundary.png": "99c8ad9437bc7c2edec0763dfa53f8623c85bf165bce0cca6c89de6a42da3d88",
+        "generated-report-chapter-boundary.yml": "72228357e58679e3c15951b7215558b11f1a7bae38c47b6b364a315093353ce2",
+        "hypothesis-saved-exported.png": "77bb210eee33d263e70bfcff9e2298a8cb4569f5f73573fcf4eee32552c85149",
+        "hypothesis-saved-exported.yml": "7054c9209e4e34dbd366385c56b2bcec847187d9c1c1bc080fe6da095521f38e",
+        "mobile-advisory.png": "83e9640c4b06525892e8b77e9778126b8e1aedb179348322bf4d2466087d76d2",
+        "mobile-advisory.yml": "a5ef4d6799fa120107c0819e9aad0d4f0e7538f4a10eed84bedae11f35709755",
+        "stale-response-preserved.png": "45b50c4740bc6ee9af5c3dbddf2be67c4339c5ec91189c37f803a7ec9c1fc066",
+        "stale-response-preserved.yml": "6304dc3921fcf636ee848769d1b271b70aa3a7e961c87821887122750d20480f"
+      }
+    }
+  ],
+  "diagnosis": {
+    "original_unknown": 297,
+    "only_support_not_established": 205,
+    "claim_count": 300
+  },
+  "diagnostic_comparison": {
+    "diagnostic_only": true,
+    "fresh_blind": false,
+    "expert_holdout_evaluated": false,
+    "baseline_parity": true,
+    "baseline_sha": "f64cb7e7d520ef47779bb33fd8b9b5e6a1d421c5607c596e66f9ba1b8f7b1b9d",
+    "candidate_sha": "e99d9bceb7c0ee69ab2d588181ec1148ef27d38206e09328a8318d4f35dc0a8a",
+    "input_sha": "0fde332e274aee1de8083b4895fa9e6368568a95add06dc97fdbc1e55e17221b",
+    "gold_sha": "d49ab22bd33edd98aa1448d7e69eaefe85e4b055864ad49f432ce65f993f4b76",
+    "groups": {
+      "baseline": {
+        "count": 300,
+        "matrix": {
+          "SUPPORT": {
+            "SUPPORT": 1,
+            "CONTRADICT": 0,
+            "UNKNOWN": 123,
+            "ERROR": 0
+          },
+          "CONTRADICT": {
+            "SUPPORT": 0,
+            "CONTRADICT": 2,
+            "UNKNOWN": 62,
+            "ERROR": 0
+          },
+          "NEI": {
+            "SUPPORT": 0,
+            "CONTRADICT": 0,
+            "UNKNOWN": 112,
+            "ERROR": 0
+          },
+          "AMBIGUOUS": {
+            "SUPPORT": 0,
+            "CONTRADICT": 0,
+            "UNKNOWN": 0,
+            "ERROR": 0
+          }
+        },
+        "one_vs_rest": {
+          "SUPPORT": {
+            "tp": 1,
+            "fp": 0,
+            "fn": 123,
+            "tn": 176,
+            "precision": 1.0,
+            "recall": 0.008064516129032258,
+            "fpr": 0.0,
+            "fnr": 0.9919354838709677
+          },
+          "CONTRADICT": {
+            "tp": 2,
+            "fp": 0,
+            "fn": 62,
+            "tn": 236,
+            "precision": 1.0,
+            "recall": 0.03125,
+            "fpr": 0.0,
+            "fnr": 0.96875
+          }
+        },
+        "localization": {
+          "primary": {
+            "tp": 92,
+            "fp": 97,
+            "fn": 274,
+            "claims": 188,
+            "precision": 0.48677248677248675,
+            "recall": 0.25136612021857924
+          },
+          "localized": {
+            "tp": 196,
+            "fp": 369,
+            "fn": 170,
+            "claims": 188,
+            "precision": 0.34690265486725663,
+            "recall": 0.5355191256830601
+          }
+        },
+        "decisive_coverage": 0.01,
+        "unknown": 297,
+        "errors": 0,
+        "unique_selected_comparison_documents": 263,
+        "prediction_sha": "e77efb443153b09468689bc36ddfdb484d7c6a12223072f54ad0a17b2b1f3448",
+        "gold_sha": "d49ab22bd33edd98aa1448d7e69eaefe85e4b055864ad49f432ce65f993f4b76",
+        "scientific_quality_pass": false,
+        "limits": "Public dev label-blind; UNKNOWN is abstention, not a verified NEI finding. Localization scores union of official rationales; no condition/modality gold.",
+        "retrieval_claim_hits": {
+          "primary": 92,
+          "localized": 153,
+          "denominator": 188
+        },
+        "flags": {
+          "missing_condition": 91,
+          "support_not_established": 301,
+          "numeric_mismatch": 4,
+          "unsupported_generalization": 1,
+          "possible_contradiction": 2
+        },
+        "abstention_reasons": {
+          "legacy_rule_unknown": 301
+        },
+        "mixed_evidence": 0
+      },
+      "R0A0": {
+        "count": 300,
+        "matrix": {
+          "SUPPORT": {
+            "SUPPORT": 1,
+            "CONTRADICT": 0,
+            "UNKNOWN": 123,
+            "ERROR": 0
+          },
+          "CONTRADICT": {
+            "SUPPORT": 0,
+            "CONTRADICT": 2,
+            "UNKNOWN": 62,
+            "ERROR": 0
+          },
+          "NEI": {
+            "SUPPORT": 0,
+            "CONTRADICT": 0,
+            "UNKNOWN": 112,
+            "ERROR": 0
+          },
+          "AMBIGUOUS": {
+            "SUPPORT": 0,
+            "CONTRADICT": 0,
+            "UNKNOWN": 0,
+            "ERROR": 0
+          }
+        },
+        "one_vs_rest": {
+          "SUPPORT": {
+            "tp": 1,
+            "fp": 0,
+            "fn": 123,
+            "tn": 176,
+            "precision": 1.0,
+            "recall": 0.008064516129032258,
+            "fpr": 0.0,
+            "fnr": 0.9919354838709677
+          },
+          "CONTRADICT": {
+            "tp": 2,
+            "fp": 0,
+            "fn": 62,
+            "tn": 236,
+            "precision": 1.0,
+            "recall": 0.03125,
+            "fpr": 0.0,
+            "fnr": 0.96875
+          }
+        },
+        "localization": {
+          "primary": {
+            "tp": 92,
+            "fp": 97,
+            "fn": 274,
+            "claims": 188,
+            "precision": 0.48677248677248675,
+            "recall": 0.25136612021857924
+          },
+          "localized": {
+            "tp": 196,
+            "fp": 369,
+            "fn": 170,
+            "claims": 188,
+            "precision": 0.34690265486725663,
+            "recall": 0.5355191256830601
+          }
+        },
+        "decisive_coverage": 0.01,
+        "unknown": 297,
+        "errors": 0,
+        "unique_selected_comparison_documents": 263,
+        "prediction_sha": "933d02a6677d35620eab6b40d425adda808b0104fe792b791702885003c7341a",
+        "gold_sha": "d49ab22bd33edd98aa1448d7e69eaefe85e4b055864ad49f432ce65f993f4b76",
+        "scientific_quality_pass": false,
+        "limits": "Public dev label-blind; UNKNOWN is abstention, not a verified NEI finding. Localization scores union of official rationales; no condition/modality gold.",
+        "retrieval_claim_hits": {
+          "primary": 92,
+          "localized": 153,
+          "denominator": 188
+        },
+        "flags": {
+          "missing_condition": 91,
+          "support_not_established": 301,
+          "numeric_mismatch": 4,
+          "unsupported_generalization": 1,
+          "possible_contradiction": 2
+        },
+        "abstention_reasons": {
+          "legacy_rule_unknown": 301
+        },
+        "mixed_evidence": 0
+      },
+      "R1A0": {
+        "count": 300,
+        "matrix": {
+          "SUPPORT": {
+            "SUPPORT": 1,
+            "CONTRADICT": 0,
+            "UNKNOWN": 123,
+            "ERROR": 0
+          },
+          "CONTRADICT": {
+            "SUPPORT": 0,
+            "CONTRADICT": 2,
+            "UNKNOWN": 62,
+            "ERROR": 0
+          },
+          "NEI": {
+            "SUPPORT": 0,
+            "CONTRADICT": 0,
+            "UNKNOWN": 112,
+            "ERROR": 0
+          },
+          "AMBIGUOUS": {
+            "SUPPORT": 0,
+            "CONTRADICT": 0,
+            "UNKNOWN": 0,
+            "ERROR": 0
+          }
+        },
+        "one_vs_rest": {
+          "SUPPORT": {
+            "tp": 1,
+            "fp": 0,
+            "fn": 123,
+            "tn": 176,
+            "precision": 1.0,
+            "recall": 0.008064516129032258,
+            "fpr": 0.0,
+            "fnr": 0.9919354838709677
+          },
+          "CONTRADICT": {
+            "tp": 2,
+            "fp": 0,
+            "fn": 62,
+            "tn": 236,
+            "precision": 1.0,
+            "recall": 0.03125,
+            "fpr": 0.0,
+            "fnr": 0.96875
+          }
+        },
+        "localization": {
+          "primary": {
+            "tp": 101,
+            "fp": 88,
+            "fn": 265,
+            "claims": 188,
+            "precision": 0.5343915343915344,
+            "recall": 0.27595628415300544
+          },
+          "localized": {
+            "tp": 207,
+            "fp": 358,
+            "fn": 159,
+            "claims": 188,
+            "precision": 0.3663716814159292,
+            "recall": 0.5655737704918032
+          }
+        },
+        "decisive_coverage": 0.01,
+        "unknown": 297,
+        "errors": 0,
+        "unique_selected_comparison_documents": 265,
+        "prediction_sha": "9549eff797f43723e746c38a11c755c503ce848247087148b2bbb49057d7cf9d",
+        "gold_sha": "d49ab22bd33edd98aa1448d7e69eaefe85e4b055864ad49f432ce65f993f4b76",
+        "scientific_quality_pass": false,
+        "limits": "Public dev label-blind; UNKNOWN is abstention, not a verified NEI finding. Localization scores union of official rationales; no condition/modality gold.",
+        "retrieval_claim_hits": {
+          "primary": 101,
+          "localized": 160,
+          "denominator": 188
+        },
+        "flags": {
+          "missing_condition": 91,
+          "support_not_established": 301,
+          "numeric_mismatch": 4,
+          "unsupported_generalization": 1,
+          "possible_contradiction": 2
+        },
+        "abstention_reasons": {
+          "legacy_rule_unknown": 301
+        },
+        "mixed_evidence": 0
+      },
+      "R0A1": {
+        "count": 300,
+        "matrix": {
+          "SUPPORT": {
+            "SUPPORT": 1,
+            "CONTRADICT": 0,
+            "UNKNOWN": 123,
+            "ERROR": 0
+          },
+          "CONTRADICT": {
+            "SUPPORT": 0,
+            "CONTRADICT": 0,
+            "UNKNOWN": 64,
+            "ERROR": 0
+          },
+          "NEI": {
+            "SUPPORT": 0,
+            "CONTRADICT": 0,
+            "UNKNOWN": 112,
+            "ERROR": 0
+          },
+          "AMBIGUOUS": {
+            "SUPPORT": 0,
+            "CONTRADICT": 0,
+            "UNKNOWN": 0,
+            "ERROR": 0
+          }
+        },
+        "one_vs_rest": {
+          "SUPPORT": {
+            "tp": 1,
+            "fp": 0,
+            "fn": 123,
+            "tn": 176,
+            "precision": 1.0,
+            "recall": 0.008064516129032258,
+            "fpr": 0.0,
+            "fnr": 0.9919354838709677
+          },
+          "CONTRADICT": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 64,
+            "tn": 236,
+            "precision": null,
+            "recall": 0.0,
+            "fpr": 0.0,
+            "fnr": 1.0
+          }
+        },
+        "localization": {
+          "primary": {
+            "tp": 92,
+            "fp": 97,
+            "fn": 274,
+            "claims": 188,
+            "precision": 0.48677248677248675,
+            "recall": 0.25136612021857924
+          },
+          "localized": {
+            "tp": 196,
+            "fp": 369,
+            "fn": 170,
+            "claims": 188,
+            "precision": 0.34690265486725663,
+            "recall": 0.5355191256830601
+          }
+        },
+        "decisive_coverage": 0.0033333333333333335,
+        "unknown": 299,
+        "errors": 0,
+        "unique_selected_comparison_documents": 263,
+        "prediction_sha": "8c0d3997dfb565c6e3402b1004e281b1557175cf558532c441fa30354ea4108a",
+        "gold_sha": "d49ab22bd33edd98aa1448d7e69eaefe85e4b055864ad49f432ce65f993f4b76",
+        "scientific_quality_pass": false,
+        "limits": "Public dev label-blind; UNKNOWN is abstention, not a verified NEI finding. Localization scores union of official rationales; no condition/modality gold.",
+        "retrieval_claim_hits": {
+          "primary": 92,
+          "localized": 153,
+          "denominator": 188
+        },
+        "flags": {
+          "support_not_established": 303,
+          "numeric_mismatch": 4,
+          "missing_condition": 18
+        },
+        "abstention_reasons": {
+          "source_hedged": 20,
+          "unsupported_sentence_structure": 252,
+          "different_quantities": 2,
+          "different_arguments_or_conditions": 28,
+          "significance_is_not_direction": 1
+        },
+        "mixed_evidence": 0
+      },
+      "R1A1": {
+        "count": 300,
+        "matrix": {
+          "SUPPORT": {
+            "SUPPORT": 1,
+            "CONTRADICT": 0,
+            "UNKNOWN": 123,
+            "ERROR": 0
+          },
+          "CONTRADICT": {
+            "SUPPORT": 0,
+            "CONTRADICT": 0,
+            "UNKNOWN": 64,
+            "ERROR": 0
+          },
+          "NEI": {
+            "SUPPORT": 0,
+            "CONTRADICT": 0,
+            "UNKNOWN": 112,
+            "ERROR": 0
+          },
+          "AMBIGUOUS": {
+            "SUPPORT": 0,
+            "CONTRADICT": 0,
+            "UNKNOWN": 0,
+            "ERROR": 0
+          }
+        },
+        "one_vs_rest": {
+          "SUPPORT": {
+            "tp": 1,
+            "fp": 0,
+            "fn": 123,
+            "tn": 176,
+            "precision": 1.0,
+            "recall": 0.008064516129032258,
+            "fpr": 0.0,
+            "fnr": 0.9919354838709677
+          },
+          "CONTRADICT": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 64,
+            "tn": 236,
+            "precision": null,
+            "recall": 0.0,
+            "fpr": 0.0,
+            "fnr": 1.0
+          }
+        },
+        "localization": {
+          "primary": {
+            "tp": 101,
+            "fp": 88,
+            "fn": 265,
+            "claims": 188,
+            "precision": 0.5343915343915344,
+            "recall": 0.27595628415300544
+          },
+          "localized": {
+            "tp": 207,
+            "fp": 358,
+            "fn": 159,
+            "claims": 188,
+            "precision": 0.3663716814159292,
+            "recall": 0.5655737704918032
+          }
+        },
+        "decisive_coverage": 0.0033333333333333335,
+        "unknown": 299,
+        "errors": 0,
+        "unique_selected_comparison_documents": 265,
+        "prediction_sha": "befb9e2eed274bd192cef9ddc6a16677c3c82dc815d91993e08eb788dc893ccd",
+        "gold_sha": "d49ab22bd33edd98aa1448d7e69eaefe85e4b055864ad49f432ce65f993f4b76",
+        "scientific_quality_pass": false,
+        "limits": "Public dev label-blind; UNKNOWN is abstention, not a verified NEI finding. Localization scores union of official rationales; no condition/modality gold.",
+        "retrieval_claim_hits": {
+          "primary": 101,
+          "localized": 160,
+          "denominator": 188
+        },
+        "flags": {
+          "support_not_established": 303,
+          "numeric_mismatch": 4,
+          "missing_condition": 18
+        },
+        "abstention_reasons": {
+          "source_hedged": 22,
+          "unsupported_sentence_structure": 254,
+          "different_arguments_or_conditions": 26,
+          "different_quantities": 1
+        },
+        "mixed_evidence": 0
+      },
+      "product": {
+        "count": 300,
+        "matrix": {
+          "SUPPORT": {
+            "SUPPORT": 1,
+            "CONTRADICT": 0,
+            "UNKNOWN": 123,
+            "ERROR": 0
+          },
+          "CONTRADICT": {
+            "SUPPORT": 0,
+            "CONTRADICT": 2,
+            "UNKNOWN": 62,
+            "ERROR": 0
+          },
+          "NEI": {
+            "SUPPORT": 0,
+            "CONTRADICT": 0,
+            "UNKNOWN": 112,
+            "ERROR": 0
+          },
+          "AMBIGUOUS": {
+            "SUPPORT": 0,
+            "CONTRADICT": 0,
+            "UNKNOWN": 0,
+            "ERROR": 0
+          }
+        },
+        "one_vs_rest": {
+          "SUPPORT": {
+            "tp": 1,
+            "fp": 0,
+            "fn": 123,
+            "tn": 176,
+            "precision": 1.0,
+            "recall": 0.008064516129032258,
+            "fpr": 0.0,
+            "fnr": 0.9919354838709677
+          },
+          "CONTRADICT": {
+            "tp": 2,
+            "fp": 0,
+            "fn": 62,
+            "tn": 236,
+            "precision": 1.0,
+            "recall": 0.03125,
+            "fpr": 0.0,
+            "fnr": 0.96875
+          }
+        },
+        "localization": {
+          "primary": {
+            "tp": 101,
+            "fp": 88,
+            "fn": 265,
+            "claims": 188,
+            "precision": 0.5343915343915344,
+            "recall": 0.27595628415300544
+          },
+          "localized": {
+            "tp": 207,
+            "fp": 358,
+            "fn": 159,
+            "claims": 188,
+            "precision": 0.3663716814159292,
+            "recall": 0.5655737704918032
+          }
+        },
+        "decisive_coverage": 0.01,
+        "unknown": 297,
+        "errors": 0,
+        "unique_selected_comparison_documents": 265,
+        "prediction_sha": "02dde3009a32fec42d997989e668a7167f012f2caff5aed9ab6d0f4a90e83d4b",
+        "gold_sha": "d49ab22bd33edd98aa1448d7e69eaefe85e4b055864ad49f432ce65f993f4b76",
+        "scientific_quality_pass": false,
+        "limits": "Public dev label-blind; UNKNOWN is abstention, not a verified NEI finding. Localization scores union of official rationales; no condition/modality gold.",
+        "retrieval_claim_hits": {
+          "primary": 101,
+          "localized": 160,
+          "denominator": 188
+        },
+        "flags": {
+          "missing_condition": 91,
+          "support_not_established": 301,
+          "numeric_mismatch": 4,
+          "unsupported_generalization": 1,
+          "possible_contradiction": 2
+        },
+        "abstention_reasons": {
+          "source_hedged": 22,
+          "unsupported_sentence_structure": 253,
+          "different_arguments_or_conditions": 25,
+          "different_quantities": 1
+        },
+        "mixed_evidence": 0
+      }
+    }
+  },
+  "diagnostic_attempts": {
+    "diagnostic-v1": {
+      "sha256": "df58b44538cb1ce53e18eddbe14256c479c293567ac2377acad1d757537324e2",
+      "summary": {
+        "diagnostic_only": true,
+        "fresh_blind": false,
+        "expert_holdout_evaluated": false,
+        "baseline_parity": true,
+        "baseline_sha": "f64cb7e7d520ef47779bb33fd8b9b5e6a1d421c5607c596e66f9ba1b8f7b1b9d",
+        "candidate_sha": "f49dfba4e2808b5f6bbebfb45e156a40a7d989664fe7d9fb04691811afb4a94e",
+        "input_sha": "0fde332e274aee1de8083b4895fa9e6368568a95add06dc97fdbc1e55e17221b",
+        "gold_sha": "d49ab22bd33edd98aa1448d7e69eaefe85e4b055864ad49f432ce65f993f4b76",
+        "groups": {
+          "baseline": {
+            "count": 300,
+            "matrix": {
+              "SUPPORT": {
+                "SUPPORT": 1,
+                "CONTRADICT": 0,
+                "UNKNOWN": 123,
+                "ERROR": 0
+              },
+              "CONTRADICT": {
+                "SUPPORT": 0,
+                "CONTRADICT": 2,
+                "UNKNOWN": 62,
+                "ERROR": 0
+              },
+              "NEI": {
+                "SUPPORT": 0,
+                "CONTRADICT": 0,
+                "UNKNOWN": 112,
+                "ERROR": 0
+              },
+              "AMBIGUOUS": {
+                "SUPPORT": 0,
+                "CONTRADICT": 0,
+                "UNKNOWN": 0,
+                "ERROR": 0
+              }
+            },
+            "one_vs_rest": {
+              "SUPPORT": {
+                "tp": 1,
+                "fp": 0,
+                "fn": 123,
+                "tn": 176,
+                "precision": 1.0,
+                "recall": 0.008064516129032258,
+                "fpr": 0.0,
+                "fnr": 0.9919354838709677
+              },
+              "CONTRADICT": {
+                "tp": 2,
+                "fp": 0,
+                "fn": 62,
+                "tn": 236,
+                "precision": 1.0,
+                "recall": 0.03125,
+                "fpr": 0.0,
+                "fnr": 0.96875
+              }
+            },
+            "localization": {
+              "primary": {
+                "tp": 92,
+                "fp": 97,
+                "fn": 274,
+                "claims": 188,
+                "precision": 0.48677248677248675,
+                "recall": 0.25136612021857924
+              },
+              "localized": {
+                "tp": 196,
+                "fp": 369,
+                "fn": 170,
+                "claims": 188,
+                "precision": 0.34690265486725663,
+                "recall": 0.5355191256830601
+              }
+            },
+            "decisive_coverage": 0.01,
+            "unknown": 297,
+            "errors": 0,
+            "unique_selected_comparison_documents": 263,
+            "prediction_sha": "e77efb443153b09468689bc36ddfdb484d7c6a12223072f54ad0a17b2b1f3448",
+            "gold_sha": "d49ab22bd33edd98aa1448d7e69eaefe85e4b055864ad49f432ce65f993f4b76",
+            "scientific_quality_pass": false,
+            "limits": "Public dev label-blind; UNKNOWN is abstention, not a verified NEI finding. Localization scores union of official rationales; no condition/modality gold.",
+            "retrieval_claim_hits": {
+              "primary": 92,
+              "localized": 153,
+              "denominator": 188
+            },
+            "flags": {
+              "missing_condition": 91,
+              "support_not_established": 301,
+              "numeric_mismatch": 4,
+              "unsupported_generalization": 1,
+              "possible_contradiction": 2
+            },
+            "abstention_reasons": {
+              "legacy_rule_unknown": 301
+            },
+            "mixed_evidence": 0
+          },
+          "R0A0": {
+            "count": 300,
+            "matrix": {
+              "SUPPORT": {
+                "SUPPORT": 1,
+                "CONTRADICT": 0,
+                "UNKNOWN": 123,
+                "ERROR": 0
+              },
+              "CONTRADICT": {
+                "SUPPORT": 0,
+                "CONTRADICT": 2,
+                "UNKNOWN": 62,
+                "ERROR": 0
+              },
+              "NEI": {
+                "SUPPORT": 0,
+                "CONTRADICT": 0,
+                "UNKNOWN": 112,
+                "ERROR": 0
+              },
+              "AMBIGUOUS": {
+                "SUPPORT": 0,
+                "CONTRADICT": 0,
+                "UNKNOWN": 0,
+                "ERROR": 0
+              }
+            },
+            "one_vs_rest": {
+              "SUPPORT": {
+                "tp": 1,
+                "fp": 0,
+                "fn": 123,
+                "tn": 176,
+                "precision": 1.0,
+                "recall": 0.008064516129032258,
+                "fpr": 0.0,
+                "fnr": 0.9919354838709677
+              },
+              "CONTRADICT": {
+                "tp": 2,
+                "fp": 0,
+                "fn": 62,
+                "tn": 236,
+                "precision": 1.0,
+                "recall": 0.03125,
+                "fpr": 0.0,
+                "fnr": 0.96875
+              }
+            },
+            "localization": {
+              "primary": {
+                "tp": 92,
+                "fp": 97,
+                "fn": 274,
+                "claims": 188,
+                "precision": 0.48677248677248675,
+                "recall": 0.25136612021857924
+              },
+              "localized": {
+                "tp": 196,
+                "fp": 369,
+                "fn": 170,
+                "claims": 188,
+                "precision": 0.34690265486725663,
+                "recall": 0.5355191256830601
+              }
+            },
+            "decisive_coverage": 0.01,
+            "unknown": 297,
+            "errors": 0,
+            "unique_selected_comparison_documents": 263,
+            "prediction_sha": "933d02a6677d35620eab6b40d425adda808b0104fe792b791702885003c7341a",
+            "gold_sha": "d49ab22bd33edd98aa1448d7e69eaefe85e4b055864ad49f432ce65f993f4b76",
+            "scientific_quality_pass": false,
+            "limits": "Public dev label-blind; UNKNOWN is abstention, not a verified NEI finding. Localization scores union of official rationales; no condition/modality gold.",
+            "retrieval_claim_hits": {
+              "primary": 92,
+              "localized": 153,
+              "denominator": 188
+            },
+            "flags": {
+              "missing_condition": 91,
+              "support_not_established": 301,
+              "numeric_mismatch": 4,
+              "unsupported_generalization": 1,
+              "possible_contradiction": 2
+            },
+            "abstention_reasons": {
+              "legacy_rule_unknown": 301
+            },
+            "mixed_evidence": 0
+          },
+          "R1A0": {
+            "count": 300,
+            "matrix": {
+              "SUPPORT": {
+                "SUPPORT": 1,
+                "CONTRADICT": 0,
+                "UNKNOWN": 123,
+                "ERROR": 0
+              },
+              "CONTRADICT": {
+                "SUPPORT": 0,
+                "CONTRADICT": 2,
+                "UNKNOWN": 62,
+                "ERROR": 0
+              },
+              "NEI": {
+                "SUPPORT": 0,
+                "CONTRADICT": 0,
+                "UNKNOWN": 112,
+                "ERROR": 0
+              },
+              "AMBIGUOUS": {
+                "SUPPORT": 0,
+                "CONTRADICT": 0,
+                "UNKNOWN": 0,
+                "ERROR": 0
+              }
+            },
+            "one_vs_rest": {
+              "SUPPORT": {
+                "tp": 1,
+                "fp": 0,
+                "fn": 123,
+                "tn": 176,
+                "precision": 1.0,
+                "recall": 0.008064516129032258,
+                "fpr": 0.0,
+                "fnr": 0.9919354838709677
+              },
+              "CONTRADICT": {
+                "tp": 2,
+                "fp": 0,
+                "fn": 62,
+                "tn": 236,
+                "precision": 1.0,
+                "recall": 0.03125,
+                "fpr": 0.0,
+                "fnr": 0.96875
+              }
+            },
+            "localization": {
+              "primary": {
+                "tp": 101,
+                "fp": 88,
+                "fn": 265,
+                "claims": 188,
+                "precision": 0.5343915343915344,
+                "recall": 0.27595628415300544
+              },
+              "localized": {
+                "tp": 207,
+                "fp": 358,
+                "fn": 159,
+                "claims": 188,
+                "precision": 0.3663716814159292,
+                "recall": 0.5655737704918032
+              }
+            },
+            "decisive_coverage": 0.01,
+            "unknown": 297,
+            "errors": 0,
+            "unique_selected_comparison_documents": 265,
+            "prediction_sha": "9549eff797f43723e746c38a11c755c503ce848247087148b2bbb49057d7cf9d",
+            "gold_sha": "d49ab22bd33edd98aa1448d7e69eaefe85e4b055864ad49f432ce65f993f4b76",
+            "scientific_quality_pass": false,
+            "limits": "Public dev label-blind; UNKNOWN is abstention, not a verified NEI finding. Localization scores union of official rationales; no condition/modality gold.",
+            "retrieval_claim_hits": {
+              "primary": 101,
+              "localized": 160,
+              "denominator": 188
+            },
+            "flags": {
+              "missing_condition": 91,
+              "support_not_established": 301,
+              "numeric_mismatch": 4,
+              "unsupported_generalization": 1,
+              "possible_contradiction": 2
+            },
+            "abstention_reasons": {
+              "legacy_rule_unknown": 301
+            },
+            "mixed_evidence": 0
+          },
+          "R0A1": {
+            "count": 300,
+            "matrix": {
+              "SUPPORT": {
+                "SUPPORT": 1,
+                "CONTRADICT": 0,
+                "UNKNOWN": 123,
+                "ERROR": 0
+              },
+              "CONTRADICT": {
+                "SUPPORT": 0,
+                "CONTRADICT": 0,
+                "UNKNOWN": 64,
+                "ERROR": 0
+              },
+              "NEI": {
+                "SUPPORT": 0,
+                "CONTRADICT": 0,
+                "UNKNOWN": 112,
+                "ERROR": 0
+              },
+              "AMBIGUOUS": {
+                "SUPPORT": 0,
+                "CONTRADICT": 0,
+                "UNKNOWN": 0,
+                "ERROR": 0
+              }
+            },
+            "one_vs_rest": {
+              "SUPPORT": {
+                "tp": 1,
+                "fp": 0,
+                "fn": 123,
+                "tn": 176,
+                "precision": 1.0,
+                "recall": 0.008064516129032258,
+                "fpr": 0.0,
+                "fnr": 0.9919354838709677
+              },
+              "CONTRADICT": {
+                "tp": 0,
+                "fp": 0,
+                "fn": 64,
+                "tn": 236,
+                "precision": null,
+                "recall": 0.0,
+                "fpr": 0.0,
+                "fnr": 1.0
+              }
+            },
+            "localization": {
+              "primary": {
+                "tp": 92,
+                "fp": 97,
+                "fn": 274,
+                "claims": 188,
+                "precision": 0.48677248677248675,
+                "recall": 0.25136612021857924
+              },
+              "localized": {
+                "tp": 196,
+                "fp": 369,
+                "fn": 170,
+                "claims": 188,
+                "precision": 0.34690265486725663,
+                "recall": 0.5355191256830601
+              }
+            },
+            "decisive_coverage": 0.0033333333333333335,
+            "unknown": 299,
+            "errors": 0,
+            "unique_selected_comparison_documents": 263,
+            "prediction_sha": "8c0d3997dfb565c6e3402b1004e281b1557175cf558532c441fa30354ea4108a",
+            "gold_sha": "d49ab22bd33edd98aa1448d7e69eaefe85e4b055864ad49f432ce65f993f4b76",
+            "scientific_quality_pass": false,
+            "limits": "Public dev label-blind; UNKNOWN is abstention, not a verified NEI finding. Localization scores union of official rationales; no condition/modality gold.",
+            "retrieval_claim_hits": {
+              "primary": 92,
+              "localized": 153,
+              "denominator": 188
+            },
+            "flags": {
+              "support_not_established": 303,
+              "numeric_mismatch": 4,
+              "missing_condition": 18
+            },
+            "abstention_reasons": {
+              "source_hedged": 20,
+              "unsupported_sentence_structure": 252,
+              "different_quantities": 2,
+              "different_arguments_or_conditions": 28,
+              "significance_is_not_direction": 1
+            },
+            "mixed_evidence": 0
+          },
+          "R1A1": {
+            "count": 300,
+            "matrix": {
+              "SUPPORT": {
+                "SUPPORT": 1,
+                "CONTRADICT": 0,
+                "UNKNOWN": 123,
+                "ERROR": 0
+              },
+              "CONTRADICT": {
+                "SUPPORT": 0,
+                "CONTRADICT": 0,
+                "UNKNOWN": 64,
+                "ERROR": 0
+              },
+              "NEI": {
+                "SUPPORT": 0,
+                "CONTRADICT": 0,
+                "UNKNOWN": 112,
+                "ERROR": 0
+              },
+              "AMBIGUOUS": {
+                "SUPPORT": 0,
+                "CONTRADICT": 0,
+                "UNKNOWN": 0,
+                "ERROR": 0
+              }
+            },
+            "one_vs_rest": {
+              "SUPPORT": {
+                "tp": 1,
+                "fp": 0,
+                "fn": 123,
+                "tn": 176,
+                "precision": 1.0,
+                "recall": 0.008064516129032258,
+                "fpr": 0.0,
+                "fnr": 0.9919354838709677
+              },
+              "CONTRADICT": {
+                "tp": 0,
+                "fp": 0,
+                "fn": 64,
+                "tn": 236,
+                "precision": null,
+                "recall": 0.0,
+                "fpr": 0.0,
+                "fnr": 1.0
+              }
+            },
+            "localization": {
+              "primary": {
+                "tp": 101,
+                "fp": 88,
+                "fn": 265,
+                "claims": 188,
+                "precision": 0.5343915343915344,
+                "recall": 0.27595628415300544
+              },
+              "localized": {
+                "tp": 207,
+                "fp": 358,
+                "fn": 159,
+                "claims": 188,
+                "precision": 0.3663716814159292,
+                "recall": 0.5655737704918032
+              }
+            },
+            "decisive_coverage": 0.0033333333333333335,
+            "unknown": 299,
+            "errors": 0,
+            "unique_selected_comparison_documents": 265,
+            "prediction_sha": "befb9e2eed274bd192cef9ddc6a16677c3c82dc815d91993e08eb788dc893ccd",
+            "gold_sha": "d49ab22bd33edd98aa1448d7e69eaefe85e4b055864ad49f432ce65f993f4b76",
+            "scientific_quality_pass": false,
+            "limits": "Public dev label-blind; UNKNOWN is abstention, not a verified NEI finding. Localization scores union of official rationales; no condition/modality gold.",
+            "retrieval_claim_hits": {
+              "primary": 101,
+              "localized": 160,
+              "denominator": 188
+            },
+            "flags": {
+              "support_not_established": 303,
+              "numeric_mismatch": 4,
+              "missing_condition": 18
+            },
+            "abstention_reasons": {
+              "source_hedged": 22,
+              "unsupported_sentence_structure": 254,
+              "different_arguments_or_conditions": 26,
+              "different_quantities": 1
+            },
+            "mixed_evidence": 0
+          }
+        }
+      }
+    },
+    "diagnostic-v2": {
+      "sha256": "2397386b1241fa53b70e1df8a76002c19275c57010ea84bed2d3b82603d3e8d5",
+      "summary": {
+        "diagnostic_only": true,
+        "fresh_blind": false,
+        "expert_holdout_evaluated": false,
+        "baseline_parity": true,
+        "baseline_sha": "f64cb7e7d520ef47779bb33fd8b9b5e6a1d421c5607c596e66f9ba1b8f7b1b9d",
+        "candidate_sha": "e99d9bceb7c0ee69ab2d588181ec1148ef27d38206e09328a8318d4f35dc0a8a",
+        "input_sha": "0fde332e274aee1de8083b4895fa9e6368568a95add06dc97fdbc1e55e17221b",
+        "gold_sha": "d49ab22bd33edd98aa1448d7e69eaefe85e4b055864ad49f432ce65f993f4b76",
+        "groups": {
+          "baseline": {
+            "count": 300,
+            "matrix": {
+              "SUPPORT": {
+                "SUPPORT": 1,
+                "CONTRADICT": 0,
+                "UNKNOWN": 123,
+                "ERROR": 0
+              },
+              "CONTRADICT": {
+                "SUPPORT": 0,
+                "CONTRADICT": 2,
+                "UNKNOWN": 62,
+                "ERROR": 0
+              },
+              "NEI": {
+                "SUPPORT": 0,
+                "CONTRADICT": 0,
+                "UNKNOWN": 112,
+                "ERROR": 0
+              },
+              "AMBIGUOUS": {
+                "SUPPORT": 0,
+                "CONTRADICT": 0,
+                "UNKNOWN": 0,
+                "ERROR": 0
+              }
+            },
+            "one_vs_rest": {
+              "SUPPORT": {
+                "tp": 1,
+                "fp": 0,
+                "fn": 123,
+                "tn": 176,
+                "precision": 1.0,
+                "recall": 0.008064516129032258,
+                "fpr": 0.0,
+                "fnr": 0.9919354838709677
+              },
+              "CONTRADICT": {
+                "tp": 2,
+                "fp": 0,
+                "fn": 62,
+                "tn": 236,
+                "precision": 1.0,
+                "recall": 0.03125,
+                "fpr": 0.0,
+                "fnr": 0.96875
+              }
+            },
+            "localization": {
+              "primary": {
+                "tp": 92,
+                "fp": 97,
+                "fn": 274,
+                "claims": 188,
+                "precision": 0.48677248677248675,
+                "recall": 0.25136612021857924
+              },
+              "localized": {
+                "tp": 196,
+                "fp": 369,
+                "fn": 170,
+                "claims": 188,
+                "precision": 0.34690265486725663,
+                "recall": 0.5355191256830601
+              }
+            },
+            "decisive_coverage": 0.01,
+            "unknown": 297,
+            "errors": 0,
+            "unique_selected_comparison_documents": 263,
+            "prediction_sha": "e77efb443153b09468689bc36ddfdb484d7c6a12223072f54ad0a17b2b1f3448",
+            "gold_sha": "d49ab22bd33edd98aa1448d7e69eaefe85e4b055864ad49f432ce65f993f4b76",
+            "scientific_quality_pass": false,
+            "limits": "Public dev label-blind; UNKNOWN is abstention, not a verified NEI finding. Localization scores union of official rationales; no condition/modality gold.",
+            "retrieval_claim_hits": {
+              "primary": 92,
+              "localized": 153,
+              "denominator": 188
+            },
+            "flags": {
+              "missing_condition": 91,
+              "support_not_established": 301,
+              "numeric_mismatch": 4,
+              "unsupported_generalization": 1,
+              "possible_contradiction": 2
+            },
+            "abstention_reasons": {
+              "legacy_rule_unknown": 301
+            },
+            "mixed_evidence": 0
+          },
+          "R0A0": {
+            "count": 300,
+            "matrix": {
+              "SUPPORT": {
+                "SUPPORT": 1,
+                "CONTRADICT": 0,
+                "UNKNOWN": 123,
+                "ERROR": 0
+              },
+              "CONTRADICT": {
+                "SUPPORT": 0,
+                "CONTRADICT": 2,
+                "UNKNOWN": 62,
+                "ERROR": 0
+              },
+              "NEI": {
+                "SUPPORT": 0,
+                "CONTRADICT": 0,
+                "UNKNOWN": 112,
+                "ERROR": 0
+              },
+              "AMBIGUOUS": {
+                "SUPPORT": 0,
+                "CONTRADICT": 0,
+                "UNKNOWN": 0,
+                "ERROR": 0
+              }
+            },
+            "one_vs_rest": {
+              "SUPPORT": {
+                "tp": 1,
+                "fp": 0,
+                "fn": 123,
+                "tn": 176,
+                "precision": 1.0,
+                "recall": 0.008064516129032258,
+                "fpr": 0.0,
+                "fnr": 0.9919354838709677
+              },
+              "CONTRADICT": {
+                "tp": 2,
+                "fp": 0,
+                "fn": 62,
+                "tn": 236,
+                "precision": 1.0,
+                "recall": 0.03125,
+                "fpr": 0.0,
+                "fnr": 0.96875
+              }
+            },
+            "localization": {
+              "primary": {
+                "tp": 92,
+                "fp": 97,
+                "fn": 274,
+                "claims": 188,
+                "precision": 0.48677248677248675,
+                "recall": 0.25136612021857924
+              },
+              "localized": {
+                "tp": 196,
+                "fp": 369,
+                "fn": 170,
+                "claims": 188,
+                "precision": 0.34690265486725663,
+                "recall": 0.5355191256830601
+              }
+            },
+            "decisive_coverage": 0.01,
+            "unknown": 297,
+            "errors": 0,
+            "unique_selected_comparison_documents": 263,
+            "prediction_sha": "933d02a6677d35620eab6b40d425adda808b0104fe792b791702885003c7341a",
+            "gold_sha": "d49ab22bd33edd98aa1448d7e69eaefe85e4b055864ad49f432ce65f993f4b76",
+            "scientific_quality_pass": false,
+            "limits": "Public dev label-blind; UNKNOWN is abstention, not a verified NEI finding. Localization scores union of official rationales; no condition/modality gold.",
+            "retrieval_claim_hits": {
+              "primary": 92,
+              "localized": 153,
+              "denominator": 188
+            },
+            "flags": {
+              "missing_condition": 91,
+              "support_not_established": 301,
+              "numeric_mismatch": 4,
+              "unsupported_generalization": 1,
+              "possible_contradiction": 2
+            },
+            "abstention_reasons": {
+              "legacy_rule_unknown": 301
+            },
+            "mixed_evidence": 0
+          },
+          "R1A0": {
+            "count": 300,
+            "matrix": {
+              "SUPPORT": {
+                "SUPPORT": 1,
+                "CONTRADICT": 0,
+                "UNKNOWN": 123,
+                "ERROR": 0
+              },
+              "CONTRADICT": {
+                "SUPPORT": 0,
+                "CONTRADICT": 2,
+                "UNKNOWN": 62,
+                "ERROR": 0
+              },
+              "NEI": {
+                "SUPPORT": 0,
+                "CONTRADICT": 0,
+                "UNKNOWN": 112,
+                "ERROR": 0
+              },
+              "AMBIGUOUS": {
+                "SUPPORT": 0,
+                "CONTRADICT": 0,
+                "UNKNOWN": 0,
+                "ERROR": 0
+              }
+            },
+            "one_vs_rest": {
+              "SUPPORT": {
+                "tp": 1,
+                "fp": 0,
+                "fn": 123,
+                "tn": 176,
+                "precision": 1.0,
+                "recall": 0.008064516129032258,
+                "fpr": 0.0,
+                "fnr": 0.9919354838709677
+              },
+              "CONTRADICT": {
+                "tp": 2,
+                "fp": 0,
+                "fn": 62,
+                "tn": 236,
+                "precision": 1.0,
+                "recall": 0.03125,
+                "fpr": 0.0,
+                "fnr": 0.96875
+              }
+            },
+            "localization": {
+              "primary": {
+                "tp": 101,
+                "fp": 88,
+                "fn": 265,
+                "claims": 188,
+                "precision": 0.5343915343915344,
+                "recall": 0.27595628415300544
+              },
+              "localized": {
+                "tp": 207,
+                "fp": 358,
+                "fn": 159,
+                "claims": 188,
+                "precision": 0.3663716814159292,
+                "recall": 0.5655737704918032
+              }
+            },
+            "decisive_coverage": 0.01,
+            "unknown": 297,
+            "errors": 0,
+            "unique_selected_comparison_documents": 265,
+            "prediction_sha": "9549eff797f43723e746c38a11c755c503ce848247087148b2bbb49057d7cf9d",
+            "gold_sha": "d49ab22bd33edd98aa1448d7e69eaefe85e4b055864ad49f432ce65f993f4b76",
+            "scientific_quality_pass": false,
+            "limits": "Public dev label-blind; UNKNOWN is abstention, not a verified NEI finding. Localization scores union of official rationales; no condition/modality gold.",
+            "retrieval_claim_hits": {
+              "primary": 101,
+              "localized": 160,
+              "denominator": 188
+            },
+            "flags": {
+              "missing_condition": 91,
+              "support_not_established": 301,
+              "numeric_mismatch": 4,
+              "unsupported_generalization": 1,
+              "possible_contradiction": 2
+            },
+            "abstention_reasons": {
+              "legacy_rule_unknown": 301
+            },
+            "mixed_evidence": 0
+          },
+          "R0A1": {
+            "count": 300,
+            "matrix": {
+              "SUPPORT": {
+                "SUPPORT": 1,
+                "CONTRADICT": 0,
+                "UNKNOWN": 123,
+                "ERROR": 0
+              },
+              "CONTRADICT": {
+                "SUPPORT": 0,
+                "CONTRADICT": 0,
+                "UNKNOWN": 64,
+                "ERROR": 0
+              },
+              "NEI": {
+                "SUPPORT": 0,
+                "CONTRADICT": 0,
+                "UNKNOWN": 112,
+                "ERROR": 0
+              },
+              "AMBIGUOUS": {
+                "SUPPORT": 0,
+                "CONTRADICT": 0,
+                "UNKNOWN": 0,
+                "ERROR": 0
+              }
+            },
+            "one_vs_rest": {
+              "SUPPORT": {
+                "tp": 1,
+                "fp": 0,
+                "fn": 123,
+                "tn": 176,
+                "precision": 1.0,
+                "recall": 0.008064516129032258,
+                "fpr": 0.0,
+                "fnr": 0.9919354838709677
+              },
+              "CONTRADICT": {
+                "tp": 0,
+                "fp": 0,
+                "fn": 64,
+                "tn": 236,
+                "precision": null,
+                "recall": 0.0,
+                "fpr": 0.0,
+                "fnr": 1.0
+              }
+            },
+            "localization": {
+              "primary": {
+                "tp": 92,
+                "fp": 97,
+                "fn": 274,
+                "claims": 188,
+                "precision": 0.48677248677248675,
+                "recall": 0.25136612021857924
+              },
+              "localized": {
+                "tp": 196,
+                "fp": 369,
+                "fn": 170,
+                "claims": 188,
+                "precision": 0.34690265486725663,
+                "recall": 0.5355191256830601
+              }
+            },
+            "decisive_coverage": 0.0033333333333333335,
+            "unknown": 299,
+            "errors": 0,
+            "unique_selected_comparison_documents": 263,
+            "prediction_sha": "8c0d3997dfb565c6e3402b1004e281b1557175cf558532c441fa30354ea4108a",
+            "gold_sha": "d49ab22bd33edd98aa1448d7e69eaefe85e4b055864ad49f432ce65f993f4b76",
+            "scientific_quality_pass": false,
+            "limits": "Public dev label-blind; UNKNOWN is abstention, not a verified NEI finding. Localization scores union of official rationales; no condition/modality gold.",
+            "retrieval_claim_hits": {
+              "primary": 92,
+              "localized": 153,
+              "denominator": 188
+            },
+            "flags": {
+              "support_not_established": 303,
+              "numeric_mismatch": 4,
+              "missing_condition": 18
+            },
+            "abstention_reasons": {
+              "source_hedged": 20,
+              "unsupported_sentence_structure": 252,
+              "different_quantities": 2,
+              "different_arguments_or_conditions": 28,
+              "significance_is_not_direction": 1
+            },
+            "mixed_evidence": 0
+          },
+          "R1A1": {
+            "count": 300,
+            "matrix": {
+              "SUPPORT": {
+                "SUPPORT": 1,
+                "CONTRADICT": 0,
+                "UNKNOWN": 123,
+                "ERROR": 0
+              },
+              "CONTRADICT": {
+                "SUPPORT": 0,
+                "CONTRADICT": 0,
+                "UNKNOWN": 64,
+                "ERROR": 0
+              },
+              "NEI": {
+                "SUPPORT": 0,
+                "CONTRADICT": 0,
+                "UNKNOWN": 112,
+                "ERROR": 0
+              },
+              "AMBIGUOUS": {
+                "SUPPORT": 0,
+                "CONTRADICT": 0,
+                "UNKNOWN": 0,
+                "ERROR": 0
+              }
+            },
+            "one_vs_rest": {
+              "SUPPORT": {
+                "tp": 1,
+                "fp": 0,
+                "fn": 123,
+                "tn": 176,
+                "precision": 1.0,
+                "recall": 0.008064516129032258,
+                "fpr": 0.0,
+                "fnr": 0.9919354838709677
+              },
+              "CONTRADICT": {
+                "tp": 0,
+                "fp": 0,
+                "fn": 64,
+                "tn": 236,
+                "precision": null,
+                "recall": 0.0,
+                "fpr": 0.0,
+                "fnr": 1.0
+              }
+            },
+            "localization": {
+              "primary": {
+                "tp": 101,
+                "fp": 88,
+                "fn": 265,
+                "claims": 188,
+                "precision": 0.5343915343915344,
+                "recall": 0.27595628415300544
+              },
+              "localized": {
+                "tp": 207,
+                "fp": 358,
+                "fn": 159,
+                "claims": 188,
+                "precision": 0.3663716814159292,
+                "recall": 0.5655737704918032
+              }
+            },
+            "decisive_coverage": 0.0033333333333333335,
+            "unknown": 299,
+            "errors": 0,
+            "unique_selected_comparison_documents": 265,
+            "prediction_sha": "befb9e2eed274bd192cef9ddc6a16677c3c82dc815d91993e08eb788dc893ccd",
+            "gold_sha": "d49ab22bd33edd98aa1448d7e69eaefe85e4b055864ad49f432ce65f993f4b76",
+            "scientific_quality_pass": false,
+            "limits": "Public dev label-blind; UNKNOWN is abstention, not a verified NEI finding. Localization scores union of official rationales; no condition/modality gold.",
+            "retrieval_claim_hits": {
+              "primary": 101,
+              "localized": 160,
+              "denominator": 188
+            },
+            "flags": {
+              "support_not_established": 303,
+              "numeric_mismatch": 4,
+              "missing_condition": 18
+            },
+            "abstention_reasons": {
+              "source_hedged": 22,
+              "unsupported_sentence_structure": 254,
+              "different_arguments_or_conditions": 26,
+              "different_quantities": 1
+            },
+            "mixed_evidence": 0
+          },
+          "product": {
+            "count": 300,
+            "matrix": {
+              "SUPPORT": {
+                "SUPPORT": 1,
+                "CONTRADICT": 0,
+                "UNKNOWN": 123,
+                "ERROR": 0
+              },
+              "CONTRADICT": {
+                "SUPPORT": 0,
+                "CONTRADICT": 2,
+                "UNKNOWN": 62,
+                "ERROR": 0
+              },
+              "NEI": {
+                "SUPPORT": 0,
+                "CONTRADICT": 0,
+                "UNKNOWN": 112,
+                "ERROR": 0
+              },
+              "AMBIGUOUS": {
+                "SUPPORT": 0,
+                "CONTRADICT": 0,
+                "UNKNOWN": 0,
+                "ERROR": 0
+              }
+            },
+            "one_vs_rest": {
+              "SUPPORT": {
+                "tp": 1,
+                "fp": 0,
+                "fn": 123,
+                "tn": 176,
+                "precision": 1.0,
+                "recall": 0.008064516129032258,
+                "fpr": 0.0,
+                "fnr": 0.9919354838709677
+              },
+              "CONTRADICT": {
+                "tp": 2,
+                "fp": 0,
+                "fn": 62,
+                "tn": 236,
+                "precision": 1.0,
+                "recall": 0.03125,
+                "fpr": 0.0,
+                "fnr": 0.96875
+              }
+            },
+            "localization": {
+              "primary": {
+                "tp": 101,
+                "fp": 88,
+                "fn": 265,
+                "claims": 188,
+                "precision": 0.5343915343915344,
+                "recall": 0.27595628415300544
+              },
+              "localized": {
+                "tp": 207,
+                "fp": 358,
+                "fn": 159,
+                "claims": 188,
+                "precision": 0.3663716814159292,
+                "recall": 0.5655737704918032
+              }
+            },
+            "decisive_coverage": 0.01,
+            "unknown": 297,
+            "errors": 0,
+            "unique_selected_comparison_documents": 265,
+            "prediction_sha": "02dde3009a32fec42d997989e668a7167f012f2caff5aed9ab6d0f4a90e83d4b",
+            "gold_sha": "d49ab22bd33edd98aa1448d7e69eaefe85e4b055864ad49f432ce65f993f4b76",
+            "scientific_quality_pass": false,
+            "limits": "Public dev label-blind; UNKNOWN is abstention, not a verified NEI finding. Localization scores union of official rationales; no condition/modality gold.",
+            "retrieval_claim_hits": {
+              "primary": 101,
+              "localized": 160,
+              "denominator": 188
+            },
+            "flags": {
+              "missing_condition": 91,
+              "support_not_established": 301,
+              "numeric_mismatch": 4,
+              "unsupported_generalization": 1,
+              "possible_contradiction": 2
+            },
+            "abstention_reasons": {
+              "source_hedged": 22,
+              "unsupported_sentence_structure": 253,
+              "different_arguments_or_conditions": 25,
+              "different_quantities": 1
+            },
+            "mixed_evidence": 0
+          }
+        }
+      }
+    }
+  },
+  "condition_controls": {
+    "synthetic_only": true,
+    "fixture_sha": "6699f723f550e415605a9dd07506888680fe86aa7547e8e345914133f4726a0a",
+    "condition_term_confusion": {
+      "tp": 6,
+      "fp": 0,
+      "fn": 0,
+      "tn": 13
+    },
+    "expected_warnings_detected": 4,
+    "expected_warning_count": 4,
+    "cases": [
+      {
+        "id": "bounded",
+        "expected_warning": null,
+        "findings": [
+          "support_not_established"
+        ],
+        "original_unchanged": true,
+        "quote_offsets_exact": true,
+        "condition_comparisons": [
+          {
+            "term": "sample A",
+            "missing": false,
+            "detected_missing": false
+          },
+          {
+            "term": "300 K",
+            "missing": false,
+            "detected_missing": false
+          },
+          {
+            "term": "10 GHz",
+            "missing": false,
+            "detected_missing": false
+          },
+          {
+            "term": "chip facet",
+            "missing": false,
+            "detected_missing": false
+          }
+        ]
+      },
+      {
+        "id": "all_samples",
+        "expected_warning": "unsupported_generalization",
+        "findings": [
+          "missing_condition",
+          "support_not_established",
+          "unsupported_generalization"
+        ],
+        "original_unchanged": true,
+        "quote_offsets_exact": true,
+        "condition_comparisons": [
+          {
+            "term": "sample A",
+            "missing": true,
+            "detected_missing": true
+          },
+          {
+            "term": "300 K",
+            "missing": true,
+            "detected_missing": true
+          },
+          {
+            "term": "10 GHz",
+            "missing": true,
+            "detected_missing": true
+          },
+          {
+            "term": "chip facet",
+            "missing": true,
+            "detected_missing": true
+          }
+        ]
+      },
+      {
+        "id": "missing_temperature",
+        "expected_warning": "missing_condition",
+        "findings": [
+          "missing_condition",
+          "support_not_established"
+        ],
+        "original_unchanged": true,
+        "quote_offsets_exact": true,
+        "condition_comparisons": [
+          {
+            "term": "sample A",
+            "missing": false,
+            "detected_missing": false
+          },
+          {
+            "term": "300 K",
+            "missing": true,
+            "detected_missing": true
+          },
+          {
+            "term": "10 GHz",
+            "missing": false,
+            "detected_missing": false
+          },
+          {
+            "term": "chip facet",
+            "missing": false,
+            "detected_missing": false
+          }
+        ]
+      },
+      {
+        "id": "forged_locator",
+        "expected_warning": null,
+        "findings": [
+          "support_not_established"
+        ],
+        "original_unchanged": true,
+        "quote_offsets_exact": true,
+        "condition_comparisons": [
+          {
+            "term": "sample A",
+            "missing": false,
+            "detected_missing": false
+          },
+          {
+            "term": "300 K",
+            "missing": false,
+            "detected_missing": false
+          },
+          {
+            "term": "10 GHz",
+            "missing": false,
+            "detected_missing": false
+          },
+          {
+            "term": "chip facet",
+            "missing": false,
+            "detected_missing": false
+          }
+        ]
+      },
+      {
+        "id": "simulation_as_measurement",
+        "expected_warning": "modality_mismatch",
+        "findings": [
+          "missing_condition",
+          "modality_mismatch",
+          "support_not_established"
+        ],
+        "original_unchanged": true,
+        "quote_offsets_exact": true,
+        "condition_comparisons": [
+          {
+            "term": "device B",
+            "missing": false,
+            "detected_missing": false
+          },
+          {
+            "term": "1550 nm",
+            "missing": false,
+            "detected_missing": false
+          },
+          {
+            "term": "simulation",
+            "missing": true,
+            "detected_missing": true
+          }
+        ]
+      },
+      {
+        "id": "missing_evidence",
+        "expected_warning": "no_evidence",
+        "findings": [
+          "missing_condition",
+          "no_evidence"
+        ],
+        "original_unchanged": true,
+        "quote_offsets_exact": true,
+        "condition_comparisons": []
+      }
+    ],
+    "limits": "Fixed authored controls; lexical terms only; no expert scientific quality or independent condition/modality gold."
+  },
+  "holdout": {
+    "manifest": {
+      "domains": {
+        "life_sciences": {
+          "holdout": 2,
+          "pilot": 2
+        },
+        "materials_energy": {
+          "holdout": 2,
+          "pilot": 2
+        },
+        "photonics": {
+          "holdout": 2,
+          "pilot": 2
+        }
+      },
+      "expert_judgments_created": 0,
+      "expert_labels_complete": false,
+      "holdout_cases": 26,
+      "holdout_ciphertext_sha256": "47e477946bb0414c3711f28f6fe0f949973ecca45c1cbbd5d581370fddef1481",
+      "holdout_documents": 6,
+      "holdout_plaintext_sha256": "d4fd574b4a5bf4d328a7348915932061951bb52198b3eb163395db64c67ec044",
+      "independent_custodian_assigned": false,
+      "inference_performed": false,
+      "pilot_cases": 30,
+      "pilot_documents": 6,
+      "queries": {
+        "life_sciences": "public-seeds-sha256:1606d0c215b9e445de2eb3138dd90fbbb528f4d1f3faef9526878dcde9995338",
+        "materials_energy": "public-seeds-sha256:1606d0c215b9e445de2eb3138dd90fbbb528f4d1f3faef9526878dcde9995338",
+        "photonics": "public-seeds-sha256:1606d0c215b9e445de2eb3138dd90fbbb528f4d1f3faef9526878dcde9995338"
+      },
+      "rejections": [],
+      "source_groups_disjoint": true,
+      "version": "i08-expert-packet-1"
+    },
+    "artifact_folder": "C:\\Users\\Franky Kuo\\.codex\\worktrees\\sai-i08\\roothinks-1.0.1\\output\\scientific-i08-expert-labeling",
+    "seal_created_utc": "2026-10-24T11:07:15.468777+00:00",
+    "implementation_first_component_check_utc": "2026-10-24T11:12:08.423802+00:00",
+    "expert_labels_complete": false,
+    "independent_custodian_assigned": false,
+    "actual_holdout_opened_by_implementation": false,
+    "key_committed": false,
+    "reviewer_packets": 2,
+    "reviewer_packets_have_no_transform_hints": true,
+    "public_seed_registry_sha": "1606d0c215b9e445de2eb3138dd90fbbb528f4d1f3faef9526878dcde9995338",
+    "nonsecret_artifacts": {
+      "holdout.aesgcm": "47e477946bb0414c3711f28f6fe0f949973ecca45c1cbbd5d581370fddef1481",
+      "public-manifest.json": "3e83d5fe6d518c0848a0718f948e5c796ec3f64a765f99d3f6428e6c0a033361",
+      "pilot-labeling.json": "c51f22f03c54d402e7f8a8ddda08f6d61222e2ae839d41a71ed2b388fef98572",
+      "reviewer-1-unassigned.json": "54f493f132b6630040323da9eaa34385dfe5876232d29346aa43b9c19799f867",
+      "reviewer-2-unassigned.json": "a6cebe420539caede6e0ba037fb72c1f9a68c23f39ff7c9487faf88e130aa54a"
+    }
+  },
+  "rejected_attempts": [
+    {
+      "run": "expert-evaluator",
+      "reason": "Europe PMC search HTTP 503; no sealed output"
+    },
+    {
+      "run": "expert-evaluator-v2",
+      "reason": "Incomplete license URL extraction; no sealed output"
+    },
+    {
+      "run": "expert-evaluator-v3",
+      "reason": "One seed only stated CC BY without explicit license URL; replaced with independently verified public seed before implementation"
+    }
+  ],
+  "data_attribution": {
+    "scifact": "Wadden et al. (2020), AI2 SciFact; previously exposed public dev, diagnostic only; claims CC BY 4.0, S2ORC abstracts ODC-By 1.0",
+    "expert_pool": "Published authors named in local licensed source XML; Europe PMC fullTextXML, CC BY/CC0 URLs verified; sources and gold not committed"
+  },
+  "safeguards": {
+    "no_production_data": true,
+    "no_deployment": true,
+    "no_main_merge": true,
+    "no_upstream_operations": true,
+    "baseline_worktree_retained_at": "582e646d1be389d50a612bba8470a476e9dfcc99",
+    "original_checkout_retained_at": "60cf9f73d15cf0e43927cfe572bf217e4547d943",
+    "personal_main_observed": "9655546eac2f2e43a0cabceee0bd75843b47dae2"
+  },
+  "implementation_unchanged_after_full_run": true
+}
