@@ -4,7 +4,22 @@
 
 此表為優化實作的驗收依據。Batch A/B 及段落主張 → 證據條件 → 版本師生審閱工程切片已實作；各列標明實際範圍。未執行的案例保留未驗證，不以完整回歸數量推定全需求通過。更新證據時記錄實作 SHA、環境、命令／操作、結果與限制。
 
-## 本輪 I08：凍結回歸與科學診斷
+## 本輪 I09：專家完整性與範圍棄權
+
+起點 `c33f2589`；實作及瀏覽器測試凍結 `2937722559e773180a28c3f5a6ad600a3ad7c2c5`；分支 `codex/sai-i09-scientific-foundation`。見 [交付與自我稽核](engineering/SAI_I09_DELIVERY_2026-10-24.md)、[機器證據](engineering/SAI_I09_EVIDENCE_2026-10-24.json)、[診斷](engineering/SAI_I09_SCIENTIFIC_DIAGNOSTICS_2026-10-24.json)、[專家操作](engineering/I09_EXPERT_WORKFLOW.md)。
+
+| 項目 | 已實作／實際驗證 | 未完成／限制 |
+|---|---|---|
+| 最終工程基線 | 2937722 完整回歸 1,415 通過／2 略過／0 失敗；9 支 Node；Linux 110 通過／2 Windows-only 略過；兩套真瀏覽器 | 不是全面安全或科學認證；Linux 是 cbc4d16，同最終 Python source／tests 無差異，另有瀏覽器動畫等待修補 |
+| REL-06、專家完整性 | Owner trust root、角色不同金鑰、盲化任務／案例 hash、精確證據定位及條件、兩人簽章、科學欄位分歧獨立裁決、gold 重建及固定承諾 label-only scorer；合成 CLI 與對抗測試 | 真人 0、真 gold 0；簽章不證明資格、獨立性、盲性或提交時序；完整專家條件／定位／模態評分未完成 |
+| 保留集保管／恢復 | 未來封存可用分離 key 路徑；錯 key 不匯出，既有檔拒絕覆寫，manifest 故障保留可恢復 key／密文；I08 真密文 hash 不變 | 未任命獨立保管人，未建立實作者不可存取環境；未讀 key、未開封、未推論；holdout 成績 NOT MEASURED |
+| SCI-ADV、S01/S02/S07 | 修正跨主體／數字條件、弱語氣、未顯著、缺證據、未量測及否認範圍誤判；UI 顯示原因，逐候選原文與其他上下文條件保留 | 有界規則仍非 NLI；跨句條件、單位換算、一般因果／中文科學驗證與機率校準未完成 |
+| 檢索／判讀分離診斷 | 300 個已曝光 dev：檢索 miss 28／188，命中後 159／160 棄權；詞形檢索 recall 56.56% → 54.64%，保留負結果並拒絕採用 | I09 矛盾 TP 2 → 0；UNKNOWN 297 → 299，支持 TP 仍 1；沒有科學準確度提升證據。低 FP 不代表可靠 |
+| COL-01、REL-03/04/05、P0-AUT | 新程序與 Linux 撤權／CSRF／Socket、硬退出／CAS／備份還原回歸；獨立、選用教授、團隊、移除教授歷史、無證據保存／匯出實走 | 多主機原子撤權、真斷電、正式容量、真 provider 與真人可用性仍未驗 |
+
+本輪工程切片 CONDITIONAL PASS；科學品質未通過。完整回歸途中沒有改實作；被人工中止的前一輪不可計為通過。後續文件提交沿用同一實作 hash，全部 raw 失敗保留。下一位代理可用 [Opus 5.5 接手 prompt](engineering/I10_OPUS55_HANDOFF_PROMPT.md)。
+
+## I08 歷史：凍結回歸與科學診斷
 
 起點 `582e646`；實作凍結 `fd5559d1767c500ff9fdbe09a4ca5d490408c9f9`；分支 `codex/sai-i08-reliability`。本輪完整回歸均在對應凍結版本執行，之後實作不變。見 [I08 交付](engineering/SAI_I08_DELIVERY_2026-10-24.md)、[機器證據](engineering/SAI_I08_EVIDENCE_2026-10-24.json)、[專家標註指南](engineering/I08_LABELING_GUIDE.md)。
 

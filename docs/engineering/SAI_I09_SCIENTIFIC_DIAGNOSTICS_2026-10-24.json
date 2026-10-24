@@ -1,0 +1,400 @@
+{
+  "diagnostic_only": true,
+  "fresh_blind": false,
+  "expert_holdout_evaluated": false,
+  "condition_fidelity": "NOT MEASURED: no independent condition gold",
+  "groups": {
+    "I08": {
+      "count": 300,
+      "matrix": {
+        "SUPPORT": {
+          "SUPPORT": 1,
+          "CONTRADICT": 0,
+          "UNKNOWN": 123,
+          "ERROR": 0
+        },
+        "CONTRADICT": {
+          "SUPPORT": 0,
+          "CONTRADICT": 2,
+          "UNKNOWN": 62,
+          "ERROR": 0
+        },
+        "NEI": {
+          "SUPPORT": 0,
+          "CONTRADICT": 0,
+          "UNKNOWN": 112,
+          "ERROR": 0
+        },
+        "AMBIGUOUS": {
+          "SUPPORT": 0,
+          "CONTRADICT": 0,
+          "UNKNOWN": 0,
+          "ERROR": 0
+        }
+      },
+      "one_vs_rest": {
+        "SUPPORT": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 123,
+          "tn": 176,
+          "precision": 1.0,
+          "recall": 0.008064516129032258,
+          "fpr": 0.0,
+          "fnr": 0.9919354838709677
+        },
+        "CONTRADICT": {
+          "tp": 2,
+          "fp": 0,
+          "fn": 62,
+          "tn": 236,
+          "precision": 1.0,
+          "recall": 0.03125,
+          "fpr": 0.0,
+          "fnr": 0.96875
+        }
+      },
+      "localization": {
+        "primary": {
+          "tp": 101,
+          "fp": 88,
+          "fn": 265,
+          "claims": 188,
+          "precision": 0.5343915343915344,
+          "recall": 0.27595628415300544
+        },
+        "localized": {
+          "tp": 207,
+          "fp": 358,
+          "fn": 159,
+          "claims": 188,
+          "precision": 0.3663716814159292,
+          "recall": 0.5655737704918032
+        }
+      },
+      "decisive_coverage": 0.01,
+      "unknown": 297,
+      "errors": 0,
+      "unique_selected_comparison_documents": 265,
+      "prediction_sha": "02dde3009a32fec42d997989e668a7167f012f2caff5aed9ab6d0f4a90e83d4b",
+      "gold_sha": "d49ab22bd33edd98aa1448d7e69eaefe85e4b055864ad49f432ce65f993f4b76",
+      "scientific_quality_pass": false,
+      "limits": "Public dev label-blind; UNKNOWN is abstention, not a verified NEI finding. Localization scores union of official rationales; no condition/modality gold.",
+      "failure_decomposition": {
+        "no_gold_rationale": 112,
+        "retrieved_abstained": 157,
+        "retrieval_miss": 28,
+        "retrieved_correct": 3
+      },
+      "abstention_reasons": {
+        "source_hedged": 22,
+        "unsupported_sentence_structure": 253,
+        "different_arguments_or_conditions": 25,
+        "different_quantities": 1
+      },
+      "warnings": {
+        "missing_condition": 91,
+        "support_not_established": 301,
+        "numeric_mismatch": 4,
+        "unsupported_generalization": 1,
+        "possible_contradiction": 2
+      }
+    },
+    "I09": {
+      "count": 300,
+      "matrix": {
+        "SUPPORT": {
+          "SUPPORT": 1,
+          "CONTRADICT": 0,
+          "UNKNOWN": 123,
+          "ERROR": 0
+        },
+        "CONTRADICT": {
+          "SUPPORT": 0,
+          "CONTRADICT": 0,
+          "UNKNOWN": 64,
+          "ERROR": 0
+        },
+        "NEI": {
+          "SUPPORT": 0,
+          "CONTRADICT": 0,
+          "UNKNOWN": 112,
+          "ERROR": 0
+        },
+        "AMBIGUOUS": {
+          "SUPPORT": 0,
+          "CONTRADICT": 0,
+          "UNKNOWN": 0,
+          "ERROR": 0
+        }
+      },
+      "one_vs_rest": {
+        "SUPPORT": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 123,
+          "tn": 176,
+          "precision": 1.0,
+          "recall": 0.008064516129032258,
+          "fpr": 0.0,
+          "fnr": 0.9919354838709677
+        },
+        "CONTRADICT": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 64,
+          "tn": 236,
+          "precision": null,
+          "recall": 0.0,
+          "fpr": 0.0,
+          "fnr": 1.0
+        }
+      },
+      "localization": {
+        "primary": {
+          "tp": 101,
+          "fp": 88,
+          "fn": 265,
+          "claims": 188,
+          "precision": 0.5343915343915344,
+          "recall": 0.27595628415300544
+        },
+        "localized": {
+          "tp": 207,
+          "fp": 358,
+          "fn": 159,
+          "claims": 188,
+          "precision": 0.3663716814159292,
+          "recall": 0.5655737704918032
+        }
+      },
+      "decisive_coverage": 0.0033333333333333335,
+      "unknown": 299,
+      "errors": 0,
+      "unique_selected_comparison_documents": 265,
+      "prediction_sha": "23e081a928dff197b269f51e612296949c876ba49b1003005c49d5d30374453e",
+      "gold_sha": "d49ab22bd33edd98aa1448d7e69eaefe85e4b055864ad49f432ce65f993f4b76",
+      "scientific_quality_pass": false,
+      "limits": "Public dev label-blind; UNKNOWN is abstention, not a verified NEI finding. Localization scores union of official rationales; no condition/modality gold.",
+      "failure_decomposition": {
+        "no_gold_rationale": 112,
+        "retrieved_abstained": 159,
+        "retrieval_miss": 28,
+        "retrieved_correct": 1
+      },
+      "abstention_reasons": {
+        "source_hedged": 22,
+        "unsupported_sentence_structure": 253,
+        "different_arguments_or_conditions": 26,
+        "different_quantities": 1,
+        "source_does_not_establish_claim": 1
+      },
+      "warnings": {
+        "support_not_established": 303,
+        "missing_condition": 18,
+        "causality_not_established": 3,
+        "numeric_mismatch": 1
+      }
+    },
+    "I08-morph": {
+      "count": 300,
+      "matrix": {
+        "SUPPORT": {
+          "SUPPORT": 1,
+          "CONTRADICT": 0,
+          "UNKNOWN": 123,
+          "ERROR": 0
+        },
+        "CONTRADICT": {
+          "SUPPORT": 0,
+          "CONTRADICT": 2,
+          "UNKNOWN": 62,
+          "ERROR": 0
+        },
+        "NEI": {
+          "SUPPORT": 0,
+          "CONTRADICT": 0,
+          "UNKNOWN": 112,
+          "ERROR": 0
+        },
+        "AMBIGUOUS": {
+          "SUPPORT": 0,
+          "CONTRADICT": 0,
+          "UNKNOWN": 0,
+          "ERROR": 0
+        }
+      },
+      "one_vs_rest": {
+        "SUPPORT": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 123,
+          "tn": 176,
+          "precision": 1.0,
+          "recall": 0.008064516129032258,
+          "fpr": 0.0,
+          "fnr": 0.9919354838709677
+        },
+        "CONTRADICT": {
+          "tp": 2,
+          "fp": 0,
+          "fn": 62,
+          "tn": 236,
+          "precision": 1.0,
+          "recall": 0.03125,
+          "fpr": 0.0,
+          "fnr": 0.96875
+        }
+      },
+      "localization": {
+        "primary": {
+          "tp": 99,
+          "fp": 90,
+          "fn": 267,
+          "claims": 188,
+          "precision": 0.5238095238095238,
+          "recall": 0.27049180327868855
+        },
+        "localized": {
+          "tp": 200,
+          "fp": 366,
+          "fn": 166,
+          "claims": 188,
+          "precision": 0.35335689045936397,
+          "recall": 0.546448087431694
+        }
+      },
+      "decisive_coverage": 0.01,
+      "unknown": 297,
+      "errors": 0,
+      "unique_selected_comparison_documents": 264,
+      "prediction_sha": "8d24d1df612c339ac347bb1dcbc60e94ceccabeaceb1a89d3973411ab93f4f72",
+      "gold_sha": "d49ab22bd33edd98aa1448d7e69eaefe85e4b055864ad49f432ce65f993f4b76",
+      "scientific_quality_pass": false,
+      "limits": "Public dev label-blind; UNKNOWN is abstention, not a verified NEI finding. Localization scores union of official rationales; no condition/modality gold.",
+      "failure_decomposition": {
+        "no_gold_rationale": 112,
+        "retrieved_abstained": 153,
+        "retrieval_miss": 32,
+        "retrieved_correct": 3
+      },
+      "abstention_reasons": {
+        "source_hedged": 21,
+        "unsupported_sentence_structure": 257,
+        "different_arguments_or_conditions": 22,
+        "different_quantities": 1
+      },
+      "warnings": {
+        "missing_condition": 90,
+        "support_not_established": 301,
+        "numeric_mismatch": 4,
+        "unsupported_generalization": 1,
+        "possible_contradiction": 2
+      }
+    },
+    "I09-morph": {
+      "count": 300,
+      "matrix": {
+        "SUPPORT": {
+          "SUPPORT": 1,
+          "CONTRADICT": 0,
+          "UNKNOWN": 123,
+          "ERROR": 0
+        },
+        "CONTRADICT": {
+          "SUPPORT": 0,
+          "CONTRADICT": 0,
+          "UNKNOWN": 64,
+          "ERROR": 0
+        },
+        "NEI": {
+          "SUPPORT": 0,
+          "CONTRADICT": 0,
+          "UNKNOWN": 112,
+          "ERROR": 0
+        },
+        "AMBIGUOUS": {
+          "SUPPORT": 0,
+          "CONTRADICT": 0,
+          "UNKNOWN": 0,
+          "ERROR": 0
+        }
+      },
+      "one_vs_rest": {
+        "SUPPORT": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 123,
+          "tn": 176,
+          "precision": 1.0,
+          "recall": 0.008064516129032258,
+          "fpr": 0.0,
+          "fnr": 0.9919354838709677
+        },
+        "CONTRADICT": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 64,
+          "tn": 236,
+          "precision": null,
+          "recall": 0.0,
+          "fpr": 0.0,
+          "fnr": 1.0
+        }
+      },
+      "localization": {
+        "primary": {
+          "tp": 99,
+          "fp": 90,
+          "fn": 267,
+          "claims": 188,
+          "precision": 0.5238095238095238,
+          "recall": 0.27049180327868855
+        },
+        "localized": {
+          "tp": 200,
+          "fp": 366,
+          "fn": 166,
+          "claims": 188,
+          "precision": 0.35335689045936397,
+          "recall": 0.546448087431694
+        }
+      },
+      "decisive_coverage": 0.0033333333333333335,
+      "unknown": 299,
+      "errors": 0,
+      "unique_selected_comparison_documents": 264,
+      "prediction_sha": "d9592b23c3acb35659e0df0003c91d342c75a9f5cc9ef896f016d36afb8c153c",
+      "gold_sha": "d49ab22bd33edd98aa1448d7e69eaefe85e4b055864ad49f432ce65f993f4b76",
+      "scientific_quality_pass": false,
+      "limits": "Public dev label-blind; UNKNOWN is abstention, not a verified NEI finding. Localization scores union of official rationales; no condition/modality gold.",
+      "failure_decomposition": {
+        "no_gold_rationale": 112,
+        "retrieved_abstained": 155,
+        "retrieval_miss": 32,
+        "retrieved_correct": 1
+      },
+      "abstention_reasons": {
+        "source_hedged": 20,
+        "unsupported_sentence_structure": 257,
+        "different_arguments_or_conditions": 23,
+        "source_does_not_establish_claim": 2,
+        "different_quantities": 1
+      },
+      "warnings": {
+        "support_not_established": 303,
+        "missing_condition": 18,
+        "causality_not_established": 2,
+        "numeric_mismatch": 1
+      }
+    }
+  },
+  "engines": {
+    "I08": "e99d9bceb7c0ee69ab2d588181ec1148ef27d38206e09328a8318d4f35dc0a8a",
+    "I09": "64a5b526d4e8801a1f7a9d3d09a77f12039df9aedbb493969bf11831dad00ebe",
+    "I08-morph": "132a04b66e702895e90b0bc7483a384e9b76047c28cd83413bcbb6c64f565cca",
+    "I09-morph": "6cddd23d8efaa5f9b735908625c56e1f911e164c2b3980074f5eff2e732c7a16"
+  },
+  "inputs_sha256": "0fde332e274aee1de8083b4895fa9e6368568a95add06dc97fdbc1e55e17221b",
+  "gold_sha256": "d49ab22bd33edd98aa1448d7e69eaefe85e4b055864ad49f432ce65f993f4b76"
+}
