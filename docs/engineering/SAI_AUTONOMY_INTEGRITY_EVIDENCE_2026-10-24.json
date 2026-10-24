@@ -1,0 +1,2318 @@
+{
+  "code_sha": "6c8e07174093c54ef5e9c2a45041c69173bb3ac3",
+  "base_sha": "6a965e851e03a9d7acefc3d48851d639c8595266",
+  "branch": "codex/sai-autonomy-integrity",
+  "scope": "synthetic_engineering_slice_not_full_security_or_scientific_acceptance",
+  "commits": [
+    "a2065a6d28a70ede3f52ab9075b3a821691da630 fix(workflow): 保留獨立研究自主並以可撤銷邀請管理教授與團隊權限",
+    "e96a25eb72b56bdee90b3569c48f71f5a0d7892c feat(integrity): 追蹤來源主張與版本審閱變動並追加人工重新確認",
+    "c0b9bcba41f531b4cfe6b2db2597c6ae1a5d9f9a fix: allow scoped authors to use renewed evidence authorization",
+    "97dfcd6687ad6def3e45b061a2f0cc7cd146dfaa feat: add verified offline research backup and fresh-directory restore",
+    "fb73d7a505a1229bdcf763b7bbfd059daff58463 test: measure research traceability and unsupported-claim controls",
+    "6a03ac851b8de7852f647ae890f74de0c3f26d8a fix: initialize scoped writers in an assigned visible chapter",
+    "767d5940940704f87c6939a3df00ebbc5a0ea8c8 fix: bind reconfirmation snapshots to current source and section inputs",
+    "811952a6cd3f7b3cf117344c7a304e4b2cb417c8 fix: refresh impact report before reloading reconfirmation evidence",
+    "5414ce3ee7e0fb128034b56b522f273448b1adf1 test: exercise independent guided and scoped-team browser workflows",
+    "6c8e07174093c54ef5e9c2a45041c69173bb3ac3 fix: refuse incomplete backups when a research directory cannot be read"
+  ],
+  "tests": {
+    "autonomy-before": {
+      "sha": "6a965e851e03a9d7acefc3d48851d639c8595266",
+      "status": "failed",
+      "exit_code": 1,
+      "started_utc": "2026-10-23T17:23:40.040502+00:00",
+      "ended_utc": "2026-10-23T17:24:09.276703+00:00",
+      "command": [
+        "C:\\Users\\Franky Kuo\\Desktop\\ai-system-test\\roothinks-R-10005\\roothinks\\.venv\\Scripts\\python.exe",
+        "-m",
+        "pytest",
+        "test/unit/test_sai_autonomy.py",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "--tb=short",
+        "--show-capture=no",
+        "--junitxml",
+        "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-review-20261023\\autonomy-before.xml"
+      ],
+      "suites": [
+        {
+          "name": "pytest",
+          "errors": "0",
+          "failures": "3",
+          "skipped": "0",
+          "tests": "3",
+          "time": "17.087",
+          "timestamp": "2026-10-24T01:23:42.659131+08:00",
+          "hostname": "DESKTOP-P3N737E"
+        }
+      ],
+      "dirty_files": [
+        "?? docs/engineering/SAI_AUTONOMY_INTEGRITY_PLAN.md",
+        "?? test/unit/test_sai_autonomy.py"
+      ],
+      "receipt": {
+        "path": "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-review-20261023\\autonomy-before-receipt.json",
+        "sha256": "3998f5c9c59e9de3573326a25636a1effdaa3083a7ac1fe4f236cd9834e3e1e8",
+        "bytes": 1013
+      },
+      "counts": {
+        "tests": 3,
+        "failures": 3,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 0
+      },
+      "xml_artifact": {
+        "path": "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-review-20261023\\autonomy-before.xml",
+        "sha256": "7636b50f66e57be9bd4c19dad7106df3467aab773e5d585a3a58677785344419",
+        "bytes": 3216
+      },
+      "txt_artifact": {
+        "path": "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-review-20261023\\autonomy-before.txt",
+        "sha256": "9f60a4100da5dbdf52b0e0fff1fcfffb29afddf3ed954139524ca5dde4b7b400",
+        "bytes": 2382
+      }
+    },
+    "autonomy-after": {
+      "sha": "6a965e851e03a9d7acefc3d48851d639c8595266",
+      "status": "passed",
+      "exit_code": 0,
+      "started_utc": "2026-10-23T17:25:33.210725+00:00",
+      "ended_utc": "2026-10-23T17:27:15.635352+00:00",
+      "command": [
+        "C:\\Users\\Franky Kuo\\Desktop\\ai-system-test\\roothinks-R-10005\\roothinks\\.venv\\Scripts\\python.exe",
+        "-m",
+        "pytest",
+        "test/unit/test_sai_autonomy.py",
+        "test/unit/test_members_access_sync.py",
+        "test/unit/test_workspace_roles.py",
+        "test/unit/test_research_title_sync.py",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "--tb=short",
+        "--show-capture=no",
+        "--junitxml",
+        "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-review-20261023\\autonomy-after.xml"
+      ],
+      "suites": [
+        {
+          "name": "pytest",
+          "errors": "0",
+          "failures": "0",
+          "skipped": "0",
+          "tests": "49",
+          "time": "99.125",
+          "timestamp": "2026-10-24T01:25:34.697126+08:00",
+          "hostname": "DESKTOP-P3N737E"
+        }
+      ],
+      "dirty_files": [
+        " M app/__init__.py",
+        " M app/project_portfolio/project_service.py",
+        " M test/unit/test_members_access_sync.py",
+        "?? docs/engineering/SAI_AUTONOMY_INTEGRITY_PLAN.md",
+        "?? test/unit/test_sai_autonomy.py"
+      ],
+      "receipt": {
+        "path": "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-review-20261023\\autonomy-after-receipt.json",
+        "sha256": "bc5a206131639a0f1327440ef73852225a4e79404952633db62a04089a470394",
+        "bytes": 1275
+      },
+      "counts": {
+        "tests": 49,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 49
+      },
+      "xml_artifact": {
+        "path": "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-review-20261023\\autonomy-after.xml",
+        "sha256": "3f32eb06333068566978a916b8579bb3eaeff3fb4a5ab33508c6a68e783364ce",
+        "bytes": 7171
+      },
+      "txt_artifact": {
+        "path": "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-review-20261023\\autonomy-after.txt",
+        "sha256": "fe187992e6b0d2482e944f8d9e2e6d152cf27e3b77e1c7d01cea37b194cab824",
+        "bytes": 112
+      }
+    },
+    "mentor-privacy-before": {
+      "sha": "6a965e851e03a9d7acefc3d48851d639c8595266",
+      "status": "failed",
+      "exit_code": 1,
+      "started_utc": "2026-10-23T18:02:22.101979+00:00",
+      "ended_utc": "2026-10-23T18:02:28.256107+00:00",
+      "command": [
+        "C:\\Users\\Franky Kuo\\Desktop\\ai-system-test\\roothinks-R-10005\\roothinks\\.venv\\Scripts\\python.exe",
+        "-m",
+        "pytest",
+        "test/unit/test_sai_autonomy.py::test_project_professor_cannot_enumerate_other_projects_or_personal_sessions",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "--tb=short",
+        "--show-capture=no",
+        "--junitxml",
+        "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-review-20261023\\mentor-privacy-before.xml"
+      ],
+      "suites": [
+        {
+          "name": "pytest",
+          "errors": "0",
+          "failures": "1",
+          "skipped": "0",
+          "tests": "1",
+          "time": "4.398",
+          "timestamp": "2026-10-24T02:02:23.294473+08:00",
+          "hostname": "DESKTOP-P3N737E"
+        }
+      ],
+      "dirty_files": [
+        " M app/__init__.py",
+        " M app/models.py",
+        " M app/project_portfolio/project_service.py",
+        " M app/static/js/dashboard.js",
+        " M app/templates/dashboard.html",
+        " M test/unit/test_members_access_sync.py",
+        " M test/unit/test_pi_role_matching.py",
+        "?? app/project_portfolio/collaboration.py",
+        "?? docs/engineering/SAI_AUTONOMY_INTEGRITY_PLAN.md",
+        "?? test/unit/test_sai_autonomy.py",
+        "?? test/unit/test_sai_invitations.py"
+      ],
+      "receipt": {
+        "path": "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-review-20261023\\mentor-privacy-before-receipt.json",
+        "sha256": "fddf90fb56f4039625d12fce303c88ff042712d0784beee86b720de77a5339cf",
+        "bytes": 1467
+      },
+      "counts": {
+        "tests": 1,
+        "failures": 1,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 0
+      },
+      "xml_artifact": {
+        "path": "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-review-20261023\\mentor-privacy-before.xml",
+        "sha256": "8fdcb1fcf73ef287ca47ee97c3f403b71fe7c5162ee1fedcac988ae1f020a64a",
+        "bytes": 2338
+      },
+      "txt_artifact": {
+        "path": "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-review-20261023\\mentor-privacy-before.txt",
+        "sha256": "4177da156999f1b65283b922ab147826bd9d3948a70ba1ab5ca0a6c0dd529564",
+        "bytes": 1303
+      }
+    },
+    "invitations-before": {
+      "sha": "6a965e851e03a9d7acefc3d48851d639c8595266",
+      "status": "failed",
+      "exit_code": 1,
+      "started_utc": "2026-10-23T17:58:44.745021+00:00",
+      "ended_utc": "2026-10-23T17:58:57.114128+00:00",
+      "command": [
+        "C:\\Users\\Franky Kuo\\Desktop\\ai-system-test\\roothinks-R-10005\\roothinks\\.venv\\Scripts\\python.exe",
+        "-m",
+        "pytest",
+        "test/unit/test_sai_invitations.py",
+        "test/unit/test_pi_role_matching.py",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "--tb=short",
+        "--show-capture=no",
+        "--junitxml",
+        "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-review-20261023\\invitations-before.xml"
+      ],
+      "suites": [
+        {
+          "name": "pytest",
+          "errors": "0",
+          "failures": "12",
+          "skipped": "0",
+          "tests": "23",
+          "time": "7.877",
+          "timestamp": "2026-10-24T01:58:45.913711+08:00",
+          "hostname": "DESKTOP-P3N737E"
+        }
+      ],
+      "dirty_files": [
+        " M app/__init__.py",
+        " M app/project_portfolio/project_service.py",
+        " M app/static/js/dashboard.js",
+        " M app/templates/dashboard.html",
+        " M test/unit/test_members_access_sync.py",
+        " M test/unit/test_pi_role_matching.py",
+        "?? docs/engineering/SAI_AUTONOMY_INTEGRITY_PLAN.md",
+        "?? test/unit/test_sai_autonomy.py",
+        "?? test/unit/test_sai_invitations.py"
+      ],
+      "receipt": {
+        "path": "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-review-20261023\\invitations-before-receipt.json",
+        "sha256": "b4dda0623856d6cd5aabce2da7f32822a2199fd54cc866a29bf7fcecbc9f3ff6",
+        "bytes": 1360
+      },
+      "counts": {
+        "tests": 23,
+        "failures": 12,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 11
+      },
+      "xml_artifact": {
+        "path": "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-review-20261023\\invitations-before.xml",
+        "sha256": "707bf0e2eda680761bc199de65c9673a8fd6779036cb0102fa23fba00394332c",
+        "bytes": 10788
+      },
+      "txt_artifact": {
+        "path": "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-review-20261023\\invitations-before.txt",
+        "sha256": "7cb9bc8db4cc638e804420761dca494c87e0aef22152775dd86ab478e4fe80e8",
+        "bytes": 6759
+      }
+    },
+    "professor-history-before": {
+      "sha": "6a965e851e03a9d7acefc3d48851d639c8595266",
+      "status": "failed",
+      "exit_code": 1,
+      "started_utc": "2026-10-23T18:14:35.116387+00:00",
+      "ended_utc": "2026-10-23T18:14:42.583460+00:00",
+      "command": [
+        "C:\\Users\\Franky Kuo\\Desktop\\ai-system-test\\roothinks-R-10005\\roothinks\\.venv\\Scripts\\python.exe",
+        "-m",
+        "pytest",
+        "test/unit/test_sai_invitations.py::test_invitation_token_identity_single_use_and_revocation_preserve_history",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "--tb=short",
+        "--show-capture=no",
+        "--junitxml",
+        "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-review-20261023\\professor-history-before.xml"
+      ],
+      "suites": [
+        {
+          "name": "pytest",
+          "errors": "0",
+          "failures": "1",
+          "skipped": "0",
+          "tests": "1",
+          "time": "5.650",
+          "timestamp": "2026-10-24T02:14:36.429621+08:00",
+          "hostname": "DESKTOP-P3N737E"
+        }
+      ],
+      "dirty_files": [
+        " M app/__init__.py",
+        " M app/mentor/routes.py",
+        " M app/models.py",
+        " M app/project_portfolio/member_routes.py",
+        " M app/project_portfolio/project_service.py",
+        " M app/static/js/dashboard.js",
+        " M app/templates/_header.html",
+        " M app/templates/_navbar.html",
+        " M app/templates/dashboard.html",
+        " M test/unit/test_members_access_sync.py",
+        " M test/unit/test_mentor_scope.py",
+        " M test/unit/test_pi_role_matching.py",
+        " M test/unit/test_sai_review_workflow.py",
+        "?? app/project_portfolio/collaboration.py",
+        "?? app/static/js/collaboration.js",
+        "?? app/templates/collaboration.html",
+        "?? docs/engineering/SAI_AUTONOMY_INTEGRITY_PLAN.md",
+        "?? migrations/versions/0004_project_invitations.py",
+        "?? test/unit/test_sai_autonomy.py",
+        "?? test/unit/test_sai_invitations.py"
+      ],
+      "receipt": {
+        "path": "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-review-20261023\\professor-history-before-receipt.json",
+        "sha256": "dde95ea9496cd725a08c5d0bceecdc5be21e0d68d6d1cffee3fb78f2153ec521",
+        "bytes": 1865
+      },
+      "counts": {
+        "tests": 1,
+        "failures": 1,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 0
+      },
+      "xml_artifact": {
+        "path": "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-review-20261023\\professor-history-before.xml",
+        "sha256": "4e4412f4704159753cefd0ecbd96e9b236722c0f3d312c16e498aa28bf6dfd46",
+        "bytes": 1241
+      },
+      "txt_artifact": {
+        "path": "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-review-20261023\\professor-history-before.txt",
+        "sha256": "0acec0b027fd817fff64c4da28f451dd931901ec6d1468f77ee9a68349ce795e",
+        "bytes": 980
+      }
+    },
+    "autonomy-guidance-regression": {
+      "sha": "6a965e851e03a9d7acefc3d48851d639c8595266",
+      "status": "passed",
+      "exit_code": 0,
+      "started_utc": "2026-10-23T18:15:08.332919+00:00",
+      "ended_utc": "2026-10-23T18:17:06.365425+00:00",
+      "command": [
+        "C:\\Users\\Franky Kuo\\Desktop\\ai-system-test\\roothinks-R-10005\\roothinks\\.venv\\Scripts\\python.exe",
+        "-m",
+        "pytest",
+        "test/unit/test_sai_invitations.py",
+        "test/unit/test_sai_autonomy.py",
+        "test/unit/test_sai_review_workflow.py",
+        "test/unit/test_workspace_roles.py",
+        "test/unit/test_pi_role_matching.py",
+        "test/unit/test_mentor_scope.py",
+        "test/unit/test_members_access_sync.py",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "--tb=short",
+        "--show-capture=no",
+        "--junitxml",
+        "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-review-20261023\\autonomy-guidance-regression.xml"
+      ],
+      "suites": [
+        {
+          "name": "pytest",
+          "errors": "0",
+          "failures": "0",
+          "skipped": "0",
+          "tests": "128",
+          "time": "115.528",
+          "timestamp": "2026-10-24T02:15:09.843729+08:00",
+          "hostname": "DESKTOP-P3N737E"
+        }
+      ],
+      "dirty_files": [
+        " M app/__init__.py",
+        " M app/mentor/routes.py",
+        " M app/models.py",
+        " M app/project_portfolio/member_routes.py",
+        " M app/project_portfolio/project_service.py",
+        " M app/static/js/dashboard.js",
+        " M app/templates/_header.html",
+        " M app/templates/_navbar.html",
+        " M app/templates/dashboard.html",
+        " M test/unit/test_members_access_sync.py",
+        " M test/unit/test_mentor_scope.py",
+        " M test/unit/test_pi_role_matching.py",
+        " M test/unit/test_sai_review_workflow.py",
+        "?? app/project_portfolio/collaboration.py",
+        "?? app/static/js/collaboration.js",
+        "?? app/templates/collaboration.html",
+        "?? docs/engineering/SAI_AUTONOMY_INTEGRITY_PLAN.md",
+        "?? migrations/versions/0004_project_invitations.py",
+        "?? test/unit/test_sai_autonomy.py",
+        "?? test/unit/test_sai_invitations.py"
+      ],
+      "receipt": {
+        "path": "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-review-20261023\\autonomy-guidance-regression-receipt.json",
+        "sha256": "fb86200287925263f1a6c595dd752e93834b65f8e0f6b4a7344ed6e8ea54f73c",
+        "bytes": 2053
+      },
+      "counts": {
+        "tests": 128,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 128
+      },
+      "xml_artifact": {
+        "path": "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-review-20261023\\autonomy-guidance-regression.xml",
+        "sha256": "452c7fb953156764f65777536a7a1ec5f6bce611afb42900b04124766b5d6c1a",
+        "bytes": 17778
+      },
+      "txt_artifact": {
+        "path": "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-review-20261023\\autonomy-guidance-regression.txt",
+        "sha256": "b19490baff91fbd67a2d34dfd16eaf524d9bf1a140e8e660680dc6604e30bab4",
+        "bytes": 817
+      }
+    },
+    "scoped-evidence-before": {
+      "sha": "a2065a6d28a70ede3f52ab9075b3a821691da630",
+      "status": "failed",
+      "exit_code": 1,
+      "started_utc": "2026-10-23T18:23:18.002863+00:00",
+      "ended_utc": "2026-10-23T18:23:32.007272+00:00",
+      "command": [
+        "C:\\Users\\Franky Kuo\\Desktop\\ai-system-test\\roothinks-R-10005\\roothinks\\.venv\\Scripts\\python.exe",
+        "-m",
+        "pytest",
+        "test/unit/test_sai_change_impact.py::test_scoped_source_picker_never_discloses_unassigned_library",
+        "test/unit/test_sai_change_impact.py::test_scoped_author_cannot_guess_unassigned_evidence",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "--tb=short",
+        "--show-capture=no",
+        "--junitxml",
+        "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-review-20261023\\scoped-evidence-before.xml"
+      ],
+      "suites": [
+        {
+          "name": "pytest",
+          "errors": "0",
+          "failures": "2",
+          "skipped": "0",
+          "tests": "2",
+          "time": "11.431",
+          "timestamp": "2026-10-24T02:23:19.797045+08:00",
+          "hostname": "DESKTOP-P3N737E"
+        }
+      ],
+      "dirty_files": [
+        "?? test/unit/test_sai_change_impact.py"
+      ],
+      "receipt": {
+        "path": "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-review-20261023\\scoped-evidence-before-receipt.json",
+        "sha256": "74375fc4011e8ed6b11008ae1142027959153355c1dba95a0524bfe07b720350",
+        "bytes": 1130
+      },
+      "counts": {
+        "tests": 2,
+        "failures": 2,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 0
+      },
+      "xml_artifact": {
+        "path": "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-review-20261023\\scoped-evidence-before.xml",
+        "sha256": "9b6fb800c0ccd265780b23bd5858d238e8a5eed2cc8db64a48e5290f9a80cdf2",
+        "bytes": 2368
+      },
+      "txt_artifact": {
+        "path": "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-review-20261023\\scoped-evidence-before.txt",
+        "sha256": "6575b12ad31bf62d453c0290f32d0e2cd8bb59ac80f18a0b0b29b2e30594f618",
+        "bytes": 1639
+      }
+    },
+    "change-impact-first": {
+      "sha": "a2065a6d28a70ede3f52ab9075b3a821691da630",
+      "status": "failed",
+      "exit_code": 1,
+      "started_utc": "2026-10-23T18:30:14.208310+00:00",
+      "ended_utc": "2026-10-23T18:30:50.718161+00:00",
+      "command": [
+        "C:\\Users\\Franky Kuo\\Desktop\\ai-system-test\\roothinks-R-10005\\roothinks\\.venv\\Scripts\\python.exe",
+        "-m",
+        "pytest",
+        "test/unit/test_sai_change_impact.py",
+        "test/unit/test_sai_review_workflow.py",
+        "tests/test_citation_ledger.py",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "--tb=short",
+        "--show-capture=no",
+        "--junitxml",
+        "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-review-20261023\\change-impact-first.xml"
+      ],
+      "suites": [
+        {
+          "name": "pytest",
+          "errors": "0",
+          "failures": "2",
+          "skipped": "0",
+          "tests": "35",
+          "time": "33.077",
+          "timestamp": "2026-10-24T02:30:16.082101+08:00",
+          "hostname": "DESKTOP-P3N737E"
+        }
+      ],
+      "dirty_files": [
+        " M app/core_pro/manuscript/citation_ledger.py",
+        " M app/core_pro/manuscript/manuscript_io.py",
+        " M app/core_pro/manuscript/manuscript_routes.py",
+        " M app/core_pro/manuscript/paragraph_context.py",
+        "?? app/core_pro/manuscript/change_impact.py",
+        "?? test/unit/test_sai_change_impact.py"
+      ],
+      "receipt": {
+        "path": "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-review-20261023\\change-impact-first-receipt.json",
+        "sha256": "a942a6538bf476bcce99168b70a38799c24d09321d0f552583de66dff4ee78c3",
+        "bytes": 1323
+      },
+      "counts": {
+        "tests": 35,
+        "failures": 2,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 33
+      },
+      "xml_artifact": {
+        "path": "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-review-20261023\\change-impact-first.xml",
+        "sha256": "d221a8b3d94a24f5fdd7a66e711bb1dfa8bd568517b30cc019be8462dd014e10",
+        "bytes": 6122
+      },
+      "txt_artifact": {
+        "path": "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-review-20261023\\change-impact-first.txt",
+        "sha256": "20d026f94d241987809a1f3f8db98b281e33da441f1367b214c81a9261baeb48",
+        "bytes": 2085
+      }
+    },
+    "change-impact-expanded": {
+      "sha": "a2065a6d28a70ede3f52ab9075b3a821691da630",
+      "status": "passed",
+      "exit_code": 0,
+      "started_utc": "2026-10-23T18:33:55.882347+00:00",
+      "ended_utc": "2026-10-23T18:34:29.703220+00:00",
+      "command": [
+        "C:\\Users\\Franky Kuo\\Desktop\\ai-system-test\\roothinks-R-10005\\roothinks\\.venv\\Scripts\\python.exe",
+        "-m",
+        "pytest",
+        "test/unit/test_sai_change_impact.py",
+        "test/unit/test_sai_review_workflow.py",
+        "tests/test_citation_ledger.py",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "--tb=short",
+        "--show-capture=no",
+        "--junitxml",
+        "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-review-20261023\\change-impact-expanded.xml"
+      ],
+      "suites": [
+        {
+          "name": "pytest",
+          "errors": "0",
+          "failures": "0",
+          "skipped": "0",
+          "tests": "37",
+          "time": "31.052",
+          "timestamp": "2026-10-24T02:33:57.827488+08:00",
+          "hostname": "DESKTOP-P3N737E"
+        }
+      ],
+      "dirty_files": [
+        " M app/core_pro/manuscript/citation_ledger.py",
+        " M app/core_pro/manuscript/manuscript_io.py",
+        " M app/core_pro/manuscript/manuscript_routes.py",
+        " M app/core_pro/manuscript/paragraph_context.py",
+        "?? app/core_pro/manuscript/change_impact.py",
+        "?? test/unit/test_sai_change_impact.py"
+      ],
+      "receipt": {
+        "path": "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-review-20261023\\change-impact-expanded-receipt.json",
+        "sha256": "b48c12d4ba74a4ccfd540eb139267829819a8bf75fca6327637c9e47163b848b",
+        "bytes": 1326
+      },
+      "counts": {
+        "tests": 37,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 37
+      },
+      "xml_artifact": {
+        "path": "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-review-20261023\\change-impact-expanded.xml",
+        "sha256": "5a9813dd8acd87e630c4b03c5ca77afaec89f8f24c4f4d3a32c686155a5ff030",
+        "bytes": 5291
+      },
+      "txt_artifact": {
+        "path": "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-review-20261023\\change-impact-expanded.txt",
+        "sha256": "00fb8b8dcd0e1af48b8eb7cb2350feba97e1c61c6690a7dbb20da4dfe69b1f5a",
+        "bytes": 724
+      }
+    },
+    "change-impact-integrity": {
+      "sha": "a2065a6d28a70ede3f52ab9075b3a821691da630",
+      "status": "passed",
+      "exit_code": 0,
+      "started_utc": "2026-10-23T18:43:21.736084+00:00",
+      "ended_utc": "2026-10-23T18:44:02.605028+00:00",
+      "command": [
+        "C:\\Users\\Franky Kuo\\Desktop\\ai-system-test\\roothinks-R-10005\\roothinks\\.venv\\Scripts\\python.exe",
+        "-m",
+        "pytest",
+        "test/unit/test_sai_change_impact.py",
+        "test/unit/test_sai_review_workflow.py",
+        "tests/test_citation_ledger.py",
+        "test/unit/test_sai_invitations.py",
+        "test/unit/test_sai_channel_acl.py",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "--tb=short",
+        "--show-capture=no",
+        "--junitxml",
+        "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-review-20261023\\change-impact-integrity.xml"
+      ],
+      "suites": [
+        {
+          "name": "pytest",
+          "errors": "0",
+          "failures": "0",
+          "skipped": "0",
+          "tests": "81",
+          "time": "38.794",
+          "timestamp": "2026-10-24T02:43:22.883539+08:00",
+          "hostname": "DESKTOP-P3N737E"
+        }
+      ],
+      "dirty_files": [
+        " M app/core_pro/manuscript/citation_ledger.py",
+        " M app/core_pro/manuscript/manuscript_io.py",
+        " M app/core_pro/manuscript/manuscript_routes.py",
+        " M app/core_pro/manuscript/paragraph_context.py",
+        " M app/static/js/paragraph_review.js",
+        " M app/templates/_header.html",
+        " M app/templates/_navbar.html",
+        "?? app/core_pro/manuscript/change_impact.py",
+        "?? app/static/js/change_impact.js",
+        "?? app/templates/change_impact.html",
+        "?? test/unit/test_sai_change_impact.py"
+      ],
+      "receipt": {
+        "path": "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-review-20261023\\change-impact-integrity-receipt.json",
+        "sha256": "2df952e5dea953a242e4e3861104846666b436792567f1d8aa29b2c69ed0da47",
+        "bytes": 1618
+      },
+      "counts": {
+        "tests": 81,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 81
+      },
+      "xml_artifact": {
+        "path": "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-review-20261023\\change-impact-integrity.xml",
+        "sha256": "b3da03881f72ed5893b75b0b6dad23e7e839f1ce6fbb08a3fd513af784b0dffe",
+        "bytes": 11089
+      },
+      "txt_artifact": {
+        "path": "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-review-20261023\\change-impact-integrity.txt",
+        "sha256": "18f2cb9dc0a447a63e0a8ef5b1ad4dae60d2ddcf23163a01b9f6b92c32df7f84",
+        "bytes": 853
+      }
+    },
+    "invitation-last-owner-before": {
+      "sha": "a2065a6d28a70ede3f52ab9075b3a821691da630",
+      "status": "failed",
+      "exit_code": 1,
+      "started_utc": "2026-10-23T18:49:23.468665+00:00",
+      "ended_utc": "2026-10-23T18:49:36.836743+00:00",
+      "command": [
+        "C:\\Users\\Franky Kuo\\Desktop\\ai-system-test\\roothinks-R-10005\\roothinks\\.venv\\Scripts\\python.exe",
+        "-m",
+        "pytest",
+        "test/unit/test_sai_invitations.py::test_revocation_cannot_remove_last_owner_after_member_role_changes",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "--tb=short",
+        "--show-capture=no",
+        "--junitxml",
+        "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-review-20261023\\invitation-last-owner-before.xml"
+      ],
+      "suites": [
+        {
+          "name": "pytest",
+          "errors": "0",
+          "failures": "1",
+          "skipped": "0",
+          "tests": "1",
+          "time": "10.870",
+          "timestamp": "2026-10-24T02:49:25.088943+08:00",
+          "hostname": "DESKTOP-P3N737E"
+        }
+      ],
+      "dirty_files": [
+        " M app/core_pro/manuscript/citation_ledger.py",
+        " M app/core_pro/manuscript/manuscript_io.py",
+        " M app/core_pro/manuscript/manuscript_routes.py",
+        " M app/core_pro/manuscript/paragraph_context.py",
+        " M app/static/js/paragraph_review.js",
+        " M app/templates/_header.html",
+        " M app/templates/_navbar.html",
+        " M test/unit/test_sai_invitations.py",
+        "?? app/core_pro/manuscript/change_impact.py",
+        "?? app/static/js/change_impact.js",
+        "?? app/templates/change_impact.html",
+        "?? test/unit/test_sai_change_impact.py"
+      ],
+      "receipt": {
+        "path": "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-review-20261023\\invitation-last-owner-before-receipt.json",
+        "sha256": "65d8deeb0d3a1da951c5d813044072cda2ac668421585646e22082ff1764283f",
+        "bytes": 1565
+      },
+      "counts": {
+        "tests": 1,
+        "failures": 1,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 0
+      },
+      "xml_artifact": {
+        "path": "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-review-20261023\\invitation-last-owner-before.xml",
+        "sha256": "0d43c06ca5a3ebcbdd8362abe42a22c51e4523a28c71beb7312c061988a8413d",
+        "bytes": 1105
+      },
+      "txt_artifact": {
+        "path": "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-review-20261023\\invitation-last-owner-before.txt",
+        "sha256": "1f61a731d668626290a00bd17a4d05624746532d2bf822483e7ef13442c4941b",
+        "bytes": 871
+      }
+    },
+    "context-and-ownership": {
+      "sha": "a2065a6d28a70ede3f52ab9075b3a821691da630",
+      "status": "passed",
+      "exit_code": 0,
+      "started_utc": "2026-10-23T18:53:51.799760+00:00",
+      "ended_utc": "2026-10-23T18:55:19.785091+00:00",
+      "command": [
+        "C:\\Users\\Franky Kuo\\Desktop\\ai-system-test\\roothinks-R-10005\\roothinks\\.venv\\Scripts\\python.exe",
+        "-m",
+        "pytest",
+        "test/unit/test_sai_change_impact.py",
+        "test/unit/test_sai_invitations.py",
+        "test/unit/test_sai_review_workflow.py",
+        "test/unit/test_sai_autonomy.py",
+        "test/unit/test_workspace_roles.py",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "--tb=short",
+        "--show-capture=no",
+        "--junitxml",
+        "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-review-20261023\\context-and-ownership.xml"
+      ],
+      "suites": [
+        {
+          "name": "pytest",
+          "errors": "0",
+          "failures": "0",
+          "skipped": "0",
+          "tests": "68",
+          "time": "85.465",
+          "timestamp": "2026-10-24T02:53:53.037019+08:00",
+          "hostname": "DESKTOP-P3N737E"
+        }
+      ],
+      "dirty_files": [
+        " M app/core_pro/manuscript/citation_ledger.py",
+        " M app/core_pro/manuscript/manuscript_io.py",
+        " M app/core_pro/manuscript/manuscript_routes.py",
+        " M app/core_pro/manuscript/paragraph_context.py",
+        " M app/project_portfolio/collaboration.py",
+        " M app/static/js/collaboration.js",
+        " M app/static/js/paragraph_review.js",
+        " M app/templates/_header.html",
+        " M app/templates/_navbar.html",
+        " M app/templates/collaboration.html",
+        " M app/templates/mentor/dashboard.html",
+        " M test/unit/test_sai_invitations.py",
+        "?? app/core_pro/manuscript/change_impact.py",
+        "?? app/static/js/change_impact.js",
+        "?? app/templates/change_impact.html",
+        "?? test/unit/test_sai_change_impact.py"
+      ],
+      "receipt": {
+        "path": "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-review-20261023\\context-and-ownership-receipt.json",
+        "sha256": "5eb94b20ecafea9e834ec12f3d393c2336747abdd20b3c9afb6a38b01dbb7326",
+        "bytes": 1845
+      },
+      "counts": {
+        "tests": 68,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 68
+      },
+      "xml_artifact": {
+        "path": "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-review-20261023\\context-and-ownership.xml",
+        "sha256": "1ec90361e6d5fafd6760cdcb6a0bec2fecba0016750814689838343ec565da50",
+        "bytes": 9412
+      },
+      "txt_artifact": {
+        "path": "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-review-20261023\\context-and-ownership.txt",
+        "sha256": "763951b3d6a9e22ce286e7aa38f90e15f1c7740b5231f4bc619610b6980ed91e",
+        "bytes": 734
+      }
+    },
+    "backup-capability-before": {
+      "sha": "a2065a6d28a70ede3f52ab9075b3a821691da630",
+      "status": "failed",
+      "exit_code": 2,
+      "started_utc": "2026-10-23T18:55:47.614670+00:00",
+      "ended_utc": "2026-10-23T18:55:54.648694+00:00",
+      "command": [
+        "C:\\Users\\Franky Kuo\\Desktop\\ai-system-test\\roothinks-R-10005\\roothinks\\.venv\\Scripts\\python.exe",
+        "-m",
+        "pytest",
+        "test/unit/test_research_backup.py",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "--tb=short",
+        "--show-capture=no",
+        "--junitxml",
+        "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-review-20261023\\backup-capability-before.xml"
+      ],
+      "suites": [
+        {
+          "name": "pytest",
+          "errors": "1",
+          "failures": "0",
+          "skipped": "0",
+          "tests": "1",
+          "time": "5.211",
+          "timestamp": "2026-10-24T02:55:48.920007+08:00",
+          "hostname": "DESKTOP-P3N737E"
+        }
+      ],
+      "dirty_files": [
+        " M app/core_pro/manuscript/citation_ledger.py",
+        " M app/core_pro/manuscript/manuscript_io.py",
+        " M app/core_pro/manuscript/manuscript_routes.py",
+        " M app/core_pro/manuscript/paragraph_context.py",
+        " M app/project_portfolio/collaboration.py",
+        " M app/static/js/collaboration.js",
+        " M app/static/js/paragraph_review.js",
+        " M app/templates/_header.html",
+        " M app/templates/_navbar.html",
+        " M app/templates/collaboration.html",
+        " M app/templates/mentor/dashboard.html",
+        " M test/unit/test_sai_invitations.py",
+        "?? app/core_pro/manuscript/change_impact.py",
+        "?? app/static/js/change_impact.js",
+        "?? app/templates/change_impact.html",
+        "?? test/unit/test_research_backup.py",
+        "?? test/unit/test_sai_change_impact.py"
+      ],
+      "receipt": {
+        "path": "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-review-20261023\\backup-capability-before-receipt.json",
+        "sha256": "6847cc8d18e0f0f9eff2837e015acf63f828b891c17a87958c404b2c4b8b2fc8",
+        "bytes": 1720
+      },
+      "counts": {
+        "tests": 1,
+        "failures": 0,
+        "errors": 1,
+        "skipped": 0,
+        "passed": 0
+      },
+      "classification": "capability_missing_collection_error_not_product_assertion_failure",
+      "xml_artifact": {
+        "path": "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-review-20261023\\backup-capability-before.xml",
+        "sha256": "764eed1c66074f9758498fdba5a1e6f6b44a93cfd7a6112ff6978028d8dd86ee",
+        "bytes": 1070
+      },
+      "txt_artifact": {
+        "path": "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-review-20261023\\backup-capability-before.txt",
+        "sha256": "63418b9c0b6c685a0afee2d22d3f7351b51c1c23ff51844eb9a3039cb76c48fc",
+        "bytes": 1071
+      }
+    },
+    "backup-first": {
+      "sha": "a2065a6d28a70ede3f52ab9075b3a821691da630",
+      "status": "passed",
+      "exit_code": 0,
+      "started_utc": "2026-10-23T19:01:47.206205+00:00",
+      "ended_utc": "2026-10-23T19:02:03.050249+00:00",
+      "command": [
+        "C:\\Users\\Franky Kuo\\Desktop\\ai-system-test\\roothinks-R-10005\\roothinks\\.venv\\Scripts\\python.exe",
+        "-m",
+        "pytest",
+        "test/unit/test_research_backup.py",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "--tb=short",
+        "--show-capture=no",
+        "--junitxml",
+        "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-review-20261023\\backup-first.xml"
+      ],
+      "suites": [
+        {
+          "name": "pytest",
+          "errors": "0",
+          "failures": "0",
+          "skipped": "1",
+          "tests": "11",
+          "time": "13.483",
+          "timestamp": "2026-10-24T03:01:48.827290+08:00",
+          "hostname": "DESKTOP-P3N737E"
+        }
+      ],
+      "dirty_files": [
+        " M app/core_pro/manuscript/citation_ledger.py",
+        " M app/core_pro/manuscript/manuscript_io.py",
+        " M app/core_pro/manuscript/manuscript_routes.py",
+        " M app/core_pro/manuscript/paragraph_context.py",
+        " M app/project_portfolio/collaboration.py",
+        " M app/static/js/collaboration.js",
+        " M app/static/js/paragraph_review.js",
+        " M app/templates/_header.html",
+        " M app/templates/_navbar.html",
+        " M app/templates/collaboration.html",
+        " M app/templates/mentor/dashboard.html",
+        " M test/unit/test_sai_invitations.py",
+        "?? app/core_pro/manuscript/change_impact.py",
+        "?? app/research_backup.py",
+        "?? app/static/js/change_impact.js",
+        "?? app/templates/change_impact.html",
+        "?? test/unit/test_research_backup.py",
+        "?? test/unit/test_sai_change_impact.py"
+      ],
+      "receipt": {
+        "path": "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-review-20261023\\backup-first-receipt.json",
+        "sha256": "fd21ae20b92ff353aaa34363aaa28780cb126bdafa395f2cb53a257c95833933",
+        "bytes": 1744
+      },
+      "counts": {
+        "tests": 11,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 1,
+        "passed": 10
+      },
+      "xml_artifact": {
+        "path": "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-review-20261023\\backup-first.xml",
+        "sha256": "f2d84737cd940847cffaf66fad0fa557a661cbc396b4e9af2d10cce31e20c5c9",
+        "bytes": 2156
+      },
+      "txt_artifact": {
+        "path": "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-review-20261023\\backup-first.txt",
+        "sha256": "f16390c10e78e65462346edd8b2999a98820dfe353abbe3dc834f975dd810011",
+        "bytes": 113
+      }
+    },
+    "backup-real-schema": {
+      "sha": "a2065a6d28a70ede3f52ab9075b3a821691da630",
+      "status": "failed",
+      "exit_code": 1,
+      "started_utc": "2026-10-23T19:05:20.702354+00:00",
+      "ended_utc": "2026-10-23T19:05:44.333358+00:00",
+      "command": [
+        "C:\\Users\\Franky Kuo\\Desktop\\ai-system-test\\roothinks-R-10005\\roothinks\\.venv\\Scripts\\python.exe",
+        "-m",
+        "pytest",
+        "test/unit/test_research_backup.py",
+        "test/unit/test_backup_research_state.py",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "--tb=short",
+        "--show-capture=no",
+        "--junitxml",
+        "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-review-20261023\\backup-real-schema.xml"
+      ],
+      "suites": [
+        {
+          "name": "pytest",
+          "errors": "0",
+          "failures": "1",
+          "skipped": "1",
+          "tests": "13",
+          "time": "21.264",
+          "timestamp": "2026-10-24T03:05:22.151428+08:00",
+          "hostname": "DESKTOP-P3N737E"
+        }
+      ],
+      "dirty_files": [
+        " M app/__init__.py",
+        " M app/core_pro/manuscript/citation_ledger.py",
+        " M app/core_pro/manuscript/manuscript_io.py",
+        " M app/core_pro/manuscript/manuscript_routes.py",
+        " M app/core_pro/manuscript/paragraph_context.py",
+        " M app/project_portfolio/collaboration.py",
+        " M app/static/js/collaboration.js",
+        " M app/static/js/paragraph_review.js",
+        " M app/templates/_header.html",
+        " M app/templates/_navbar.html",
+        " M app/templates/collaboration.html",
+        " M app/templates/mentor/dashboard.html",
+        " M test/unit/test_sai_invitations.py",
+        "?? app/core_pro/manuscript/change_impact.py",
+        "?? app/research_backup.py",
+        "?? app/static/js/change_impact.js",
+        "?? app/templates/change_impact.html",
+        "?? test/unit/test_backup_research_state.py",
+        "?? test/unit/test_research_backup.py",
+        "?? test/unit/test_sai_change_impact.py"
+      ],
+      "receipt": {
+        "path": "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-review-20261023\\backup-real-schema-receipt.json",
+        "sha256": "4aef1d46542fc30b10b5eb103df29df7e894b7144905281e6167a60b69cd081c",
+        "bytes": 1876
+      },
+      "counts": {
+        "tests": 13,
+        "failures": 1,
+        "errors": 0,
+        "skipped": 1,
+        "passed": 11
+      },
+      "xml_artifact": {
+        "path": "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-review-20261023\\backup-real-schema.xml",
+        "sha256": "75ee0abb09a368fda2c14bd475c044f80d7fee077b87a4f4abb7307fdcf8d720",
+        "bytes": 3010
+      },
+      "txt_artifact": {
+        "path": "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-review-20261023\\backup-real-schema.txt",
+        "sha256": "e7f686284e41a41ec0c2e258f42e9e60c2b229e0909ca8d78a4794e1d1c03326",
+        "bytes": 927
+      }
+    },
+    "backup-wal-before": {
+      "sha": "a2065a6d28a70ede3f52ab9075b3a821691da630",
+      "status": "failed",
+      "exit_code": 1,
+      "started_utc": "2026-10-23T19:08:05.614553+00:00",
+      "ended_utc": "2026-10-23T19:08:15.485400+00:00",
+      "command": [
+        "C:\\Users\\Franky Kuo\\Desktop\\ai-system-test\\roothinks-R-10005\\roothinks\\.venv\\Scripts\\python.exe",
+        "-m",
+        "pytest",
+        "test/unit/test_research_backup.py::test_wal_committed_rows_are_in_a_self_contained_database_snapshot",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "--tb=short",
+        "--show-capture=no",
+        "--junitxml",
+        "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-review-20261023\\backup-wal-before.xml"
+      ],
+      "suites": [
+        {
+          "name": "pytest",
+          "errors": "0",
+          "failures": "1",
+          "skipped": "0",
+          "tests": "1",
+          "time": "6.922",
+          "timestamp": "2026-10-24T03:08:07.593305+08:00",
+          "hostname": "DESKTOP-P3N737E"
+        }
+      ],
+      "dirty_files": [
+        " M app/__init__.py",
+        " M app/core_pro/manuscript/citation_ledger.py",
+        " M app/core_pro/manuscript/manuscript_io.py",
+        " M app/core_pro/manuscript/manuscript_routes.py",
+        " M app/core_pro/manuscript/paragraph_context.py",
+        " M app/project_portfolio/collaboration.py",
+        " M app/static/js/collaboration.js",
+        " M app/static/js/paragraph_review.js",
+        " M app/templates/_header.html",
+        " M app/templates/_navbar.html",
+        " M app/templates/collaboration.html",
+        " M app/templates/mentor/dashboard.html",
+        " M test/unit/test_sai_invitations.py",
+        "?? app/core_pro/manuscript/change_impact.py",
+        "?? app/research_backup.py",
+        "?? app/static/js/change_impact.js",
+        "?? app/templates/change_impact.html",
+        "?? test/unit/test_backup_research_state.py",
+        "?? test/unit/test_research_backup.py",
+        "?? test/unit/test_sai_change_impact.py"
+      ],
+      "receipt": {
+        "path": "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-review-20261023\\backup-wal-before-receipt.json",
+        "sha256": "36c72b2a16ee89873dad73dfb3c9479a9b6553e751ef546542c3f0a351deaedf",
+        "bytes": 1892
+      },
+      "counts": {
+        "tests": 1,
+        "failures": 1,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 0
+      },
+      "xml_artifact": {
+        "path": "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-review-20261023\\backup-wal-before.xml",
+        "sha256": "6bc0f3f203e2b5e6938e8e042d45e8286b560681035cf6c470e5bab7165b59e1",
+        "bytes": 985
+      },
+      "txt_artifact": {
+        "path": "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-review-20261023\\backup-wal-before.txt",
+        "sha256": "b4ee1fe9eb24214a78b1a075df029129885d4ae82fc5a059c3afba2647aff589",
+        "bytes": 930
+      }
+    },
+    "backup-wal-fixed": {
+      "sha": "a2065a6d28a70ede3f52ab9075b3a821691da630",
+      "status": "passed",
+      "exit_code": 0,
+      "started_utc": "2026-10-23T19:10:18.453869+00:00",
+      "ended_utc": "2026-10-23T19:10:42.218016+00:00",
+      "command": [
+        "C:\\Users\\Franky Kuo\\Desktop\\ai-system-test\\roothinks-R-10005\\roothinks\\.venv\\Scripts\\python.exe",
+        "-m",
+        "pytest",
+        "test/unit/test_research_backup.py",
+        "test/unit/test_backup_research_state.py",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "--tb=short",
+        "--show-capture=no",
+        "--junitxml",
+        "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-review-20261023\\backup-wal-fixed.xml"
+      ],
+      "suites": [
+        {
+          "name": "pytest",
+          "errors": "0",
+          "failures": "0",
+          "skipped": "1",
+          "tests": "14",
+          "time": "20.850",
+          "timestamp": "2026-10-24T03:10:19.633332+08:00",
+          "hostname": "DESKTOP-P3N737E"
+        }
+      ],
+      "dirty_files": [
+        " M app/__init__.py",
+        " M app/core_pro/manuscript/citation_ledger.py",
+        " M app/core_pro/manuscript/manuscript_io.py",
+        " M app/core_pro/manuscript/manuscript_routes.py",
+        " M app/core_pro/manuscript/paragraph_context.py",
+        " M app/project_portfolio/collaboration.py",
+        " M app/static/js/collaboration.js",
+        " M app/static/js/paragraph_review.js",
+        " M app/templates/_header.html",
+        " M app/templates/_navbar.html",
+        " M app/templates/collaboration.html",
+        " M app/templates/mentor/dashboard.html",
+        " M test/unit/test_sai_invitations.py",
+        "?? app/core_pro/manuscript/change_impact.py",
+        "?? app/research_backup.py",
+        "?? app/static/js/change_impact.js",
+        "?? app/templates/change_impact.html",
+        "?? test/unit/test_backup_research_state.py",
+        "?? test/unit/test_research_backup.py",
+        "?? test/unit/test_sai_change_impact.py"
+      ],
+      "receipt": {
+        "path": "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-review-20261023\\backup-wal-fixed-receipt.json",
+        "sha256": "f72e13c8f2314227f6f76db83c38ecb3e8e3f22759c45f3a43cc39a0e59a6394",
+        "bytes": 1874
+      },
+      "counts": {
+        "tests": 14,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 1,
+        "passed": 13
+      },
+      "xml_artifact": {
+        "path": "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-review-20261023\\backup-wal-fixed.xml",
+        "sha256": "48859e9888f4ca3160977936e0a1519a10291e58a572ad11f3c210f1fa5f4be0",
+        "bytes": 2573
+      },
+      "txt_artifact": {
+        "path": "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-review-20261023\\backup-wal-fixed.txt",
+        "sha256": "850d33bb32ff10122f3c8d02266e0d289b5b105097a8c0bb0bfb29a4a3564925",
+        "bytes": 113
+      }
+    },
+    "backup-revocation-crash": {
+      "sha": "e96a25eb72b56bdee90b3569c48f71f5a0d7892c",
+      "status": "passed",
+      "exit_code": 0,
+      "started_utc": "2026-10-23T19:21:38.131240+00:00",
+      "ended_utc": "2026-10-23T19:22:11.805608+00:00",
+      "command": [
+        "C:\\Users\\Franky Kuo\\Desktop\\ai-system-test\\roothinks-R-10005\\roothinks\\.venv\\Scripts\\python.exe",
+        "-m",
+        "pytest",
+        "test/unit/test_research_backup.py",
+        "test/unit/test_backup_research_state.py",
+        "test/unit/test_sai_invitations.py",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "--tb=short",
+        "--show-capture=no",
+        "--junitxml",
+        "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-review-20261023\\backup-revocation-crash.xml"
+      ],
+      "suites": [
+        {
+          "name": "pytest",
+          "errors": "0",
+          "failures": "0",
+          "skipped": "1",
+          "tests": "36",
+          "time": "30.634",
+          "timestamp": "2026-10-24T03:21:39.321656+08:00",
+          "hostname": "DESKTOP-P3N737E"
+        }
+      ],
+      "dirty_files": [
+        " M app/__init__.py",
+        "?? app/research_backup.py",
+        "?? test/unit/test_backup_research_state.py",
+        "?? test/unit/test_research_backup.py"
+      ],
+      "receipt": {
+        "path": "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-review-20261023\\backup-revocation-crash-receipt.json",
+        "sha256": "e4645040630eeee85d03ad33a05401612c3c3e5b3e64ce7a3a63c7b8d7458d0c",
+        "bytes": 1171
+      },
+      "counts": {
+        "tests": 36,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 1,
+        "passed": 35
+      },
+      "xml_artifact": {
+        "path": "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-review-20261023\\backup-revocation-crash.xml",
+        "sha256": "022ec0fd0f992c63143dd86dd6d429ce5f52dc04f9286f066af6ad614dfff75c",
+        "bytes": 5517
+      },
+      "txt_artifact": {
+        "path": "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-review-20261023\\backup-revocation-crash.txt",
+        "sha256": "d5d919b8c0f1adc328a361eb22e4d6ae2003498fe7bcf6b071014976978fecfb",
+        "bytes": 113
+      }
+    },
+    "scientific-benchmark-first": {
+      "sha": "e96a25eb72b56bdee90b3569c48f71f5a0d7892c",
+      "status": "passed",
+      "exit_code": 0,
+      "started_utc": "2026-10-23T19:27:52.057979+00:00",
+      "ended_utc": "2026-10-23T19:28:06.083447+00:00",
+      "command": [
+        "C:\\Users\\Franky Kuo\\Desktop\\ai-system-test\\roothinks-R-10005\\roothinks\\.venv\\Scripts\\python.exe",
+        "-m",
+        "pytest",
+        "test/unit/test_research_integrity_benchmark.py",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "--tb=short",
+        "--show-capture=no",
+        "--junitxml",
+        "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-review-20261023\\scientific-benchmark-first.xml"
+      ],
+      "suites": [
+        {
+          "name": "pytest",
+          "errors": "0",
+          "failures": "0",
+          "skipped": "0",
+          "tests": "4",
+          "time": "11.684",
+          "timestamp": "2026-10-24T03:27:53.549660+08:00",
+          "hostname": "DESKTOP-P3N737E"
+        }
+      ],
+      "dirty_files": [
+        " M app/__init__.py",
+        "?? app/research_backup.py",
+        "?? docs/engineering/SCIENTIFIC_BENCHMARK_PROTOCOL.md",
+        "?? scripts/benchmark_research_integrity.py",
+        "?? test/fixtures/",
+        "?? test/unit/test_backup_research_state.py",
+        "?? test/unit/test_research_backup.py",
+        "?? test/unit/test_research_integrity_benchmark.py"
+      ],
+      "receipt": {
+        "path": "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-review-20261023\\scientific-benchmark-first-receipt.json",
+        "sha256": "ed4e32ea578158ffbd3e3e2d3f99a5444449eda1667707a6539f66c9c5738b66",
+        "bytes": 1292
+      },
+      "counts": {
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 4
+      },
+      "xml_artifact": {
+        "path": "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-review-20261023\\scientific-benchmark-first.xml",
+        "sha256": "41e13cd3facdc2fe6fffb441cfba8490f22a7defd0a2b99d2adf8f43315de5b7",
+        "bytes": 870
+      },
+      "txt_artifact": {
+        "path": "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-review-20261023\\scientific-benchmark-first.txt",
+        "sha256": "c60eff297423f66b9b064e0acd047079dbcad4b55c81718166ca7fa3d5069474",
+        "bytes": 732
+      }
+    },
+    "scoped-reconfirmation-before": {
+      "sha": "e96a25eb72b56bdee90b3569c48f71f5a0d7892c",
+      "status": "failed",
+      "exit_code": 1,
+      "started_utc": "2026-10-23T19:36:11.580329+00:00",
+      "ended_utc": "2026-10-23T19:36:24.887683+00:00",
+      "command": [
+        "C:\\Users\\Franky Kuo\\Desktop\\ai-system-test\\roothinks-R-10005\\roothinks\\.venv\\Scripts\\python.exe",
+        "-m",
+        "pytest",
+        "test/unit/test_sai_change_impact.py",
+        "-k",
+        "newly_reconfirmed",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "--tb=short",
+        "--show-capture=no",
+        "--junitxml",
+        "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-review-20261023\\scoped-reconfirmation-before.xml"
+      ],
+      "suites": [
+        {
+          "name": "pytest",
+          "errors": "0",
+          "failures": "1",
+          "skipped": "0",
+          "tests": "1",
+          "time": "10.471",
+          "timestamp": "2026-10-24T03:36:12.610589+08:00",
+          "hostname": "DESKTOP-P3N737E"
+        }
+      ],
+      "dirty_files": [
+        " M app/__init__.py",
+        " M test/unit/test_sai_change_impact.py",
+        "?? app/research_backup.py",
+        "?? docs/engineering/SCIENTIFIC_BENCHMARK_PROTOCOL.md",
+        "?? scripts/benchmark_research_integrity.py",
+        "?? test/fixtures/",
+        "?? test/unit/test_backup_research_state.py",
+        "?? test/unit/test_research_backup.py",
+        "?? test/unit/test_research_integrity_benchmark.py"
+      ],
+      "receipt": {
+        "path": "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-review-20261023\\scoped-reconfirmation-before-receipt.json",
+        "sha256": "c6f47842222149515b671cae1a1872f9c77bd04ff7c8d1abeda852af63ee0e4b",
+        "bytes": 1367
+      },
+      "counts": {
+        "tests": 1,
+        "failures": 1,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 0
+      },
+      "xml_artifact": {
+        "path": "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-review-20261023\\scoped-reconfirmation-before.xml",
+        "sha256": "c21bb16003ae42cf256746a02e1b1a19de2d5447ee4279289d44d32b6239430a",
+        "bytes": 1011
+      },
+      "txt_artifact": {
+        "path": "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-review-20261023\\scoped-reconfirmation-before.txt",
+        "sha256": "8061a158b92a2845c03862860de54e8aa69a2ac11f7cebd9a6524a6e5a1310df",
+        "bytes": 848
+      }
+    },
+    "scoped-reconfirmation-fixed": {
+      "sha": "e96a25eb72b56bdee90b3569c48f71f5a0d7892c",
+      "status": "passed",
+      "exit_code": 0,
+      "started_utc": "2026-10-23T19:36:49.704684+00:00",
+      "ended_utc": "2026-10-23T19:37:58.537434+00:00",
+      "command": [
+        "C:\\Users\\Franky Kuo\\Desktop\\ai-system-test\\roothinks-R-10005\\roothinks\\.venv\\Scripts\\python.exe",
+        "-m",
+        "pytest",
+        "test/unit/test_sai_change_impact.py",
+        "test/unit/test_research_backup.py",
+        "test/unit/test_backup_research_state.py",
+        "test/unit/test_sai_process_revision.py",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "--tb=short",
+        "--show-capture=no",
+        "--junitxml",
+        "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-review-20261023\\scoped-reconfirmation-fixed.xml"
+      ],
+      "suites": [
+        {
+          "name": "pytest",
+          "errors": "0",
+          "failures": "0",
+          "skipped": "1",
+          "tests": "37",
+          "time": "65.283",
+          "timestamp": "2026-10-24T03:36:51.039813+08:00",
+          "hostname": "DESKTOP-P3N737E"
+        }
+      ],
+      "dirty_files": [
+        " M app/__init__.py",
+        " M app/core_pro/manuscript/manuscript_routes.py",
+        " M test/unit/test_sai_change_impact.py",
+        "?? app/research_backup.py",
+        "?? docs/engineering/SCIENTIFIC_BENCHMARK_PROTOCOL.md",
+        "?? scripts/benchmark_research_integrity.py",
+        "?? test/fixtures/",
+        "?? test/unit/test_backup_research_state.py",
+        "?? test/unit/test_research_backup.py",
+        "?? test/unit/test_research_integrity_benchmark.py"
+      ],
+      "receipt": {
+        "path": "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-review-20261023\\scoped-reconfirmation-fixed-receipt.json",
+        "sha256": "276844345a9e11c16cee20522a9e4bb5f33a4ca2e60f940712e547a646df336e",
+        "bytes": 1523
+      },
+      "counts": {
+        "tests": 37,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 1,
+        "passed": 36
+      },
+      "xml_artifact": {
+        "path": "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-review-20261023\\scoped-reconfirmation-fixed.xml",
+        "sha256": "50f2d1916ad902bca533798102d90bec1de1ba8b8e11577b6b7038d64cd40672",
+        "bytes": 5925
+      },
+      "txt_artifact": {
+        "path": "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-review-20261023\\scoped-reconfirmation-fixed.txt",
+        "sha256": "5f487a38c7e8ef5da3aaff83b44fafa8dbefe1dc75fcdfba05a8c9658a5764f3",
+        "bytes": 123
+      }
+    },
+    "repeated-source-change-before": {
+      "sha": "6a03ac851b8de7852f647ae890f74de0c3f26d8a",
+      "status": "failed",
+      "exit_code": 1,
+      "started_utc": "2026-10-23T19:53:56.140351+00:00",
+      "ended_utc": "2026-10-23T19:54:08.230593+00:00",
+      "command": [
+        "C:\\Users\\Franky Kuo\\Desktop\\ai-system-test\\roothinks-R-10005\\roothinks\\.venv\\Scripts\\python.exe",
+        "-m",
+        "pytest",
+        "test/unit/test_sai_change_impact.py",
+        "-k",
+        "already_changed",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "--tb=short",
+        "--show-capture=no",
+        "--junitxml",
+        "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-review-20261023\\repeated-source-change-before.xml"
+      ],
+      "suites": [
+        {
+          "name": "pytest",
+          "errors": "0",
+          "failures": "1",
+          "skipped": "0",
+          "tests": "1",
+          "time": "9.848",
+          "timestamp": "2026-10-24T03:53:57.627680+08:00",
+          "hostname": "DESKTOP-P3N737E"
+        }
+      ],
+      "dirty_files": [
+        " M app/static/js/change_impact.js",
+        " M docs/SAI.md",
+        " M test/integration_e2e/sai_browser_fixture.py",
+        " M test/unit/test_sai_change_impact.py",
+        "?? docs/spec/roothinks_SAI_v1.1.1_2026-10-24.md",
+        "?? test/integration_e2e/sai_autonomy_browser.cjs"
+      ],
+      "receipt": {
+        "path": "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-review-20261023\\repeated-source-change-before-receipt.json",
+        "sha256": "a0f999ab70b3727a0617e8ef0024a01dfde786bf3d382fbffdc687414181cff4",
+        "bytes": 1245
+      },
+      "counts": {
+        "tests": 1,
+        "failures": 1,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 0
+      },
+      "xml_artifact": {
+        "path": "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-review-20261023\\repeated-source-change-before.xml",
+        "sha256": "6318d9ffc6ffd5e9e42940c0b51f6bf419f5340f9bb27495e9f445aae7102625",
+        "bytes": 1210
+      },
+      "txt_artifact": {
+        "path": "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-review-20261023\\repeated-source-change-before.txt",
+        "sha256": "06412ee909e77994d7f1c0417c35466793cca031c8f17ea8a7595d268eea213a",
+        "bytes": 936
+      }
+    },
+    "repeated-source-change-fixed": {
+      "sha": "6a03ac851b8de7852f647ae890f74de0c3f26d8a",
+      "status": "failed",
+      "exit_code": 1,
+      "started_utc": "2026-10-23T19:54:39.494381+00:00",
+      "ended_utc": "2026-10-23T19:55:07.818981+00:00",
+      "command": [
+        "C:\\Users\\Franky Kuo\\Desktop\\ai-system-test\\roothinks-R-10005\\roothinks\\.venv\\Scripts\\python.exe",
+        "-m",
+        "pytest",
+        "test/unit/test_sai_change_impact.py",
+        "test/unit/test_sai_review_workflow.py",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "--tb=short",
+        "--show-capture=no",
+        "--junitxml",
+        "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-review-20261023\\repeated-source-change-fixed.xml"
+      ],
+      "suites": [
+        {
+          "name": "pytest",
+          "errors": "0",
+          "failures": "8",
+          "skipped": "0",
+          "tests": "32",
+          "time": "26.350",
+          "timestamp": "2026-10-24T03:54:40.662818+08:00",
+          "hostname": "DESKTOP-P3N737E"
+        }
+      ],
+      "dirty_files": [
+        " M app/core_pro/manuscript/change_impact.py",
+        " M app/static/js/change_impact.js",
+        " M docs/SAI.md",
+        " M test/integration_e2e/sai_browser_fixture.py",
+        " M test/unit/test_sai_change_impact.py",
+        "?? docs/spec/roothinks_SAI_v1.1.1_2026-10-24.md",
+        "?? test/integration_e2e/sai_autonomy_browser.cjs"
+      ],
+      "receipt": {
+        "path": "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-review-20261023\\repeated-source-change-fixed-receipt.json",
+        "sha256": "b747d1a5b49c6f0aeff922b9211b58862a3a85aa4f732b580d331e43fec87f27",
+        "bytes": 1309
+      },
+      "counts": {
+        "tests": 32,
+        "failures": 8,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 24
+      },
+      "xml_artifact": {
+        "path": "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-review-20261023\\repeated-source-change-fixed.xml",
+        "sha256": "0fdda2986c23c7c95b8468510dbb338e19132bda99812280e05c3e36318d24d3",
+        "bytes": 8550
+      },
+      "txt_artifact": {
+        "path": "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-review-20261023\\repeated-source-change-fixed.txt",
+        "sha256": "2181a95d5cdc502b980b5d85c05527ba969451c607823a2b60df2c91c376114a",
+        "bytes": 5066
+      }
+    },
+    "repeated-source-diagnostic": {
+      "sha": "6a03ac851b8de7852f647ae890f74de0c3f26d8a",
+      "status": "failed",
+      "exit_code": 1,
+      "started_utc": "2026-10-23T19:56:08.141550+00:00",
+      "ended_utc": "2026-10-23T19:56:19.763385+00:00",
+      "command": [
+        "C:\\Users\\Franky Kuo\\Desktop\\ai-system-test\\roothinks-R-10005\\roothinks\\.venv\\Scripts\\python.exe",
+        "-m",
+        "pytest",
+        "test/unit/test_sai_change_impact.py",
+        "-k",
+        "already_changed",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "--tb=short",
+        "--show-capture=no",
+        "--junitxml",
+        "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-review-20261023\\repeated-source-diagnostic.xml"
+      ],
+      "suites": [
+        {
+          "name": "pytest",
+          "errors": "0",
+          "failures": "1",
+          "skipped": "0",
+          "tests": "1",
+          "time": "7.975",
+          "timestamp": "2026-10-24T03:56:09.318282+08:00",
+          "hostname": "DESKTOP-P3N737E"
+        }
+      ],
+      "dirty_files": [
+        " M app/core_pro/manuscript/change_impact.py",
+        " M app/static/js/change_impact.js",
+        " M docs/SAI.md",
+        " M test/integration_e2e/sai_browser_fixture.py",
+        " M test/unit/test_sai_change_impact.py",
+        "?? docs/spec/roothinks_SAI_v1.1.1_2026-10-24.md",
+        "?? test/integration_e2e/sai_autonomy_browser.cjs"
+      ],
+      "receipt": {
+        "path": "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-review-20261023\\repeated-source-diagnostic-receipt.json",
+        "sha256": "df2f28ff6a9edc8071089093497e2c5f370f3005095ac77f02ad37ae988f90b6",
+        "bytes": 1294
+      },
+      "counts": {
+        "tests": 1,
+        "failures": 1,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 0
+      },
+      "xml_artifact": {
+        "path": "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-review-20261023\\repeated-source-diagnostic.xml",
+        "sha256": "c3e825f5c0f871613ef44824e54a2ec0b35e0e9f82df2b838298b4b8c08833f5",
+        "bytes": 1238
+      },
+      "txt_artifact": {
+        "path": "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-review-20261023\\repeated-source-diagnostic.txt",
+        "sha256": "42a7fcffc350977885a24e5f7a268d7fa63f2baac86f3cad74a810d4c3a6dcbc",
+        "bytes": 1153
+      }
+    },
+    "repeated-source-final": {
+      "sha": "6a03ac851b8de7852f647ae890f74de0c3f26d8a",
+      "status": "passed",
+      "exit_code": 0,
+      "started_utc": "2026-10-23T19:56:54.005377+00:00",
+      "ended_utc": "2026-10-23T19:57:27.796794+00:00",
+      "command": [
+        "C:\\Users\\Franky Kuo\\Desktop\\ai-system-test\\roothinks-R-10005\\roothinks\\.venv\\Scripts\\python.exe",
+        "-m",
+        "pytest",
+        "test/unit/test_sai_change_impact.py",
+        "test/unit/test_sai_review_workflow.py",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "--tb=short",
+        "--show-capture=no",
+        "--junitxml",
+        "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-review-20261023\\repeated-source-final.xml"
+      ],
+      "suites": [
+        {
+          "name": "pytest",
+          "errors": "0",
+          "failures": "0",
+          "skipped": "0",
+          "tests": "32",
+          "time": "31.581",
+          "timestamp": "2026-10-24T03:56:55.370537+08:00",
+          "hostname": "DESKTOP-P3N737E"
+        }
+      ],
+      "dirty_files": [
+        " M app/core_pro/manuscript/change_impact.py",
+        " M app/static/js/change_impact.js",
+        " M docs/SAI.md",
+        " M test/integration_e2e/sai_browser_fixture.py",
+        " M test/unit/test_sai_change_impact.py",
+        "?? docs/spec/roothinks_SAI_v1.1.1_2026-10-24.md",
+        "?? test/integration_e2e/sai_autonomy_browser.cjs"
+      ],
+      "receipt": {
+        "path": "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-review-20261023\\repeated-source-final-receipt.json",
+        "sha256": "6f66d8600135dd1c84b298ba0f71a9087ca9565d7d8ae06c45c76e799df50c1a",
+        "bytes": 1302
+      },
+      "counts": {
+        "tests": 32,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 32
+      },
+      "xml_artifact": {
+        "path": "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-review-20261023\\repeated-source-final.xml",
+        "sha256": "c9bdb30c0ee5f14b2ba65237f5eaaed6ff079673e15c9b4520411e8077c5b872",
+        "bytes": 4818
+      },
+      "txt_artifact": {
+        "path": "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-review-20261023\\repeated-source-final.txt",
+        "sha256": "1c13ea1b758201554c6225b17dec1bc8f21faf55a4ac9f352e9c6d4a1510e2c1",
+        "bytes": 724
+      }
+    },
+    "backup-unreadable-before": {
+      "sha": "5414ce3ee7e0fb128034b56b522f273448b1adf1",
+      "status": "failed",
+      "exit_code": 1,
+      "started_utc": "2026-10-23T20:05:35.088745+00:00",
+      "ended_utc": "2026-10-23T20:05:41.890833+00:00",
+      "command": [
+        "C:\\Users\\Franky Kuo\\Desktop\\ai-system-test\\roothinks-R-10005\\roothinks\\.venv\\Scripts\\python.exe",
+        "-m",
+        "pytest",
+        "test/unit/test_research_backup.py",
+        "-k",
+        "unreadable",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "--tb=short",
+        "--show-capture=no",
+        "--junitxml",
+        "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-review-20261023\\backup-unreadable-before.xml"
+      ],
+      "suites": [
+        {
+          "name": "pytest",
+          "errors": "0",
+          "failures": "1",
+          "skipped": "0",
+          "tests": "1",
+          "time": "5.037",
+          "timestamp": "2026-10-24T04:05:36.194985+08:00",
+          "hostname": "DESKTOP-P3N737E"
+        }
+      ],
+      "dirty_files": [
+        " M docs/SAI.md",
+        " M test/unit/test_research_backup.py",
+        "?? docs/spec/roothinks_SAI_v1.1.1_2026-10-24.md"
+      ],
+      "receipt": {
+        "path": "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-review-20261023\\backup-unreadable-before-receipt.json",
+        "sha256": "8b7c34e018fe80b2315dcc4e27cefaffd4d25bc636fdc222c8aff61fc3c33b89",
+        "bytes": 1077
+      },
+      "counts": {
+        "tests": 1,
+        "failures": 1,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 0
+      },
+      "xml_artifact": {
+        "path": "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-review-20261023\\backup-unreadable-before.xml",
+        "sha256": "0c417ada8cfd8ccc839903f0ef6494e82ffd34dd738f851e2e77ce31803f7ee5",
+        "bytes": 691
+      },
+      "txt_artifact": {
+        "path": "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-review-20261023\\backup-unreadable-before.txt",
+        "sha256": "5ef95614ea3670e0947ce4c5f98aba041a740357d4fba0d04685ba252ef85890",
+        "bytes": 696
+      }
+    },
+    "backup-unreadable-fixed": {
+      "sha": "5414ce3ee7e0fb128034b56b522f273448b1adf1",
+      "status": "passed",
+      "exit_code": 0,
+      "started_utc": "2026-10-23T20:06:30.379018+00:00",
+      "ended_utc": "2026-10-23T20:06:55.068508+00:00",
+      "command": [
+        "C:\\Users\\Franky Kuo\\Desktop\\ai-system-test\\roothinks-R-10005\\roothinks\\.venv\\Scripts\\python.exe",
+        "-m",
+        "pytest",
+        "test/unit/test_research_backup.py",
+        "test/unit/test_backup_research_state.py",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "--tb=short",
+        "--show-capture=no",
+        "--junitxml",
+        "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-review-20261023\\backup-unreadable-fixed.xml"
+      ],
+      "suites": [
+        {
+          "name": "pytest",
+          "errors": "0",
+          "failures": "0",
+          "skipped": "1",
+          "tests": "19",
+          "time": "22.827",
+          "timestamp": "2026-10-24T04:06:31.417305+08:00",
+          "hostname": "DESKTOP-P3N737E"
+        }
+      ],
+      "dirty_files": [
+        " M app/research_backup.py",
+        " M docs/SAI.md",
+        " M test/unit/test_research_backup.py",
+        "?? docs/spec/roothinks_SAI_v1.1.1_2026-10-24.md"
+      ],
+      "receipt": {
+        "path": "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-review-20261023\\backup-unreadable-fixed-receipt.json",
+        "sha256": "3d5f603816bf35f639d07bd37f6b1a2e473c022495e7df8fdefa4ee186188a61",
+        "bytes": 1130
+      },
+      "counts": {
+        "tests": 19,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 1,
+        "passed": 18
+      },
+      "xml_artifact": {
+        "path": "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-review-20261023\\backup-unreadable-fixed.xml",
+        "sha256": "d4b4d49e036a16493d1672d745389982bf150c9a7479377f16e4f68fa4b942e0",
+        "bytes": 3281
+      },
+      "txt_artifact": {
+        "path": "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-review-20261023\\backup-unreadable-fixed.txt",
+        "sha256": "b4504483587908b33e2e3cd17eca24a6e368c9160c0322548a6a0979a8d84eaa",
+        "bytes": 113
+      }
+    },
+    "autonomy-integrity-full-final": {
+      "sha": "5414ce3ee7e0fb128034b56b522f273448b1adf1",
+      "status": "failed",
+      "exit_code": 4294967295,
+      "started_utc": "2026-10-23T20:00:00.555780+00:00",
+      "ended_utc": "2026-10-23T20:06:25.555182+00:00",
+      "command": [
+        "C:\\Users\\Franky Kuo\\Desktop\\ai-system-test\\roothinks-R-10005\\roothinks\\.venv\\Scripts\\python.exe",
+        "-m",
+        "pytest",
+        "test/unit",
+        "tests",
+        "test/integration_e2e",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "--tb=short",
+        "--show-capture=no",
+        "--junitxml",
+        "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-review-20261023\\autonomy-integrity-full-final.xml"
+      ],
+      "dirty_files": [
+        " M docs/SAI.md",
+        "?? docs/spec/roothinks_SAI_v1.1.1_2026-10-24.md"
+      ],
+      "receipt": {
+        "path": "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-review-20261023\\autonomy-integrity-full-final-receipt.json",
+        "sha256": "30ea9c440a7d7ed6f30764e3811a4957fa76ec892832e30f04ad8e279c731eac",
+        "bytes": 768
+      },
+      "classification": "aborted_by_agent_after_backup_defect_found_not_assertion_failure_or_pass",
+      "txt_artifact": {
+        "path": "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-review-20261023\\autonomy-integrity-full-final.txt",
+        "sha256": "5d6e672b7909c002f684fc4b63e0e73464829b76695705855e64b1b567d14deb",
+        "bytes": 829
+      }
+    },
+    "scientific-release": {
+      "sha": "6c8e07174093c54ef5e9c2a45041c69173bb3ac3",
+      "status": "passed",
+      "exit_code": 0,
+      "started_utc": "2026-10-23T20:09:18.985499+00:00",
+      "ended_utc": "2026-10-23T20:09:32.157276+00:00",
+      "command": [
+        "C:\\Users\\Franky Kuo\\Desktop\\ai-system-test\\roothinks-R-10005\\roothinks\\.venv\\Scripts\\python.exe",
+        "-m",
+        "pytest",
+        "test/unit/test_research_integrity_benchmark.py",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "--tb=short",
+        "--show-capture=no",
+        "--junitxml",
+        "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-review-20261023\\scientific-release.xml"
+      ],
+      "suites": [
+        {
+          "name": "pytest",
+          "errors": "0",
+          "failures": "0",
+          "skipped": "0",
+          "tests": "4",
+          "time": "10.770",
+          "timestamp": "2026-10-24T04:09:20.506835+08:00",
+          "hostname": "DESKTOP-P3N737E"
+        }
+      ],
+      "dirty_files": [
+        " M docs/SAI.md",
+        "?? docs/engineering/RESEARCH_BACKUP_RUNBOOK.md",
+        "?? docs/spec/roothinks_SAI_v1.1.1_2026-10-24.md"
+      ],
+      "receipt": {
+        "path": "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-review-20261023\\scientific-release-receipt.json",
+        "sha256": "43b26fe7fbcc61ce01c7346087961e39b2457a004d8cb3306794ff398dbdee0a",
+        "bytes": 1065
+      },
+      "counts": {
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 4
+      },
+      "xml_artifact": {
+        "path": "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-review-20261023\\scientific-release.xml",
+        "sha256": "fa5dbfc6a8af4709fe19eda2c371106d2354ed5b07595a3bbbacb850527555ea",
+        "bytes": 870
+      },
+      "txt_artifact": {
+        "path": "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-review-20261023\\scientific-release.txt",
+        "sha256": "41df2c960fdeb144a34954db4bc94c5baa1d04d7a861bff215f7076193d51b98",
+        "bytes": 732
+      }
+    },
+    "autonomy-integrity-release": {
+      "sha": "6c8e07174093c54ef5e9c2a45041c69173bb3ac3",
+      "status": "passed",
+      "exit_code": 0,
+      "started_utc": "2026-10-23T20:07:42.356679+00:00",
+      "ended_utc": "2026-10-23T20:21:46.643450+00:00",
+      "command": [
+        "C:\\Users\\Franky Kuo\\Desktop\\ai-system-test\\roothinks-R-10005\\roothinks\\.venv\\Scripts\\python.exe",
+        "-m",
+        "pytest",
+        "test/unit",
+        "tests",
+        "test/integration_e2e",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "--tb=short",
+        "--show-capture=no",
+        "--junitxml",
+        "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-review-20261023\\autonomy-integrity-release.xml"
+      ],
+      "suites": [
+        {
+          "name": "pytest",
+          "errors": "0",
+          "failures": "0",
+          "skipped": "1",
+          "tests": "1322",
+          "time": "839.114",
+          "timestamp": "2026-10-24T04:07:43.463656+08:00",
+          "hostname": "DESKTOP-P3N737E"
+        }
+      ],
+      "dirty_files": [
+        " M docs/SAI.md",
+        "?? docs/engineering/RESEARCH_BACKUP_RUNBOOK.md",
+        "?? docs/spec/roothinks_SAI_v1.1.1_2026-10-24.md"
+      ],
+      "receipt": {
+        "path": "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-review-20261023\\autonomy-integrity-release-receipt.json",
+        "sha256": "a39351c08143722d25a4e35f078a2153ebc1498c3c8cacd95d89632c1397a3d3",
+        "bytes": 1083
+      },
+      "counts": {
+        "tests": 1322,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 1,
+        "passed": 1321
+      },
+      "xml_artifact": {
+        "path": "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-review-20261023\\autonomy-integrity-release.xml",
+        "sha256": "79b2ce425d14cb24c399cdea4ca9ab16e82a6e24164524573896f0ccd47592b1",
+        "bytes": 179464
+      },
+      "txt_artifact": {
+        "path": "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-review-20261023\\autonomy-integrity-release.txt",
+        "sha256": "8a8776605ce37ef123c45f247add638e36d9948782dd8d2c9b29852313e566b6",
+        "bytes": 3886
+      }
+    }
+  },
+  "linux": {
+    "label": "linux-release",
+    "status": "passed",
+    "exit_code": 0,
+    "started_utc": "2026-10-23T20:08:13.217325+00:00",
+    "ended_utc": "2026-10-23T20:08:58.326331+00:00",
+    "targets": [
+      "test/unit/test_research_backup.py",
+      "test/unit/test_backup_research_state.py",
+      "test/unit/test_sai_process_revision.py"
+    ],
+    "platform": "Linux-6.6.87.2-microsoft-standard-WSL2-x86_64-with-glibc2.41",
+    "python": "3.10.20",
+    "sqlite": "3.46.1",
+    "suites": [
+      {
+        "name": "pytest",
+        "errors": "0",
+        "failures": "0",
+        "skipped": "2",
+        "tests": "27",
+        "time": "44.088",
+        "timestamp": "2026-10-23T20:08:14.054205+00:00",
+        "hostname": "768cdec600e1"
+      }
+    ],
+    "receipt": {
+      "path": "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-linux-20261024\\evidence\\linux-release-receipt.json",
+      "sha256": "b4e7af9ace3772f7a601079f30f4b25706ec9d8ceeb1cda85c97f57762730cc5",
+      "bytes": 56873
+    },
+    "counts": {
+      "tests": 27,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 2,
+      "passed": 25
+    },
+    "source_manifest": {
+      "path": "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-linux-20261024\\source\\.codex-sai-stage.json",
+      "sha256": "eccf0bb26574385e1e706e0d72bae469bbeaeb564d0f21300b42c79e65583017",
+      "bytes": 54717
+    },
+    "staged_source_integrity": {
+      "checked": 356,
+      "changed": []
+    },
+    "image": "roothinks10005-roothinks-paq:latest",
+    "constraints": "network none; read-only root; 2 CPU; 4 GiB; pids 256; only staged code and synthetic artifacts mounted"
+  },
+  "browser": {
+    "run": "autonomy-2026-10-23T19-59-00-026Z",
+    "sha": "811952a6cd3f7b3cf117344c7a304e4b2cb417c8",
+    "checks": [
+      {
+        "name": "independent_no_professor",
+        "pid": "BXQIDP-p",
+        "sectionVersions": [
+          "0.1",
+          "0.2"
+        ],
+        "passed": true
+      },
+      {
+        "name": "impact_explicit_author_paper_original_reviewer_reconfirmation",
+        "passed": true,
+        "review": 1
+      },
+      {
+        "name": "optional_professor_invite_review_response_remove",
+        "reviewId": 1,
+        "passed": true
+      },
+      {
+        "name": "team_scoped_save_export_denial_exit_history",
+        "passed": true
+      }
+    ],
+    "errors": [],
+    "status": "passed",
+    "files": [
+      {
+        "path": "C:\\Users\\Franky Kuo\\.codex\\worktrees\\sai-batch-a-b\\roothinks-1.0.1\\output\\playwright\\autonomy-2026-10-23T19-59-00-026Z\\after-professor-removal.docx",
+        "sha256": "e046095a021f835eb70d1733c98dda3cc8392ae295db473a9cae9791bd91438c",
+        "bytes": 2724
+      },
+      {
+        "path": "C:\\Users\\Franky Kuo\\.codex\\worktrees\\sai-batch-a-b\\roothinks-1.0.1\\output\\playwright\\autonomy-2026-10-23T19-59-00-026Z\\collaboration-owner.png",
+        "sha256": "5cb6f9ffb7852b70618b357c90de87e69972e27ae9d523ba8f12fef68caa8964",
+        "bytes": 72146
+      },
+      {
+        "path": "C:\\Users\\Franky Kuo\\.codex\\worktrees\\sai-batch-a-b\\roothinks-1.0.1\\output\\playwright\\autonomy-2026-10-23T19-59-00-026Z\\collaboration-owner.yml",
+        "sha256": "4fb1fbca44f1060cd01bc2422523846dc0002f8f816ac0ab68ed2205eb9469d7",
+        "bytes": 2495
+      },
+      {
+        "path": "C:\\Users\\Franky Kuo\\.codex\\worktrees\\sai-batch-a-b\\roothinks-1.0.1\\output\\playwright\\autonomy-2026-10-23T19-59-00-026Z\\impact-author-paper-reconfirmed.png",
+        "sha256": "e6da22b4440a1f22266f552592c75566b230ec048145d255d86ca35b565a4be3",
+        "bytes": 178589
+      },
+      {
+        "path": "C:\\Users\\Franky Kuo\\.codex\\worktrees\\sai-batch-a-b\\roothinks-1.0.1\\output\\playwright\\autonomy-2026-10-23T19-59-00-026Z\\impact-author-paper-reconfirmed.yml",
+        "sha256": "8ad633d777957c455816fc51dfffd90d5a8d796d7a48f9305f50cd503396c024",
+        "bytes": 5109
+      },
+      {
+        "path": "C:\\Users\\Franky Kuo\\.codex\\worktrees\\sai-batch-a-b\\roothinks-1.0.1\\output\\playwright\\autonomy-2026-10-23T19-59-00-026Z\\impact-professor-reconfirmed.png",
+        "sha256": "2cad5cf65e6c679c8000877e70bea36a9b15d28a55a1e88a51b00d7b514765cc",
+        "bytes": 140810
+      },
+      {
+        "path": "C:\\Users\\Franky Kuo\\.codex\\worktrees\\sai-batch-a-b\\roothinks-1.0.1\\output\\playwright\\autonomy-2026-10-23T19-59-00-026Z\\impact-professor-reconfirmed.yml",
+        "sha256": "58a9e789b02c788c1a3b6705a5d31a298230da0b11ce8f34cd5b8da584a31566",
+        "bytes": 3852
+      },
+      {
+        "path": "C:\\Users\\Franky Kuo\\.codex\\worktrees\\sai-batch-a-b\\roothinks-1.0.1\\output\\playwright\\autonomy-2026-10-23T19-59-00-026Z\\impact-stale-retains-input.png",
+        "sha256": "6e2498cedee5177ca0ef8bc2dcd7b6ba1c3c73c323abf72ee97eef6ba7012183",
+        "bytes": 217379
+      },
+      {
+        "path": "C:\\Users\\Franky Kuo\\.codex\\worktrees\\sai-batch-a-b\\roothinks-1.0.1\\output\\playwright\\autonomy-2026-10-23T19-59-00-026Z\\impact-stale-retains-input.yml",
+        "sha256": "8be671c657ce217add787c83dbae7bbf533d3ccad408b950dcef44729f01def3",
+        "bytes": 6192
+      },
+      {
+        "path": "C:\\Users\\Franky Kuo\\.codex\\worktrees\\sai-batch-a-b\\roothinks-1.0.1\\output\\playwright\\autonomy-2026-10-23T19-59-00-026Z\\independent-dashboard.png",
+        "sha256": "107c9cefd9bdec423332faea2e29f706c95394a6fa2e68962f9f2492a393936a",
+        "bytes": 35857
+      },
+      {
+        "path": "C:\\Users\\Franky Kuo\\.codex\\worktrees\\sai-batch-a-b\\roothinks-1.0.1\\output\\playwright\\autonomy-2026-10-23T19-59-00-026Z\\independent-dashboard.yml",
+        "sha256": "f3baa7d6824708769feaa7f3b427ebe4bf131a2db7c0e0e7b874fa8d2e5ef1ef",
+        "bytes": 802
+      },
+      {
+        "path": "C:\\Users\\Franky Kuo\\.codex\\worktrees\\sai-batch-a-b\\roothinks-1.0.1\\output\\playwright\\autonomy-2026-10-23T19-59-00-026Z\\independent-saved-exported.png",
+        "sha256": "7ff695497f640820599f9828ce4350fc8fd3a1e7cc4b1c95c99e611bf02324bc",
+        "bytes": 102293
+      },
+      {
+        "path": "C:\\Users\\Franky Kuo\\.codex\\worktrees\\sai-batch-a-b\\roothinks-1.0.1\\output\\playwright\\autonomy-2026-10-23T19-59-00-026Z\\independent-saved-exported.yml",
+        "sha256": "61a1a22e0f49428607882949d0e897297d92c889172ad3bc9a7f499197606080",
+        "bytes": 3254
+      },
+      {
+        "path": "C:\\Users\\Franky Kuo\\.codex\\worktrees\\sai-batch-a-b\\roothinks-1.0.1\\output\\playwright\\autonomy-2026-10-23T19-59-00-026Z\\independent.docx",
+        "sha256": "326042df10f3064ba977aef5e40dc139f9fc4c36e93c9691990ea91127fa5529",
+        "bytes": 2771
+      },
+      {
+        "path": "C:\\Users\\Franky Kuo\\.codex\\worktrees\\sai-batch-a-b\\roothinks-1.0.1\\output\\playwright\\autonomy-2026-10-23T19-59-00-026Z\\professor-confirmed.png",
+        "sha256": "903bdca51a93a056009f5467c1953a072086cfa6d962c6aa72366e0b23af2b38",
+        "bytes": 94887
+      },
+      {
+        "path": "C:\\Users\\Franky Kuo\\.codex\\worktrees\\sai-batch-a-b\\roothinks-1.0.1\\output\\playwright\\autonomy-2026-10-23T19-59-00-026Z\\professor-confirmed.yml",
+        "sha256": "a521820c995c1cc458bbe34340b5d66328ee52a0a1970e261e1e639ed9aab0c3",
+        "bytes": 2604
+      },
+      {
+        "path": "C:\\Users\\Franky Kuo\\.codex\\worktrees\\sai-batch-a-b\\roothinks-1.0.1\\output\\playwright\\autonomy-2026-10-23T19-59-00-026Z\\professor-removed-history.png",
+        "sha256": "2c50fb3b6764628372824a60c7d5a575236778e200b711b50eddb8a9b77e7e32",
+        "bytes": 114485
+      },
+      {
+        "path": "C:\\Users\\Franky Kuo\\.codex\\worktrees\\sai-batch-a-b\\roothinks-1.0.1\\output\\playwright\\autonomy-2026-10-23T19-59-00-026Z\\professor-removed-history.yml",
+        "sha256": "6440c9e659de136cbd1710bb5ae448e86c78e77c640ded0e21fe8ef731660c97",
+        "bytes": 6964
+      },
+      {
+        "path": "C:\\Users\\Franky Kuo\\.codex\\worktrees\\sai-batch-a-b\\roothinks-1.0.1\\output\\playwright\\autonomy-2026-10-23T19-59-00-026Z\\professor-workbench.png",
+        "sha256": "f70f3220b4ba75837c736ba6046ea7bcaeeee313bd9d7e54ed40a034cc12d6ae",
+        "bytes": 65701
+      },
+      {
+        "path": "C:\\Users\\Franky Kuo\\.codex\\worktrees\\sai-batch-a-b\\roothinks-1.0.1\\output\\playwright\\autonomy-2026-10-23T19-59-00-026Z\\professor-workbench.yml",
+        "sha256": "bfe6281f320067aed8c5e33d0c93cec99bad7e4a9327a0b2d6345f1a6b71579c",
+        "bytes": 1614
+      },
+      {
+        "path": "C:\\Users\\Franky Kuo\\.codex\\worktrees\\sai-batch-a-b\\roothinks-1.0.1\\output\\playwright\\autonomy-2026-10-23T19-59-00-026Z\\receipt.json",
+        "sha256": "b884822872106b5be7d5fac5134dfc2fbd5443b48e61dd18352971684d4237ab",
+        "bytes": 671
+      },
+      {
+        "path": "C:\\Users\\Franky Kuo\\.codex\\worktrees\\sai-batch-a-b\\roothinks-1.0.1\\output\\playwright\\autonomy-2026-10-23T19-59-00-026Z\\register-professor-autonomy-2026-10-23T19-59-00-026Z.png",
+        "sha256": "09c46092162c5f981bdaf910e70513df787fce1d1cb3fb1078dd696b48740ee3",
+        "bytes": 31981
+      },
+      {
+        "path": "C:\\Users\\Franky Kuo\\.codex\\worktrees\\sai-batch-a-b\\roothinks-1.0.1\\output\\playwright\\autonomy-2026-10-23T19-59-00-026Z\\register-professor-autonomy-2026-10-23T19-59-00-026Z.yml",
+        "sha256": "8d0abeb74519e723ea754739fd5248936df126e8ad768c2fcefaa8e089c37d05",
+        "bytes": 893
+      },
+      {
+        "path": "C:\\Users\\Franky Kuo\\.codex\\worktrees\\sai-batch-a-b\\roothinks-1.0.1\\output\\playwright\\autonomy-2026-10-23T19-59-00-026Z\\register-team-autonomy-2026-10-23T19-59-00-026Z.png",
+        "sha256": "09c46092162c5f981bdaf910e70513df787fce1d1cb3fb1078dd696b48740ee3",
+        "bytes": 31981
+      },
+      {
+        "path": "C:\\Users\\Franky Kuo\\.codex\\worktrees\\sai-batch-a-b\\roothinks-1.0.1\\output\\playwright\\autonomy-2026-10-23T19-59-00-026Z\\register-team-autonomy-2026-10-23T19-59-00-026Z.yml",
+        "sha256": "8d0abeb74519e723ea754739fd5248936df126e8ad768c2fcefaa8e089c37d05",
+        "bytes": 893
+      },
+      {
+        "path": "C:\\Users\\Franky Kuo\\.codex\\worktrees\\sai-batch-a-b\\roothinks-1.0.1\\output\\playwright\\autonomy-2026-10-23T19-59-00-026Z\\team-scoped-writing.png",
+        "sha256": "758e3b35eaaf649997d9d42a410c6bd7676d6be76235b677490b794c76e4a41a",
+        "bytes": 94118
+      },
+      {
+        "path": "C:\\Users\\Franky Kuo\\.codex\\worktrees\\sai-batch-a-b\\roothinks-1.0.1\\output\\playwright\\autonomy-2026-10-23T19-59-00-026Z\\team-scoped-writing.yml",
+        "sha256": "b827a3a36eed650e84f7904fd1078a8cfd8068b2530b67a5f55f8591373f4592",
+        "bytes": 2625
+      }
+    ],
+    "applicable_after": "5414ce3 captured scenario unchanged; later 6c8e071 only changes backup directory scanning",
+    "supplemental_api": "same-session source selection-reason corrections and negative ACL checks"
+  },
+  "delivery_integrity": {
+    "sha": "5414ce3ee7e0fb128034b56b522f273448b1adf1",
+    "docx": [
+      {
+        "name": "independent",
+        "sha256": "326042df10f3064ba977aef5e40dc139f9fc4c36e93c9691990ea91127fa5529",
+        "zip_crc": "passed",
+        "word_document": "passed"
+      },
+      {
+        "name": "after-professor-removal",
+        "sha256": "e046095a021f835eb70d1733c98dda3cc8392ae295db473a9cae9791bd91438c",
+        "zip_crc": "passed",
+        "word_document": "passed"
+      }
+    ],
+    "migration": {
+      "status": "passed",
+      "baseline": "0002_create_evidence_segments",
+      "head": "0004_project_invitations",
+      "upgrade_twice": true,
+      "preserved_decision": true,
+      "integrity_check": "ok",
+      "production": false
+    },
+    "runner": {
+      "path": "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-review-20261023\\delivery_integrity_checks.py",
+      "sha256": "f6569cf0a712224b42a6e2b0148ead2c5f0c671091762cb1335494c805ffc327",
+      "bytes": 3210
+    }
+  },
+  "scientific": {
+    "artifact": {
+      "path": "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-review-20261023\\scientific-6c8e071-observations.json",
+      "sha256": "1fc114a735137423e5b3ef2eb0d24402f044b8ac81b8e8da6b0089712441fea9",
+      "bytes": 36900
+    },
+    "result": {
+      "status": "SYNTHETIC_PIPELINE_MEASURED_SCIENTIFIC_ACCEPTANCE_OPEN",
+      "metrics": {
+        "requested": 6,
+        "accepted": 5,
+        "rejected": 1,
+        "traceable_accepted": 5,
+        "input_conditions_preserved": 5,
+        "prompt_conditions_preserved": 5,
+        "evidence_condition_tokens_present": 18,
+        "evidence_condition_tokens_required": 19,
+        "unsupported_controls": 2,
+        "unsupported_controls_returned": 2,
+        "missing_condition_controls_returned": 1,
+        "unavailable_evidence_rejected": 1,
+        "unknown_outputs": 0,
+        "scientific_validation_claimed": 0
+      },
+      "limitations": [
+        "provider is a controlled substitute",
+        "catalogue matching is not semantic validation",
+        "two synthetic sources are not independent scientific samples",
+        "no claim of improved scientific quality"
+      ]
+    }
+  },
+  "node_checks": {
+    "syntax_changed_js": 5,
+    "behavior_scripts": [
+      "test/js/test_literature_decision_integrity.cjs",
+      "test/js/test_manuscript_draft_integrity.cjs",
+      "test/js/test_manuscript_input_boundary.cjs",
+      "test/js/test_manuscript_visible_section.cjs",
+      "test/js/test_mentor_review_race.cjs",
+      "test/js/test_study_notes_integrity.cjs",
+      "test/js/test_pi_role_matching.js"
+    ]
+  },
+  "boundaries": {
+    "protected_tracked_changes": [],
+    "deployment": false,
+    "main_merge": false,
+    "upstream_operations": false,
+    "production_data": false,
+    "external_auditor_signoff": false,
+    "main_observed_before": "9655546eac2f2e43a0cabceee0bd75843b47dae2",
+    "previous_remote_branches": {
+      "codex/sai-v1.1.0-batch-a-b": "d36cb9c18c944ac0d9d3cac0912702f29790c096",
+      "codex/sai-verification-review": "6a965e851e03a9d7acefc3d48851d639c8595266"
+    }
+  }
+}
