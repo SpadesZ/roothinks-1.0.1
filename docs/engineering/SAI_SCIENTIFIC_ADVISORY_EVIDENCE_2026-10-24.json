@@ -1,0 +1,1525 @@
+{
+  "code_sha": "ba2448014e234b4547e570c5d2448c647480285a",
+  "base_sha": "52f728740cba7b30bb7c18636deed3a31c4a521d",
+  "branch": "codex/sai-scientific-advisory",
+  "engineering_verdict": "CONDITIONAL PASS for measured advisory/security slice",
+  "scientific_verdict": "NOT ACCEPTED: very low recall and no independent condition/modality gold",
+  "commits": [
+    "ba2448014e234b4547e570c5d2448c647480285a fix: keep generated advisory reports bound to their original chapter",
+    "8f8e55816379ae563243a50f8dd1d90f2727c9b8 fix: preserve advisory recovery and upload CSRF across research workflows",
+    "58fab8690f7f54131f2432046c0bd89a673cf141 test: freeze label-blind SciFact inference and evaluation tooling",
+    "1810a832f887b228497114e2f1d7f33f52be97f8 feat: add advisory claim evidence comparisons and versioned author responses",
+    "4f5faf86207f96237247729f9f281235eb30b10b fix: enforce session CSRF and current authorization for manuscript delivery",
+    "f0a18bec4bf795c2a51abc8986e439cc86b983fa docs: freeze scientific advisory and label-blind evaluation protocol"
+  ],
+  "tests": {
+    "i07-advisory-before": {
+      "sha": "f0a18bec4bf795c2a51abc8986e439cc86b983fa",
+      "started_utc": "2026-10-24T04:00:52.055957+00:00",
+      "command": [
+        "C:\\Users\\Franky Kuo\\Desktop\\ai-system-test\\roothinks-R-10005\\roothinks\\.venv\\Scripts\\python.exe",
+        "-m",
+        "pytest",
+        "test/unit/test_scientific_advisory.py",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "--tb=short",
+        "--show-capture=no",
+        "--junitxml",
+        "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-scientific-20261024\\i07-advisory-before.xml"
+      ],
+      "status": "failed",
+      "dirty_files": [
+        " M app/__init__.py",
+        " M app/auth/routes.py",
+        " M app/core_pro/manuscript/manuscript_routes.py",
+        " M app/core_pro/manuscript/presence.py",
+        " M app/security.py",
+        " M app/static/js/manuscript_ws.js",
+        " M app/templates/_header.html",
+        " M app/templates/manuscript_workspace.html",
+        "?? app/static/js/csrf.js",
+        "?? test/js/test_csrf_transport.cjs",
+        "?? test/unit/test_scientific_advisory.py",
+        "?? test/unit/test_scientific_security.py"
+      ],
+      "exit_code": 2,
+      "ended_utc": "2026-10-24T04:00:57.467248+00:00",
+      "suites": [
+        {
+          "name": "pytest",
+          "errors": "1",
+          "failures": "0",
+          "skipped": "0",
+          "tests": "1",
+          "time": "3.710",
+          "timestamp": "2026-10-24T12:00:53.337497+08:00",
+          "hostname": "DESKTOP-P3N737E"
+        }
+      ],
+      "artifact_hashes": {
+        "i07-advisory-before.txt": "54af596bc11b0de5a69a471567325fcbd05f106e7adfad45da9e43319dd24bc3",
+        "i07-advisory-before.xml": "1d568dcfa885056dde422d106e1d5f61c36e06214dcfc573e8713bfd7f191f27"
+      }
+    },
+    "i07-advisory-controls": {
+      "sha": "4f5faf86207f96237247729f9f281235eb30b10b",
+      "started_utc": "2026-10-24T04:04:27.804728+00:00",
+      "command": [
+        "C:\\Users\\Franky Kuo\\Desktop\\ai-system-test\\roothinks-R-10005\\roothinks\\.venv\\Scripts\\python.exe",
+        "-m",
+        "pytest",
+        "test/unit/test_scientific_advisory.py",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "--tb=short",
+        "--show-capture=no",
+        "--junitxml",
+        "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-scientific-20261024\\i07-advisory-controls.xml"
+      ],
+      "status": "passed",
+      "dirty_files": [
+        "?? app/core_pro/manuscript/scientific_advisory.py",
+        "?? test/unit/test_scientific_advisory.py"
+      ],
+      "exit_code": 0,
+      "ended_utc": "2026-10-24T04:04:45.826280+00:00",
+      "suites": [
+        {
+          "name": "pytest",
+          "errors": "0",
+          "failures": "0",
+          "skipped": "0",
+          "tests": "15",
+          "time": "15.567",
+          "timestamp": "2026-10-24T12:04:29.660059+08:00",
+          "hostname": "DESKTOP-P3N737E"
+        }
+      ],
+      "artifact_hashes": {
+        "i07-advisory-controls.txt": "548bec70efb6c659319117cdf10e7167c377eb3f89271b5464286578789a5fbd",
+        "i07-advisory-controls.xml": "51fe4acd13d1fafe32f35dc37c7357deaab9283699b20b747a72cdf0dfe32e50"
+      }
+    },
+    "i07-advisory-first": {
+      "sha": "4f5faf86207f96237247729f9f281235eb30b10b",
+      "started_utc": "2026-10-24T04:03:15.582990+00:00",
+      "command": [
+        "C:\\Users\\Franky Kuo\\Desktop\\ai-system-test\\roothinks-R-10005\\roothinks\\.venv\\Scripts\\python.exe",
+        "-m",
+        "pytest",
+        "test/unit/test_scientific_advisory.py",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "--tb=short",
+        "--show-capture=no",
+        "--junitxml",
+        "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-scientific-20261024\\i07-advisory-first.xml"
+      ],
+      "status": "passed",
+      "dirty_files": [
+        "?? app/core_pro/manuscript/scientific_advisory.py",
+        "?? test/unit/test_scientific_advisory.py"
+      ],
+      "exit_code": 0,
+      "ended_utc": "2026-10-24T04:03:20.802962+00:00",
+      "suites": [
+        {
+          "name": "pytest",
+          "errors": "0",
+          "failures": "0",
+          "skipped": "0",
+          "tests": "13",
+          "time": "3.268",
+          "timestamp": "2026-10-24T12:03:17.070206+08:00",
+          "hostname": "DESKTOP-P3N737E"
+        }
+      ],
+      "artifact_hashes": {
+        "i07-advisory-first.txt": "06fed058b0182910bfd12da0022b5836e58f873c2f244b3bc734fd9ed533c11c",
+        "i07-advisory-first.xml": "5580934699e1383375d1e5213fa78a9a3babf00aa5899c6125f4231fc9a8470e"
+      }
+    },
+    "i07-advisory-history-restore": {
+      "sha": "58fab8690f7f54131f2432046c0bd89a673cf141",
+      "started_utc": "2026-10-24T04:28:19.059986+00:00",
+      "command": [
+        "C:\\Users\\Franky Kuo\\Desktop\\ai-system-test\\roothinks-R-10005\\roothinks\\.venv\\Scripts\\python.exe",
+        "-m",
+        "pytest",
+        "test/unit/test_backup_research_state.py",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "--tb=short",
+        "--show-capture=no",
+        "--junitxml",
+        "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-scientific-20261024\\i07-advisory-history-restore.xml"
+      ],
+      "status": "passed",
+      "dirty_files": [
+        " M app/core_pro/manuscript/chapter_routes.py",
+        " M app/static/css/manuscript.css",
+        " M app/templates/manuscript_workspace.html",
+        " M test/integration_e2e/sai_scientific_browser.cjs",
+        " M test/unit/test_backup_research_state.py"
+      ],
+      "exit_code": 0,
+      "ended_utc": "2026-10-24T04:28:35.361837+00:00",
+      "suites": [
+        {
+          "name": "pytest",
+          "errors": "0",
+          "failures": "0",
+          "skipped": "0",
+          "tests": "2",
+          "time": "12.253",
+          "timestamp": "2026-10-24T12:28:20.290098+08:00",
+          "hostname": "DESKTOP-P3N737E"
+        }
+      ],
+      "artifact_hashes": {
+        "i07-advisory-history-restore.txt": "c6f96b9dd3b3e83b9ff045045c3a8e6c10dca3ef0219dce02bcc9ac9a284e9c7",
+        "i07-advisory-history-restore.xml": "ac9b5ab2d95bace6f480a8c6a2fdeed7f582c7b2bd6ed916aebdc2b9e70d873b"
+      }
+    },
+    "i07-analysis-revoke-before": {
+      "sha": "58fab8690f7f54131f2432046c0bd89a673cf141",
+      "started_utc": "2026-10-24T04:35:16.320748+00:00",
+      "command": [
+        "C:\\Users\\Franky Kuo\\Desktop\\ai-system-test\\roothinks-R-10005\\roothinks\\.venv\\Scripts\\python.exe",
+        "-m",
+        "pytest",
+        "test/unit/test_scientific_review_workflow.py::test_revocation_during_comparison_prevents_new_advisory_persistence",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "--tb=short",
+        "--show-capture=no",
+        "--junitxml",
+        "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-scientific-20261024\\i07-analysis-revoke-before.xml"
+      ],
+      "status": "failed",
+      "dirty_files": [
+        " M app/core_pro/manuscript/chapter_routes.py",
+        " M app/static/css/manuscript.css",
+        " M app/static/js/literature_origins.js",
+        " M app/templates/literature.html",
+        " M app/templates/manuscript_workspace.html",
+        " M test/integration_e2e/sai_scientific_browser.cjs",
+        " M test/unit/test_backup_research_state.py",
+        " M test/unit/test_scientific_review_workflow.py",
+        "?? scripts/scientific_control_report.py",
+        "?? test/js/test_origins_upload_csrf.cjs"
+      ],
+      "exit_code": 1,
+      "ended_utc": "2026-10-24T04:35:27.936872+00:00",
+      "suites": [
+        {
+          "name": "pytest",
+          "errors": "0",
+          "failures": "1",
+          "skipped": "0",
+          "tests": "1",
+          "time": "9.792",
+          "timestamp": "2026-10-24T12:35:17.491506+08:00",
+          "hostname": "DESKTOP-P3N737E"
+        }
+      ],
+      "artifact_hashes": {
+        "i07-analysis-revoke-before.txt": "d353a7bd7e03ebdc16ddd1f9f80c20ca821cd65e5544ba51948dd30ae02a4615",
+        "i07-analysis-revoke-before.xml": "82f340eae8fdabe864d3207c999251d179897a23aff039d06f43a30e195140c1"
+      }
+    },
+    "i07-analysis-revoke-fixed": {
+      "sha": "58fab8690f7f54131f2432046c0bd89a673cf141",
+      "started_utc": "2026-10-24T04:35:54.168319+00:00",
+      "command": [
+        "C:\\Users\\Franky Kuo\\Desktop\\ai-system-test\\roothinks-R-10005\\roothinks\\.venv\\Scripts\\python.exe",
+        "-m",
+        "pytest",
+        "test/unit/test_scientific_review_workflow.py",
+        "test/unit/test_scientific_security.py",
+        "test/unit/test_backup_research_state.py",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "--tb=short",
+        "--show-capture=no",
+        "--junitxml",
+        "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-scientific-20261024\\i07-analysis-revoke-fixed.xml"
+      ],
+      "status": "passed",
+      "dirty_files": [
+        " M app/core_pro/manuscript/chapter_routes.py",
+        " M app/core_pro/manuscript/scientific_routes.py",
+        " M app/static/css/manuscript.css",
+        " M app/static/js/literature_origins.js",
+        " M app/templates/literature.html",
+        " M app/templates/manuscript_workspace.html",
+        " M test/integration_e2e/sai_scientific_browser.cjs",
+        " M test/unit/test_backup_research_state.py",
+        " M test/unit/test_scientific_review_workflow.py",
+        "?? scripts/scientific_control_report.py",
+        "?? test/js/test_origins_upload_csrf.cjs"
+      ],
+      "exit_code": 0,
+      "ended_utc": "2026-10-24T04:36:21.933870+00:00",
+      "suites": [
+        {
+          "name": "pytest",
+          "errors": "0",
+          "failures": "0",
+          "skipped": "0",
+          "tests": "17",
+          "time": "25.310",
+          "timestamp": "2026-10-24T12:35:55.474383+08:00",
+          "hostname": "DESKTOP-P3N737E"
+        }
+      ],
+      "artifact_hashes": {
+        "i07-analysis-revoke-fixed.txt": "e566a8d38c6b0d3a4f75bacac29298dddef1571c416b687c2fd9f562b7ce83de",
+        "i07-analysis-revoke-fixed.xml": "daf1d495282e97cd172144288689048896aaf149febf9cdbcf87b0cdc0006a9b"
+      }
+    },
+    "i07-baseline": {
+      "sha": "52f728740cba7b30bb7c18636deed3a31c4a521d",
+      "started_utc": "2026-10-24T03:48:29.146467+00:00",
+      "command": [
+        "C:\\Users\\Franky Kuo\\Desktop\\ai-system-test\\roothinks-R-10005\\roothinks\\.venv\\Scripts\\python.exe",
+        "-m",
+        "pytest",
+        "test/unit/test_research_integrity_benchmark.py",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "--tb=short",
+        "--show-capture=no",
+        "--junitxml",
+        "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-scientific-20261024\\i07-baseline.xml"
+      ],
+      "status": "passed",
+      "dirty_files": [],
+      "exit_code": 0,
+      "ended_utc": "2026-10-24T03:48:44.993611+00:00",
+      "suites": [
+        {
+          "name": "pytest",
+          "errors": "0",
+          "failures": "0",
+          "skipped": "0",
+          "tests": "4",
+          "time": "12.170",
+          "timestamp": "2026-10-24T11:48:31.785263+08:00",
+          "hostname": "DESKTOP-P3N737E"
+        }
+      ],
+      "artifact_hashes": {
+        "i07-baseline.txt": "124121c5a75f6edabef3db0b2feb0f332fba4790923744bdb9123f56d899e469",
+        "i07-baseline.xml": "c81f892b1ce8b312144d3ef68d47e0d488329b001506b9283553f51b7c1b1192"
+      }
+    },
+    "i07-benchmark-tool": {
+      "sha": "4f5faf86207f96237247729f9f281235eb30b10b",
+      "started_utc": "2026-10-24T04:22:28.608157+00:00",
+      "command": [
+        "C:\\Users\\Franky Kuo\\Desktop\\ai-system-test\\roothinks-R-10005\\roothinks\\.venv\\Scripts\\python.exe",
+        "-m",
+        "pytest",
+        "test/unit/test_scientific_benchmark.py",
+        "test/unit/test_scientific_advisory.py",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "--tb=short",
+        "--show-capture=no",
+        "--junitxml",
+        "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-scientific-20261024\\i07-benchmark-tool.xml"
+      ],
+      "status": "passed",
+      "dirty_files": [
+        " M app/__init__.py",
+        " M app/core_pro/manuscript/manuscript_routes.py",
+        " M app/static/js/manuscript_collab.js",
+        " M app/templates/manuscript_workspace.html",
+        "?? app/core_pro/manuscript/scientific_advisory.py",
+        "?? app/core_pro/manuscript/scientific_routes.py",
+        "?? app/static/js/scientific_review.js",
+        "?? scripts/scientific_benchmark.py",
+        "?? test/unit/test_scientific_advisory.py",
+        "?? test/unit/test_scientific_benchmark.py",
+        "?? test/unit/test_scientific_review_workflow.py"
+      ],
+      "exit_code": 0,
+      "ended_utc": "2026-10-24T04:22:33.627515+00:00",
+      "suites": [
+        {
+          "name": "pytest",
+          "errors": "0",
+          "failures": "0",
+          "skipped": "0",
+          "tests": "17",
+          "time": "3.235",
+          "timestamp": "2026-10-24T12:22:29.629403+08:00",
+          "hostname": "DESKTOP-P3N737E"
+        }
+      ],
+      "artifact_hashes": {
+        "i07-benchmark-tool.txt": "04f3e10e38aef2002a37075c215655aa3bee9b122d43c71706868612709cd943",
+        "i07-benchmark-tool.xml": "e1f6945028ff1ece0bfaeb3acf49673387a9dc7bb3a452e5f1a9e07843c746d6"
+      }
+    },
+    "i07-broadcast-before": {
+      "sha": "f0a18bec4bf795c2a51abc8986e439cc86b983fa",
+      "started_utc": "2026-10-24T03:57:16.998807+00:00",
+      "command": [
+        "C:\\Users\\Franky Kuo\\Desktop\\ai-system-test\\roothinks-R-10005\\roothinks\\.venv\\Scripts\\python.exe",
+        "-m",
+        "pytest",
+        "test/unit/test_scientific_security.py",
+        "-k",
+        "broadcast",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "--tb=short",
+        "--show-capture=no",
+        "--junitxml",
+        "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-scientific-20261024\\i07-broadcast-before.xml"
+      ],
+      "status": "failed",
+      "dirty_files": [
+        " M app/__init__.py",
+        " M app/auth/routes.py",
+        " M app/core_pro/manuscript/manuscript_routes.py",
+        " M app/security.py",
+        " M app/static/js/manuscript_ws.js",
+        " M app/templates/_header.html",
+        " M app/templates/manuscript_workspace.html",
+        "?? app/static/js/csrf.js",
+        "?? test/js/test_csrf_transport.cjs",
+        "?? test/unit/test_scientific_security.py"
+      ],
+      "exit_code": 1,
+      "ended_utc": "2026-10-24T03:57:24.819506+00:00",
+      "suites": [
+        {
+          "name": "pytest",
+          "errors": "0",
+          "failures": "1",
+          "skipped": "0",
+          "tests": "1",
+          "time": "5.947",
+          "timestamp": "2026-10-24T11:57:18.332721+08:00",
+          "hostname": "DESKTOP-P3N737E"
+        }
+      ],
+      "artifact_hashes": {
+        "i07-broadcast-before.txt": "b42d3ccfa70d296e91c2ee377b26de3f4597f84adf5a39ca12f5722b7209922b",
+        "i07-broadcast-before.xml": "8237ab38bd416ca9780af3867cf4f177c3aa7dfe808923cb2a98f5626aa7cd49"
+      }
+    },
+    "i07-final-code-targeted": {
+      "sha": "8f8e55816379ae563243a50f8dd1d90f2727c9b8",
+      "started_utc": "2026-10-24T04:37:05.280537+00:00",
+      "command": [
+        "C:\\Users\\Franky Kuo\\Desktop\\ai-system-test\\roothinks-R-10005\\roothinks\\.venv\\Scripts\\python.exe",
+        "-m",
+        "pytest",
+        "test/unit/test_scientific_review_workflow.py",
+        "test/unit/test_scientific_security.py",
+        "test/unit/test_backup_research_state.py",
+        "test/unit/test_upload_preservation.py",
+        "test/unit/test_scientific_advisory.py",
+        "test/unit/test_scientific_benchmark.py",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "--tb=short",
+        "--show-capture=no",
+        "--junitxml",
+        "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-scientific-20261024\\i07-final-code-targeted.xml"
+      ],
+      "status": "passed",
+      "dirty_files": [],
+      "exit_code": 0,
+      "ended_utc": "2026-10-24T04:37:50.996575+00:00",
+      "suites": [
+        {
+          "name": "pytest",
+          "errors": "0",
+          "failures": "0",
+          "skipped": "0",
+          "tests": "43",
+          "time": "42.506",
+          "timestamp": "2026-10-24T12:37:06.771365+08:00",
+          "hostname": "DESKTOP-P3N737E"
+        }
+      ],
+      "artifact_hashes": {
+        "i07-final-code-targeted.txt": "f5fa7414f2a9a6a82342fe076d58ef52a19cea0e5cc9975a7239ff9bf4f4318b",
+        "i07-final-code-targeted.xml": "b94d8f72a9c49637b2522818e809c8386441fadc937d3581c7857604db1d1568"
+      }
+    },
+    "i07-final-targeted": {
+      "sha": "58fab8690f7f54131f2432046c0bd89a673cf141",
+      "started_utc": "2026-10-24T04:33:13.097693+00:00",
+      "command": [
+        "C:\\Users\\Franky Kuo\\Desktop\\ai-system-test\\roothinks-R-10005\\roothinks\\.venv\\Scripts\\python.exe",
+        "-m",
+        "pytest",
+        "test/unit/test_scientific_advisory.py",
+        "test/unit/test_scientific_review_workflow.py",
+        "test/unit/test_scientific_security.py",
+        "test/unit/test_scientific_benchmark.py",
+        "test/unit/test_backup_research_state.py",
+        "test/unit/test_upload_preservation.py",
+        "test/unit/test_sai_channel_acl.py",
+        "test/unit/test_sai_autonomy.py",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "--tb=short",
+        "--show-capture=no",
+        "--junitxml",
+        "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-scientific-20261024\\i07-final-targeted.xml"
+      ],
+      "status": "passed",
+      "dirty_files": [
+        " M app/core_pro/manuscript/chapter_routes.py",
+        " M app/static/css/manuscript.css",
+        " M app/static/js/literature_origins.js",
+        " M app/templates/literature.html",
+        " M app/templates/manuscript_workspace.html",
+        " M test/integration_e2e/sai_scientific_browser.cjs",
+        " M test/unit/test_backup_research_state.py",
+        "?? test/js/test_origins_upload_csrf.cjs"
+      ],
+      "exit_code": 0,
+      "ended_utc": "2026-10-24T04:34:08.861996+00:00",
+      "suites": [
+        {
+          "name": "pytest",
+          "errors": "0",
+          "failures": "0",
+          "skipped": "0",
+          "tests": "72",
+          "time": "53.446",
+          "timestamp": "2026-10-24T12:33:14.402266+08:00",
+          "hostname": "DESKTOP-P3N737E"
+        }
+      ],
+      "artifact_hashes": {
+        "i07-final-targeted.txt": "304c6ffce308f7ce47288b1773bfbc42304ec20a7ebe778b266be1b1cd175d62",
+        "i07-final-targeted.xml": "d4cd340f46b486ec19b96f78142201d490c175683f75153e179087d365bd74a3"
+      }
+    },
+    "i07-full-regression": {
+      "sha": "58fab8690f7f54131f2432046c0bd89a673cf141",
+      "started_utc": "2026-10-24T04:24:58.825409+00:00",
+      "command": [
+        "C:\\Users\\Franky Kuo\\Desktop\\ai-system-test\\roothinks-R-10005\\roothinks\\.venv\\Scripts\\python.exe",
+        "-m",
+        "pytest",
+        "test/unit",
+        "tests",
+        "test/integration_e2e",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "--tb=short",
+        "--show-capture=no",
+        "--junitxml",
+        "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-scientific-20261024\\i07-full-regression.xml"
+      ],
+      "status": "passed",
+      "dirty_files": [],
+      "exit_code": 0,
+      "ended_utc": "2026-10-24T04:39:51.646900+00:00",
+      "suites": [
+        {
+          "name": "pytest",
+          "errors": "0",
+          "failures": "0",
+          "skipped": "1",
+          "tests": "1353",
+          "time": "886.794",
+          "timestamp": "2026-10-24T12:25:00.263241+08:00",
+          "hostname": "DESKTOP-P3N737E"
+        }
+      ],
+      "artifact_hashes": {
+        "i07-full-regression.txt": "87623fe6cac96d04273f6e091e3e633beb74f580887f9dd3319cc1c401e1a3c8",
+        "i07-full-regression.xml": "7c4c078aed19f9eff40d479c1f164a8df1646c4f89d3c17055d01509a090da0d"
+      }
+    },
+    "i07-security-beacon": {
+      "sha": "f0a18bec4bf795c2a51abc8986e439cc86b983fa",
+      "started_utc": "2026-10-24T03:56:35.931287+00:00",
+      "command": [
+        "C:\\Users\\Franky Kuo\\Desktop\\ai-system-test\\roothinks-R-10005\\roothinks\\.venv\\Scripts\\python.exe",
+        "-m",
+        "pytest",
+        "test/unit/test_scientific_security.py",
+        "test/unit/test_auth_basic.py",
+        "test/unit/test_sai_channel_acl.py",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "--tb=short",
+        "--show-capture=no",
+        "--junitxml",
+        "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-scientific-20261024\\i07-security-beacon.xml"
+      ],
+      "status": "failed",
+      "dirty_files": [
+        " M app/__init__.py",
+        " M app/auth/routes.py",
+        " M app/core_pro/manuscript/manuscript_routes.py",
+        " M app/security.py",
+        " M app/static/js/manuscript_ws.js",
+        " M app/templates/_header.html",
+        " M app/templates/manuscript_workspace.html",
+        "?? app/static/js/csrf.js",
+        "?? test/js/test_csrf_transport.cjs",
+        "?? test/unit/test_scientific_security.py"
+      ],
+      "exit_code": 1,
+      "ended_utc": "2026-10-24T03:56:53.198027+00:00",
+      "suites": [
+        {
+          "name": "pytest",
+          "errors": "0",
+          "failures": "1",
+          "skipped": "0",
+          "tests": "46",
+          "time": "15.049",
+          "timestamp": "2026-10-24T11:56:37.491000+08:00",
+          "hostname": "DESKTOP-P3N737E"
+        }
+      ],
+      "artifact_hashes": {
+        "i07-security-beacon.txt": "86689232e39decd50d1c2f3c888078ef5b5b850ae0c25c920c2af03ddb74d835",
+        "i07-security-beacon.xml": "70bc3d36b75a9047195b965d6fbd30d6ac65d581f015ff74b152fac3a946eaa7"
+      }
+    },
+    "i07-security-before": {
+      "sha": "f0a18bec4bf795c2a51abc8986e439cc86b983fa",
+      "started_utc": "2026-10-24T03:50:43.872251+00:00",
+      "command": [
+        "C:\\Users\\Franky Kuo\\Desktop\\ai-system-test\\roothinks-R-10005\\roothinks\\.venv\\Scripts\\python.exe",
+        "-m",
+        "pytest",
+        "test/unit/test_scientific_security.py",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "--tb=short",
+        "--show-capture=no",
+        "--junitxml",
+        "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-scientific-20261024\\i07-security-before.xml"
+      ],
+      "status": "failed",
+      "dirty_files": [
+        "?? test/unit/test_scientific_security.py"
+      ],
+      "exit_code": 1,
+      "ended_utc": "2026-10-24T03:51:01.072767+00:00",
+      "suites": [
+        {
+          "name": "pytest",
+          "errors": "0",
+          "failures": "6",
+          "skipped": "0",
+          "tests": "6",
+          "time": "7.771",
+          "timestamp": "2026-10-24T11:50:45.833788+08:00",
+          "hostname": "DESKTOP-P3N737E"
+        }
+      ],
+      "artifact_hashes": {
+        "i07-security-before.txt": "f7a1f72a2238b09645bd0fe1bd7f8ea8a3172c676f4a67c050692b32610978ed",
+        "i07-security-before.xml": "de8016ddb577d617321d10b2e4cfdca398e486d6f2e301b80492123900f2b9ce"
+      }
+    },
+    "i07-security-fixed": {
+      "sha": "f0a18bec4bf795c2a51abc8986e439cc86b983fa",
+      "started_utc": "2026-10-24T03:54:36.090450+00:00",
+      "command": [
+        "C:\\Users\\Franky Kuo\\Desktop\\ai-system-test\\roothinks-R-10005\\roothinks\\.venv\\Scripts\\python.exe",
+        "-m",
+        "pytest",
+        "test/unit/test_scientific_security.py",
+        "test/unit/test_sai_channel_acl.py",
+        "test/unit/test_auth_basic.py",
+        "test/unit/test_sai_invitations.py",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "--tb=short",
+        "--show-capture=no",
+        "--junitxml",
+        "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-scientific-20261024\\i07-security-fixed.xml"
+      ],
+      "status": "failed",
+      "dirty_files": [
+        " M app/__init__.py",
+        " M app/auth/routes.py",
+        " M app/core_pro/manuscript/manuscript_routes.py",
+        " M app/security.py",
+        " M app/templates/_header.html",
+        " M app/templates/manuscript_workspace.html",
+        "?? app/static/js/csrf.js",
+        "?? test/unit/test_scientific_security.py"
+      ],
+      "exit_code": 1,
+      "ended_utc": "2026-10-24T03:54:56.180442+00:00",
+      "suites": [
+        {
+          "name": "pytest",
+          "errors": "0",
+          "failures": "1",
+          "skipped": "0",
+          "tests": "64",
+          "time": "18.173",
+          "timestamp": "2026-10-24T11:54:37.155344+08:00",
+          "hostname": "DESKTOP-P3N737E"
+        }
+      ],
+      "artifact_hashes": {
+        "i07-security-fixed.txt": "325b5c85441e1603b84bbcff12dd9a63686bee77e8e9279837dab5dbf71c9371",
+        "i07-security-fixed.xml": "26b59375a69704e716caeb02cd1b0f3c82663e0bd5ea44686a9c83be053efffb"
+      }
+    },
+    "i07-security-integrated": {
+      "sha": "f0a18bec4bf795c2a51abc8986e439cc86b983fa",
+      "started_utc": "2026-10-24T03:58:10.651464+00:00",
+      "command": [
+        "C:\\Users\\Franky Kuo\\Desktop\\ai-system-test\\roothinks-R-10005\\roothinks\\.venv\\Scripts\\python.exe",
+        "-m",
+        "pytest",
+        "test/unit/test_scientific_security.py",
+        "test/unit/test_sai_channel_acl.py",
+        "test/unit/test_auth_basic.py",
+        "test/unit/test_sai_invitations.py",
+        "test/unit/test_sai_review_workflow.py",
+        "test/unit/test_presence.py",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "--tb=short",
+        "--show-capture=no",
+        "--junitxml",
+        "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-scientific-20261024\\i07-security-integrated.xml"
+      ],
+      "status": "passed",
+      "dirty_files": [
+        " M app/__init__.py",
+        " M app/auth/routes.py",
+        " M app/core_pro/manuscript/manuscript_routes.py",
+        " M app/core_pro/manuscript/presence.py",
+        " M app/security.py",
+        " M app/static/js/manuscript_ws.js",
+        " M app/templates/_header.html",
+        " M app/templates/manuscript_workspace.html",
+        "?? app/static/js/csrf.js",
+        "?? test/js/test_csrf_transport.cjs",
+        "?? test/unit/test_scientific_security.py"
+      ],
+      "exit_code": 0,
+      "ended_utc": "2026-10-24T03:58:39.442191+00:00",
+      "suites": [
+        {
+          "name": "pytest",
+          "errors": "0",
+          "failures": "0",
+          "skipped": "0",
+          "tests": "94",
+          "time": "26.348",
+          "timestamp": "2026-10-24T11:58:12.081144+08:00",
+          "hostname": "DESKTOP-P3N737E"
+        }
+      ],
+      "artifact_hashes": {
+        "i07-security-integrated.txt": "d18403043e5bc09be0e48f78fc1a65d7da0c0d95d749db2b372b9f1b07c256ca",
+        "i07-security-integrated.xml": "6b4c8cd059e9a2686f6b0bb88c461919c805f5d0807201f820ca63acd8bbb45e"
+      }
+    },
+    "i07-workflow-adversarial": {
+      "sha": "4f5faf86207f96237247729f9f281235eb30b10b",
+      "started_utc": "2026-10-24T04:19:21.840066+00:00",
+      "command": [
+        "C:\\Users\\Franky Kuo\\Desktop\\ai-system-test\\roothinks-R-10005\\roothinks\\.venv\\Scripts\\python.exe",
+        "-m",
+        "pytest",
+        "test/unit/test_scientific_review_workflow.py",
+        "test/unit/test_scientific_security.py",
+        "test/unit/test_sai_change_impact.py",
+        "test/unit/test_sai_backup_restore.py",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "--tb=short",
+        "--show-capture=no",
+        "--junitxml",
+        "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-scientific-20261024\\i07-workflow-adversarial.xml"
+      ],
+      "status": "failed",
+      "dirty_files": [
+        " M app/__init__.py",
+        " M app/core_pro/manuscript/manuscript_routes.py",
+        " M app/static/js/manuscript_collab.js",
+        " M app/templates/manuscript_workspace.html",
+        "?? app/core_pro/manuscript/scientific_advisory.py",
+        "?? app/core_pro/manuscript/scientific_routes.py",
+        "?? app/static/js/scientific_review.js",
+        "?? test/unit/test_scientific_advisory.py",
+        "?? test/unit/test_scientific_review_workflow.py"
+      ],
+      "exit_code": 4,
+      "ended_utc": "2026-10-24T04:19:23.559879+00:00",
+      "suites": [
+        {
+          "name": "pytest",
+          "errors": "0",
+          "failures": "0",
+          "skipped": "0",
+          "tests": "0",
+          "time": "0.007",
+          "timestamp": "2026-10-24T12:19:23.354733+08:00",
+          "hostname": "DESKTOP-P3N737E"
+        }
+      ],
+      "artifact_hashes": {
+        "i07-workflow-adversarial.txt": "4ba260cf94f25bfedf8186619c6bdd698f4cecd1cd0baca0d145a596b4e2eee3",
+        "i07-workflow-adversarial.xml": "ea616075187248ea04695a5f45ab96d3906c74781c8cd7b1335a48b1b25f3c83"
+      }
+    },
+    "i07-workflow-adversarial-v2": {
+      "sha": "4f5faf86207f96237247729f9f281235eb30b10b",
+      "started_utc": "2026-10-24T04:20:24.604923+00:00",
+      "command": [
+        "C:\\Users\\Franky Kuo\\Desktop\\ai-system-test\\roothinks-R-10005\\roothinks\\.venv\\Scripts\\python.exe",
+        "-m",
+        "pytest",
+        "test/unit/test_scientific_review_workflow.py",
+        "test/unit/test_scientific_security.py",
+        "test/unit/test_sai_change_impact.py",
+        "test/unit/test_research_backup.py",
+        "test/unit/test_backup_research_state.py",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "--tb=short",
+        "--show-capture=no",
+        "--junitxml",
+        "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-scientific-20261024\\i07-workflow-adversarial-v2.xml"
+      ],
+      "status": "passed",
+      "dirty_files": [
+        " M app/__init__.py",
+        " M app/core_pro/manuscript/manuscript_routes.py",
+        " M app/static/js/manuscript_collab.js",
+        " M app/templates/manuscript_workspace.html",
+        "?? app/core_pro/manuscript/scientific_advisory.py",
+        "?? app/core_pro/manuscript/scientific_routes.py",
+        "?? app/static/js/scientific_review.js",
+        "?? test/unit/test_scientific_advisory.py",
+        "?? test/unit/test_scientific_review_workflow.py"
+      ],
+      "exit_code": 0,
+      "ended_utc": "2026-10-24T04:21:24.368073+00:00",
+      "suites": [
+        {
+          "name": "pytest",
+          "errors": "0",
+          "failures": "0",
+          "skipped": "1",
+          "tests": "45",
+          "time": "57.226",
+          "timestamp": "2026-10-24T12:20:25.827995+08:00",
+          "hostname": "DESKTOP-P3N737E"
+        }
+      ],
+      "artifact_hashes": {
+        "i07-workflow-adversarial-v2.txt": "9047fb8f5b60fb844a9e0a57d1b31618faeda76e7164c03cdd7a0d012c361549",
+        "i07-workflow-adversarial-v2.xml": "9d504a5a19a12548e7923417b93cd2b684ebd97fbf31e442b690572a740616da"
+      }
+    },
+    "i07-workflow-before": {
+      "sha": "4f5faf86207f96237247729f9f281235eb30b10b",
+      "started_utc": "2026-10-24T04:08:25.264651+00:00",
+      "command": [
+        "C:\\Users\\Franky Kuo\\Desktop\\ai-system-test\\roothinks-R-10005\\roothinks\\.venv\\Scripts\\python.exe",
+        "-m",
+        "pytest",
+        "test/unit/test_scientific_review_workflow.py",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "--tb=short",
+        "--show-capture=no",
+        "--junitxml",
+        "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-scientific-20261024\\i07-workflow-before.xml"
+      ],
+      "status": "failed",
+      "dirty_files": [
+        "?? app/core_pro/manuscript/scientific_advisory.py",
+        "?? test/unit/test_scientific_advisory.py",
+        "?? test/unit/test_scientific_review_workflow.py"
+      ],
+      "exit_code": 1,
+      "ended_utc": "2026-10-24T04:08:41.366553+00:00",
+      "suites": [
+        {
+          "name": "pytest",
+          "errors": "0",
+          "failures": "4",
+          "skipped": "0",
+          "tests": "4",
+          "time": "13.743",
+          "timestamp": "2026-10-24T12:08:26.757431+08:00",
+          "hostname": "DESKTOP-P3N737E"
+        }
+      ],
+      "artifact_hashes": {
+        "i07-workflow-before.txt": "a405e4148c7384d7c564abb5d045ec81a72d6f39c716b8d67a0576c6838d23f2",
+        "i07-workflow-before.xml": "cfcba2aa5133274dfcb406fd45c145819a0e55abef3d60af72daf4b27f9edba7"
+      }
+    },
+    "i07-workflow-first": {
+      "sha": "4f5faf86207f96237247729f9f281235eb30b10b",
+      "started_utc": "2026-10-24T04:10:09.149659+00:00",
+      "command": [
+        "C:\\Users\\Franky Kuo\\Desktop\\ai-system-test\\roothinks-R-10005\\roothinks\\.venv\\Scripts\\python.exe",
+        "-m",
+        "pytest",
+        "test/unit/test_scientific_review_workflow.py",
+        "test/unit/test_scientific_advisory.py",
+        "test/unit/test_sai_review_workflow.py",
+        "test/unit/test_scientific_security.py",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "--tb=short",
+        "--show-capture=no",
+        "--junitxml",
+        "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-scientific-20261024\\i07-workflow-first.xml"
+      ],
+      "status": "failed",
+      "dirty_files": [
+        " M app/__init__.py",
+        " M app/core_pro/manuscript/manuscript_routes.py",
+        "?? app/core_pro/manuscript/scientific_advisory.py",
+        "?? app/core_pro/manuscript/scientific_routes.py",
+        "?? test/unit/test_scientific_advisory.py",
+        "?? test/unit/test_scientific_review_workflow.py"
+      ],
+      "exit_code": 1,
+      "ended_utc": "2026-10-24T04:10:42.052813+00:00",
+      "suites": [
+        {
+          "name": "pytest",
+          "errors": "0",
+          "failures": "3",
+          "skipped": "0",
+          "tests": "46",
+          "time": "30.553",
+          "timestamp": "2026-10-24T12:10:10.351707+08:00",
+          "hostname": "DESKTOP-P3N737E"
+        }
+      ],
+      "artifact_hashes": {
+        "i07-workflow-first.txt": "c3780b4e78c45fb43714a134341ccc92375a3c7ee88f5251705e27857c081c38",
+        "i07-workflow-first.xml": "d6cef8541cf6964ae22a0be5cff9b66297d63954f3fc1f00c2ded03f508d8cd3"
+      }
+    },
+    "i07-workflow-validator": {
+      "sha": "4f5faf86207f96237247729f9f281235eb30b10b",
+      "started_utc": "2026-10-24T04:18:15.298208+00:00",
+      "command": [
+        "C:\\Users\\Franky Kuo\\Desktop\\ai-system-test\\roothinks-R-10005\\roothinks\\.venv\\Scripts\\python.exe",
+        "-m",
+        "pytest",
+        "test/unit/test_scientific_review_workflow.py",
+        "test/unit/test_scientific_advisory.py",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "--tb=short",
+        "--show-capture=no",
+        "--junitxml",
+        "C:\\Users\\Franky Kuo\\AppData\\Local\\Temp\\roothinks-sai-scientific-20261024\\i07-workflow-validator.xml"
+      ],
+      "status": "passed",
+      "dirty_files": [
+        " M app/__init__.py",
+        " M app/core_pro/manuscript/manuscript_routes.py",
+        " M app/static/js/manuscript_collab.js",
+        " M app/templates/manuscript_workspace.html",
+        "?? app/core_pro/manuscript/scientific_advisory.py",
+        "?? app/core_pro/manuscript/scientific_routes.py",
+        "?? app/static/js/scientific_review.js",
+        "?? test/unit/test_scientific_advisory.py",
+        "?? test/unit/test_scientific_review_workflow.py"
+      ],
+      "exit_code": 0,
+      "ended_utc": "2026-10-24T04:18:28.544737+00:00",
+      "suites": [
+        {
+          "name": "pytest",
+          "errors": "0",
+          "failures": "0",
+          "skipped": "0",
+          "tests": "19",
+          "time": "11.211",
+          "timestamp": "2026-10-24T12:18:16.779067+08:00",
+          "hostname": "DESKTOP-P3N737E"
+        }
+      ],
+      "artifact_hashes": {
+        "i07-workflow-validator.txt": "b27b662d4dc5b1d2cf4ab645dc3af6a3d92034646618d6f9415008256997e089",
+        "i07-workflow-validator.xml": "d24d37a8d7103d4e7e19441136a7e4a32494192c41e35f0898966f8d857a0e62"
+      }
+    }
+  },
+  "browser_runs": [
+    {
+      "folder": "output\\playwright\\scientific-2026-10-24T04-23-38-068Z",
+      "evidence": {
+        "sha": "4f5faf86207f96237247729f9f281235eb30b10b",
+        "checks": [
+          "actionable_source_comparison_original_unchanged"
+        ],
+        "errors": [],
+        "status": "failed",
+        "failure": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n+ actual - expected\n\n+ 'c:\\\\users\\\\franky kuo\\\\appdata\\\\local\\\\temp'\n- 'c:\\\\users\\\\franky~1\\\\appdata\\\\local\\\\temp'\n\n    at main (C:\\Users\\Franky Kuo\\.codex\\worktrees\\sai-batch-a-b\\roothinks-1.0.1\\test\\integration_e2e\\sai_scientific_browser.cjs:36:12)"
+      },
+      "artifacts": {
+        "claim-evidence-comparison.png": "e02ce9fd06b01ea7eb7164bc741c85c216fc861c2243ddfa5295ba865d4e51f6",
+        "claim-evidence-comparison.yml": "fe43c059d6652f303a6da7fd293b299253279a871e07fffe60a0034c2273ecfc",
+        "evidence.json": "05f763e3c6f4e87d43189390ee7717cae03b3faecbad269e50469066d8027471",
+        "failure.png": "d27524370266a02e3c2e694f360ff03a232e2950505e0c3e7b2a56f1e4433d15",
+        "failure.yml": "9539ad4b9eb2eb90295598eee6ec4558a3411a69681ba3526d4d7b3658185df0"
+      }
+    },
+    {
+      "folder": "output\\playwright\\scientific-2026-10-24T04-24-11-947Z",
+      "evidence": {
+        "sha": "4f5faf86207f96237247729f9f281235eb30b10b",
+        "checks": [
+          "actionable_source_comparison_original_unchanged",
+          "stale_409_refresh_reason_preserved_append_response",
+          "unknown_advisory_does_not_block_save_export"
+        ],
+        "errors": [],
+        "status": "passed"
+      },
+      "artifacts": {
+        "advisory-nonblocking.docx": "36f3771492525962ee82c9e88b50a511f21677c480b1be0c8045ebbdf2bc96af",
+        "claim-evidence-comparison.png": "0cf3245b0f11fa0f5f76e5e3f5006558a94e6fee5a930c09ffed5c5ed8a55e8e",
+        "claim-evidence-comparison.yml": "fcc98c8e7e11a028004e29df8e2ed1e86cd125b362a69f4bd9bd2fd03a4d5cb9",
+        "evidence.json": "02026fb26a64354416b78200747c6f9cf9a699bcbb993c6ff16cbd6f8ad19c30",
+        "hypothesis-saved-exported.png": "dd0cdb2ecb700e1fa28cee935dfc4a13ebf797adf6310b8387d09b69e4720037",
+        "hypothesis-saved-exported.yml": "a76e4001f7a2199f7b260582f6830c03b993162d2137e0a0366a6d82b7d198f2",
+        "stale-response-preserved.png": "20b6c2251416601530714cb98abe3508a05b3074c983cc3998cf914b438dff2c",
+        "stale-response-preserved.yml": "cdf6825c89b38ebe9798478093e47a6e91a181cc07bd766fd9ee5c4800b81513"
+      }
+    },
+    {
+      "folder": "output\\playwright\\scientific-2026-10-24T04-28-04-778Z",
+      "evidence": {
+        "sha": "58fab8690f7f54131f2432046c0bd89a673cf141",
+        "checks": [
+          "actionable_source_comparison_original_unchanged",
+          "stale_409_refresh_reason_preserved_append_response",
+          "unknown_advisory_does_not_block_save_export"
+        ],
+        "errors": [],
+        "status": "failed",
+        "failure": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n\nfalse !== true\n\n    at main (C:\\Users\\Franky Kuo\\.codex\\worktrees\\sai-batch-a-b\\roothinks-1.0.1\\test\\integration_e2e\\sai_scientific_browser.cjs:57:12)"
+      },
+      "artifacts": {
+        "advisory-nonblocking.docx": "6ba48fedf5bc4656b8e48e46f9a456b4cda840645597f2fc4703a2bb7134f30c",
+        "claim-evidence-comparison.png": "5d96ec608b3115c30666f6d6aabd943e55c41da6785259a4a85627a2ab694d3e",
+        "claim-evidence-comparison.yml": "8812b3068ca72f6c04e06b1387d1e9625e2868ee4ab173de99498bb2fb888958",
+        "evidence.json": "61f0d05ee3d4222d94dbc99dc8a622381bad6d3ca2f21420bcf38744e1bc07b1",
+        "failure.png": "151f0fd85464a5837d001291bd1beccd8923a3698f1ae255c6e0d779bb5d510d",
+        "failure.yml": "fd6cf4e844451b4fb10b78b8d2a78e17d7919372d022e67e39e719d3dcee6e34",
+        "hypothesis-saved-exported.png": "1e50c6dd31d5ce07aab21924db598a92ee3711d0b1fb99ca75f13a05a2b45945",
+        "hypothesis-saved-exported.yml": "2f367dbae479480eedf32920345a70775e4f0db575cac944d132ef8551ffb7eb",
+        "stale-response-preserved.png": "1bf7330add4f58950f97c6b04a1640434efa5d7441b6024129c2007303441c66",
+        "stale-response-preserved.yml": "7dccd8c68d40a97a67595842eae2ee9a55608b3834b2a2029f1bec55cc9906af"
+      }
+    },
+    {
+      "folder": "output\\playwright\\scientific-2026-10-24T04-29-11-430Z",
+      "evidence": {
+        "sha": "58fab8690f7f54131f2432046c0bd89a673cf141",
+        "checks": [
+          "actionable_source_comparison_original_unchanged",
+          "stale_409_refresh_reason_preserved_append_response",
+          "unknown_advisory_does_not_block_save_export",
+          "mobile_panel_fits_viewport"
+        ],
+        "errors": [],
+        "status": "passed"
+      },
+      "artifacts": {
+        "advisory-nonblocking.docx": "e9b0ff1819d517fa1e5443658e870d21b306e31a19eec16de763030c95a399cb",
+        "claim-evidence-comparison.png": "d6a65582e78a30212d7794cc36d84ad4815e70f15a6f33e1cc438421c6314454",
+        "claim-evidence-comparison.yml": "2537546d0325f19529e40e360e3b44152000bb5929fcff8adafa6be506134036",
+        "evidence.json": "39366deaac2cb2f10091511a3c63d19446eb72304b1313ccb0cc7af05a2b5978",
+        "hypothesis-saved-exported.png": "87566ffea2962c866822d9bb8c6154b07b036d92287e457b0a04c123d306fbeb",
+        "hypothesis-saved-exported.yml": "5bd0c4dd1fb20d169ea1763a065d3bd6b5c4222506495e99c70d1dd40d7f037f",
+        "mobile-advisory.png": "a32d8c079e2acd23d296d629689edea51479f6415b0a4153008b1093ece8ec2d",
+        "mobile-advisory.yml": "d07fa9212a0f04cd1e1f7fe6eef8d1fd927a50378c59158011ab2ecce7b7977e",
+        "stale-response-preserved.png": "a79ace97bd1475319da7421867b602a04f75c3a0a7c1010667dba5a3f95caa23",
+        "stale-response-preserved.yml": "ca8d46f3ab6b525e2fa666c766a6dabb8ceaf6be60b83c7becd781bfd6efed9c"
+      }
+    },
+    {
+      "folder": "output\\playwright\\scientific-2026-10-24T04-32-58-278Z",
+      "evidence": {
+        "sha": "58fab8690f7f54131f2432046c0bd89a673cf141",
+        "checks": [
+          "actionable_source_comparison_original_unchanged",
+          "stale_409_refresh_reason_preserved_append_response",
+          "unknown_advisory_does_not_block_save_export",
+          "mobile_panel_fits_viewport",
+          "csrf_xhr_upload_original_registered_no_parsing_claim"
+        ],
+        "errors": [],
+        "status": "passed"
+      },
+      "artifacts": {
+        "advisory-nonblocking.docx": "24dffcad25101b4882e133a8c19ffe25b845ad344a06fb90cc2c816c6f61c892",
+        "claim-evidence-comparison.png": "ce3c7dd4593a05e12a747591eebe9654b2bf887198edf46caa8d6627985aca60",
+        "claim-evidence-comparison.yml": "9ef11c112fd972511c413659669ec406c8ce54798a136478769ce6885c5fc70d",
+        "csrf-xhr-upload-registered.png": "320f56a46d46fd7c259b836b6a7c25c4956728ea5b56a18994c576aef27feb5d",
+        "csrf-xhr-upload-registered.yml": "cba3c97f536e586008299afe18b6cd36547c55989ab2a76ee4724a9ea431dffb",
+        "evidence.json": "d6a50f25f607844dd481ee075b9c328124adb4dcdda6909f63a38b5555213eb8",
+        "hypothesis-saved-exported.png": "feeba430344e3eadeb7017c8bdc9aeea07ed131b5174a341ea63ebab5de37817",
+        "hypothesis-saved-exported.yml": "6f389ae21797fa7d852a184230b4a0ec5b5f67d3b9ad548a089770bf526616c0",
+        "mobile-advisory.png": "9dfb797ed73c457654d28084fb230ac0441fc374fdfcddcc42dbfea63ed017ee",
+        "mobile-advisory.yml": "3e9837974af7fdc9c528af1368cd911a777222f4dc561b2e88c9d25877a80d35",
+        "stale-response-preserved.png": "0ccdc7967b7f4a482a65b069d3c18d84ddbf5b32bb845adaaefc25568fb9b3a7",
+        "stale-response-preserved.yml": "25a73ae5112c6faea89b312258b2e99e55b35fd2d59278f3e229e4c264d69807"
+      }
+    },
+    {
+      "folder": "output\\playwright\\scientific-2026-10-24T04-40-15-076Z",
+      "evidence": {
+        "sha": "ba2448014e234b4547e570c5d2448c647480285a",
+        "checks": [
+          "actionable_source_comparison_original_unchanged",
+          "stale_409_refresh_reason_preserved_append_response",
+          "unknown_advisory_does_not_block_save_export",
+          "mobile_panel_fits_viewport",
+          "generated_report_not_mislabeled_in_other_chapter",
+          "csrf_xhr_upload_original_registered_no_parsing_claim"
+        ],
+        "errors": [],
+        "status": "passed"
+      },
+      "artifacts": {
+        "advisory-nonblocking.docx": "6a5c1c333c9dc5d1839d6770245fac70ece99d6d9e67c5fa1c96d589170061f5",
+        "claim-evidence-comparison.png": "173e2f8367dc72772d39e83fbef44e61ef5d0152c782a118c0b8520899c844de",
+        "claim-evidence-comparison.yml": "664585cec1f9545a57be52dc199792552b8158fb4777942fe446abd89a7bf8ec",
+        "csrf-xhr-upload-registered.png": "7bfff9b250c56c883b070a387a80a65bee886e7c5c6bf42cb8448451f9fb0822",
+        "csrf-xhr-upload-registered.yml": "698b033be2d6de0a7c065ff49e826ec79e5a15b3f2c562969f4f79478f2f2780",
+        "evidence.json": "fc0e0c27c945d381e27268866f08001aaeea8e682a96d1129a8caecc8cce6da1",
+        "generated-report-chapter-boundary.png": "746c46a68e35167b44d1d2e80a2a0a525a974bfb43ebe2b14b20379d2d9fe747",
+        "generated-report-chapter-boundary.yml": "222e8fe2c21c3de73dbfb09faac9730051b0eb9a9bb36a8a77ff05d525097f67",
+        "hypothesis-saved-exported.png": "2fc6751459990b19e74e4e76a8108a718dc34712ab9bb03d78d063dc6f786ef6",
+        "hypothesis-saved-exported.yml": "48cde8693aa978fb29a540e6f3a1559cd7ca44f6a34a5b53b6fca32f62b4bd4b",
+        "mobile-advisory.png": "e5d7751d0662b52488266f789c01a24dc377eb1c14da465b5d5fe5c4e99beb4e",
+        "mobile-advisory.yml": "5a24b59f53caa444578cbdbae030f0c4cb133a251f2caeca53e79a60e7414efa",
+        "stale-response-preserved.png": "97cc4cc5f4710f77af58d8d13b86fe820461a6e19380ac56bc3ab1ae7827ce1f",
+        "stale-response-preserved.yml": "c63523fe5507042275dbeb433e838a2d8499eec0379915281a409e0909b49064"
+      }
+    },
+    {
+      "folder": "output\\playwright\\scientific-2026-10-24T04-43-03-488Z",
+      "evidence": {
+        "sha": "ba2448014e234b4547e570c5d2448c647480285a",
+        "checks": [
+          "actionable_source_comparison_original_unchanged",
+          "stale_409_refresh_reason_preserved_append_response",
+          "unknown_advisory_does_not_block_save_export",
+          "mobile_panel_fits_viewport",
+          "generated_report_not_mislabeled_in_other_chapter",
+          "csrf_xhr_upload_original_registered_no_parsing_claim"
+        ],
+        "errors": [],
+        "status": "passed"
+      },
+      "artifacts": {
+        "advisory-nonblocking.docx": "0f60f5b8beaee46c959a579679ca99ef867e32ca7496fb984bcf0b16be004e8b",
+        "claim-evidence-comparison.png": "4f52bd011e1916889312a17d93517c333ba78d8ec628a2df99d5b88daa41ddf8",
+        "claim-evidence-comparison.yml": "ff2a7112aed0073944c1007ddca7e027685e8e9ee16f56cbc77351c35dd5a1d3",
+        "csrf-xhr-upload-registered.png": "320f56a46d46fd7c259b836b6a7c25c4956728ea5b56a18994c576aef27feb5d",
+        "csrf-xhr-upload-registered.yml": "cba3c97f536e586008299afe18b6cd36547c55989ab2a76ee4724a9ea431dffb",
+        "evidence.json": "fc0e0c27c945d381e27268866f08001aaeea8e682a96d1129a8caecc8cce6da1",
+        "generated-report-chapter-boundary.png": "cf3064ce6bf7d36d4b83e65faefc9a154e507519884c19e4ced352006a8718c1",
+        "generated-report-chapter-boundary.yml": "3ef24856ac346431764f4647d86989790b4b5fddb8ed772d9371891d737823ac",
+        "hypothesis-saved-exported.png": "9d580276fad8f3bfcc4afca1349c6bf04632b070eeb0fa0e51ec36218223216e",
+        "hypothesis-saved-exported.yml": "5d5976a89ce5bacfe4db10eefbf6a9e0367bc59f3e61a45a92842b7cb0dccd8a",
+        "mobile-advisory.png": "03bda13f3300a5777f13b3517b0a63435a1d055c45a0cc2bdeeb6f6094ee5abf",
+        "mobile-advisory.yml": "4f45c16b8e2c8d1272d7839649f5093fc3750b29d762e4724081420f474aa440",
+        "stale-response-preserved.png": "7a0a57d31d3867a9f36275af6aa04c3a94b290e2b768704fb194b9d837b5d5ad",
+        "stale-response-preserved.yml": "63e00e454508661a332551ad33bce1dd84c336a2e764c6da4110dbc7af269e03"
+      }
+    }
+  ],
+  "node_behavior": [
+    {
+      "file": "test_csrf_transport.cjs",
+      "exit_code": 0
+    },
+    {
+      "file": "test_literature_decision_integrity.cjs",
+      "exit_code": 0
+    },
+    {
+      "file": "test_manuscript_draft_integrity.cjs",
+      "exit_code": 0
+    },
+    {
+      "file": "test_manuscript_input_boundary.cjs",
+      "exit_code": 0
+    },
+    {
+      "file": "test_manuscript_visible_section.cjs",
+      "exit_code": 0
+    },
+    {
+      "file": "test_mentor_review_race.cjs",
+      "exit_code": 0
+    },
+    {
+      "file": "test_origins_upload_csrf.cjs",
+      "exit_code": 0
+    },
+    {
+      "file": "test_pi_role_matching.js",
+      "exit_code": 0
+    },
+    {
+      "file": "test_study_notes_integrity.cjs",
+      "exit_code": 0
+    }
+  ],
+  "scifact": {
+    "protocol_commit": "f0a18bec4bf795c2a51abc8986e439cc86b983fa",
+    "frozen_engine_commit": "1810a83",
+    "frozen_runner_commit": "58fab8690f7f54131f2432046c0bd89a673cf141",
+    "attribution": "Wadden et al. (2020), Fact or Fiction: Verifying Scientific Claims, AI2 SciFact; corpus abstracts S2ORC.",
+    "license_url": "https://github.com/allenai/scifact/blob/master/LICENSE.md",
+    "license_blob_sha": "18a738e109d7e3b28935a75d2134c5ccd602f403",
+    "licenses": {
+      "claims_and_annotations": "CC BY 4.0",
+      "abstracts": "ODC-By 1.0",
+      "repository_code": "Apache 2.0"
+    },
+    "archive": {
+      "url": "https://scifact.s3-us-west-2.amazonaws.com/release/latest/data.tar.gz",
+      "sha256": "11c621288d41ac144d29b13b0f8503b3820b7d6e8b1f6ff24dff335c196d76be"
+    },
+    "preparation": {
+      "count": 300,
+      "unique_cited_documents": 283,
+      "input_sha": "0fde332e274aee1de8083b4895fa9e6368568a95add06dc97fdbc1e55e17221b",
+      "gold_sha": "d49ab22bd33edd98aa1448d7e69eaefe85e4b055864ad49f432ce65f993f4b76",
+      "files": {
+        "corpus.jsonl": "b8d6c89624cb2ed74dee8938effc4f5d8bd2086887880af8110d64be4ceade62",
+        "claims_dev.jsonl": "86f0435d08fdb65d1aa41d1472684f57e6e71930626497bdf4d7a9ec1a632217"
+      }
+    },
+    "prediction_manifest": {
+      "engine_sha": "f64cb7e7d520ef47779bb33fd8b9b5e6a1d421c5607c596e66f9ba1b8f7b1b9d",
+      "runner_sha": "16a592e2313d48c6d4a76f3c201d4b76bc918f7c1aa2a0810a0ef5f8e41ca26d",
+      "inputs_sha": "0fde332e274aee1de8083b4895fa9e6368568a95add06dc97fdbc1e55e17221b",
+      "predictions_sha": "e77efb443153b09468689bc36ddfdb484d7c6a12223072f54ad0a17b2b1f3448",
+      "count": 300
+    },
+    "metrics": {
+      "count": 300,
+      "matrix": {
+        "SUPPORT": {
+          "SUPPORT": 1,
+          "CONTRADICT": 0,
+          "UNKNOWN": 123,
+          "ERROR": 0
+        },
+        "CONTRADICT": {
+          "SUPPORT": 0,
+          "CONTRADICT": 2,
+          "UNKNOWN": 62,
+          "ERROR": 0
+        },
+        "NEI": {
+          "SUPPORT": 0,
+          "CONTRADICT": 0,
+          "UNKNOWN": 112,
+          "ERROR": 0
+        },
+        "AMBIGUOUS": {
+          "SUPPORT": 0,
+          "CONTRADICT": 0,
+          "UNKNOWN": 0,
+          "ERROR": 0
+        }
+      },
+      "one_vs_rest": {
+        "SUPPORT": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 123,
+          "tn": 176,
+          "precision": 1.0,
+          "recall": 0.008064516129032258,
+          "fpr": 0.0,
+          "fnr": 0.9919354838709677
+        },
+        "CONTRADICT": {
+          "tp": 2,
+          "fp": 0,
+          "fn": 62,
+          "tn": 236,
+          "precision": 1.0,
+          "recall": 0.03125,
+          "fpr": 0.0,
+          "fnr": 0.96875
+        }
+      },
+      "localization": {
+        "primary": {
+          "tp": 92,
+          "fp": 97,
+          "fn": 274,
+          "claims": 188,
+          "precision": 0.48677248677248675,
+          "recall": 0.25136612021857924
+        },
+        "localized": {
+          "tp": 196,
+          "fp": 369,
+          "fn": 170,
+          "claims": 188,
+          "precision": 0.34690265486725663,
+          "recall": 0.5355191256830601
+        }
+      },
+      "decisive_coverage": 0.01,
+      "unknown": 297,
+      "errors": 0,
+      "unique_selected_comparison_documents": 263,
+      "prediction_sha": "e77efb443153b09468689bc36ddfdb484d7c6a12223072f54ad0a17b2b1f3448",
+      "gold_sha": "d49ab22bd33edd98aa1448d7e69eaefe85e4b055864ad49f432ce65f993f4b76",
+      "scientific_quality_pass": false,
+      "limits": "Public dev label-blind; UNKNOWN is abstention, not a verified NEI finding. Localization scores union of official rationales; no condition/modality gold."
+    },
+    "inference_order": "freeze tools -> prepare gold separately -> write and hash all predictions -> score; no engine tuning after opening gold"
+  },
+  "synthetic_controls": {
+    "synthetic_only": true,
+    "fixture_sha": "6699f723f550e415605a9dd07506888680fe86aa7547e8e345914133f4726a0a",
+    "condition_term_confusion": {
+      "tp": 6,
+      "fp": 0,
+      "fn": 0,
+      "tn": 13
+    },
+    "expected_warnings_detected": 4,
+    "expected_warning_count": 4,
+    "cases": [
+      {
+        "id": "bounded",
+        "expected_warning": null,
+        "findings": [
+          "support_not_established"
+        ],
+        "original_unchanged": true,
+        "quote_offsets_exact": true,
+        "condition_comparisons": [
+          {
+            "term": "sample A",
+            "missing": false,
+            "detected_missing": false
+          },
+          {
+            "term": "300 K",
+            "missing": false,
+            "detected_missing": false
+          },
+          {
+            "term": "10 GHz",
+            "missing": false,
+            "detected_missing": false
+          },
+          {
+            "term": "chip facet",
+            "missing": false,
+            "detected_missing": false
+          }
+        ]
+      },
+      {
+        "id": "all_samples",
+        "expected_warning": "unsupported_generalization",
+        "findings": [
+          "missing_condition",
+          "support_not_established",
+          "unsupported_generalization"
+        ],
+        "original_unchanged": true,
+        "quote_offsets_exact": true,
+        "condition_comparisons": [
+          {
+            "term": "sample A",
+            "missing": true,
+            "detected_missing": true
+          },
+          {
+            "term": "300 K",
+            "missing": true,
+            "detected_missing": true
+          },
+          {
+            "term": "10 GHz",
+            "missing": true,
+            "detected_missing": true
+          },
+          {
+            "term": "chip facet",
+            "missing": true,
+            "detected_missing": true
+          }
+        ]
+      },
+      {
+        "id": "missing_temperature",
+        "expected_warning": "missing_condition",
+        "findings": [
+          "missing_condition",
+          "support_not_established"
+        ],
+        "original_unchanged": true,
+        "quote_offsets_exact": true,
+        "condition_comparisons": [
+          {
+            "term": "sample A",
+            "missing": false,
+            "detected_missing": false
+          },
+          {
+            "term": "300 K",
+            "missing": true,
+            "detected_missing": true
+          },
+          {
+            "term": "10 GHz",
+            "missing": false,
+            "detected_missing": false
+          },
+          {
+            "term": "chip facet",
+            "missing": false,
+            "detected_missing": false
+          }
+        ]
+      },
+      {
+        "id": "forged_locator",
+        "expected_warning": null,
+        "findings": [
+          "support_not_established"
+        ],
+        "original_unchanged": true,
+        "quote_offsets_exact": true,
+        "condition_comparisons": [
+          {
+            "term": "sample A",
+            "missing": false,
+            "detected_missing": false
+          },
+          {
+            "term": "300 K",
+            "missing": false,
+            "detected_missing": false
+          },
+          {
+            "term": "10 GHz",
+            "missing": false,
+            "detected_missing": false
+          },
+          {
+            "term": "chip facet",
+            "missing": false,
+            "detected_missing": false
+          }
+        ]
+      },
+      {
+        "id": "simulation_as_measurement",
+        "expected_warning": "modality_mismatch",
+        "findings": [
+          "missing_condition",
+          "modality_mismatch",
+          "support_not_established"
+        ],
+        "original_unchanged": true,
+        "quote_offsets_exact": true,
+        "condition_comparisons": [
+          {
+            "term": "device B",
+            "missing": false,
+            "detected_missing": false
+          },
+          {
+            "term": "1550 nm",
+            "missing": false,
+            "detected_missing": false
+          },
+          {
+            "term": "simulation",
+            "missing": true,
+            "detected_missing": true
+          }
+        ]
+      },
+      {
+        "id": "missing_evidence",
+        "expected_warning": "no_evidence",
+        "findings": [
+          "missing_condition",
+          "no_evidence"
+        ],
+        "original_unchanged": true,
+        "quote_offsets_exact": true,
+        "condition_comparisons": []
+      }
+    ],
+    "limits": "Fixed authored controls; lexical terms only; no expert scientific quality or independent condition/modality gold."
+  },
+  "no_full_final_sha_claim": "Full pytest ran clean at 58fab86. Incremental guard/restore/upload fixes verified by 43 tests at clean 8f8e558; later chapter UI verified by final-code browser. Do not add overlapping counts.",
+  "environment": {
+    "platform": "Windows",
+    "python": "Python 3.12.10",
+    "browser": "Chromium headless shell 1228; installed Playwright; localhost synthetic fixture only",
+    "linux": "I06 process/backup evidence retained; not rerun for I07 security"
+  },
+  "safeguards": {
+    "original_checkout_sha": "60cf9f73d15cf0e43927cfe572bf217e4547d943",
+    "original_checkout_dirty": false,
+    "personal_main_observed": "9655546eac2f2e43a0cabceee0bd75843b47dae2",
+    "main_merged": false,
+    "deployed": false,
+    "production_data_accessed": false,
+    "upstream_modified": false
+  }
+}

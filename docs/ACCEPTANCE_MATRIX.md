@@ -1,10 +1,22 @@
 # Roothinks SAI v1.1.x 驗收矩陣
 
-日期：2026-10-24。規格：[SAI v1.1.0](spec/roothinks_SAI_v1.1.0_2026-10-23.md) 加上 [v1.1.1 修訂條款](spec/roothinks_SAI_v1.1.1_2026-10-24.md)。
+日期：2026-10-24。規格：[SAI v1.1.0](spec/roothinks_SAI_v1.1.0_2026-10-23.md)、[v1.1.1 修訂條款](spec/roothinks_SAI_v1.1.1_2026-10-24.md)及 [v1.1.2 科學完整性建議](spec/roothinks_SAI_v1.1.2_2026-10-24.md)。
 
 此表為優化實作的驗收依據。Batch A/B 及段落主張 → 證據條件 → 版本師生審閱工程切片已實作；各列標明實際範圍。未執行的案例保留未驗證，不以完整回歸數量推定全需求通過。更新證據時記錄實作 SHA、環境、命令／操作、結果與限制。
 
-## 本輪 I06：研究者自主與完整性
+## 本輪 I07：科學完整性建議
+
+規格增加 [v1.1.2](spec/roothinks_SAI_v1.1.2_2026-10-24.md)，起點 `52f7287`，分支 `codex/sai-scientific-advisory`。科學比較工作流與安全切片有條件通過；**科學判讀品質未通過**。逐項證據、完整回歸與保留失敗見 [I07 交付](engineering/SAI_SCIENTIFIC_ADVISORY_DELIVERY_2026-10-24.md)及[機器證據](engineering/SAI_SCIENTIFIC_ADVISORY_EVIDENCE_2026-10-24.json)。
+
+| 需求／案例 | 本輪已驗行為 | 仍開放 |
+|---|---|---|
+| SCI-ADV、COC-03/04、S01–S04 | 原文／來源逐句比較、部分條件與模擬警訊、生成後提示、追加作者回應、過時檢視恢復、報告及回應備份還原 | 完整語意、跨來源矛盾、跨句條件、單位換算與因果判讀 |
+| REL-06、S06–S07 | 完整 SciFact dev 300 claims／283 篇引用文獻；引擎及評分器先固定，預測 hash 固定後才評分 | 支持召回 0.8%、矛盾召回 3.1%、未知 99%；定位前三句 recall 53.6%。不得稱可靠科學 Gate；無獨立條件／模擬 gold |
+| COL-01、S05 | 專案清單 ACL、已登入 unsafe API CSRF、XHR 及 beacon 合法傳輸、排隊／provider 後撤權、廣播收件重驗、登出舊 Socket、分析中撤權不新增報告 | 全站滲透、所有通道時序的原子撤權、多主機與跨程序即時驗證 |
+| P0-AUT、COL-02、S03/S08 | 三流程真瀏覽器；無教授與無證據仍可修訂、保存、匯出；教授移除保留歷史；限定作者全文操作 UI 對齊 ACL | 完整行動裝置工作台、真研究者可用性及科學專家驗收 |
+| REL-05、S04 | 真 schema 的科學報告／作者回應逐字備份還原；原有故障注入回歸 | 既有單機停機限制持續；Linux 舊程序證據不冒充本輪安全重跑 |
+
+## I06 歷史：研究者自主與完整性
 
 程式凍結：`6c8e07174093c54ef5e9c2a45041c69173bb3ac3`；分支 `codex/sai-autonomy-integrity`，承接 `6a965e8`，沒有合併 main 或部署。三工作流程、COC-05、備份還原及科學基準的實作與證據見[本輪交付](engineering/SAI_AUTONOMY_INTEGRITY_DELIVERY_2026-10-24.md)及[機器證據](engineering/SAI_AUTONOMY_INTEGRITY_EVIDENCE_2026-10-24.json)。每項限制仍保留；本輪不構成全面安全或科學驗收。
 
