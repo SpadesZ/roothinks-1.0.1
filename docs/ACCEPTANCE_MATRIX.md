@@ -4,7 +4,29 @@
 
 此表為優化實作的驗收依據。Batch A/B 及段落主張 → 證據條件 → 版本師生審閱工程切片已實作；各列標明實際範圍。未執行的案例保留未驗證，不以完整回歸數量推定全需求通過。更新證據時記錄實作 SHA、環境、命令／操作、結果與限制。
 
-## 本輪 I10：證據鏈核對、反證線索與 custody 修補
+## 本輪 I11：真瀏覽器驗證完成、語意實驗量測後不採用
+
+起點 `9deaa94`；實作凍結 `780e1e1`；分支 `codex/sai-i11-semantic-and-browser`。
+預先固定的契約見 [I11_PROTOCOL.md](engineering/I11_PROTOCOL.md)（在任何量測之前提交）。
+見 [交付與自我稽核](engineering/SAI_I11_DELIVERY_2026-10-24.md)、
+[機器證據](engineering/SAI_I11_EVIDENCE_2026-10-24.json)、
+[語意負結果](engineering/SAI_I11_SEMANTIC_NEGATIVE_RESULT_2026-10-24.json)。
+
+| 項目 | 已實作／實際驗證 | 未完成／限制 |
+|---|---|---|
+| 最終工程基線 | `780e1e1` 完整回歸：產品環境（無 WordNet）**1,470 通過／16 略過／0 失敗**；有 WordNet **1,483 通過／3 略過／0 失敗**，均 1,486 項 | 3 項共同略過與 I10 相同；16 項中多出的 13 項為 WordNet 專屬語意案例。非全面安全認證 |
+| **真瀏覽器（I10 缺口已關閉）** | 兩條流程**全部通過**，共 12 項 check、零錯誤。只攔 `cdn.jsdelivr.net`／`cdnjs.cloudflare.com`／`apis.google.com`；資產為 npm 同版本真品，樣板宣告的 **5 個 SRI 全部相符**，瀏覽器自身亦驗 SRI。產品碼與既有 assertion 一字未改（新增 21 行、刪除 0 行） | 資產由本機 vendor 服務，**未驗證 CDN 實際出網與 TLS 鏈**；`apis.google.com` 未 vendor 照原樣中止（非必要）；KaTeX／Split.js／`cdn.plot.ly` plotly 未被這兩條流程請求故未驗證；headless 版面與計時可能與桌面不同 |
+| 研究者自主（Owner 第 4 條） | 真瀏覽器驗證：`unknown_advisory_does_not_block_save_export`（含實際 DOCX 下載）、`independent_no_professor`、`team_scoped_save_export_denial_exit_history` | 真人可用性仍未驗 |
+| 反證線索的瀏覽器證據 | 新增 `unresolved_counter_evidence_lead_visible_without_verdict`：relation 仍 unknown、`blocks_writing` 仍 false、畫面實顯「請核對：來源 … 第 1 句」與原因、作者原文逐字不變 | — |
+| 語意瓶頸實驗 | 協議先提交再量測；對抗案例先寫再實作，17 項控制全過；四項硬性閘門全過（既有控制 134 項、自主不變、定位完全相同、gold SUPPORT 決定性誤報維持 0） | **不採用**：效果門檻 130 → ≤115 未達標，實測 **130 → 130**；dev 300 案標籤、定位、棄權原因與完整報告**逐案位元相同**。產品引擎已回退凍結基線並核對 hash |
+| 瓶頸的精確形狀（負結果診斷） | 161 個首候選句：**93（57.8%）擴充後仍零謂詞**、20（12.4%）謂詞 ≥2 被否決、實際還原僅 1 次且**是跨子句假 frame**（案 837），真實語料還原精確度 **0／1**。主張側 94／161（58.4%）零謂詞 | 更大的謂詞詞表無法修好此架構；鬆綁歧義紀律會讓跨子句假 frame 生效。需真正的句法剖析與語意關係模型 |
+| 可用資源的實測限制 | HuggingFace 與 github.com 被擋 → 無 NLI 權重、無 spaCy 模型；PyPI 與 npm 可達；WordNet 以 curl 走正常代理取得（**未繞過 NLTK 的 SSRF 防護**） | 產品 `requirements.txt` 未新增相依；WordNet 為實驗專用選用資源 |
+
+本輪**真瀏覽器驗證通過**；**科學品質仍未通過，科學分類能力與 I10 完全相同（沒有提升）**，
+真人專家評估依 Owner 決策延後，真 holdout 仍未開封，真專家 0 人。
+未部署、未 merge main、未讀寫正式資料、未接觸 LAVA-Cowork、未開放無限制網路、未用 mock 冒充通過。
+
+## I10 歷史：證據鏈核對、反證線索與 custody 修補
 
 起點 `900394e`；實作凍結 `ce9dc8c`（之後只有文件與證據提交）；分支 `codex/sai-i10-scientific-review`。
 見 [交付與自我稽核](engineering/SAI_I10_DELIVERY_2026-10-24.md)、

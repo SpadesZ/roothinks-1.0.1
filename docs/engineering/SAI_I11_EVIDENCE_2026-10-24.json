@@ -1,0 +1,559 @@
+{
+  "round": "I11",
+  "base_sha": "9deaa948b6a923c7a59f38df4ced756026b7a27d",
+  "branch": "codex/sai-i11-semantic-and-browser",
+  "head_sha": "780e1e173aa17a80c7eef2de1dabf76a2fedfd16",
+  "commits": [
+    {
+      "sha": "780e1e1",
+      "subject": "test(browser): assert the counter-evidence lead is visible without a verdict"
+    },
+    {
+      "sha": "9307f27",
+      "subject": "feat(eval): WordNet semantic frame experiment, measured and NOT adopted"
+    },
+    {
+      "sha": "652eb48",
+      "subject": "docs(sai): fix the I11 evaluation protocol before any measurement"
+    }
+  ],
+  "changed_paths": [
+    "docs/engineering/I11_PROTOCOL.md",
+    "docs/engineering/SAI_I11_SEMANTIC_NEGATIVE_RESULT_2026-10-24.json",
+    "scripts/semantic_frame_experiment.py",
+    "test/integration_e2e/sai_scientific_browser.cjs",
+    "test/unit/test_semantic_frame.py"
+  ],
+  "protocol": "docs/engineering/I11_PROTOCOL.md",
+  "owner_decisions_honoured": {
+    "real_browser_only_three_cdn_domains": true,
+    "unrestricted_networking_enabled": false,
+    "mocked_success_used": false,
+    "failures_preserved": true,
+    "expert_appointments_deferred": true,
+    "holdout_opened": false,
+    "acceptance_thresholds_invented": false,
+    "researcher_autonomy_preserved": true,
+    "i10_baseline_intact": true,
+    "main_merged": false,
+    "deployed": false,
+    "production_data_changed": false,
+    "lava_upstream_modified": false
+  },
+  "semantic_experiment": {
+    "adopted": false,
+    "detail_path": "docs/engineering/SAI_I11_SEMANTIC_NEGATIVE_RESULT_2026-10-24.json",
+    "gates": {
+      "adopted": false,
+      "gates_passed": [
+        "既有對抗控制 134 項全過",
+        "研究者自主不變",
+        "定位指標完全相同",
+        "gold SUPPORT 決定性誤報維持 0"
+      ],
+      "gate_failed": "效果門檻：130 → 130，要求 ≤115",
+      "action": "產品引擎回退至凍結基線（hash 已核對）；實驗保留為 scripts/semantic_frame_experiment.py 與對抗測試。"
+    },
+    "dev_outcome": {
+      "cases": 300,
+      "labels_changed": 0,
+      "localization_changed": 0,
+      "full_reports_changed": 0,
+      "abstention_reasons_changed": 0,
+      "unsupported_sentence_structure_after_retrieval": {
+        "baseline": 130,
+        "candidate": 130,
+        "threshold": "<=115",
+        "met": false
+      }
+    },
+    "false_restoration": {
+      "count": 1,
+      "of_opportunities": 1,
+      "precision": 0.0,
+      "case_id": 837,
+      "claim": "NR5A2 is important in development of endometrial tissues.",
+      "problem": "of…by 模式跨子句匹配，從一句講表現量的來源句拼出橫跨兩個子句的假 frame subject=('rna','interference','abrogated','decidualization') / object=('nr5a2','transcript','abundance')。",
+      "why_harmless": "主張側沒有可解析的謂詞，所以該假 frame 沒有改變任何結果；這是運氣，不是防護。"
+    },
+    "next_round_evidence": "謂詞覆蓋是雙邊瓶頸：來源句 93/161（57.8%）與主張句 94/161（58.4%）在擴充詞表後仍然一個謂詞都沒有。擴充詞表同時把多謂詞句從 17 推到 20，被單一謂詞紀律否決得更多，兩者互相抵銷。結論：更大的謂詞詞表無法修好這個架構，需要真正的句法剖析（處理多謂詞與論元結構）與語意關係模型，不是更長的字串清單。",
+    "product_engine_sha256": "4c2034bf8fdbf2ad49276d136a0d37c6201240bd2570bffca5b1fbc0f5f7bd82",
+    "product_engine_matches_frozen_baseline": true
+  },
+  "real_browser": {
+    "status": "passed",
+    "method": "以 Playwright request routing 把樣板引用的三個 CDN 網域導到本機 vendor 檔案；vendor 內容為 npm 發佈的同版本套件，產品碼與 .cjs 腳本的既有 assertion 一字未改。",
+    "node": "v22.22.0",
+    "playwright": "1.63.0",
+    "chromium": "/opt/pw-browsers/chromium-1243/chrome-linux64/chrome",
+    "intercepted_domains": [
+      "cdn.jsdelivr.net",
+      "cdnjs.cloudflare.com",
+      "apis.google.com"
+    ],
+    "unrestricted_network": false,
+    "sri_verified_offline": {
+      "checked": 5,
+      "passed": 5,
+      "meaning": "樣板宣告的 sha384 與 npm bytes 完全相符，再由瀏覽器自行驗 SRI；任何位元差異都會被拒絕執行。"
+    },
+    "vendor": {
+      "ex/bootstrap-5.3.0/dist/js/bootstrap.bundle.min.js": {
+        "template_declared_sri": "sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz",
+        "recomputed_from_npm": "sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz",
+        "match": true,
+        "sha256": "aa53d582f97eb594c2a5cc5824574707f9ba9837bce3046bfa5f3556860f4e04"
+      },
+      "ex/bootstrap-5.3.0/dist/css/bootstrap.min.css": {
+        "template_declared_sri": "sha384-9ndCyUaIbzAi2FUVXJi0CjmCapSmO7SnpJef0486qhLnuZ2cdeRhO02iuK6FUUVM",
+        "recomputed_from_npm": "sha384-9ndCyUaIbzAi2FUVXJi0CjmCapSmO7SnpJef0486qhLnuZ2cdeRhO02iuK6FUUVM",
+        "match": true,
+        "sha256": "7f1d37f0d90b6385354c2ac10e2bb91563c46bd7a266ed351222ebcac8496c2a"
+      },
+      "ex/bootstrap-icons-1.11.1/font/bootstrap-icons.css": {
+        "template_declared_sri": "sha384-4LISF5TTJX/fLmGSxO53rV4miRxdg84mZsxmO8Rx5jGtp/LbrixFETvWa5a6sESd",
+        "recomputed_from_npm": "sha384-4LISF5TTJX/fLmGSxO53rV4miRxdg84mZsxmO8Rx5jGtp/LbrixFETvWa5a6sESd",
+        "match": true,
+        "sha256": "bb6fd8cd85394cb367e8ac58e47292f2d68eb288fa12fab68e65430a5ddfce48"
+      },
+      "ex/socket.io-client-4.7.2/dist/socket.io.min.js": {
+        "template_declared_sri": "sha384-mZLF4UVrpi/QTWPA7BjNPEnkIfRFn4ZEO3Qt/HFklTJBj/gBOV8G3HcKn4NfQblz",
+        "recomputed_from_npm": "sha384-mZLF4UVrpi/QTWPA7BjNPEnkIfRFn4ZEO3Qt/HFklTJBj/gBOV8G3HcKn4NfQblz",
+        "match": true,
+        "sha256": "83df4abc7eec941f1d29ae254e80bac0bb82d398fbe2e8ee4ea2a7efc8e704f1"
+      },
+      "ex/split.js-1.6.0/dist/split.min.js": {
+        "template_declared_sri": "sha384-0blL3GqHy6+9fw0cyY2Aoiwg4onHAtslAs4OkqZY7UQBrR65/K4gI+hxLdWDrjpz",
+        "recomputed_from_npm": "sha384-0blL3GqHy6+9fw0cyY2Aoiwg4onHAtslAs4OkqZY7UQBrR65/K4gI+hxLdWDrjpz",
+        "match": true,
+        "sha256": "6529253141c187ed786009b245457ce209ff65b0cefb40ecfaf9faab2f581441"
+      },
+      "ex/katex-0.16.9/dist/katex.min.js": {
+        "template_declared_sri": null,
+        "sha256": "dc84b296ec3e884de093158f760fd9d45b6c7abe58b5381557f4e138f46a58ae",
+        "note": "樣板未宣告 integrity，無法以 SRI 證明；版本與路徑對應 jsdelivr 的 /npm/ 服務同一檔案。"
+      },
+      "ex/katex-0.16.9/dist/katex.min.css": {
+        "template_declared_sri": null,
+        "sha256": "505d5f829022bb7b4f24dfee0aa1141cd7bba67afe411d1240335f820960b5c3",
+        "note": "樣板未宣告 integrity，無法以 SRI 證明；版本與路徑對應 jsdelivr 的 /npm/ 服務同一檔案。"
+      },
+      "ex/katex-0.16.9/dist/contrib/auto-render.min.js": {
+        "template_declared_sri": null,
+        "sha256": "9cb8dacfc086c2966c9ec4ba54f4a2dc43b7cbe2b33cec1a2743d886c7fb47a7",
+        "note": "樣板未宣告 integrity，無法以 SRI 證明；版本與路徑對應 jsdelivr 的 /npm/ 服務同一檔案。"
+      },
+      "ex/mermaid-10.9.8/dist/mermaid.min.js": {
+        "template_declared_sri": null,
+        "sha256": "8d607d7ef1d077a8aa202e18e62212bfa992c68bfeabc5cf45d51a128fe6675d",
+        "note": "樣板未宣告 integrity，無法以 SRI 證明；版本與路徑對應 jsdelivr 的 /npm/ 服務同一檔案。"
+      }
+    },
+    "mermaid_resolved_version": "10.9.8",
+    "wrapper_sha256": "0abb10e18912a8d2e97fcaee776184c57d3b0aee0ef4a04fc869013dbf409f4f",
+    "scientific": {
+      "output": "/tmp/claude-0/-home-user/26119001-76e5-5f53-b408-3b98c029fc98/scratchpad/i11-browser/repo2/output/playwright/scientific-2026-10-24T18-44-47-859Z",
+      "sha": "9307f27ee0f0fdfffdbfd71b8e1de729e64d2557",
+      "checks": [
+        "actionable_source_comparison_original_unchanged",
+        "stale_409_refresh_reason_preserved_append_response",
+        "negative_evidence_and_different_conditions_explained_without_rewriting",
+        "unresolved_counter_evidence_lead_visible_without_verdict",
+        "unknown_advisory_does_not_block_save_export",
+        "mobile_panel_fits_viewport",
+        "generated_report_not_mislabeled_in_other_chapter",
+        "csrf_xhr_upload_original_registered_no_parsing_claim"
+      ],
+      "errors": [],
+      "status": "passed"
+    },
+    "autonomy": {
+      "output": "/tmp/claude-0/-home-user/26119001-76e5-5f53-b408-3b98c029fc98/scratchpad/i11-browser/repo2/output/playwright/autonomy-2026-10-24T18-45-00-573Z",
+      "run": "autonomy-2026-10-24T18-45-00-573Z",
+      "sha": "9307f27ee0f0fdfffdbfd71b8e1de729e64d2557",
+      "checks": [
+        {
+          "name": "independent_no_professor",
+          "pid": "ANU4BU-p",
+          "sectionVersions": [
+            "0.1",
+            "0.2"
+          ],
+          "passed": true
+        },
+        {
+          "name": "impact_explicit_author_paper_original_reviewer_reconfirmation",
+          "passed": true,
+          "review": 1
+        },
+        {
+          "name": "optional_professor_invite_review_response_remove",
+          "reviewId": 1,
+          "passed": true
+        },
+        {
+          "name": "team_scoped_save_export_denial_exit_history",
+          "passed": true
+        }
+      ],
+      "errors": [],
+      "status": "passed"
+    },
+    "route_log": {
+      "sci": {
+        "missing": [],
+        "served_count": 20,
+        "distinct_served": [
+          "ex/bootstrap-5.3.0/dist/css/bootstrap.min.css",
+          "ex/bootstrap-5.3.0/dist/js/bootstrap.bundle.min.js",
+          "ex/bootstrap-icons-1.11.1/font/bootstrap-icons.css",
+          "ex/bootstrap-icons-1.11.1/font/fonts/bootstrap-icons.woff2",
+          "ex/mermaid-10.9.8/dist/mermaid.min.js",
+          "ex/socket.io-client-4.7.2/dist/socket.io.min.js"
+        ],
+        "aborted_distinct": [
+          "https://apis.google.com/js/api.js"
+        ]
+      },
+      "aut": {
+        "missing": [],
+        "served_count": 94,
+        "distinct_served": [
+          "ex/bootstrap-5.3.0/dist/css/bootstrap.min.css",
+          "ex/bootstrap-5.3.0/dist/js/bootstrap.bundle.min.js",
+          "ex/bootstrap-icons-1.11.1/font/bootstrap-icons.css",
+          "ex/bootstrap-icons-1.11.1/font/fonts/bootstrap-icons.woff2",
+          "ex/mermaid-10.9.8/dist/mermaid.min.js",
+          "ex/socket.io-client-4.7.2/dist/socket.io.min.js"
+        ],
+        "aborted_distinct": [
+          "https://apis.google.com/js/api.js"
+        ]
+      }
+    },
+    "apis_google_handling": "未 vendor，照原樣中止，不造假內容；兩條流程皆通過，故非必要資產。",
+    "not_requested_by_these_flows": [
+      "katex",
+      "split.js",
+      "cdn.plot.ly plotly"
+    ],
+    "artifacts": {
+      "autonomy-2026-10-24T18-45-00-573Z/after-professor-removal.docx": {
+        "bytes": 2724,
+        "sha256": "44c393f7da8100e2dc571ee24ea734c7bfd0732fb5262aee5114e45034c7a3c2"
+      },
+      "autonomy-2026-10-24T18-45-00-573Z/collaboration-owner.png": {
+        "bytes": 119724,
+        "sha256": "f4ad752df9c6a22aa2a95b0e9965a9ef63cc8c0c66ba17a0a271a8418d8dbf2f"
+      },
+      "autonomy-2026-10-24T18-45-00-573Z/collaboration-owner.yml": {
+        "bytes": 2495,
+        "sha256": "4fb1fbca44f1060cd01bc2422523846dc0002f8f816ac0ab68ed2205eb9469d7"
+      },
+      "autonomy-2026-10-24T18-45-00-573Z/impact-author-paper-reconfirmed.png": {
+        "bytes": 324721,
+        "sha256": "4c8f4b2be3b6e5cf0ce731497b0e706a1152d3cf4dc4e9012462514ee8a122eb"
+      },
+      "autonomy-2026-10-24T18-45-00-573Z/impact-author-paper-reconfirmed.yml": {
+        "bytes": 5109,
+        "sha256": "4f9a5e30f4cb989e9f435f1890a69463d8e1a782c4d5bc334ff6eb4849430221"
+      },
+      "autonomy-2026-10-24T18-45-00-573Z/impact-professor-reconfirmed.png": {
+        "bytes": 261133,
+        "sha256": "06c1a424c82df919f049524d0c3a602249f3abdabab87780e509fc98499258d9"
+      },
+      "autonomy-2026-10-24T18-45-00-573Z/impact-professor-reconfirmed.yml": {
+        "bytes": 3852,
+        "sha256": "5af5fd91386800604b5c36c87f6fcc95c594dbbd15d004bc5f2153e1d30d2726"
+      },
+      "autonomy-2026-10-24T18-45-00-573Z/impact-stale-retains-input.png": {
+        "bytes": 385389,
+        "sha256": "23d0fe860be7140395b09076aff1498f0a3bae5f7c49f3eb98ada05853745dd7"
+      },
+      "autonomy-2026-10-24T18-45-00-573Z/impact-stale-retains-input.yml": {
+        "bytes": 6192,
+        "sha256": "25750d3efc8de85b93376b2515500dc2ca7f2f7c7c114e9eda4964c69f6bca05"
+      },
+      "autonomy-2026-10-24T18-45-00-573Z/independent-dashboard.png": {
+        "bytes": 49779,
+        "sha256": "31cfc3c90ae24bafbe1a578b75f232a1e6ca90736ab7ece8f9cef32f27d6c735"
+      },
+      "autonomy-2026-10-24T18-45-00-573Z/independent-dashboard.yml": {
+        "bytes": 802,
+        "sha256": "f3baa7d6824708769feaa7f3b427ebe4bf131a2db7c0e0e7b874fa8d2e5ef1ef"
+      },
+      "autonomy-2026-10-24T18-45-00-573Z/independent-saved-exported.png": {
+        "bytes": 156383,
+        "sha256": "cc5b319ca4375ba73cd6ab15fcc8b16e00a76c674408df75d2fff33894739f51"
+      },
+      "autonomy-2026-10-24T18-45-00-573Z/independent-saved-exported.yml": {
+        "bytes": 3308,
+        "sha256": "e1ad2350501e187101ab30a7dc58ce70f2b6f1cb65fbda21ccdf18a69422f312"
+      },
+      "autonomy-2026-10-24T18-45-00-573Z/independent.docx": {
+        "bytes": 2773,
+        "sha256": "4ec7687cab17c8e5f4b9244934eae6d7052fc41fc68c4e98a37a9af8e145c91a"
+      },
+      "autonomy-2026-10-24T18-45-00-573Z/professor-confirmed.png": {
+        "bytes": 152498,
+        "sha256": "b2156392de31ac0db3d90ff01374d50bdabd55ea42cfb2e12291a7c73e958643"
+      },
+      "autonomy-2026-10-24T18-45-00-573Z/professor-confirmed.yml": {
+        "bytes": 2600,
+        "sha256": "81b52be50d854481e13d322d5dab989cef591e126c056e4d91b15405b80f2ca2"
+      },
+      "autonomy-2026-10-24T18-45-00-573Z/professor-removed-history.png": {
+        "bytes": 199425,
+        "sha256": "8ee05c3622659054e4b6dc6d2e7f449bc4c26d03309d122db293e10044d8f1e4"
+      },
+      "autonomy-2026-10-24T18-45-00-573Z/professor-removed-history.yml": {
+        "bytes": 7013,
+        "sha256": "e3ba8ea7f11f21daa6634088c1c01fd58966f63cd2f4b8709630934d5758e36e"
+      },
+      "autonomy-2026-10-24T18-45-00-573Z/professor-workbench.png": {
+        "bytes": 115118,
+        "sha256": "20fbd83d032d0a9c92f3aa1d7f5e110c2263491240c74c44ba68e00f1575d257"
+      },
+      "autonomy-2026-10-24T18-45-00-573Z/professor-workbench.yml": {
+        "bytes": 2065,
+        "sha256": "c8d8c35e4215fd2254f317ce1435386c7329fcc805f75d222f66b468d37fe28f"
+      },
+      "autonomy-2026-10-24T18-45-00-573Z/receipt.json": {
+        "bytes": 671,
+        "sha256": "122a63176ee36ace2588c628aa254b141e495c3b1ad1c8308225502e96b7abec"
+      },
+      "autonomy-2026-10-24T18-45-00-573Z/register-professor-autonomy-2026-10-24T18-45-00-573Z.png": {
+        "bytes": 40939,
+        "sha256": "eba290e712f5083b151a49d8652530c6ac87a3dac4578a3281e442c49b6a9567"
+      },
+      "autonomy-2026-10-24T18-45-00-573Z/register-professor-autonomy-2026-10-24T18-45-00-573Z.yml": {
+        "bytes": 893,
+        "sha256": "8d0abeb74519e723ea754739fd5248936df126e8ad768c2fcefaa8e089c37d05"
+      },
+      "autonomy-2026-10-24T18-45-00-573Z/register-team-autonomy-2026-10-24T18-45-00-573Z.png": {
+        "bytes": 40939,
+        "sha256": "eba290e712f5083b151a49d8652530c6ac87a3dac4578a3281e442c49b6a9567"
+      },
+      "autonomy-2026-10-24T18-45-00-573Z/register-team-autonomy-2026-10-24T18-45-00-573Z.yml": {
+        "bytes": 893,
+        "sha256": "8d0abeb74519e723ea754739fd5248936df126e8ad768c2fcefaa8e089c37d05"
+      },
+      "autonomy-2026-10-24T18-45-00-573Z/team-scoped-writing.png": {
+        "bytes": 140900,
+        "sha256": "488417f42df3db250910d6432af33675cd1b132ba6225c8e65ce483ad9475ff4"
+      },
+      "autonomy-2026-10-24T18-45-00-573Z/team-scoped-writing.yml": {
+        "bytes": 2701,
+        "sha256": "4805a92a83a38d1df8cddee3bc7fec79c0f855b3742ae00791b6f7ea0fa9e5c8"
+      },
+      "f2-aut.out": {
+        "bytes": 58990,
+        "sha256": "5c32e254b24b6ec3e400905d7c8a6483a1eb9cd0a649042a48d4d9a20b2f5bcc"
+      },
+      "f2-sci.out": {
+        "bytes": 20682,
+        "sha256": "de8468d0f3a14f027a75abe4607cd39488e3ba27ba1425283169b1952850d9a5"
+      },
+      "final-aut.out": {
+        "bytes": 830,
+        "sha256": "dc4e8b14af7bfde4f4187963f73cfda4970292ecd29b43b5f16ce6a49c88fd02"
+      },
+      "final-sci.out": {
+        "bytes": 728,
+        "sha256": "402ea6e1667d3689457c56581f1bd107fd4abcfef1a9febd3d4f676b0baca829"
+      },
+      "route2-aut.json": {
+        "bytes": 19725,
+        "sha256": "699a1f7dec5061617185508e69b772992c9834435596c3fef0e60fe89f15a012"
+      },
+      "route2-sci.json": {
+        "bytes": 4569,
+        "sha256": "ad14070e004714d8960b592c638b1fa94ba7f4afcd66d7a1247f6db2724d4b59"
+      },
+      "scientific-2026-10-24T18-44-47-859Z/advisory-nonblocking.docx": {
+        "bytes": 2769,
+        "sha256": "a358932385de256518a71916015f138b0035edfee8c9f3780de50726cfd02103"
+      },
+      "scientific-2026-10-24T18-44-47-859Z/claim-evidence-comparison.png": {
+        "bytes": 193874,
+        "sha256": "b8e794893aa8f68b7c68d9045fa72f647b7b53785d935eecd3c56a10858c51db"
+      },
+      "scientific-2026-10-24T18-44-47-859Z/claim-evidence-comparison.yml": {
+        "bytes": 6440,
+        "sha256": "64f40ed63699151fcb251cdd1f3513b24fe6ed91b6daf41e4efb6acf0f6462f0"
+      },
+      "scientific-2026-10-24T18-44-47-859Z/counter-evidence-lead.png": {
+        "bytes": 208778,
+        "sha256": "8931d15fe1754af25e66285ec944e001557e23cd47091d34f8ff78762993136a"
+      },
+      "scientific-2026-10-24T18-44-47-859Z/counter-evidence-lead.yml": {
+        "bytes": 6140,
+        "sha256": "10f3339d7d05190a68b42e9b4d2a09997d0772563f881538b329ab6c949e6586"
+      },
+      "scientific-2026-10-24T18-44-47-859Z/csrf-xhr-upload-registered.png": {
+        "bytes": 198287,
+        "sha256": "a8b560fd6e46f20c91601c60f91d015eeeb783638fbc9164107826a7dda95e23"
+      },
+      "scientific-2026-10-24T18-44-47-859Z/csrf-xhr-upload-registered.yml": {
+        "bytes": 4536,
+        "sha256": "cba3c97f536e586008299afe18b6cd36547c55989ab2a76ee4724a9ea431dffb"
+      },
+      "scientific-2026-10-24T18-44-47-859Z/evidence.json": {
+        "bytes": 567,
+        "sha256": "bb8352adf4375dba28ff172ad71beb69a749cacb1fcf3531b7b909047b4e23b6"
+      },
+      "scientific-2026-10-24T18-44-47-859Z/generated-report-chapter-boundary.png": {
+        "bytes": 213212,
+        "sha256": "7ffceb9abb5957782451825e4a22174e3426fe89af70c33d2fc3bb1a874cb96a"
+      },
+      "scientific-2026-10-24T18-44-47-859Z/generated-report-chapter-boundary.yml": {
+        "bytes": 4852,
+        "sha256": "130882cf1f13e7333226230b7e0d77bac95bdb500ef2f4bc6d5160edbc69e2d3"
+      },
+      "scientific-2026-10-24T18-44-47-859Z/hypothesis-saved-exported.png": {
+        "bytes": 171183,
+        "sha256": "0c8c05f0fb352af9f207aa379174b7f4b5fa7ae7ee123f0d0c15b2e3ca3c59d0"
+      },
+      "scientific-2026-10-24T18-44-47-859Z/hypothesis-saved-exported.yml": {
+        "bytes": 3521,
+        "sha256": "dc083690be930060425d15649a68b0d5fa5306970ee19ac56755656fa2b48780"
+      },
+      "scientific-2026-10-24T18-44-47-859Z/mobile-advisory.png": {
+        "bytes": 98013,
+        "sha256": "9a379e98941c16b6e95295381419d3b7579ecfa8db65d6b9e4990508c8ce2c38"
+      },
+      "scientific-2026-10-24T18-44-47-859Z/mobile-advisory.yml": {
+        "bytes": 5216,
+        "sha256": "67525f9fb2fa4bff5aa1000b55a5ca4b8d031e84029943e5f3baff7fec85820f"
+      },
+      "scientific-2026-10-24T18-44-47-859Z/scoped-abstention-explained.png": {
+        "bytes": 194449,
+        "sha256": "ee1765210fa0789fce59a4779464c22b4a7929279f8303e9d825879a2d0bcae1"
+      },
+      "scientific-2026-10-24T18-44-47-859Z/scoped-abstention-explained.yml": {
+        "bytes": 6436,
+        "sha256": "9afaaa8cf89eb656819e9e36f7bb42779585f7eb6f689718127a7dc29b92335b"
+      },
+      "scientific-2026-10-24T18-44-47-859Z/stale-response-preserved.png": {
+        "bytes": 236284,
+        "sha256": "f70bcfefc1140da326377d634d5208c7b1bf51f4864ae39de2abddbb3774d2ac"
+      },
+      "scientific-2026-10-24T18-44-47-859Z/stale-response-preserved.yml": {
+        "bytes": 6584,
+        "sha256": "5da7e12b02cba4c2d83afe699fa4038bb7b4c4cb0ae6432aebd313a0403688c3"
+      }
+    },
+    "artifacts_kept_at": "/tmp/claude-0/-home-user/26119001-76e5-5f53-b408-3b98c029fc98/scratchpad/i11-browser-evidence",
+    "honest_limits": [
+      "資產由本機 vendor 服務，不是真的從 CDN 出網；真品性由樣板宣告的 SRI 與瀏覽器自身驗證保證，但不等於驗證了 CDN 的可用性或 TLS 鏈。",
+      "apis.google.com/js/api.js 未驗證（Google Drive 轉接路徑）。",
+      "katex、split.js 與 cdn.plot.ly 的 plotly 未被這兩條流程請求，因此未驗證。",
+      "headless Chromium 的版面與計時可能與真實桌面瀏覽器不同。"
+    ]
+  },
+  "full_regression": {
+    "sha": "780e1e173aa17a80c7eef2de1dabf76a2fedfd16",
+    "targets": [
+      "test/unit",
+      "tests",
+      "test/integration_e2e"
+    ],
+    "tests": 1486,
+    "passed": 1470,
+    "skipped": 16,
+    "failures": 0,
+    "errors": 0,
+    "seconds": 281.387,
+    "environment": "product-like: no nltk data, provider/DB credentials unset",
+    "skips": [
+      {
+        "test": "test_sai_process_revision::test_multiple_process_writers_have_one_winner_per_revision[draft_aliases]",
+        "reason": "Windows 路徑別名語意"
+      },
+      {
+        "test": "test_sai_process_revision::test_extended_prefix_and_case_aliases_share_the_same_lock",
+        "reason": "Windows 路徑別名語意"
+      },
+      {
+        "test": "TestRealDatabaseIsNotTouched::test_real_db_is_untouched_by_create_app",
+        "reason": "這台機器沒有正式 data/roothinks.db"
+      },
+      {
+        "test": "test_semantic_frame::test_nominalized_and_passive_restatements_align[Treatment X reduces survival.-Reduction of survival by treatment X was observed.]",
+        "reason": "WordNet 資料不可用"
+      },
+      {
+        "test": "test_semantic_frame::test_nominalized_and_passive_restatements_align[Treatment X increases survival.-Survival was increased by treatment X.]",
+        "reason": "WordNet 資料不可用"
+      },
+      {
+        "test": "test_semantic_frame::test_nominalized_and_passive_restatements_align[Protein X inhibits protein Y.-Inhibition of protein Y by protein X was measured.]",
+        "reason": "WordNet 資料不可用"
+      },
+      {
+        "test": "test_semantic_frame::test_nominalized_and_passive_restatements_align[Treatment X improves outcome.-Outcome was improved by treatment X.]",
+        "reason": "WordNet 資料不可用"
+      },
+      {
+        "test": "test_semantic_frame::test_restored_arguments_must_still_match_in_order[Treatment X reduces survival.-Reduction of treatment X by survival was observed.]",
+        "reason": "WordNet 資料不可用"
+      },
+      {
+        "test": "test_semantic_frame::test_restored_arguments_must_still_match_in_order[Treatment X increases survival.-Treatment X was increased by survival.]",
+        "reason": "WordNet 資料不可用"
+      },
+      {
+        "test": "test_semantic_frame::test_restored_arguments_must_still_match_in_order[Treatment X increases survival.-Survival was increased by treatment Z.]",
+        "reason": "WordNet 資料不可用"
+      },
+      {
+        "test": "test_semantic_frame::test_restored_arguments_must_still_match_in_order[Treatment X increases survival in mice.-Survival was increased by treatment X in rats.]",
+        "reason": "WordNet 資料不可用"
+      },
+      {
+        "test": "test_semantic_frame::test_argument_restoration_never_hides_a_real_direction_conflict[Treatment X increases survival.-Survival was decreased by treatment X.]",
+        "reason": "WordNet 資料不可用"
+      },
+      {
+        "test": "test_semantic_frame::test_argument_restoration_never_hides_a_real_direction_conflict[Treatment X reduces survival.-Increase of survival by treatment X was observed.]",
+        "reason": "WordNet 資料不可用"
+      },
+      {
+        "test": "test_semantic_frame::test_passive_without_an_agent_cannot_invent_a_subject",
+        "reason": "WordNet 資料不可用"
+      },
+      {
+        "test": "test_semantic_frame::test_nominalization_does_not_cross_the_relation_family",
+        "reason": "WordNet 資料不可用"
+      },
+      {
+        "test": "test_semantic_frame::test_adjectival_forms_without_a_wordnet_verb_link_stay_unparsed",
+        "reason": "WordNet 資料不可用"
+      }
+    ]
+  },
+  "wordnet": {
+    "version": "3.0",
+    "sha256": "cbda5ea6eef7f36a97a43d4a75f85e07fccbb4f23657d27b4ccbc93e2646ab59",
+    "product_dependency": false,
+    "note": "產品 requirements.txt 未新增相依；資料不可用時實驗引擎逐案退回凍結基線。"
+  },
+  "not_measured": [
+    "cross-domain expert gold",
+    "condition/modality/causal quality",
+    "probability calibration",
+    "real holdout score",
+    "inter-rater agreement and kappa from real annotators",
+    "CDN egress availability and TLS chain",
+    "apis.google.com drive adapter path"
+  ],
+  "limits": [
+    "SciFact dev 早已曝光，全部結果為開發診斷，不是盲測。",
+    "合成對抗控制只證明程式行為，不證明跨領域科學效度。",
+    "真專家 0 人；專家任命與 holdout 評估依 Owner 決策延後。",
+    "語意實驗未採用；科學分類能力與 I10 完全相同，沒有提升。"
+  ],
+  "scientific_quality_pass": false,
+  "expert_evaluation_complete": false,
+  "builder_sha256": "3efd1d3c5b3f87f928a800fcfc82c157c1ea7e94fd86ebdf60848b427f8e764d"
+}
