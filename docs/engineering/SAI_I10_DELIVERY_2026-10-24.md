@@ -193,22 +193,88 @@ I09 的既有證據不受影響也未被改寫。
 |---|---|
 | `a048898` | `counter_evidence_lead` 非決定性線索、前端顯示要開哪一句與原因、合成對抗測試 |
 | `89fa94b` | 證據 hash 跨平台可重現（LF 固定、實驗引擎位元串接）、可重現性測試 |
+| `9bb5a95` | 交付文件：起點核對、I09 證據鏈重現、退步根因、線索量測 |
+| `8d36972` | `scientific_phenomena.py`：檢索與語意分離、科學現象分項計數、手算測試 |
+| `ce9dc8c` | 專家流程 8 項已確認 custody 缺陷修補 ＋ 30 個對抗測試 |
+| `732832c` | custody 稽核紀錄；專家操作指南事實更正 |
 
-## 已執行的驗證
+## 工程驗證（最終）
 
-- **引擎對抗控制 21 項全通過**（以 importlib 繞過需要 flask 的 `app` 套件直接執行）：
-  含 I09 全部 7 項 scope 控制與 3 項 polarity 控制在加入線索後仍保持原行為。
-- **JS 行為檢查 10 支全通過**（Node v22.22.0 實跑）：9 支既有 + 1 支新增
-  `test/js/test_scientific_lead_rendering.cjs`（4 情境）。
-- **可重現性測試 2 項通過**（獨立執行）。
-- **dev 診斷**：加入線索後重跑，標籤／定位／失敗分解與凍結 I09 位元級相同。
+最終 source 凍結於 `ce9dc8c`（之後只有文件與證據提交）。**完整回歸在該凍結之後執行**；
+修補前那一輪（1,436 通過）不作最終證據。
 
-## 尚未完成（更新中）
+| 項目 | 結果 |
+|---|---|
+| 完整回歸 `test/unit tests test/integration_e2e` | **1,466 通過／3 略過／0 失敗／0 錯誤**，1,469 項，179.77 秒 |
+| 略過原因 | 2 項 Windows 路徑別名語意（本輪在 Linux 執行）、1 項本機沒有正式 `data/roothinks.db` |
+| 引擎對抗控制 | 21 項（以 importlib 繞過需要 flask 的 `app` 套件），含 I09 全部 7 項 scope 控制與 3 項 polarity 控制加入線索後行為不變 |
+| 專家流程測試 | 59 通過（既有 29 ＋ 新增 30 項 custody 對抗情境） |
+| JS 行為檢查 | **10 支全通過**（Node v22.22.0 實跑）：9 支既有 ＋ 1 支新增 `test/js/test_scientific_lead_rendering.cjs`（4 情境） |
+| 可重現性測試 | 2 項通過 |
+| dev 診斷 | 以最終工具重跑；標籤混淆矩陣、前三句與首句定位 precision／recall、失敗分解與凍結 I09 **完全相同** |
 
-- 完整 pytest 回歸：容器系統 python 無 pytest 與專案相依，環境建置與可跑範圍評估進行中。
-- 真瀏覽器操作：可行性評估進行中。
-- 專家流程與 custody 稽核：進行中。
-- 最終 source 凍結後的完整回歸與逐項驗收矩陣更新。
+I09 歷史比較：I09 在 Windows 為 1,415 通過／2 略過（1,417 項）。本輪 1,469 項 = 1,417 ＋ 本輪新增 52 項；
+略過數 3 vs 2 的差異來自平台（Linux 少一個 Windows symlink 略過、多兩個 Windows 路徑別名略過與一個正式 DB 略過）。
+
+機器證據：[SAI_I10_EVIDENCE_2026-10-24.json](SAI_I10_EVIDENCE_2026-10-24.json)、
+[科學現象分項](SAI_I10_SCIENTIFIC_PHENOMENA_2026-10-24.json)。
+
+## 檢索與語意的分項診斷（最終）
+
+這是本輪對「是否泛化到科學」最直接的量測結果。
+
+| 指標 | 數值 |
+|---|---:|
+| 有官方 rationale 的案例 | 188 / 300 |
+| 檢索取回 rationale | 160（**失敗 28**，14.9%） |
+| 取回後棄權 | **159** |
+| 取回後判對 | 1 |
+| 取回後判錯 | 0 |
+| **取回成功後的語意失敗率** | **99.375%** |
+
+取回正確句之後的棄權原因分布：
+
+| 原因 | 次數 |
+|---|---:|
+| `unsupported_sentence_structure` | **130**（160 案的 81%） |
+| `different_arguments_or_conditions` | 17 |
+| `source_hedged` | 12 |
+| `source_does_not_establish_claim` | 1 |
+
+**結論：主要瓶頸不是保守化，也不只是檢索，而是 `_relation_frame` 要求句中恰好有一個
+出自小型詞表的謂詞，導致 81% 的真實科學句子根本無法被解析。** 這比 I09 的四個 bucket
+更精確地指出下一輪該往哪裡投資：真正的語意模型，而不是更多字面規則。
+
+科學現象分項計數（引擎自己的警訊代碼，非專家標註）：
+
+| 現象 | 命中案例 | 說明 |
+|---|---:|---|
+| 條件（`missing_condition`） | 18 | gold 分布 SUPPORT 5／CONTRADICT 5／NEI 8 |
+| 反證線索（`counter_evidence_lead`） | 10 | 其中 gold CONTRADICT 4 |
+| 因果（`causality_not_established`） | 3 | |
+| 數值（`numeric_mismatch`） | 1 | |
+| 模擬／實測（`modality_mismatch`） | **0** | 合成對抗控制涵蓋此路徑，真實 dev 從未觸發 |
+| 外推（`unsupported_generalization`） | **0** | 同上 |
+| 缺引用（`no_evidence`） | 0 | dev 每案都有被引用來源，恆為 0 |
+| 決定性矛盾（`possible_contradiction`） | **0** | |
+
+**這揭露一個容易誤讀的事實**：模態與外推這兩類對抗控制在真實 SciFact dev 上**一次都沒有觸發**。
+合成控制證明了程式路徑可用，但在這份語料上的真實覆蓋率為零；不能用「對抗控制通過」
+推論這些能力在真實科學寫作中有效。
+
+## 縱向流程（優先工作 4）
+
+作者端的「可執行下一步」由本輪的線索顯示補齊（原主張、來源、適用條件、不確定原因、
+要開哪一句與為什麼），`original_text` 不變、`blocks_writing` 恆為 false。
+教授加入／撤權／移除不丟歷史、獨立研究、選用教授與團隊協作由既有測試涵蓋並在本輪完整回歸中通過：
+`test_invitation_token_identity_single_use_and_revocation_preserve_history`、
+`test_team_invitation_only_grants_selected_chapter_and_can_be_removed`、
+`test_revocation_cannot_remove_last_owner_after_member_role_changes`、
+`test_expired_and_revoked_invitation_never_grant_access`、
+`test_revoked_chapter_comment_author_cannot_mutate`、
+`test_author_response_is_append_only_not_scientific_proof_and_stale_view_is_explicit`、
+`test_advisory_failure_preserves_original_generated_draft`。
+本輪未重複造等效測試，也未在此宣稱真人可用性。
 
 ## 明確未測量（NOT MEASURED）
 

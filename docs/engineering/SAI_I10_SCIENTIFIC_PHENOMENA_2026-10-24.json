@@ -1,0 +1,92 @@
+{
+  "note": "開發診斷；SciFact dev 早已曝光，不是盲測。現象分類來自引擎自己的警訊代碼，不是獨立專家標註。",
+  "scientific_quality_pass": false,
+  "expert_gold_available": false,
+  "condition_modality_causal_gold": "NOT MEASURED",
+  "probability_calibration": "NOT MEASURED",
+  "cases": 300,
+  "gold_totals": {
+    "NEI": 112,
+    "SUPPORT": 124,
+    "CONTRADICT": 64
+  },
+  "retrieval_vs_semantics": {
+    "official_rationale_cases": 188,
+    "retrieval_recalled": 160,
+    "retrieval_missed": 28,
+    "abstained_after_retrieval": 159,
+    "correct_after_retrieval": 1,
+    "wrong_after_retrieval": 0,
+    "semantic_failure_share_of_retrieved": 0.99375
+  },
+  "stage_buckets": {
+    "no_official_rationale": 112,
+    "retrieved_then_abstained": 159,
+    "retrieval_miss": 28,
+    "retrieved_then_correct": 1
+  },
+  "stage_by_gold_label": {
+    "no_official_rationale": {
+      "NEI": 112
+    },
+    "retrieved_then_abstained": {
+      "SUPPORT": 105,
+      "CONTRADICT": 54
+    },
+    "retrieval_miss": {
+      "SUPPORT": 18,
+      "CONTRADICT": 10
+    },
+    "retrieved_then_correct": {
+      "SUPPORT": 1
+    }
+  },
+  "phenomena": {
+    "support_not_established": 299,
+    "contradiction_lead": 10,
+    "condition": 18,
+    "causality": 3,
+    "quantity": 1
+  },
+  "phenomena_by_gold_label": {
+    "support_not_established": {
+      "NEI": 112,
+      "SUPPORT": 123,
+      "CONTRADICT": 64
+    },
+    "contradiction_lead": {
+      "NEI": 4,
+      "CONTRADICT": 4,
+      "SUPPORT": 2
+    },
+    "condition": {
+      "SUPPORT": 5,
+      "CONTRADICT": 5,
+      "NEI": 8
+    },
+    "causality": {
+      "CONTRADICT": 1,
+      "SUPPORT": 1,
+      "NEI": 1
+    },
+    "quantity": {
+      "SUPPORT": 1
+    }
+  },
+  "contradiction_false_alarms_on_gold_support": {
+    "contradiction_lead": 2
+  },
+  "abstention_reasons_all": {
+    "source_hedged": 22,
+    "unsupported_sentence_structure": 253,
+    "different_arguments_or_conditions": 26,
+    "different_quantities": 1,
+    "source_does_not_establish_claim": 1
+  },
+  "abstention_reasons_after_successful_retrieval": {
+    "unsupported_sentence_structure": 130,
+    "different_arguments_or_conditions": 17,
+    "source_hedged": 12,
+    "source_does_not_establish_claim": 1
+  }
+}

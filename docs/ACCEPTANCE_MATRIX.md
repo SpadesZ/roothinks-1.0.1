@@ -4,7 +4,34 @@
 
 此表為優化實作的驗收依據。Batch A/B 及段落主張 → 證據條件 → 版本師生審閱工程切片已實作；各列標明實際範圍。未執行的案例保留未驗證，不以完整回歸數量推定全需求通過。更新證據時記錄實作 SHA、環境、命令／操作、結果與限制。
 
-## 本輪 I09：專家完整性與範圍棄權
+## 本輪 I10：證據鏈核對、反證線索與 custody 修補
+
+起點 `900394e`；實作凍結 `ce9dc8c`（之後只有文件與證據提交）；分支 `codex/sai-i10-scientific-review`。
+見 [交付與自我稽核](engineering/SAI_I10_DELIVERY_2026-10-24.md)、
+[機器證據](engineering/SAI_I10_EVIDENCE_2026-10-24.json)、
+[科學現象分項](engineering/SAI_I10_SCIENTIFIC_PHENOMENA_2026-10-24.json)。
+
+**執行環境與 I09 不同**：Linux 雲端容器，非 Windows 工作站。I09 的 raw QA 目錄、
+Windows venv、SciFact blind 目錄與 I08 真 holdout 在此環境均不存在；
+dev 資料自公開 SciFact 位元級重建並以 I09 記錄的 hash 核對。
+AGENTS.md 要求的 CodeGraph 與 Rickie `brain_context` MCP 在此環境未掛載，改以全文閱讀與可執行反例替代。
+
+| 項目 | 已實作／實際驗證 | 未完成／限制 |
+|---|---|---|
+| 最終工程基線 | `ce9dc8c` 完整回歸 **1,466 通過／3 略過／0 失敗**（1,469 項、179.77 秒）；JS 行為檢查 10 支全通過（Node v22.22.0 實跑）；引擎對抗控制 21 項；專家流程 59 項 | 修補前那一輪（1,436 通過）不作最終證據。本輪**沒有執行真瀏覽器操作**，也沒有 Linux 容器化隔離回歸；非全面安全認證 |
+| I09 證據鏈獨立核對 | 9 項 source hash 對 git `2937722` **位元相符**；2 個凍結引擎位元相符；inputs／gold／兩個 morph 引擎在 CRLF 轉換後相符；I09 回歸數字內部一致（1417−2=1415）；四組 dev 診斷**逐項完全重現** | 173 份 raw QA 產物不在此環境，無法核對其本身，只能核對 I09 已提交的 hash |
+| 證據可重現性（已修） | `scientific_benchmark.write()` 固定 LF；實驗引擎改位元串接。新增 `test_evidence_reproducibility.py` 釘住不變量 | 此修補後產生的 hash 與 I09 記錄的 CRLF 值不同；對應關係見交付文件。I09 既有證據未改寫 |
+| SCI-ADV：反證線索（已修） | `counter_evidence_lead` 非決定性線索；三條訊號在量測前先固定，沿用既有 0.35 門檻，未加新參數。dev 300 案命中 10（3.3%），其中 gold CONTRADICT 4／64（6.25%）、NEI 4、SUPPORT 2。**標籤混淆矩陣、定位 precision／recall、失敗分解與凍結 I09 完全相同** | 絕對召回 6.25% 仍極低，是**資訊保留不是語意能力提升**。案 1298 為確認的誤報。被動句論元還原與縮寫對照經量測確認單獨都救不回案 249，刻意未實作 |
+| 檢索／語意分項診斷 | 新增 `scientific_phenomena.py`。188 案有 rationale：檢索失敗 28；取回 160 案中 **159 棄權**，**取回後語意失敗率 99.375%**；主因 `unsupported_sentence_structure` **130／160（81%）** | 現象分類來自引擎自己的警訊代碼，**不是獨立專家標註**；條件／模態／因果的真人 gold 與機率校準仍 NOT MEASURED |
+| 對抗控制的真實覆蓋率 | 量測發現 `modality_mismatch` 與 `unsupported_generalization` 在真實 SciFact dev 上**觸發 0 次** | 合成控制只證明程式路徑可用，在這份語料上真實覆蓋率為零；不得以此推論真實科學寫作中有效 |
+| REL-06：專家流程 custody（已修 8 項） | 角色金鑰 hex 大小寫塌縮（**高**，實測同一把金鑰可兼任兩個「獨立」reviewer 並回報 kappa 1.0）、已簽檔案非 canonical bytes、`verified_gold` 型別等價、缺輪次 nonce、裁決欄位不對稱、`engine_sha256` 只檢查長度、keygen 0644 窗口、`--owner-public` 非必填。每項先重現再修，新增 30 項對抗測試 | 保管人可從多份有效簽章擇一遞交；盲化仍含 DOI／標題／全文 URL 且探針家族可還原；commitment 仍是未簽 CLI 字串且預測不綁 gold digest；**全流程無任何時序證據**；條件值為子字串比對、定位不要求句界；Unicode 與 offset 單位未固定；兩套 canonical JSON。以上皆屬 Owner／協定決策，刻意未自行變更 |
+| P0-AUT、COC、COL：縱向流程 | 作者端「可執行下一步」由線索顯示補齊，`original_text` 不變、`blocks_writing` 恆 false。教授加入／撤權／移除保留歷史、獨立研究、選用教授、團隊協作由既有 7 支測試涵蓋並在本輪完整回歸通過 | 本輪未重複造等效測試，未執行真瀏覽器，未宣稱真人可用性 |
+| 專家操作指南更正 | 必填欄位 12 → **11**（實際 `FIELDS` 為 11 欄）；條件值與定位強度改為精確描述；補記 I10 的行為變更與未修界線 | I09 的凍結交付文件與機器證據 JSON 未改動，更正只記在 I10 交付文件 |
+
+本輪工程切片 CONDITIONAL PASS；**科學品質仍未通過，真人專家評估仍未量測，真 holdout 仍未開封**。
+真專家 0 人。未部署、未 merge main、未讀寫正式資料、未接觸 LAVA-Cowork、未讀 I08 holdout 金鑰、未解密 holdout。
+
+## I09 歷史：專家完整性與範圍棄權
 
 起點 `c33f2589`；實作及瀏覽器測試凍結 `2937722559e773180a28c3f5a6ad600a3ad7c2c5`；分支 `codex/sai-i09-scientific-foundation`。見 [交付與自我稽核](engineering/SAI_I09_DELIVERY_2026-10-24.md)、[機器證據](engineering/SAI_I09_EVIDENCE_2026-10-24.json)、[診斷](engineering/SAI_I09_SCIENTIFIC_DIAGNOSTICS_2026-10-24.json)、[專家操作](engineering/I09_EXPERT_WORKFLOW.md)。
 

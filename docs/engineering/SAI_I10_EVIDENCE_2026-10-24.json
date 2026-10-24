@@ -1,0 +1,498 @@
+{
+  "round": "I10",
+  "base_sha": "900394e32279673ae1520e23e22a34fcafe27573",
+  "branch": "codex/sai-i10-scientific-review",
+  "head_sha": "732832c1154240fd805162df0ed9c390b6f85837",
+  "commits": [
+    {
+      "sha": "732832c",
+      "subject": "docs(sai): record custody audit results and correct the expert workflow guide"
+    },
+    {
+      "sha": "ce9dc8c",
+      "subject": "fix(eval): close confirmed custody gaps in the expert signing flow"
+    },
+    {
+      "sha": "8d36972",
+      "subject": "feat(eval): separate retrieval from semantic failure by phenomenon"
+    },
+    {
+      "sha": "9bb5a95",
+      "subject": "docs(sai): record I10 evidence verification and lead-preservation trade-off"
+    },
+    {
+      "sha": "89fa94b",
+      "subject": "fix(eval): make evidence hashes reproducible across platforms"
+    },
+    {
+      "sha": "a048898",
+      "subject": "fix(science): keep unresolved counter-evidence visible without a verdict"
+    }
+  ],
+  "changed_paths": [
+    "app/core_pro/manuscript/scientific_advisory.py",
+    "app/static/js/scientific_review.js",
+    "docs/engineering/I09_EXPERT_WORKFLOW.md",
+    "docs/engineering/SAI_I10_DELIVERY_2026-10-24.md",
+    "scripts/expert_evaluation.py",
+    "scripts/scientific_benchmark.py",
+    "scripts/scientific_diagnose.py",
+    "scripts/scientific_phenomena.py",
+    "test/js/test_scientific_lead_rendering.cjs",
+    "test/unit/test_evidence_reproducibility.py",
+    "test/unit/test_expert_custody_hardening.py",
+    "test/unit/test_expert_evaluation.py",
+    "test/unit/test_scientific_leads.py",
+    "test/unit/test_scientific_phenomena.py"
+  ],
+  "environment": {
+    "platform": "Linux 6.18.44-fc-v153",
+    "python": "3.13.17",
+    "node": "v22.22.0",
+    "note": "Linux 雲端容器；與 I09 的 Windows 工作站不同環境，行尾相關 hash 差異見下。",
+    "codegraph_mcp_available": false,
+    "rickie_brain_context_available": false
+  },
+  "i09_evidence_verification": {
+    "conclusion": "I09 證據鏈在所有可獨立核對的項目上皆成立；4 項生成檔的 hash 差異完全由 Windows CRLF 造成，非造假。",
+    "source_hashes_at_2937722": {
+      "app/core_pro/manuscript/scientific_advisory.py": {
+        "recorded": "64a5b526d4e8801a1f7a9d3d09a77f12039df9aedbb493969bf11831dad00ebe",
+        "recomputed_from_git": "64a5b526d4e8801a1f7a9d3d09a77f12039df9aedbb493969bf11831dad00ebe",
+        "match": "byte-identical"
+      },
+      "app/static/js/scientific_review.js": {
+        "recorded": "4108e83c889f5bd22c055fba5964292c7f7a2290b5886a573aeb06f4e402e776",
+        "recomputed_from_git": "4108e83c889f5bd22c055fba5964292c7f7a2290b5886a573aeb06f4e402e776",
+        "match": "byte-identical"
+      },
+      "scripts/expert_evaluation.py": {
+        "recorded": "793feda77d8571c4788bbdbebc8434004714dbef545c0a152c284a79929dff4c",
+        "recomputed_from_git": "793feda77d8571c4788bbdbebc8434004714dbef545c0a152c284a79929dff4c",
+        "match": "byte-identical"
+      },
+      "scripts/prepare_expert_holdout.py": {
+        "recorded": "721fe5d272d5126e057674a21f03a148575268320a368cf68f92edf2b7b136d3",
+        "recomputed_from_git": "721fe5d272d5126e057674a21f03a148575268320a368cf68f92edf2b7b136d3",
+        "match": "byte-identical"
+      },
+      "scripts/scientific_diagnose.py": {
+        "recorded": "2fe43e14be1f175b188fe447c5462ba91a48b8c4e5b9fa3b10c39401d10aadb4",
+        "recomputed_from_git": "2fe43e14be1f175b188fe447c5462ba91a48b8c4e5b9fa3b10c39401d10aadb4",
+        "match": "byte-identical"
+      },
+      "test/integration_e2e/sai_scientific_browser.cjs": {
+        "recorded": "b36d051c91325354004a0fd1289585196fdc254617fad7206a6d7d2bd228e539",
+        "recomputed_from_git": "b36d051c91325354004a0fd1289585196fdc254617fad7206a6d7d2bd228e539",
+        "match": "byte-identical"
+      },
+      "test/unit/test_expert_evaluation.py": {
+        "recorded": "8180b681224ee675dd99f04febfaa8f529e711b6bf96eb2693772d239f21b719",
+        "recomputed_from_git": "8180b681224ee675dd99f04febfaa8f529e711b6bf96eb2693772d239f21b719",
+        "match": "byte-identical"
+      },
+      "test/unit/test_expert_holdout.py": {
+        "recorded": "d840b5c857454f3d09de4089656f093a5b0ad6b0ea58200e262faaa2500605e1",
+        "recomputed_from_git": "d840b5c857454f3d09de4089656f093a5b0ad6b0ea58200e262faaa2500605e1",
+        "match": "byte-identical"
+      },
+      "test/unit/test_scientific_scope.py": {
+        "recorded": "2691df5dd645b850ec0e3f99f0e7ba65dac3b07d36764b062b130d777c124afa",
+        "recomputed_from_git": "2691df5dd645b850ec0e3f99f0e7ba65dac3b07d36764b062b130d777c124afa",
+        "match": "byte-identical"
+      }
+    },
+    "frozen_engines": {
+      "I08": {
+        "recorded": "e99d9bceb7c0ee69ab2d588181ec1148ef27d38206e09328a8318d4f35dc0a8a",
+        "recomputed": "e99d9bceb7c0ee69ab2d588181ec1148ef27d38206e09328a8318d4f35dc0a8a",
+        "match": "byte-identical"
+      },
+      "I09": {
+        "recorded": "64a5b526d4e8801a1f7a9d3d09a77f12039df9aedbb493969bf11831dad00ebe",
+        "recomputed": "64a5b526d4e8801a1f7a9d3d09a77f12039df9aedbb493969bf11831dad00ebe",
+        "match": "byte-identical"
+      }
+    },
+    "generated_artifacts": {
+      "inputs.jsonl": {
+        "recorded": "0fde332e274aee1de8083b4895fa9e6368568a95add06dc97fdbc1e55e17221b",
+        "recomputed_lf": "ded7f378b97aca168037271d0725437b035c32f2ac033563d94122178ced1ce5",
+        "recomputed_after_crlf": "0fde332e274aee1de8083b4895fa9e6368568a95add06dc97fdbc1e55e17221b",
+        "match": "matches after CRLF conversion"
+      },
+      "evaluator-only-gold.jsonl": {
+        "recorded": "d49ab22bd33edd98aa1448d7e69eaefe85e4b055864ad49f432ce65f993f4b76",
+        "recomputed_lf": "4374b195bd49dd3e2202d013e593955e00e078b7bd6f564307d992d041f4681f",
+        "recomputed_after_crlf": "d49ab22bd33edd98aa1448d7e69eaefe85e4b055864ad49f432ce65f993f4b76",
+        "match": "matches after CRLF conversion"
+      },
+      "I08-morph-engine.py": {
+        "recorded": "132a04b66e702895e90b0bc7483a384e9b76047c28cd83413bcbb6c64f565cca",
+        "recomputed_lf": "19cb8a4cff3db7ec8b0bd6962d3ff8d7125227ebad19dbbee70ffb6cc9ffa712",
+        "recomputed_after_crlf": "132a04b66e702895e90b0bc7483a384e9b76047c28cd83413bcbb6c64f565cca",
+        "match": "matches after CRLF conversion"
+      },
+      "I09-morph-engine.py": {
+        "recorded": "6cddd23d8efaa5f9b735908625c56e1f911e164c2b3980074f5eff2e732c7a16",
+        "recomputed_lf": "5a41133d5cf1950349c5bf0e84bb3bc39cf88e94d116feddf814e0b8dc94e697",
+        "recomputed_after_crlf": "6cddd23d8efaa5f9b735908625c56e1f911e164c2b3980074f5eff2e732c7a16",
+        "match": "matches after CRLF conversion"
+      }
+    },
+    "full_regression_internal_consistency": {
+      "recorded_tests": "1417",
+      "recorded_skipped": "2",
+      "recorded_failures": "0",
+      "delivery_doc_claim": "1,415 通過／2 略過／0 失敗",
+      "consistent": true
+    },
+    "dev_diagnostics_reproduced_exactly": true
+  },
+  "scifact_source_files": {
+    "corpus.jsonl": "b8d6c89624cb2ed74dee8938effc4f5d8bd2086887880af8110d64be4ceade62",
+    "claims_dev.jsonl": "86f0435d08fdb65d1aa41d1472684f57e6e71930626497bdf4d7a9ec1a632217"
+  },
+  "final_tooling_hashes": {
+    "app/core_pro/manuscript/scientific_advisory.py": "4c2034bf8fdbf2ad49276d136a0d37c6201240bd2570bffca5b1fbc0f5f7bd82",
+    "app/static/js/scientific_review.js": "abc6d5652629276da5171b315c8592c1f13a11bedf45af4839509b207ee89303",
+    "scripts/expert_evaluation.py": "aee4f126eb6ad8eba350d3f741bc61124fee40e42191c88c987b77a88851de84",
+    "scripts/scientific_benchmark.py": "d3980db5f40219cfb89ba0229ea7c220ccc3aee22d3f64dcaa34e2632d7b7638",
+    "scripts/scientific_diagnose.py": "cd8693c7551a1e14cd6004a1e767832f9eaec4097d965219c86c7a3226b11155",
+    "scripts/scientific_phenomena.py": "91251bd6f51179c93fdd2fd4f058e5d439b0eb45d03c1086dd69a6e2136db9d0",
+    "test/unit/test_scientific_leads.py": "6a4d0690053e248e61338d37732fb714d7373808ea7830fcaf5bbffc584c4f43",
+    "test/unit/test_expert_custody_hardening.py": "c5011e6ede909b5ce180b175ebeb4409c44802d94f2cd741fd6897524c7b319b",
+    "test/unit/test_evidence_reproducibility.py": "70ca5327d7e6cecd2251a90bcbe184e9feba8fc7117084da23b22aa2cf0316a9",
+    "test/unit/test_scientific_phenomena.py": "ad362f7faf7602a2d978a69da29b6e77699f2c1b1066037ce752b7cda0f0a2bb",
+    "test/js/test_scientific_lead_rendering.cjs": "d25bca77f33cf8f827e49471d8d84a3554c6cc6aa33166ef126d82cc4cf71cd4"
+  },
+  "full_regression": {
+    "sha": "732832c1154240fd805162df0ed9c390b6f85837",
+    "targets": [
+      "test/unit",
+      "tests",
+      "test/integration_e2e"
+    ],
+    "tests": 1469,
+    "passed": 1466,
+    "skipped": 3,
+    "failures": 0,
+    "errors": 0,
+    "seconds": 179.77,
+    "skips": [
+      {
+        "test": "test_sai_process_revision::test_multiple_process_writers_have_one_winner_per_revision[draft_aliases]",
+        "reason": "Windows 路徑別名語意"
+      },
+      {
+        "test": "test_sai_process_revision::test_extended_prefix_and_case_aliases_share_the_same_lock",
+        "reason": "Windows 路徑別名語意"
+      },
+      {
+        "test": "TestRealDatabaseIsNotTouched::test_real_db_is_untouched_by_create_app",
+        "reason": "這台機器沒有正式 data/roothinks.db"
+      }
+    ],
+    "dirty_at_start": false,
+    "note": "此回歸在本輪最後一次 source 變更（ce9dc8c）之後執行；先前一輪（修補前 1436 通過）不作最終證據。"
+  },
+  "js_behaviour_checks": {
+    "runner": "node",
+    "count": 10,
+    "passed": 10,
+    "files": [
+      "test_csrf_transport.cjs",
+      "test_literature_decision_integrity.cjs",
+      "test_manuscript_draft_integrity.cjs",
+      "test_manuscript_input_boundary.cjs",
+      "test_manuscript_visible_section.cjs",
+      "test_mentor_review_race.cjs",
+      "test_origins_upload_csrf.cjs",
+      "test_pi_role_matching.js",
+      "test_scientific_lead_rendering.cjs",
+      "test_study_notes_integrity.cjs"
+    ]
+  },
+  "dev_diagnostics": {
+    "diagnostic_only": true,
+    "fresh_blind": false,
+    "expert_holdout_evaluated": false,
+    "inputs_sha256_lf": "ded7f378b97aca168037271d0725437b035c32f2ac033563d94122178ced1ce5",
+    "gold_sha256_lf": "4374b195bd49dd3e2202d013e593955e00e078b7bd6f564307d992d041f4681f",
+    "label_and_localization_identical_to_frozen_i09": true,
+    "groups": {
+      "I08": {
+        "unknown": 297,
+        "support": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 123,
+          "tn": 176,
+          "precision": 1.0,
+          "recall": 0.008064516129032258,
+          "fpr": 0.0,
+          "fnr": 0.9919354838709677
+        },
+        "contradict": {
+          "tp": 2,
+          "fp": 0,
+          "fn": 62,
+          "tn": 236,
+          "precision": 1.0,
+          "recall": 0.03125,
+          "fpr": 0.0,
+          "fnr": 0.96875
+        },
+        "localization": {
+          "primary": {
+            "tp": 101,
+            "fp": 88,
+            "fn": 265,
+            "claims": 188,
+            "precision": 0.5343915343915344,
+            "recall": 0.27595628415300544
+          },
+          "localized": {
+            "tp": 207,
+            "fp": 358,
+            "fn": 159,
+            "claims": 188,
+            "precision": 0.3663716814159292,
+            "recall": 0.5655737704918032
+          }
+        },
+        "failure_decomposition": {
+          "no_gold_rationale": 112,
+          "retrieved_abstained": 157,
+          "retrieval_miss": 28,
+          "retrieved_correct": 3
+        }
+      },
+      "I09": {
+        "unknown": 299,
+        "support": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 123,
+          "tn": 176,
+          "precision": 1.0,
+          "recall": 0.008064516129032258,
+          "fpr": 0.0,
+          "fnr": 0.9919354838709677
+        },
+        "contradict": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 64,
+          "tn": 236,
+          "precision": null,
+          "recall": 0.0,
+          "fpr": 0.0,
+          "fnr": 1.0
+        },
+        "localization": {
+          "primary": {
+            "tp": 101,
+            "fp": 88,
+            "fn": 265,
+            "claims": 188,
+            "precision": 0.5343915343915344,
+            "recall": 0.27595628415300544
+          },
+          "localized": {
+            "tp": 207,
+            "fp": 358,
+            "fn": 159,
+            "claims": 188,
+            "precision": 0.3663716814159292,
+            "recall": 0.5655737704918032
+          }
+        },
+        "failure_decomposition": {
+          "no_gold_rationale": 112,
+          "retrieved_abstained": 159,
+          "retrieval_miss": 28,
+          "retrieved_correct": 1
+        }
+      },
+      "I08-morph": {
+        "unknown": 297,
+        "support": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 123,
+          "tn": 176,
+          "precision": 1.0,
+          "recall": 0.008064516129032258,
+          "fpr": 0.0,
+          "fnr": 0.9919354838709677
+        },
+        "contradict": {
+          "tp": 2,
+          "fp": 0,
+          "fn": 62,
+          "tn": 236,
+          "precision": 1.0,
+          "recall": 0.03125,
+          "fpr": 0.0,
+          "fnr": 0.96875
+        },
+        "localization": {
+          "primary": {
+            "tp": 99,
+            "fp": 90,
+            "fn": 267,
+            "claims": 188,
+            "precision": 0.5238095238095238,
+            "recall": 0.27049180327868855
+          },
+          "localized": {
+            "tp": 200,
+            "fp": 366,
+            "fn": 166,
+            "claims": 188,
+            "precision": 0.35335689045936397,
+            "recall": 0.546448087431694
+          }
+        },
+        "failure_decomposition": {
+          "no_gold_rationale": 112,
+          "retrieved_abstained": 153,
+          "retrieval_miss": 32,
+          "retrieved_correct": 3
+        }
+      },
+      "I09-morph": {
+        "unknown": 299,
+        "support": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 123,
+          "tn": 176,
+          "precision": 1.0,
+          "recall": 0.008064516129032258,
+          "fpr": 0.0,
+          "fnr": 0.9919354838709677
+        },
+        "contradict": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 64,
+          "tn": 236,
+          "precision": null,
+          "recall": 0.0,
+          "fpr": 0.0,
+          "fnr": 1.0
+        },
+        "localization": {
+          "primary": {
+            "tp": 99,
+            "fp": 90,
+            "fn": 267,
+            "claims": 188,
+            "precision": 0.5238095238095238,
+            "recall": 0.27049180327868855
+          },
+          "localized": {
+            "tp": 200,
+            "fp": 366,
+            "fn": 166,
+            "claims": 188,
+            "precision": 0.35335689045936397,
+            "recall": 0.546448087431694
+          }
+        },
+        "failure_decomposition": {
+          "no_gold_rationale": 112,
+          "retrieved_abstained": 155,
+          "retrieval_miss": 32,
+          "retrieved_correct": 1
+        }
+      }
+    }
+  },
+  "counter_evidence_leads": {
+    "cases_with_lead": 10,
+    "gold_breakdown": {
+      "NEI": 4,
+      "CONTRADICT": 4,
+      "SUPPORT": 2
+    },
+    "false_alarms_on_gold_support": {
+      "contradiction_lead": 2
+    },
+    "gold_contradict_total": 64,
+    "note": "非決定性線索；relation、blocks_writing 與全部標籤指標不變，因此不可能產生新的假矛盾判定。"
+  },
+  "retrieval_vs_semantics": {
+    "official_rationale_cases": 188,
+    "retrieval_recalled": 160,
+    "retrieval_missed": 28,
+    "abstained_after_retrieval": 159,
+    "correct_after_retrieval": 1,
+    "wrong_after_retrieval": 0,
+    "semantic_failure_share_of_retrieved": 0.99375
+  },
+  "abstention_after_successful_retrieval": {
+    "unsupported_sentence_structure": 130,
+    "different_arguments_or_conditions": 17,
+    "source_hedged": 12,
+    "source_does_not_establish_claim": 1
+  },
+  "phenomena": {
+    "support_not_established": 299,
+    "contradiction_lead": 10,
+    "condition": 18,
+    "causality": 3,
+    "quantity": 1
+  },
+  "phenomena_path": "docs/engineering/SAI_I10_SCIENTIFIC_PHENOMENA_2026-10-24.json",
+  "custody_audit": {
+    "method": "全文閱讀 452 行加可執行反例；非第三方安全審查，未做滲透測試或密碼學形式驗證。",
+    "fixed": [
+      "role key hex-casing collapse",
+      "signed file not canonical bytes",
+      "verified_gold type equivalence",
+      "missing assignment round nonce",
+      "adjudication field asymmetry",
+      "engine_sha256 length-only check",
+      "keygen private key 0644 window",
+      "--owner-public optional and unvalidated"
+    ],
+    "new_adversarial_tests": "test/unit/test_expert_custody_hardening.py",
+    "left_to_owner_or_protocol": [
+      "custodian can choose which two signed submissions to hand over",
+      "blinded assignments still carry doi/title/full-text URL and recoverable probe families",
+      "prediction and gold commitments are unsigned CLI strings; predictions never bind the gold digest",
+      "no timing evidence anywhere in the chain",
+      "condition value is a substring test; locator span need not be a sentence",
+      "Unicode normalization and offset units not fixed in the protocol",
+      "two incompatible canonical JSON encoders across the two scripts",
+      "derived outputs are unsigned"
+    ]
+  },
+  "not_measured": [
+    "cross-domain expert gold",
+    "condition/modality/causal quality",
+    "probability calibration",
+    "real holdout score",
+    "inter-rater agreement and kappa from real annotators",
+    "real browser operation in this environment (see delivery doc)"
+  ],
+  "limits": [
+    "SciFact dev 早已曝光，全部結果為開發診斷，不是盲測。",
+    "合成對抗控制只證明程式行為，不證明跨領域科學效度。",
+    "真專家 0 人；簽章不證明資格、獨立性或沒看過答案。",
+    "反證線索絕對召回 6.25%，是資訊保留而非語意能力提升。",
+    "本輪稽核由同一代理執行，不是獨立第三方審查。"
+  ],
+  "scientific_quality_pass": false,
+  "expert_evaluation_complete": false,
+  "production_data_accessed": false,
+  "deployed": false,
+  "main_merged": false,
+  "lava_upstream_modified": false,
+  "i08_holdout_key_read": false,
+  "i08_holdout_decrypted": false,
+  "builder_sha256": "fdf772ed20de0cf9cd1b93863d1ec1765a80ac3a158028c4e8a362affda66c9d"
+}
