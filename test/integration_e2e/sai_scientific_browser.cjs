@@ -60,6 +60,27 @@ async function main(){
         assert.equal(await page.locator('#editorCanvas').innerText(),original);
     }
     await snapshot('scoped-abstention-explained');evidence.checks.push('negative_evidence_and_different_conditions_explained_without_rewriting');
+    // I11 新增：保守判讀收斂成 unknown 時，未解析的方向衝突必須在畫面上指出要開哪一句與為什麼，且不得變成判定。
+    {
+        const leadSource='Energy expenditure was increased upon treatment X.',leadClaim='Treatment X reduces energy expenditure.';
+        execFileSync(process.env.SAI_TEST_PYTHON,['-c',"import sqlite3,sys; c=sqlite3.connect(sys.argv[1]); c.execute('UPDATE evidence_segments SET text=? WHERE project_id=?',(sys.argv[3],sys.argv[2])); c.commit(); c.close()",path.join(root,'app.db'),pid,leadSource]);
+        await page.locator('#sciText').fill(leadClaim);
+        const pendingLead=page.waitForResponse(r=>r.url().endsWith('/scientific/assess'));
+        await page.getByRole('button',{name:'比對並保存建議',exact:true}).click();
+        const leadResponse=await pendingLead,leadBody=await leadResponse.json();
+        assert.equal(leadResponse.status(),201);assert.equal(leadBody.original_text,leadClaim);
+        assert.equal(leadBody.claims[0].relation,'unknown','線索不得升格為矛盾判定');
+        assert.equal(leadBody.scientific_proof,false);assert.equal(leadBody.blocks_writing,false);
+        const lead=leadBody.claims[0].findings.find(f=>f.code==='counter_evidence_lead');
+        assert.ok(lead,JSON.stringify(leadBody.claims[0].findings.map(f=>f.code)));
+        assert.ok(lead.leads[0].signals.includes('direction_differs_arguments_unresolved'),JSON.stringify(lead.leads));
+        assert.ok(leadBody.claims[0].findings.some(f=>f.code==='support_not_established'),'棄權說明不得被線索取代');
+        await page.locator('#sciReport').getByText('尚未建立支持／未知',{exact:true}).waitFor();
+        await page.locator('#sciReport').getByText(/請核對：來源 .+ 第 1 句/).first().waitFor();
+        await page.locator('#sciReport').getByText(/方向相反，但主客體未能對應/).first().waitFor();
+        assert.equal(await page.locator('#editorCanvas').innerText(),original,'線索不得改動作者原文');
+        await snapshot('counter-evidence-lead');evidence.checks.push('unresolved_counter_evidence_lead_visible_without_verdict');
+    }
     await page.locator('#sciEvidence').selectOption([]);await page.locator('#sciText').fill('Hypothesis: an untested mechanism may operate.');
     const unknown=page.waitForResponse(r=>r.url().endsWith('/scientific/assess'));await page.getByRole('button',{name:'比對並保存建議',exact:true}).click();assert.equal((await unknown).status(),201);
     await page.locator('#sciReport').getByText('尚未建立支持／未知',{exact:true}).waitFor();
