@@ -44,6 +44,21 @@ async function main(){
     const answered=page.waitForResponse(r=>r.url().includes('/responses')&&r.request().method()==='POST');await page.getByRole('button',{name:'追加我的回應'}).first().click();const answer=await answered;
     assert.equal(answer.status(),201);assert.equal((await answer.json()).response.scientific_proof,false);
     await page.locator('#sciReport').getByText('作者回應：',{exact:false}).first().waitFor();await snapshot('stale-response-preserved');evidence.checks.push('stale_409_refresh_reason_preserved_append_response');
+    for(const [source,text,expectedReason] of [
+        ['No evidence shows that protein X causes disease Y.','Protein X causes disease Y.','source_does_not_establish_claim'],
+        ['Treatment X decreases survival at 77 K.','Treatment X increases survival at 300 K.','different_quantities']
+    ]){
+        execFileSync(process.env.SAI_TEST_PYTHON,['-c',"import sqlite3,sys; c=sqlite3.connect(sys.argv[1]); c.execute('UPDATE evidence_segments SET text=? WHERE project_id=?',(sys.argv[3],sys.argv[2])); c.commit(); c.close()",path.join(root,'app.db'),pid,source]);
+        await page.locator('#sciText').fill(text);
+        const pendingScope=page.waitForResponse(r=>r.url().endsWith('/scientific/assess'));
+        await page.getByRole('button',{name:'比對並保存建議',exact:true}).click();const scoped=await pendingScope,body=await scoped.json();
+        assert.equal(scoped.status(),201);assert.equal(body.claims[0].relation,'unknown');
+        assert.equal(body.claims[0].comparisons[0].reason,expectedReason);assert.equal(body.original_text,text);
+        await page.locator('#sciReport').getByText('尚未建立支持／未知',{exact:true}).waitFor();
+        await page.locator('#sciReport').getByText(expectedReason==='different_quantities'?'數值或條件不同，請先確認是否同一樣本與指標。':'來源明示尚無證據、未知或未測試；不能當成支持或已證實矛盾。',{exact:true}).waitFor();
+        assert.equal(await page.locator('#editorCanvas').innerText(),original);
+    }
+    await snapshot('scoped-abstention-explained');evidence.checks.push('negative_evidence_and_different_conditions_explained_without_rewriting');
     await page.locator('#sciEvidence').selectOption([]);await page.locator('#sciText').fill('Hypothesis: an untested mechanism may operate.');
     const unknown=page.waitForResponse(r=>r.url().endsWith('/scientific/assess'));await page.getByRole('button',{name:'比對並保存建議',exact:true}).click();assert.equal((await unknown).status(),201);
     await page.locator('#sciReport').getByText('尚未建立支持／未知',{exact:true}).waitFor();

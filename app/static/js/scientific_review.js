@@ -67,6 +67,13 @@
                 if(!comparison.applicable_conditions && comparison.source_conditions.length)text(details,'來源中的條件（適用性需核對）：'+comparison.source_conditions.join('；'));
                 if(comparison.reason==='source_hedged')text(details,'來源帶有可能或假說語氣，本句較肯定。');
                 if(comparison.reason==='different_arguments_or_conditions')text(details,'主客體或條件未能對應，不能靠相似詞判定支持。');
+                const why={source_does_not_establish_claim:'來源明示尚無證據、未知或未測試；不能當成支持或已證實矛盾。',
+                    unresolved_stance_scope:'來源有否認或反駁語氣，規則未解析其範圍；請人工確認原意。',
+                    significance_is_not_direction:'未達統計顯著不等於效果方向相反。',different_quantities:'數值或條件不同，請先確認是否同一樣本與指標。',
+                    different_relationship:'來源與主張描述不同關係，請核對因果、關聯與方向。',
+                    unsupported_sentence_structure:'規則無法對齊此句型；請人工比對原句與上下文。',
+                    negated_direction_is_not_inverse:'否定某個方向不等於證實相反方向。'};
+                if(why[comparison.reason])text(details,why[comparison.reason]);
             }
             for(const response of data.responses.filter(r=>r.claim_id===claim.id))text(card,`作者回應：${({retain_hypothesis:'保留為假說',revise:'準備修訂',disagree:'不同意此建議',need_evidence:'需要更多證據'})[response.stance]} · ${response.reason}${response.stale?'（針對舊來源快照）':''}`);
             const form=document.createElement('form'),stance=document.createElement('select');stance.className='form-select';stance.setAttribute('aria-label','本主張的處理方式');
