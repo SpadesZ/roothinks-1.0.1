@@ -1,0 +1,95 @@
+{
+  "adopted": false,
+  "reason": "未達 I11_PROTOCOL.md 預先固定的效果門檻；已曝光 dev 上零變化。",
+  "diagnostic_only": true,
+  "examined_top_candidate_sentences": 161,
+  "source_predicate_counts": {
+    "wordnet_0": 93,
+    "literal_0": 109,
+    "wordnet_1": 48,
+    "literal_1": 35,
+    "wordnet_2": 13,
+    "literal_2": 12,
+    "wordnet_3": 7,
+    "literal_3": 5
+  },
+  "claim_predicate_counts": {
+    "0": 94,
+    "1": 56,
+    "3": 2,
+    "2": 9
+  },
+  "restored": {
+    "nominal_of_by": 1
+  },
+  "not_restored": {
+    "no_predicate_in_inventory": 93,
+    "active_baseline_path": 39,
+    "nominal_without_by_agent": 2,
+    "multiple_predicates_rejected": 20,
+    "passive_without_by_agent": 6
+  },
+  "note": "謂詞覆蓋是主要瓶頸；擴充詞表同時增加多謂詞句，被單一謂詞紀律否決，兩者互相抵銷。",
+  "protocol": "docs/engineering/I11_PROTOCOL.md",
+  "frozen_baseline": {
+    "commit": "9deaa948b6a923c7a59f38df4ced756026b7a27d",
+    "engine_sha256": "4c2034bf8fdbf2ad49276d136a0d37c6201240bd2570bffca5b1fbc0f5f7bd82",
+    "engine_version": "advisory-rules-4"
+  },
+  "experiment_engine_sha256": "fd09c6066dc477c451d6a8eba6c504783b0f43fa76a007a4a44c7c04e51f468f",
+  "wordnet": {
+    "version": "3.0",
+    "source": "nltk_data wordnet.zip",
+    "sha256": "cbda5ea6eef7f36a97a43d4a75f85e07fccbb4f23657d27b4ccbc93e2646ab59",
+    "used_for": [
+      "morphy inflection lemmatisation",
+      "derivationally related verb forms"
+    ],
+    "deliberately_unused": [
+      "antonymy"
+    ],
+    "antonymy_measurement": {
+      "usable": 2,
+      "checked": 8,
+      "detail": "increase→decrease 與 worsen→better 可用；activate→inactivate 與 promote→demote 不是本專案需要的對立；inhibit／suppress／improve 完全沒有反義。"
+    },
+    "no_verb_link": [
+      "causal",
+      "role"
+    ]
+  },
+  "dev_outcome": {
+    "cases": 300,
+    "labels_changed": 0,
+    "localization_changed": 0,
+    "full_reports_changed": 0,
+    "abstention_reasons_changed": 0,
+    "unsupported_sentence_structure_after_retrieval": {
+      "baseline": 130,
+      "candidate": 130,
+      "threshold": "<=115",
+      "met": false
+    }
+  },
+  "false_restoration": {
+    "count": 1,
+    "of_opportunities": 1,
+    "precision": 0.0,
+    "case_id": 837,
+    "claim": "NR5A2 is important in development of endometrial tissues.",
+    "problem": "of…by 模式跨子句匹配，從一句講表現量的來源句拼出橫跨兩個子句的假 frame subject=('rna','interference','abrogated','decidualization') / object=('nr5a2','transcript','abundance')。",
+    "why_harmless": "主張側沒有可解析的謂詞，所以該假 frame 沒有改變任何結果；這是運氣，不是防護。"
+  },
+  "adoption_decision": {
+    "adopted": false,
+    "gates_passed": [
+      "既有對抗控制 134 項全過",
+      "研究者自主不變",
+      "定位指標完全相同",
+      "gold SUPPORT 決定性誤報維持 0"
+    ],
+    "gate_failed": "效果門檻：130 → 130，要求 ≤115",
+    "action": "產品引擎回退至凍結基線（hash 已核對）；實驗保留為 scripts/semantic_frame_experiment.py 與對抗測試。"
+  },
+  "next_round_evidence": "謂詞覆蓋是雙邊瓶頸：來源句 93/161（57.8%）與主張句 94/161（58.4%）在擴充詞表後仍然一個謂詞都沒有。擴充詞表同時把多謂詞句從 17 推到 20，被單一謂詞紀律否決得更多，兩者互相抵銷。結論：更大的謂詞詞表無法修好這個架構，需要真正的句法剖析（處理多謂詞與論元結構）與語意關係模型，不是更長的字串清單。"
+}
