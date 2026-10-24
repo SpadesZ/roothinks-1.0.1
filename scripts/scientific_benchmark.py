@@ -21,7 +21,8 @@ def read(path):
 
 
 def write(path,rows):
-    with Path(path).open('x',encoding='utf-8') as handle:
+    # newline 固定 LF：證據 hash 必須跨平台一致，否則獨立稽核在別的作業系統上重算不出同一個值。
+    with Path(path).open('x',encoding='utf-8',newline='\n') as handle:
         for row in rows:handle.write(json.dumps(row,ensure_ascii=False)+'\n')
 
 

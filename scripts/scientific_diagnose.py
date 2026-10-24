@@ -32,7 +32,8 @@ def diagnose(baseline,inputs,gold,output):
     versions={'I08':baseline,'I09':ENGINE}
     for name,path in list(versions.items()):
         frozen=output/(name+'-engine.py');frozen.write_bytes(path.read_bytes());versions[name]=frozen
-        variant=output/(name+'-morph-engine.py');variant.write_text(path.read_text(encoding='utf-8')+MORPH,encoding='utf-8')
+        # 與凍結副本一致用位元寫入：write_text 會套作業系統行尾，實驗引擎 hash 就不跨平台。
+        variant=output/(name+'-morph-engine.py');variant.write_bytes(path.read_bytes()+MORPH.encode('utf-8'))
         versions[name+'-morph']=variant
     write(output/'protocol.jsonl',[dict(diagnostic_only=True,fresh_blind=False,holdout_accessed=False,
         inputs_sha256=digest(inputs),gold_path=str(gold),engines={k:digest(v) for k,v in versions.items()},
