@@ -2,8 +2,12 @@
   "round": "I10",
   "base_sha": "900394e32279673ae1520e23e22a34fcafe27573",
   "branch": "codex/sai-i10-scientific-review",
-  "head_sha": "732832c1154240fd805162df0ed9c390b6f85837",
+  "head_sha": "0b3f36f9d3cc15993f1ce30fec6bae42816fbd67",
   "commits": [
+    {
+      "sha": "0b3f36f",
+      "subject": "docs(sai): freeze I10 engineering evidence and update the acceptance matrix"
+    },
     {
       "sha": "732832c",
       "subject": "docs(sai): record custody audit results and correct the expert workflow guide"
@@ -32,8 +36,11 @@
   "changed_paths": [
     "app/core_pro/manuscript/scientific_advisory.py",
     "app/static/js/scientific_review.js",
+    "docs/ACCEPTANCE_MATRIX.md",
     "docs/engineering/I09_EXPERT_WORKFLOW.md",
     "docs/engineering/SAI_I10_DELIVERY_2026-10-24.md",
+    "docs/engineering/SAI_I10_EVIDENCE_2026-10-24.json",
+    "docs/engineering/SAI_I10_SCIENTIFIC_PHENOMENA_2026-10-24.json",
     "scripts/expert_evaluation.py",
     "scripts/scientific_benchmark.py",
     "scripts/scientific_diagnose.py",
@@ -167,7 +174,7 @@
     "test/js/test_scientific_lead_rendering.cjs": "d25bca77f33cf8f827e49471d8d84a3554c6cc6aa33166ef126d82cc4cf71cd4"
   },
   "full_regression": {
-    "sha": "732832c1154240fd805162df0ed9c390b6f85837",
+    "sha": "0b3f36f9d3cc15993f1ce30fec6bae42816fbd67",
     "targets": [
       "test/unit",
       "tests",
@@ -471,13 +478,115 @@
       "derived outputs are unsigned"
     ]
   },
+  "real_browser": {
+    "attempted": true,
+    "status": "BLOCKED by this container network policy, not by a code defect",
+    "flows": [
+      "test/integration_e2e/sai_scientific_browser.cjs",
+      "test/integration_e2e/sai_autonomy_browser.cjs"
+    ],
+    "node": "v22.22.0",
+    "playwright": "1.63.0",
+    "chromium": "/opt/pw-browsers/chromium-1243/chrome-linux64/chrome",
+    "fixture_served_plain_http": {
+      "login_status": 200,
+      "root_status": 200,
+      "note": "fixture 與 Flask 伺服器本身完全正常；失敗只發生在瀏覽器端取外部資源。"
+    },
+    "denied_hosts": [
+      "cdn.jsdelivr.net",
+      "cdnjs.cloudflare.com",
+      "apis.google.com"
+    ],
+    "blocked_assets": [
+      "bootstrap@5.3.0 bundle js/css",
+      "socket.io 4.7.2 client",
+      "split.js 1.6.0",
+      "katex 0.16.9",
+      "mermaid@10",
+      "bootstrap-icons 1.11.1"
+    ],
+    "page_errors": [
+      "bootstrap is not defined",
+      "mermaid is not defined"
+    ],
+    "first_failure": {
+      "scientific": "page.waitForFunction window.wsApp?.socket?.connected 超時（socket.io client 未載入）",
+      "autonomy": "sai_autonomy_browser.cjs:51 workbench waitForFunction 超時（bootstrap 未載入）"
+    },
+    "app_has_no_local_vendor_copy": true,
+    "conclusion": "app/templates 將 Bootstrap、Socket.IO、Split.js、KaTeX、mermaid 全部指向 CDN，無本機副本；本容器出網政策拒絕這些主機，因此本輪無法取得真瀏覽器證據。UI 變更的最高層級證據僅為合成 DOM 檢查。",
+    "failed_artifacts": {
+      "aut.out": {
+        "bytes": 783,
+        "sha256": "f509f7e2e7591e49d226f65786fdba7d236a97233a9af8d8deb4a8e09cb1152e"
+      },
+      "autonomy-2026-10-24T15-44-51-849Z/failure-0.png": {
+        "bytes": 104753,
+        "sha256": "bdf6cfec3b2dceafb2521b9996081bdacdabb3b5d7a9803ea11f70007afc6825"
+      },
+      "autonomy-2026-10-24T15-44-51-849Z/failure-0.yml": {
+        "bytes": 3733,
+        "sha256": "848508da1ebfa75fb0877ea31dba5ce71ffdb0f316f3d1300067997c4f4935a5"
+      },
+      "autonomy-2026-10-24T15-44-51-849Z/independent-dashboard.png": {
+        "bytes": 163102,
+        "sha256": "654160a2a9db7e4f9688c809710d864f8606aec0b068499b3e9616cefe4d15a1"
+      },
+      "autonomy-2026-10-24T15-44-51-849Z/independent-dashboard.yml": {
+        "bytes": 3280,
+        "sha256": "af5cb51dce4d9bcd19f478886be893d38564118807a70606035eebdfcdfd5b72"
+      },
+      "autonomy-2026-10-24T15-44-51-849Z/receipt.json": {
+        "bytes": 619,
+        "sha256": "d0692381fb74113b1e65a7aac6252fe39d90f0f73b19df155c6c8afb60fc65ef"
+      },
+      "fixture-aut.out": {
+        "bytes": 7387,
+        "sha256": "1daf3ec0c84a0ad0e03a810acbbff98799beb40f788a5f7a204bbcf8f82c3adc"
+      },
+      "fixture-sci.out": {
+        "bytes": 6845,
+        "sha256": "11b58ea0eb93c82cca6abc6d4ba64dbfe38aac95b0f29d9cbe59bf74b0d4813d"
+      },
+      "sci.out": {
+        "bytes": 536,
+        "sha256": "30af967e537bc9f335b9cb36f0858ba7af00147be172f04de2cf5f336ac95ed6"
+      },
+      "scientific-2026-10-24T15-43-28-658Z/evidence.json": {
+        "bytes": 370,
+        "sha256": "fe80153962ec9d8cc1a3456e683e500c5ca2e7e9647884baa1d57cb85e171358"
+      },
+      "scientific-2026-10-24T15-43-28-658Z/failure.png": {
+        "bytes": 104753,
+        "sha256": "bdf6cfec3b2dceafb2521b9996081bdacdabb3b5d7a9803ea11f70007afc6825"
+      },
+      "scientific-2026-10-24T15-43-28-658Z/failure.yml": {
+        "bytes": 3744,
+        "sha256": "eefa47552c379ac23a4aa75ba1b61a31e5535c89beb01632dc87a7274d98c027"
+      }
+    },
+    "artifacts_kept_at": "/tmp/claude-0/-home-user-roothinks/26119001-76e5-5f53-b408-3b98c029fc98/scratchpad/browser-evidence"
+  },
+  "dependency_findings": [
+    {
+      "severity": "low",
+      "detail": "app/llm_service/adapter/llm_google.py:26 與 llm_openrouter.py:14 在模組層直接 import httpx，但 requirements.txt 未列 httpx，只靠 openai 間接帶入。",
+      "action": "本輪未修：屬 LLM adapter 與 Docker build 範圍，本環境無法驗證建置，照實回報。"
+    }
+  ],
+  "environment_limits_not_repo_defects": [
+    "eventlet 0.36.1 在 Python 3.13 下 monkey_patch 失敗（app/__init__.py 預設 async mode）；倉庫目標為 3.10，測試完全未用到。",
+    "容器無 tesseract 二進位檔；未安裝 torch／easyocr／layoutparser／transformers，相關 OCR／CV／翻譯路徑本輪完全未涵蓋。",
+    "出網政策拒絕 CDN 主機，真瀏覽器流程無法執行（見 real_browser）。"
+  ],
   "not_measured": [
     "cross-domain expert gold",
     "condition/modality/causal quality",
     "probability calibration",
     "real holdout score",
     "inter-rater agreement and kappa from real annotators",
-    "real browser operation in this environment (see delivery doc)"
+    "real browser operation in this environment (blocked; see real_browser)"
   ],
   "limits": [
     "SciFact dev 早已曝光，全部結果為開發診斷，不是盲測。",
@@ -494,5 +603,5 @@
   "lava_upstream_modified": false,
   "i08_holdout_key_read": false,
   "i08_holdout_decrypted": false,
-  "builder_sha256": "fdf772ed20de0cf9cd1b93863d1ec1765a80ac3a158028c4e8a362affda66c9d"
+  "builder_sha256": "48e96c3c3fae11c9e95e2b53fb14d74aa94aac2044c102dd015430b36c6c70f1"
 }

@@ -276,6 +276,48 @@ I09 歷史比較：I09 在 Windows 為 1,415 通過／2 略過（1,417 項）。
 `test_advisory_failure_preserves_original_generated_draft`。
 本輪未重複造等效測試，也未在此宣稱真人可用性。
 
+## 真瀏覽器：本輪被環境阻擋（未取得證據）
+
+**兩條真瀏覽器流程都實際嘗試過，都失敗，根因是本容器的出網政策，不是程式缺陷。**
+
+容器端條件全部具備：Node v22.22.0、Playwright 1.63.0、Chromium `chromium-1243`（版本相符）、
+port 8893 空閒、fixture import 全通、無 Windows 依賴。fixture 啟動成功，
+**純 HTTP 直接存取伺服器完全正常**（`/auth/login` 與 `/` 都是 HTTP 200、約 12 KB 完整頁面）。
+
+失敗發生在瀏覽器端取外部資源：
+
+| 流程 | 首個失敗點 | 頁面錯誤 |
+|---|---|---|
+| `sai_scientific_browser.cjs` | 等 `window.wsApp?.socket?.connected` 超時 —— socket.io client 未載入 | `mermaid is not defined` |
+| `sai_autonomy_browser.cjs` | `:51` workbench waitForFunction 超時 —— bootstrap 未載入 | `bootstrap is not defined`、`mermaid is not defined` |
+
+`app/templates/` 把 Bootstrap 5.3.0、Socket.IO 4.7.2、Split.js 1.6.0、KaTeX 0.16.9、
+mermaid@10 與 bootstrap-icons 全部指向 `cdn.jsdelivr.net` 與 `cdnjs.cloudflare.com`，
+**倉庫沒有任何本機 vendor 副本**。本容器的網路政策拒絕這三個主機
+（`cdn.jsdelivr.net`、`cdnjs.cloudflare.com`、`apis.google.com`），因此整個 UI 無法初始化。
+
+**我沒有用 mock、本機替身或改動樣板去讓它通過。** 首輪失敗的 receipt、evidence.json、
+截圖與 YAML 全部保留（12 份產物的 bytes 與 SHA-256 記在機器證據的 `real_browser.failed_artifacts`）。
+自主性流程在失敗前已產生 `independent-dashboard.png`，可見登入與 dashboard 有部分渲染。
+
+**因此本輪前端變更（線索顯示）的最高層級證據只有合成 DOM 檢查**
+（`test/js/test_scientific_lead_rendering.cjs`，4 情境，Node 實跑通過），
+**不是真瀏覽器驗收**。要取得真瀏覽器證據，需在允許上述 CDN 主機的環境執行
+（例如 I09 的 Windows 工作站，或把這三個主機加進本環境的網路允許清單）。
+在那之前，UI 變更不應被記為已通過瀏覽器驗收。
+
+## 本輪發現但未修（不在本輪範圍）
+
+| 項目 | 實況 | 為什麼不修 |
+|---|---|---|
+| `httpx` 未列入相依 | `app/llm_service/adapter/llm_google.py:26` 與 `llm_openrouter.py:14` 在模組層直接 `import httpx`，`requirements.txt` 未列，只靠 `openai` 間接帶入 | 屬 LLM adapter 與 Docker build 範圍；本環境無法驗證建置結果，改動相依會影響正式映像 |
+
+## 環境限制（非倉庫缺陷）
+
+- eventlet 0.36.1 在 Python 3.13 下 `monkey_patch()` 失敗，而 `app/__init__.py` 預設 async mode 為 eventlet。倉庫目標是 3.10，測試完全未用到此路徑。
+- 容器沒有 tesseract 二進位檔，也未安裝 torch／easyocr／layoutparser／transformers。OCR／CV／NLLB 翻譯與 gunicorn+eventlet 正式啟動路徑本輪**完全未涵蓋**。
+- 出網政策拒絕 CDN 主機（見上）。
+
 ## 明確未測量（NOT MEASURED）
 
 跨領域專家 gold、條件／模態／因果品質、機率校準、真正 holdout 成績、真人標註一致率與 kappa。
