@@ -182,6 +182,19 @@ def is_api_request_path(path: str) -> bool:
     return p.startswith("/api/") or p.startswith("/manuscript/api/")
 
 
+def auth_session_ref():
+    """安全工作階段與活動統計分開；舊 cookie 沿用已簽章的登入識別，重新登入會換新碼。"""
+    from flask import session
+    return session.get('_auth_session_ref') or 'legacy:'+str(session.get('_id') or session.get('_user_id') or '')
+
+
+def auth_session_revoked(user_id, reference):
+    # 重用既有追加稽核表；空 pid 不是合法研究 ID，不會混進專案修訂查詢。
+    from app.models import RevisionLog
+    return RevisionLog.query.filter_by(pid='',user_id=user_id,entity_type='auth_session',
+        entity_ref=reference,action='logout').first() is not None
+
+
 def require_request_auth() -> Optional[Tuple[Any, int]]:
     if not _auth_enabled():
         return None

@@ -75,6 +75,8 @@ def _start_activity_session(user) -> None:
     from flask import session as flask_session
     from app.models import UserSession
     from app.routes import ACTIVITY_SESSION_KEY
+    from uuid import uuid4
+    flask_session['_auth_session_ref'] = uuid4().hex
 
     try:
         row = UserSession(user_id=user.id)
@@ -89,12 +91,17 @@ def _start_activity_session(user) -> None:
 def _end_activity_session() -> None:
     """登出時結算目前的活動紀錄。"""
     from flask import session as flask_session
-    from app.models import UserSession
+    from app.models import UserSession,RevisionLog
+    from app.security import auth_session_ref
     from app.routes import ACTIVITY_SESSION_KEY
 
     session_id = flask_session.pop(ACTIVITY_SESSION_KEY, None)
-    if not session_id:
-        return
+    if current_user.is_authenticated:
+        db.session.add(RevisionLog(pid='',user_id=current_user.id,entity_type='auth_session',
+            entity_ref=auth_session_ref(),action='logout',summary='Explicit session logout'))
+        # 登出撤銷須持久保存，不能把統計寫入失敗當成撤銷成功。
+        db.session.commit()
+    if not session_id:return
     try:
         row = db.session.get(UserSession, session_id)
         if row is not None:

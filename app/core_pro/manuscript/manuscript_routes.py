@@ -82,6 +82,7 @@ from app.core_pro.manuscript.manuscript_docx import (
 )
 from app.models import Project
 from app.security import (
+    auth_session_ref,
     check_ownership,
     get_request_token,
     get_workspace_role,
@@ -147,6 +148,22 @@ def _session_uid():
         return None
 
 
+def _emit_project_event(pid,event,data):
+    """連線房間不是永久授權；每次交付重驗專案、章節及登出撤銷。"""
+    if current_app.config.get('AUTH_MODE')!='session':
+        socketio.emit(event,data,room=f'ws:{pid}',namespace='/manu_ws');return
+    from app.security import auth_session_revoked
+    active={sid:r for sid,r in presence.connections(pid).items() if get_workspace_role(r['user_id'],pid)
+        and not auth_session_revoked(r['user_id'],r.get('auth_ref',''))}
+    if event=='presence_update':
+        data={'pid':pid,'users':list({r['user_id']:{'user_id':r['user_id'],'name':r['name']} for r in active.values()}.values())}
+    for sid,row in active.items():
+        if event=='peer_update' and not (_socket_can_read_paper(row['user_id'],pid) if data['kind']=='paper'
+                else _socket_can_read_section(row['user_id'],pid,data['section'])):
+            continue
+        socketio.emit(event,data,to=sid,namespace='/manu_ws')
+
+
 def _broadcast_presence(pid: str) -> None:
     """把在線名單推給同專案的所有連線。
 
@@ -155,12 +172,7 @@ def _broadcast_presence(pid: str) -> None:
     刻意不帶章節資訊——見 presence.py 的安全邊界說明。
     """
     try:
-        socketio.emit(
-            'presence_update',
-            {'pid': pid, 'users': presence.online(pid)},
-            room=f"ws:{pid}",
-            namespace='/manu_ws',
-        )
+        _emit_project_event(pid,'presence_update',{'pid':pid})
     except Exception:
         # 在線提示是輔助資訊，推送失敗不該影響連線或編輯流程。
         logger.warning("[presence] 廣播失敗 pid=%s", pid, exc_info=True)
@@ -375,6 +387,9 @@ def _ensure_socket_project_access(pid: str, forbidden_event: str = "", forbidden
             from flask_login import current_user
             if not current_user.is_authenticated:
                 return _deny()
+            from app.security import auth_session_ref,auth_session_revoked
+            if auth_session_revoked(current_user.id,auth_session_ref()):
+                return _deny()
             if get_workspace_role(current_user.id, pid) is None:
                 return _deny()
             return True
@@ -412,6 +427,8 @@ def _list_formal_projects():
         }
         for p in rows
         if p.project_id and (not token or check_ownership(token, p.project_id))
+        and (current_app.config.get('AUTH_MODE')!='session' or (
+            _session_uid() is not None and get_workspace_role(_session_uid(),p.project_id) is not None))
     ]
 
 
@@ -485,6 +502,17 @@ def _process_chat_job(app_obj, sid, job_id, payload):
     started_at = time.time()
     try:
         with app_obj.app_context():
+            def still_authorized():
+                db.session.expire_all()
+                if app_obj.config.get('AUTH_MODE')=='session':
+                    from app.security import auth_session_revoked
+                    uid=payload.get('user_id')
+                    return uid is not None and not auth_session_revoked(uid,payload.get('auth_session_ref','')) and _socket_can_write_section(uid,payload['pid'],payload['section'])
+                return not app_obj.config.get('API_AUTH_ENABLED') or bool(payload.get('auth_token') and check_ownership(payload['auth_token'],payload['pid']))
+            def deny_revoked():
+                socketio.emit('job_error',{'job_id':job_id,'stage':'authorization','message':'權限或登入已撤銷，未交付生成結果。'},to=sid,namespace='/manu_ws')
+            if not still_authorized():
+                deny_revoked();return
             if not _sid_connected(sid):
                 _set_job_state(job_id, cancelled=True)
                 return
@@ -522,6 +550,9 @@ def _process_chat_job(app_obj, sid, job_id, payload):
 
             if _is_cancelled(job_id):
                 return
+
+            if not still_authorized():
+                deny_revoked();return
 
             if not isinstance(ai_response,dict) or ai_response.get('type')=='error':
                 socketio.emit('job_error',{'job_id':job_id,'stage':'error',
@@ -1268,7 +1299,7 @@ def handle_connect(auth=None):
             # 在線提示：登記後廣播給同專案成員，讓大家知道還有誰在。
             # 只記專案層級，不記誰在哪一章——見 presence.py 的安全邊界說明。
             presence.enter(request.sid, pid_hint, current_user.id,
-                           getattr(current_user, 'username', None))
+                           getattr(current_user, 'username', None),auth_ref=auth_session_ref())
             _broadcast_presence(pid_hint)
 
         emit('sys_msg', {'msg': 'Connected to Roothinks-Manuscript Core (Drafter V1.4).'})
@@ -1828,6 +1859,9 @@ def handle_chat(data):
                                 'paragraph_decision_id':data.get('paragraph_decision_id')})
 
         payload = {
+            'user_id':_session_uid(),
+            'auth_session_ref':auth_session_ref() if current_app.config.get('AUTH_MODE')=='session' else '',
+            'auth_token':_get_sid_token(sid),
             'required_context':required_context,
             'user_msg': user_msg,
             'context_text': context_text,
@@ -1965,16 +1999,13 @@ def handle_save_block(data):
         )
 
         # [Batch C] 廣播 peer_update（協作預留）
-        socketio.emit(
-            'peer_update',
+        _emit_project_event(pid,'peer_update',
             {
                 'kind': 'block',
                 'section': section,
                 'ver': new_ver,
                 'by': current_username or 'anonymous',
             },
-            room=f"ws:{pid}",
-            namespace='/manu_ws',
         )
     except Exception as e:
         logger.error("[cmd_save_block] %s", e, exc_info=True)
@@ -1995,16 +2026,20 @@ def flush_draft_on_unload():
     這不是第二套儲存邏輯：底下呼叫的是**同一個** `ManuscriptIO.save_draft`。
 
     安全邊界：
-      - `sendBeacon` **無法設定自訂標頭**，因此帶不了 CSRF token。本路徑掛在
-        `/manuscript/api/` 之下讓 `is_api_request_path()` 認得它、跳過 CSRF 守衛，
-        所以**授權必須在這裡自己做**，不能靠 method 推導。
+      - `sendBeacon` 使用表單的 csrf_token；正文 JSON 保留在 draft_json。
+        全域 CSRF 與此處章節授權都必須通過。
       - ACL 與 `cmd_autosave_block` 逐條相同：專案成員 + 該章節可寫。
         「只是草稿」不是放寬的理由 —— 草稿內容就是稿件內容。
       - 只寫 `_draft` 檔：不產生版本、不寫 RevisionLog（與 socket 路徑同語意）。
     """
     # sendBeacon 送出的 Blob 常常帶 text/plain，get_json() 會直接拒收，
     # 因此一律用 force=True 自己解析。
-    data = request.get_json(silent=True, force=True) or {}
+    try:
+        data = json.loads(request.form['draft_json']) if 'draft_json' in request.form else request.get_json(silent=True, force=True) or {}
+    except (ValueError,TypeError):
+        raise BadRequest('草稿內容格式無效。')
+    if not isinstance(data,dict):
+        raise BadRequest('草稿內容必須是 JSON 物件。')
 
     try:
         pid = validate_id(data.get('pid'), "project_id")
@@ -2233,11 +2268,8 @@ def handle_save_paper(data):
         )
 
         # [Batch C] 廣播 peer_update（協作預留）
-        socketio.emit(
-            'peer_update',
+        _emit_project_event(pid,'peer_update',
             {'kind': 'paper', 'section': 'paper', 'by': current_username or 'anonymous'},
-            room=f"ws:{pid}",
-            namespace='/manu_ws',
         )
     except Exception as e:
         logger.error("[cmd_save_paper] %s", e, exc_info=True)

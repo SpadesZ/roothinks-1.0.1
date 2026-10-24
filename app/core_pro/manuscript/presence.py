@@ -39,7 +39,7 @@ _LOCK = threading.RLock()
 _BY_SID: Dict[str, Dict[str, Any]] = {}
 
 
-def enter(sid: str, pid: str, user_id: Any, name: str) -> None:
+def enter(sid: str, pid: str, user_id: Any, name: str, *, auth_ref: str = '') -> None:
     """記錄一條連線進入某專案。"""
     if not sid or not pid:
         return
@@ -48,7 +48,14 @@ def enter(sid: str, pid: str, user_id: Any, name: str) -> None:
             "pid": str(pid),
             "user_id": user_id,
             "name": name or "協作者",
+            "auth_ref": auth_ref,
         }
+
+
+def connections(pid: str) -> Dict[str,Dict[str,Any]]:
+    """內部廣播用快照；呼叫端必須重驗目前 DB 權限，不信任連線時的舊授權。"""
+    with _LOCK:
+        return {sid:dict(row) for sid,row in _BY_SID.items() if row['pid']==str(pid)}
 
 
 def drop(sid: str) -> Optional[str]:

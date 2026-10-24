@@ -502,7 +502,9 @@ def create_app(test_config=None):
         # ── 1. CSRF guard（非 API 的寫入請求）─────────────────────────────
         if (
             request.method in {"POST", "PUT", "PATCH", "DELETE"}
-            and not is_api_request_path(request.path)
+            and (not is_api_request_path(request.path) or (
+                app.config.get('AUTH_MODE')=='session' and (
+                    current_user.is_authenticated or request.path.startswith('/api/auth/'))))
             and app.config.get("WTF_CSRF_ENABLED", True)
         ):
             csrf.protect()
@@ -510,6 +512,9 @@ def create_app(test_config=None):
         # ── 2. [Batch A] Session 登入守衛 ────────────────────────────────
         _auth_mode = app.config.get("AUTH_MODE", "none")
         if _auth_mode == "session":
+            from app.security import auth_session_ref,auth_session_revoked
+            if current_user.is_authenticated and auth_session_revoked(current_user.id,auth_session_ref()):
+                return jsonify(success=False,message='此登入已登出；請重新登入。'),401
             _path = request.path
             _endpoint = request.endpoint or ""
 

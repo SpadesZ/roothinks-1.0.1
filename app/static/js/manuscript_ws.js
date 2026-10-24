@@ -383,10 +383,9 @@ class ManuscriptWorkspace {
                 section: card.getAttribute('data-section') || 'general',
                 content: body.innerHTML,
             });
-            // sendBeacon 不能設自訂標頭；端點因此用 force=True 自行解析 JSON，
-            // 並自己做授權（帶不了 CSRF token，見 NOTE-029）。
-            const blob = new Blob([payload], { type: 'application/json' });
-            if (navigator.sendBeacon('/manuscript/api/draft/flush', blob)) {
+            // 表單編碼可在離頁 beacon 帶 CSRF，正文仍完整放在 JSON 欄位。
+            const form = new URLSearchParams({draft_json:payload,csrf_token:document.querySelector('meta[name="csrf-token"]')?.content || ''});
+            if (navigator.sendBeacon('/manuscript/api/draft/flush', form)) {
                 queued = true;
             } else {
                 allQueued = false;
