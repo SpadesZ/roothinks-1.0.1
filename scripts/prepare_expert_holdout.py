@@ -104,18 +104,36 @@ def seal(output,pilot,holdout,rejections,queries):
     return manifest
 
 
-def prepare(output):
+def record_from_xml(raw,pmcid):
+    root=ET.fromstring(raw);meta=root.find('./front/article-meta')
+    if meta is None:raise ValueError('Missing article metadata')
+    doi=meta.find("article-id[@pub-id-type='doi']")
+    year=meta.find('pub-date/year');title=meta.find('title-group/article-title')
+    return dict(pmcid=pmcid,doi=doi.text if doi is not None else '',pubYear=year.text if year is not None else '',
+        title=''.join(title.itertext()) if title is not None else '',
+        authorString='; '.join(' '.join(''.join(n.itertext()).split()) for n in meta.findall('contrib-group/contrib/name')))
+
+
+def prepare(output,seeds=None):
     output.mkdir(exist_ok=False);seed=secrets.token_bytes(32);pilot=[];holdout=[];used=set();rejected=[];queries={}
+    seed_registry=json.loads(seeds.read_text(encoding='utf-8')) if seeds else None
+    if seed_registry and set(seed_registry)!=set(QUERIES):raise ValueError('Seed strata must match protocol')
     for stratum,query in QUERIES.items():
         query+=' AND FIRST_PDATE:[2022-01-01 TO 2025-12-31] AND OPEN_ACCESS:Y AND LICENSE:cc-by'
-        queries[stratum]=query
-        search_url=API+'search?'+urllib.parse.urlencode(dict(query=query,format='json',pageSize=40,sort='FIRST_PDATE_D'))
-        response=fetch(search_url);save(output/(stratum+'-search.json'),json.loads(response))
-        records=json.loads(response)['resultList']['result'];accepted=[]
+        queries[stratum]=query if not seeds else 'public-seeds-sha256:'+digest(seeds.read_bytes())
+        if seed_registry:
+            records=[dict(pmcid=pmcid) for pmcid in seed_registry[stratum]]
+        else:
+            search_url=API+'search?'+urllib.parse.urlencode(dict(query=query,format='json',pageSize=40,sort='FIRST_PDATE_D'))
+            response=fetch(search_url);save(output/(stratum+'-search.json'),json.loads(response))
+            records=json.loads(response)['resultList']['result']
+        accepted=[]
         for record in records:
             if not record.get('pmcid') or record.get('doi','').casefold() in used:continue
             try:
-                raw=fetch(API+record['pmcid']+'/fullTextXML');source=article(raw,record,stratum)
+                raw=fetch(API+record['pmcid']+'/fullTextXML')
+                if seed_registry:record=record_from_xml(raw,record['pmcid'])
+                source=article(raw,record,stratum)
             except Exception as exc:
                 rejected.append(dict(stratum=stratum,record_hash=digest(str(record.get('id')).encode()),reason=type(exc).__name__+': '+str(exc)));continue
             if source['doi'] in used:continue
@@ -125,7 +143,7 @@ def prepare(output):
         accepted.sort(key=lambda s:digest(seed+s['doi'].encode()))
         pilot.extend(accepted[:2]);holdout.extend(accepted[2:])
         # 搜尋回應可能透露 holdout 身分，不保留公開的未封存 sidecar。
-        (output/(stratum+'-search.json')).unlink()
+        if not seed_registry:(output/(stratum+'-search.json')).unlink()
     manifest=seal(output,pilot,holdout,rejected,queries)
     print(json.dumps(manifest,ensure_ascii=True))
 
@@ -143,5 +161,7 @@ def open_packet(folder,output):
 
 
 if __name__=='__main__':
-    parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('mode',choices=['prepare','open']);parser.add_argument('paths',nargs='+',type=Path)
-    args=parser.parse_args();{'prepare':prepare,'open':open_packet}[args.mode](*args.paths)
+    parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('mode',choices=['prepare','open']);parser.add_argument('paths',nargs='+',type=Path);parser.add_argument('--seeds',type=Path)
+    args=parser.parse_args()
+    if args.mode=='prepare':prepare(*args.paths,seeds=args.seeds)
+    else:open_packet(*args.paths)
