@@ -105,7 +105,8 @@ def test_condition_disagreement_requires_independent_version_bound_adjudication(
     _,cases,disputes=ev.reconcile(a,s,p,owner)
     assert disputes==['c1']  # 相同 SUPPORT 仍有科學欄位分歧。
     with pytest.raises((ValueError,TypeError)):ev.freeze(a,s,None,p,owner,keys['custodian'])
-    r=dict(plan_sha256=ev.digest(p),submission_sha256=[ev.digest(v) for v in s],decisions=[dict(case_id='c1',
+    r=dict(version=ev.VERSION,kind='adjudication',plan_sha256=ev.digest(p),
+        submission_sha256=[ev.digest(v) for v in s],decisions=[dict(case_id='c1',
         case_sha256=cases['c1']['case_sha256'],annotation=answer(cases['c1']['prompt']),reason='Synthetic adjudication')])
     with pytest.raises(InvalidSignature):ev.freeze(a,s,ev.sign(r,keys['reviewer1']),p,owner,keys['custodian'])
     frozen=ev.freeze(a,s,ev.sign(r,keys['adjudicator']),p,owner,keys['custodian'])

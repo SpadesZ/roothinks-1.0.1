@@ -9,6 +9,7 @@ import base64
 from collections import Counter
 import hashlib
 import json
+import os
 from pathlib import Path
 import secrets
 
@@ -25,7 +26,28 @@ SCIENCE=FIELDS-{'reason','uncertainty','confidence'}
 
 def encoded(value):return json.dumps(value,ensure_ascii=False,sort_keys=True,separators=(',',':'),allow_nan=False).encode('utf-8')
 def digest(value):return hashlib.sha256(encoded(value)).hexdigest()
-def read(path):return json.loads(Path(path).read_text(encoding='utf-8'))
+def keyid(value):
+    # 公鑰必須正規化後才能比較：bytes.fromhex 大小寫不敏感又會跳過空白，raw 字串比較擋不住同一把金鑰。
+    if not isinstance(value,str) or len(value)!=64 or any(c not in '0123456789abcdefABCDEF' for c in value):
+        raise ValueError('Invalid public key encoding')
+    return value.lower()
+def commitment(value):
+    if not isinstance(value,str) or len(value)!=64 or any(c not in '0123456789abcdef' for c in value):
+        raise ValueError('Invalid commitment')
+    return value
+def _unique(pairs):
+    seen={}
+    for key,value in pairs:
+        if key in seen:raise ValueError('Duplicate JSON key: '+key)
+        seen[key]=value
+    return seen
+def read(path):return json.loads(Path(path).read_text(encoding='utf-8'),object_pairs_hook=_unique)
+def read_signed(path):
+    # 簽章覆蓋的是 canonical 重編碼，不是檔案 bytes；歸檔的檔案必須就是被簽的那一份，
+    # 否則重複鍵或重新排版的檔案能對人眼、grep 與其他解析器呈現另一種內容而簽章仍成立。
+    raw=Path(path).read_bytes();value=json.loads(raw,object_pairs_hook=_unique)
+    if raw!=encoded(value):raise ValueError('Signed artifact is not canonical bytes')
+    return value
 def save(path,value):
     with Path(path).open('xb') as handle:handle.write(encoded(value))
 
@@ -50,24 +72,23 @@ def verify(envelope,key):
 
 def plan(envelope,owner):
     value=verify(envelope,owner)
-    if value.get('version')!=VERSION or value.get('owner_public_key')!=owner:raise ValueError('Plan trust root mismatch')
+    if value.get('version')!=VERSION or keyid(value.get('owner_public_key') or '')!=keyid(owner):raise ValueError('Plan trust root mismatch')
     roles=value['roles']
     if set(roles)!={'custodian','reviewer1','reviewer2','adjudicator'}:raise ValueError('Four independent roles required')
-    ids=[v['id'] for v in roles.values()];keys=[v['public_key'] for v in roles.values()]+[owner]
+    ids=[str(v['id']).strip() for v in roles.values()];keys=[keyid(v['public_key']) for v in roles.values()]+[keyid(owner)]
     if len(set(ids))!=4 or len(set(keys))!=5:raise ValueError('Role identities or keys overlap')
     for role,person in roles.items():
         if not person['id'].strip() or not person['expertise'].strip() or person['owner_approved'] is not True:
             raise ValueError('Owner must approve named roles and expertise')
         Ed25519PublicKey.from_public_bytes(bytes.fromhex(person['public_key']))
-    for field in ('dataset_sha256','rubric_sha256'):
-        if len(value[field])!=64 or any(c not in '0123456789abcdef' for c in value[field]):raise ValueError('Invalid commitment')
+    for field in ('dataset_sha256','rubric_sha256'):commitment(value[field])
     if not value['evaluation_id'].strip() or not value['acceptance_criteria']:raise ValueError('Fixed evaluation and criteria required')
     return value
 
 
 def assignments(master,signed_plan,owner,private):
     p=plan(signed_plan,owner)
-    if public(private)!=p['roles']['custodian']['public_key']:raise ValueError('Custodian key required')
+    if keyid(public(private))!=keyid(p['roles']['custodian']['public_key']):raise ValueError('Custodian key required')
     if digest(master)!=p['dataset_sha256']:raise ValueError('Dataset commitment mismatch')
     sources={s['source_id']:s for s in master['sources']};cases=master['cases']
     if not cases or len(sources)!=len(master['sources']) or len({c['case_id'] for c in cases})!=len(cases):
@@ -81,17 +102,20 @@ def assignments(master,signed_plan,owner,private):
             selected.append({k:source[k] for k in ('source_id','doi','title','text','locator','license_url')})
         prompt=dict(case_id=case['case_id'],claim=case['claim'],sources=selected,inference_scope='provided_text')
         clean.append(dict(prompt=prompt,case_sha256=digest(prompt),annotation=None))
-    result=[]
+    result=[];nonce=secrets.token_hex(16)
+    # 輪次 nonce：沒有它，同一份母版與計畫重跑可產生位元相同的任務，上一輪的標註就能直接重放。
     for role in ('reviewer1','reviewer2'):
         ordered=list(clean);secrets.SystemRandom().shuffle(ordered)
         result.append(sign(dict(version=VERSION,kind='assignment',plan_sha256=digest(signed_plan),
-            role=role,reviewer_id=p['roles'][role]['id'],cases=ordered),private))
+            round_nonce=nonce,role=role,reviewer_id=p['roles'][role]['id'],cases=ordered),private))
     return result
 
 
 def assignment(envelope,p,signed_plan):
     a=verify(envelope,p['roles']['custodian']['public_key'])
-    if a.get('version')!=VERSION or a.get('kind')!='assignment' or a.get('plan_sha256')!=digest(signed_plan):raise ValueError('Wrong assignment plan')
+    if set(a)!={'version','kind','plan_sha256','round_nonce','role','reviewer_id','cases'}:raise ValueError('Wrong assignment fields')
+    if a['version']!=VERSION or a['kind']!='assignment' or a['plan_sha256']!=digest(signed_plan):raise ValueError('Wrong assignment plan')
+    if not isinstance(a['round_nonce'],str) or len(a['round_nonce'])!=32:raise ValueError('Assignment round nonce required')
     if a['role'] not in ('reviewer1','reviewer2') or a['reviewer_id']!=p['roles'][a['role']]['id']:raise ValueError('Wrong reviewer')
     if not a['cases'] or len({c['prompt']['case_id'] for c in a['cases']})!=len(a['cases']):raise ValueError('Duplicate or empty cases')
     for c in a['cases']:
@@ -130,7 +154,7 @@ def annotation(value,prompt):
 
 def submission(assigned,filled,signed_plan,owner,private):
     p=plan(signed_plan,owner);a=assignment(assigned,p,signed_plan);role=a['role']
-    if public(private)!=p['roles'][role]['public_key']:raise ValueError('Assigned reviewer key required')
+    if keyid(public(private))!=keyid(p['roles'][role]['public_key']):raise ValueError('Assigned reviewer key required')
     expected={c['prompt']['case_id']:c for c in a['cases']}
     if set(filled)!={'annotations','declarations'} or filled['declarations']!={'independent':True,'no_predictions_seen':True,'conflicts_disclosed':True}:raise ValueError('Reviewer declarations required')
     rows=filled['annotations']
@@ -170,18 +194,22 @@ def reconcile(assigned,submitted,signed_plan,owner):
 
 def freeze(assigned,submitted,resolution,signed_plan,owner,private):
     p=plan(signed_plan,owner)
-    if private is not None and public(private)!=p['roles']['custodian']['public_key']:raise ValueError('Custodian key required')
+    if private is not None and keyid(public(private))!=keyid(p['roles']['custodian']['public_key']):raise ValueError('Custodian key required')
     pairs,cases,disputes=reconcile(assigned,submitted,signed_plan,owner)
     resolved={}
     if disputes:
         if resolution is None:raise ValueError('Unresolved disputes')
         r=verify(resolution,p['roles']['adjudicator']['public_key'])
+        # 任務與標註都檢查 version／kind 與欄位集合；裁決原本獨缺，額外鍵會夾帶內容進凍結 gold。
+        if set(r)!={'version','kind','plan_sha256','submission_sha256','decisions'} or r['version']!=VERSION or r['kind']!='adjudication':
+            raise ValueError('Adjudication envelope fields required')
         if r['plan_sha256']!=digest(signed_plan) or r['submission_sha256']!=[digest(s) for s in submitted]:raise ValueError('Adjudication binding mismatch')
         rows=r['decisions']
         if len(rows)!=len(disputes) or {d['case_id'] for d in rows}!=set(disputes):raise ValueError('Every dispute needs adjudication')
         for row in rows:
+            if set(row)!={'case_id','case_sha256','annotation','reason'}:raise ValueError('Adjudication decision fields required')
             cid=row['case_id']
-            if row['case_sha256']!=cases[cid]['case_sha256'] or not row['reason'].strip():raise ValueError('Adjudication case and reason required')
+            if row['case_sha256']!=cases[cid]['case_sha256'] or not str(row['reason']).strip():raise ValueError('Adjudication case and reason required')
             resolved[cid]=annotation(row['annotation'],cases[cid]['prompt'])
     elif resolution is not None:raise ValueError('Unexpected adjudication')
     gold=[dict(case_id=cid,case_sha256=cases[cid]['case_sha256'],annotation=resolved.get(cid,pairs[0][1][cid]),
@@ -202,7 +230,9 @@ def verified_gold(envelope,signed_plan,owner):
     p=plan(signed_plan,owner);g=verify(envelope,p['roles']['custodian']['public_key'])
     if g['plan']!=signed_plan:raise ValueError('Different gold plan')
     expected=freeze(g['assignments'],g['submissions'],g['adjudication'],signed_plan,owner,None)
-    if g!=expected:raise ValueError('Gold differs from independently signed reviews or adjudication')
+    # 用 canonical bytes 比較：Python 的 == 把 False 與 0、1.0 與 True 當成相等，
+    # 保管人改掉科學旗標的型別後重簽仍能通過，下游的 `is False` 檢查就失效。
+    if encoded(g)!=encoded(expected):raise ValueError('Gold differs from independently signed reviews or adjudication')
     return g
 
 
@@ -210,7 +240,8 @@ def score(envelope,signed_plan,owner,predictions,prediction_sha256,gold_sha256):
     """預測與 gold 各自先交由保管人固定 hash；此函式不接受未完成標註。"""
     if digest(envelope)!=gold_sha256 or digest(predictions)!=prediction_sha256:raise ValueError('External commitment mismatch')
     g=verified_gold(envelope,signed_plan,owner)
-    if predictions['plan_sha256']!=digest(signed_plan) or len(predictions['engine_sha256'])!=64:raise ValueError('Prediction plan or engine mismatch')
+    if predictions['plan_sha256']!=digest(signed_plan):raise ValueError('Prediction plan or engine mismatch')
+    commitment(predictions['engine_sha256'])
     rows=predictions['predictions'];expected={r['case_id']:r for r in g['gold']}
     if len(rows)!=len(expected) or {r['case_id'] for r in rows}!=set(expected):raise ValueError('Incomplete predictions')
     matrix={label:{p:0 for p in LABELS|{'UNKNOWN','ERROR'}} for label in LABELS}
@@ -241,15 +272,20 @@ def main():
     args=parser.parse_args();mode=args.mode
     if mode=='keygen':
         private=Ed25519PrivateKey.generate().private_bytes(serialization.Encoding.Raw,serialization.PrivateFormat.Raw,serialization.NoEncryption()).hex()
-        save(args.output,dict(private_key=private,public_key=public(private)));args.output.chmod(0o600);return
+        # 先建 0600 再寫入；先 save 後 chmod 會讓私鑰在 0644 下短暫可讀。
+        with os.fdopen(os.open(args.output,os.O_WRONLY|os.O_CREAT|os.O_EXCL,0o600),'wb') as handle:
+            handle.write(encoded(dict(private_key=private,public_key=public(private))))
+        return
+    if not args.owner_public:raise ValueError('Owner public key must be supplied and separately verified')
+    keyid(args.owner_public)
     private=read(args.private_key)['private_key'] if args.private_key else None
     if mode in {'sign-plan','assign','submit','adjudicate','freeze'} and private is None:raise ValueError('Signing key required')
     if mode=='sign-plan':
         signed=sign(read(args.input),private);plan(signed,args.owner_public);save(args.output,signed);return
-    signed_plan=read(args.plan);plan(signed_plan,args.owner_public)
+    signed_plan=read_signed(args.plan);plan(signed_plan,args.owner_public)
     if mode in {'verify-gold','score'}:
-        result=verified_gold(read(args.gold),signed_plan,args.owner_public) if mode=='verify-gold' else score(
-            read(args.gold),signed_plan,args.owner_public,read(args.input),args.prediction_sha256,args.gold_sha256)
+        result=verified_gold(read_signed(args.gold),signed_plan,args.owner_public) if mode=='verify-gold' else score(
+            read_signed(args.gold),signed_plan,args.owner_public,read(args.input),args.prediction_sha256,args.gold_sha256)
         save(args.output,result);return
     if mode=='assign':
         result=assignments(read(args.input),signed_plan,args.owner_public,private)
@@ -258,18 +294,19 @@ def main():
         return
     if mode=='submit':
         save(args.output,submission(read(args.input)['assignment'],read(args.input)['filled'],signed_plan,args.owner_public,private));return
-    assigned=[read(v) for v in args.assignment];submitted=[read(v) for v in args.submission]
+    assigned=[read_signed(v) for v in args.assignment];submitted=[read_signed(v) for v in args.submission]
     if mode=='adjudicate':
         p=plan(signed_plan,args.owner_public)
-        if public(private)!=p['roles']['adjudicator']['public_key']:raise ValueError('Adjudicator key required')
+        if keyid(public(private))!=keyid(p['roles']['adjudicator']['public_key']):raise ValueError('Adjudicator key required')
         decisions=read(args.input)
-        signed=sign(dict(plan_sha256=digest(signed_plan),submission_sha256=[digest(s) for s in submitted],decisions=decisions),private)
+        signed=sign(dict(version=VERSION,kind='adjudication',plan_sha256=digest(signed_plan),
+            submission_sha256=[digest(s) for s in submitted],decisions=decisions),private)
         freeze(assigned,submitted,signed,signed_plan,args.owner_public,None)
         save(args.output,signed);return
     if mode=='disputes':
         _,_,disputes=reconcile(assigned,submitted,signed_plan,args.owner_public)
         save(args.output,dict(disputes=disputes,plan_sha256=digest(signed_plan),submission_sha256=[digest(s) for s in submitted]));return
-    save(args.output,freeze(assigned,submitted,read(args.adjudication) if args.adjudication else None,signed_plan,args.owner_public,private))
+    save(args.output,freeze(assigned,submitted,read_signed(args.adjudication) if args.adjudication else None,signed_plan,args.owner_public,private))
 
 
 if __name__=='__main__':main()
