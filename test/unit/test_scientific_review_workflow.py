@@ -136,3 +136,24 @@ def test_advisory_rejects_cross_chapter_forgery_and_malformed_input(workflow):
     report=response.json
     assert client(workflow[0],'coauthor').get(f'/manuscript/api/scientific/reports?pid={PID}&section={HIDDEN}').status_code==403
     assert client(workflow[0],'outsider').get(f'/manuscript/api/scientific/reports/{report["report_id"]}?pid={PID}').status_code==403
+
+
+def test_revocation_during_comparison_prevents_new_advisory_persistence(workflow,monkeypatch):
+    from app import db
+    from app.models import WorkspaceMember,RevisionLog
+    from app.core_pro.manuscript import scientific_routes
+    bundle=workflow[0];app,ids,_=bundle
+    original=scientific_routes.assess_claims
+    with app.app_context():before=RevisionLog.query.filter_by(pid=PID,entity_type='scientific_advisory').count()
+    def revoke(*args,**kwargs):
+        report=original(*args,**kwargs)
+        WorkspaceMember.query.filter_by(pid=PID,user_id=ids['editor']).delete();db.session.commit()
+        return report
+    monkeypatch.setattr(scientific_routes,'assess_claims',revoke)
+    try:
+        response=assess(workflow)
+        assert response.status_code==403,response.json
+        with app.app_context():assert RevisionLog.query.filter_by(pid=PID,entity_type='scientific_advisory').count()==before
+    finally:
+        with app.app_context():
+            db.session.add(WorkspaceMember(pid=PID,user_id=ids['editor'],role='editor'));db.session.commit()

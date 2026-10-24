@@ -46,6 +46,10 @@ body.manuscript-page {
     z-index: 11010 !important;
 }
 
+/* 科學建議需在工具列／全螢幕之上，否則自主性說明會被遮住。 */
+#scientificPanel { z-index: 11010; }
+body.manuscript-page:has(#scientificPanel.show) .offcanvas-backdrop { z-index: 11000; }
+
 .manu-flex-container {
     display: flex;
     width: 100%;

@@ -66,6 +66,8 @@ def _view(row,data):
 
 def save_advisory(pid,section,text,sources,actor_id,*,required_conditions='',origin='author_request',basis_version=''):
     report=assess_claims(text,sources,required_conditions=required_conditions)
+    if actor_id is not None and not _socket_can_read_section(actor_id,pid,section):
+        raise Forbidden('權限已變更；未保存新的建議報告。')
     rid=uuid4().hex
     data=dict(schema_version=1,section=section,report=report,sources=sources,origin=origin,basis_version=basis_version)
     row=RevisionLog(pid=pid,user_id=actor_id,entity_type='scientific_advisory',entity_ref=rid,action='assess',

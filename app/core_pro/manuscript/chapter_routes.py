@@ -38,8 +38,7 @@
 #   - 非本專案成員一律 403，且不透露專案是否存在。
 #   - AUTH_MODE != session（dev/TESTING）時放行，維持既有測試相容性。
 # 維護提醒:
-#   - 路徑位於 /manuscript/api/ 之下，is_api_request_path 為 True，
-#     因此不走 csrf.protect()，改以 session cookie 驗身分。
+#   - 已登入 session 的 unsafe API 同樣由全域 guard 驗 CSRF；身分與章節授權仍分別檢查。
 #   - 這裡刻意不呼叫 enforce_project_ownership：它把 POST 一律要求 editor，
 #     會讓「viewer 可留言」與「coauthor 可寫被指派章節」都被擋掉。
 # 驗證方式:

@@ -21,6 +21,7 @@ async function main(){
     await page.locator('#sectionDropdownBtn').click();await page.locator('[data-section-id=introduction]').click();await page.locator('#editorCanvas .card-content').waitFor();
     const original=await page.locator('#editorCanvas').innerText();
     await page.locator('#btnScientificReview').click();await page.locator('#sciEvidence option').first().waitFor({state:'attached'});
+    assert.equal(await page.locator('#scientificPanel .offcanvas-body > p').first().evaluate(n=>{const r=n.getBoundingClientRect();return n.contains(document.elementFromPoint(r.x+r.width/2,r.y+r.height/2));}),true,'自主性說明不能被工作列遮住');
     const claim='Every device experimentally improved at all temperatures.';
     await page.locator('#sciText').fill(claim);await page.locator('#sciEvidence').selectOption({index:0});
     const pending=page.waitForResponse(r=>r.url().endsWith('/scientific/assess'));
@@ -51,6 +52,18 @@ async function main(){
     await page.waitForFunction(old=>document.querySelector('#sectionVersion').value!==old,before);
     const download=page.waitForEvent('download');await page.locator('#btnExportWord').click();const file=await download;assert.equal(await file.failure(),null);await file.saveAs(path.join(output,'advisory-nonblocking.docx'));
     assert.ok((await fs.stat(path.join(output,'advisory-nonblocking.docx'))).size>1000);
-    await snapshot('hypothesis-saved-exported');evidence.checks.push('unknown_advisory_does_not_block_save_export');assert.deepEqual(evidence.errors,[]);
+    await snapshot('hypothesis-saved-exported');evidence.checks.push('unknown_advisory_does_not_block_save_export');
+    await page.setViewportSize({width:390,height:844});await page.locator('#btnScientificReview').click();await page.locator('#sciText').waitFor();
+    await page.waitForFunction(()=>document.querySelector('#scientificPanel').classList.contains('show')&&!document.querySelector('#scientificPanel').classList.contains('showing'));
+    assert.equal(await page.locator('#scientificPanel').evaluate(n=>{const r=n.getBoundingClientRect();return r.width<=window.innerWidth+1&&r.left>=-1&&r.right<=window.innerWidth+1;}),true);
+    await snapshot('mobile-advisory');evidence.checks.push('mobile_panel_fits_viewport');
+    await page.setViewportSize({width:1440,height:1000});await page.goto(base+'/literature?pid='+pid);
+    await page.waitForFunction(()=>window.literatureOrigins?.pid);
+    const uploaded=page.waitForResponse(r=>r.url().endsWith('/api/literature/upload')&&r.request().method()==='POST');
+    await page.locator('#pdfUploadInput').setInputFiles({name:'synthetic-browser-csrf.pdf',mimeType:'application/pdf',buffer:Buffer.from('%PDF-synthetic-XHR-preservation-control')});
+    const upload=await uploaded,result=await upload.json();assert.equal(upload.status(),200,JSON.stringify(result));assert.equal(result.status,'success');
+    const originalFile=path.join(root,pid,'literature','papers',result.paper_id,'00_origins','source.pdf');
+    assert.equal(await fs.readFile(originalFile,'utf8'),'%PDF-synthetic-XHR-preservation-control');
+    await snapshot('csrf-xhr-upload-registered');evidence.checks.push('csrf_xhr_upload_original_registered_no_parsing_claim');assert.deepEqual(evidence.errors,[]);
 }
 main().then(()=>{evidence.status='passed';}).catch(async e=>{evidence.status='failed';evidence.failure=e.stack;if(page)await snapshot('failure').catch(()=>{});process.exitCode=1;}).finally(async()=>{await fs.mkdir(output,{recursive:true});await fs.writeFile(path.join(output,'evidence.json'),JSON.stringify(evidence,null,2));console.log(JSON.stringify({output,...evidence},null,2));if(browser)await browser.close();});

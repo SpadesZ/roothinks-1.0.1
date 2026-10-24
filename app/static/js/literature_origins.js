@@ -228,6 +228,8 @@ class LiteratureOriginsHandler {
         const formData = new FormData();
         formData.append('file', file);
         formData.append('pid', this.pid);
+        const csrfToken=document.querySelector('meta[name="csrf-token"]')?.content;
+        if(csrfToken)formData.append('csrf_token',csrfToken);
         window.literatureLibrary?.appendUploadTarget(formData);
 
         const xhr = new XMLHttpRequest();

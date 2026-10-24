@@ -9,13 +9,21 @@ from app.research_backup import BackupError,acquire_runtime_lease,create_backup,
 
 def test_real_research_schema_and_history_round_trip(workflow,tmp_path,monkeypatch):
     from app import create_app,db
-    from app.models import ChapterComment,ChapterReviewEvent,User,WorkspaceMember,Project,ProjectInvitation
+    from app.models import ChapterComment,ChapterReviewEvent,User,WorkspaceMember,Project,ProjectInvitation,RevisionLog
     from app.llm_service.llm_model import LLMModel
     from app.core_pro.manuscript.manuscript_io import ManuscriptIO
     from app.core_pro.manuscript.citation_ledger import list_decisions
     bundle,_,_ = workflow
     app,ids,root = bundle
     decision = confirm(workflow).json['decision']
+    # 新科學報告、原證據快照及作者回應同屬研究歷史，還原後不可只剩稿件。
+    assessment=client(bundle,'editor').post('/manuscript/api/scientific/assess',json=dict(
+        pid=PID,section=MINE,text='Hypothesis: an untested mechanism may operate.',evidence=[]))
+    assert assessment.status_code==201,assessment.json
+    report=assessment.json
+    answer=client(bundle,'editor').post(f'/manuscript/api/scientific/reports/{report["report_id"]}/responses',json=dict(
+        pid=PID,claim_id=report['claims'][0]['id'],view_snapshot=report['view_snapshot'],stance='retain_hypothesis',reason='Retain explicit uncertainty.'))
+    assert answer.status_code==201,answer.json
     result = client(bundle,'owner').post(f'/api/mentor/mentees/{ids["editor"]}/reviews/{PID}/items',
         json={'kind':'comment','paper_version':'V1','decision_id':decision['decision_id'],'body':'Original professor condition check'})
     assert result.status_code==201,result.json
@@ -49,6 +57,7 @@ def test_real_research_schema_and_history_round_trip(workflow,tmp_path,monkeypat
         create_backup(root,tmp_path/'must-not-run-live')
     with app.app_context():
         original_user_count = User.query.count()
+        original_scientific=[(r.entity_type,r.payload_json) for r in RevisionLog.query.filter_by(pid=PID,entity_ref=report['report_id']).order_by(RevisionLog.id)]
         original_comment = db.session.get(ChapterComment,cid).to_dict()
         original_paper = ManuscriptIO.load_paper_version(PID,'V1')
         db.session.remove()
@@ -67,6 +76,8 @@ def test_real_research_schema_and_history_round_trip(workflow,tmp_path,monkeypat
     try:
         with recovered.app_context():
             assert User.query.count()==original_user_count
+            assert [(r.entity_type,r.payload_json) for r in RevisionLog.query.filter_by(pid=PID,entity_ref=report['report_id']).order_by(RevisionLog.id)]==original_scientific
+            assert len(original_scientific)==2
             assert db.session.get(ChapterComment,cid).to_dict()==original_comment
             assert ChapterReviewEvent.query.filter_by(comment_id=cid).one().body=='Original author response'
             assert next(r for r in list_decisions(str(restored),PID) if r['decision_id']==decision['decision_id'])==decision
