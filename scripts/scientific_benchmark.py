@@ -46,19 +46,19 @@ def prepare(data,output):
         files={name:digest(data/name) for name in ('corpus.jsonl','claims_dev.jsonl')})])
 
 
-def engine():
-    spec=importlib.util.spec_from_file_location('scientific_advisory',ENGINE)
+def engine(path=ENGINE):
+    spec=importlib.util.spec_from_file_location('scientific_advisory',path)
     module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)
     return module
 
 
-def predict(inputs,output):
-    assess=engine().assess_claims;rows=[]
+def predict(inputs,output,*,engine_path=ENGINE,options=None):
+    assess=engine(engine_path).assess_claims;rows=[]
     for row in read(inputs):
         try:
             assert set(row)=={'id','claim','sources'},'Unexpected inference fields'
             assert all(set(s)=={'source_id','text','locator','sentences'} for s in row['sources'])
-            report=assess(row['claim'],row['sources'])
+            report=assess(row['claim'],row['sources'],**(options or {}))
             relations=[c['relation'] for c in report['claims']]
             label='CONTRADICT' if 'possible_contradiction' in relations else 'SUPPORT' if relations and all(r=='text_aligned' for r in relations) else 'UNKNOWN'
             localized=[];primary=[]
@@ -74,7 +74,7 @@ def predict(inputs,output):
         except Exception as exc:
             rows.append(dict(id=row['id'],label='ERROR',localized=[],primary=[],error=type(exc).__name__+': '+str(exc)))
     write(output,rows)
-    write(output.with_suffix('.manifest.jsonl'),[dict(engine_sha=digest(ENGINE),runner_sha=digest(__file__),inputs_sha=digest(inputs),predictions_sha=digest(output),count=len(rows))])
+    write(output.with_suffix('.manifest.jsonl'),[dict(engine_sha=digest(engine_path),options=options or {},runner_sha=digest(__file__),inputs_sha=digest(inputs),predictions_sha=digest(output),count=len(rows))])
 
 
 def ratio(a,b):return a/b if b else None

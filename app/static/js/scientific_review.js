@@ -55,13 +55,18 @@
         for(const claim of data.claims){
             const card=document.createElement('article');card.className='border rounded p-3 mb-3';container.append(card);
             text(card,claim.text,'h3').className='h6';
-            text(card,({text_aligned:'文字對齊；仍須核對科學支持',possible_contradiction:'可能矛盾，請人工核對',unknown:'尚未建立支持／未知'})[claim.relation]);
+            text(card,({text_aligned:'文字對齊；仍須核對科學支持',possible_contradiction:'可能矛盾，請人工核對',mixed_evidence:'候選來源相反，需核對條件與上下文',unknown:'尚未建立支持／未知'})[claim.relation] || '尚未建立支持／未知');
             for(const finding of claim.findings){text(card,finding.message);if(finding.missing)text(card,'本句未明示：'+finding.missing.join('；'));if(finding.unmatched)text(card,'未對應數值：'+finding.unmatched.join('；'));}
             for(const comparison of claim.comparisons){
                 const details=document.createElement('details');details.open=true;card.append(details);
                 text(details,`來源 ${comparison.source_id} · 定位 ${JSON.stringify(comparison.locator)} · 句 ${comparison.sentence_index+1}`,'summary');
                 text(details,comparison.quote,'blockquote').className='border-start ps-2 my-2';
-                if(comparison.source_conditions.length)text(details,'此來源的條件：'+comparison.source_conditions.join('；'));
+                if(comparison.relation)text(details,'本候選的獨立比對：'+({text_aligned:'文字或受限句型可對應',possible_contradiction:'主客體對應，但方向或否定相反',unknown:'規則未建立關係'})[comparison.relation]);
+                if(comparison.applicable_conditions?.length)text(details,'本句明示條件：'+comparison.applicable_conditions.join('；'));
+                if(comparison.other_context_conditions?.length)text(details,'同來源其他句的條件（未判定適用）：'+comparison.other_context_conditions.join('；'));
+                if(!comparison.applicable_conditions && comparison.source_conditions.length)text(details,'來源中的條件（適用性需核對）：'+comparison.source_conditions.join('；'));
+                if(comparison.reason==='source_hedged')text(details,'來源帶有可能或假說語氣，本句較肯定。');
+                if(comparison.reason==='different_arguments_or_conditions')text(details,'主客體或條件未能對應，不能靠相似詞判定支持。');
             }
             for(const response of data.responses.filter(r=>r.claim_id===claim.id))text(card,`作者回應：${({retain_hypothesis:'保留為假說',revise:'準備修訂',disagree:'不同意此建議',need_evidence:'需要更多證據'})[response.stance]} · ${response.reason}${response.stale?'（針對舊來源快照）':''}`);
             const form=document.createElement('form'),stance=document.createElement('select');stance.className='form-select';stance.setAttribute('aria-label','本主張的處理方式');
