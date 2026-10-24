@@ -514,7 +514,9 @@ def create_app(test_config=None):
         if _auth_mode == "session":
             from app.security import auth_session_ref,auth_session_revoked
             if current_user.is_authenticated and auth_session_revoked(current_user.id,auth_session_ref()):
-                return jsonify(success=False,message='此登入已登出；請重新登入。'),401
+                # 清除被撤銷的 cookie 身分，再套用既有白名單／登入守衛；否則連重新登入都會被舊 session 擋住。
+                from flask_login import logout_user
+                logout_user()
             _path = request.path
             _endpoint = request.endpoint or ""
 
