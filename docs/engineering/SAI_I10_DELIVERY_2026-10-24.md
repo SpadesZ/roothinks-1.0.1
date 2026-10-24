@@ -107,6 +107,75 @@ I08 的 `advisory` 用「詞袋方向／否定差 + 相似度 ≥ 0.35」直接�
 **不可能產生新的假矛盾判定，也不阻擋任何寫作動作**。絕對召回 6.25% 仍極低；
 這是資訊保留，**不是語意能力提升**。
 
+## 專家流程與 custody 稽核
+
+全文閱讀 `expert_evaluation.py`、`prepare_expert_holdout.py` 與兩支既有測試（共 452 行），
+每個假設都以可執行反例驗證。下列每一項都**先重現、再修補、再加對抗測試**；
+標 CONFIRMED 者為實測結果，不是推理。
+
+### 已修（8 項，`ce9dc8c`）
+
+| # | 嚴重度 | 缺陷 | 重現結果 | 修法 |
+|---|---|---|---|---|
+| 1 | **高** | 角色金鑰唯一性比較 raw hex 字串，而 `bytes.fromhex` 大小寫不敏感且跳過空白 | 同一把金鑰寫成大小寫兩種 hex 即同時擔任 reviewer1／reviewer2，一路通過 `freeze`／`verify-gold`／`score` 並回報 `label_agreement 1.0`、`disputes []`；custodian 兼 reviewer2 亦通過 | 正規化後比較，並驗證公鑰編碼 |
+| 2 | 中 | 簽章覆蓋 canonical 重編碼，不是檔案 bytes | 已簽檔案加入重複鍵後 `read`／`verify` 全部通過，Python 取 last-wins；檔案 bytes 與 canonical 不同 | `read()` 拒絕重複鍵；新增 `read_signed()` 要求簽署產物就是 canonical bytes |
+| 3 | 中低 | `verified_gold` 用 `g!=expected`，Python 認為 `False==0`、`1.0==True` | 保管人改掉 `scientific_validation_pass`、`label_agreement` 或 gold 內科學旗標的**型別**後重簽即通過，下游 `is False` 失效 | 改比較 canonical bytes |
+| 4 | 中 | 任務 payload 無輪次識別 | 同母版同計畫重跑可產生位元相同的任務，上一輪標註可直接重放 | 加入保管人產生的 `round_nonce`，並檢查任務欄位集合 |
+| 5 | 中低 | 裁決欄位檢查不對稱：任務與標註都檢查 version／kind 與欄位集合，裁決獨缺 | 任意額外鍵（含 `model_prediction`）寫入凍結 gold 且 `verify-gold` 通過 | 補齊 version／kind 與兩層欄位集合檢查 |
+| 6 | 中 | `score` 的 `engine_sha256` 只檢查長度 | 任選 64 字元字串即可「釘住」受測模型 | 套用既有 commitment hex 驗證 |
+| 7 | 低 | `keygen` 先 `save` 後 `chmod` | 實測窗口內權限為 **0o644** 且私鑰內容已寫入 | 改用 `os.open(...,0o600)` 直接建檔 |
+| 8 | 低 | `--owner-public` 非必填且無格式驗證 | 省略時死於 `TypeError: fromhex() argument must be str, not None` | 非 keygen 模式必填並驗證編碼 |
+
+新增 `test/unit/test_expert_custody_hardening.py`（30 個對抗情境）。既有
+`test_condition_disagreement` 手組裁決 payload，依新契約補上 version／kind，
+其原本驗證的版本綁定行為不變。
+
+### 稽核確認**原本就已防護**的項目
+
+這些方向都實跑過反例，確實擋得住，不應被誤讀為尚未處理：A 案標註搬到 B 案；
+換掉 reviewer 實際看到的來源正文（連用保管人金鑰重簽也擋）；跨計畫／跨 commitment 重放；
+裁決指向舊版原件或換掉原件後重簽；缺欄位／缺案例／重複案例／型別錯誤被當成有效標註；
+symlink（含 dangling）、TOCTOU 與路徑穿越；`score` 吃錯計畫或子集案例。
+`verified_gold` 的重建鏈（Owner 簽計畫 ＋ 兩位 reviewer 各自簽提交 ＋ adjudicator 簽裁決）
+是整套裡最紮實的一層，原本只被型別鬆散削弱（第 3 項已修）。
+`save()` 的 `open('xb')` 比聲稱的更強，symlink 一併拒絕。
+
+### 未修：屬 Owner／協定決策，不是程式能補的（CONFIRMED）
+
+| 項目 | 實況 | 為什麼不自行修 |
+|---|---|---|
+| **多份簽章擇一遞交** | 同一份任務上可產生多份有效且相異的提交，保管人決定遞交哪兩份；沒有任何東西紀錄「還存在其他已簽提交」。實測 3 份有效提交留下零分歧那一份 | 需要真正獨立的保管人，不是程式檢查；Owner 任命事項 |
+| **盲化仍不完整** | 盲化任務含 `doi`、`title` 與全文 XML URL（abstract-only 任務卻遞上全文入口）；同來源的變換探針家族可互相 diff 還原，其中 `missing_citation` 與 `author_quote` 兩個探針的主張逐字相同 | 改動 reviewer 實際看到的內容＝改動 rubric 與代表性，須 Owner 核准 |
+| **commitment 不是簽署物** | 預測與 gold 的 hash 是 CLI 字串；預測 payload 只綁計畫，**從不綁 gold digest**。結構上允許先讀 gold 再造預測 | 協定變更（commitment 改為保管人簽署的 envelope） |
+| **完全沒有時序證據** | 凍結記錄對 `time｜date｜stamp｜nonce｜round｜seq｜epoch` 搜尋在本輪修補前為零命中；`prepare_expert_holdout` 的解封匯出從未被 `expert_evaluation` 引用，兩支腳本無連結 | 需要外部時間源（RFC3161 或透明log），不是本機程式能提供 |
+| `no_predictions_seen` 零資訊 | 必須恰為 `True` 才被接受，因此永遠記不下「看過預測」，卻在凍結記錄裡看起來像具結 | 移除或允許為 false 會改動 reviewer 具結語意，須 Owner 決定 |
+| 條件值與定位強度 | `condition['value'] in quote` 是純子字串比對；`evidence_sentence_locators` 的 span 不要求句界，整段 abstract 合法 | 收緊會改變 reviewer 的填寫負擔與 rubric，須 Owner 核准 |
+| Unicode 與 offset 單位 | offset 是 Python code point；JS／Java 為 UTF-16、Go／Rust 為 UTF-8 byte，含非 BMP 字元時跨語言驗證器會靜默不一致。無 NFC 正規化 | 須在協定明定單位與正規化，才不會讓既有 I08 封存的 hash 失效 |
+| 兩套 canonical JSON | `prepare_expert_holdout.encoded()` 缺 `separators` 與 `allow_nan=False`，與 `expert_evaluation.encoded()` 對同一份資料給出不同 hash | 統一會改變 I08 已封存的 `holdout_plaintext_sha256`，不可在未開封前變更 |
+| 衍生物無簽章 | `score`、`disputes` 輸出無 envelope；`verify-gold` 的輸出是拆封後的 payload，保管人簽章被丟掉 | 協定變更 |
+
+### 必須更正的措辭（文件層，非程式缺陷）
+
+- `I09_EXPERT_WORKFLOW.md` 寫「必填 I08 指南的 **12** 欄」，`FIELDS` 實際為 **11** 欄。
+- 「精確驗證…必要條件值」：條件值只要求出現在被引用 span 內某處，且 span 不要求是句子。
+- 「兩份獨立亂序的盲化任務」：獨立性在本輪修補前未被強制，盲化至今仍是部分的。
+- `SAI_I09_DELIVERY` 稱共享參照已改用簽署快照：`sign()` 已修，但 `freeze(private=None)`
+  的回傳值仍別名其輸入（CLI 不可利用，屬程式庫層面）。
+- `label_agreement`／`cohen_kappa`：在擇一遞交不受約束的前提下，本工具給出的 kappa
+  不能當作 inter-rater reliability 證據。
+
+I09 已經誠實寫明、本輪稽核同意且無須更動的措辭：`I09_PROTOCOL` 的
+「同一電腦管理員仍能繞過流程或讀同機密鑰。簽章只證明持鑰者簽署，不能證明學術資格、
+獨立性或沒有看過答案」、`scientific_validation_pass` 恆為 false、
+manifest 的 `independent_custodian_assigned=False`。
+
+### 稽核本身的界線
+
+本輪稽核由本代理執行，**不是第三方安全審查**，也沒有做滲透測試或密碼學形式驗證。
+AGENTS.md 要求的 CodeGraph-first 與 Rickie `brain_context` 在本執行環境**沒有掛載**
+（工具清單與 `ToolSearch` 皆無，`.codegraph/` 與 `codegraph` CLI 不存在），
+改以 452 行全文閱讀加可執行反例替代，此規模下閱讀覆蓋率 100%，但這是環境落差，須記錄。
+
 ## 已修的可重現性缺陷
 
 | 位置 | 缺陷 | 修法 |
