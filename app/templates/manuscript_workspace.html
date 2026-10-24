@@ -226,6 +226,7 @@
 
                     <!-- [v1.8] 自動存檔狀態。停筆 1.5 秒觸發，寫入草稿而不產生版本。 -->
                     <span id="autosaveStatus" class="small text-muted ms-1" style="min-width:104px;"></span>
+                    <button id="btnScientificReview" type="button" class="btn btn-sm btn-outline-secondary">科學證據建議</button>
 
                     <!-- 章節完成比例（NOTE-036）。owner／editor 可填所有章節，
                          限定編輯只可填被指派的章節，檢視者唯讀。
@@ -303,6 +304,7 @@
                 <div class="editor-status-bar px-3 py-1 bg-light border-top text-muted small d-flex justify-content-between font-monospace">
                     <span id="wordCountDisplay">Waiting for input...</span>
                     <span id="saveStatus">All changes saved locally</span>
+                    <div id="scientificDraftStatus" role="status" class="small"></div>
                 </div>
             </div>
 
@@ -657,6 +659,7 @@
     <script src="{{ url_for('static', filename='js/manuscript_ws.js') }}?v=5.5"></script>
     <script src="{{ url_for('static', filename='js/manuscript_citation.js') }}?v=0.1"></script>
     <script src="{{ url_for('static', filename='js/paragraph_review.js') }}?v=1"></script>
+    <script src="{{ url_for('static', filename='js/scientific_review.js') }}?v=1"></script>
 
 </body>
 </html>

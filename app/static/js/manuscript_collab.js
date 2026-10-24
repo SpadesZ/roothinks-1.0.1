@@ -58,6 +58,12 @@ class ManuCollab {
                 return;
             }
             this.permissions = await res.json();
+            const readPaper=this.permissions.role!=='coauthor' || this.permissions.open_access;
+            const writePaper=!['coauthor','viewer'].includes(this.permissions.role);
+            if(this.app.btnSaveGlobal)this.app.btnSaveGlobal.disabled=!writePaper;
+            const exportButton=document.getElementById('btnExportWord');
+            if(exportButton){exportButton.disabled=!readPaper;exportButton.title=readPaper?'匯出 Word':'限定作者只可讀指定章節，沒有全文匯出權限';}
+            if(this.app.fusionCanvas)this.app.fusionCanvas.setAttribute('contenteditable',writePaper?'true':'false');
             this._renderRoleBadge();
             this.refreshLock();
             this.refreshCommentBadge();

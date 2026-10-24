@@ -631,6 +631,7 @@ def create_app(test_config=None):
     from app.core_pro.study import study_routes
     from app.core_pro.manuscript import manuscript_routes
     from app.core_pro.manuscript import chapter_routes  # noqa: F401  # [collab] 章節指派與留言
+    from app.core_pro.manuscript import scientific_routes  # noqa: F401  # 建議式證據對照，沒有稿件阻擋權
     from app.llm_service import llm_routes
     from app.routes import main_bp
     from app.auth import auth_bp, auth_api_bp

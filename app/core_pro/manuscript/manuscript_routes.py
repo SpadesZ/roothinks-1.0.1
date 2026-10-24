@@ -559,6 +559,23 @@ def _process_chat_job(app_obj, sid, job_id, payload):
                     'message':str(ai_response.get('content') or '生成未完成。') if isinstance(ai_response,dict) else '生成回應格式錯誤。'},
                     to=sid,namespace='/manu_ws')
                 return
+            if ai_response.get('type')=='draft':
+                # 建議失敗也不刪稿、不改結論；只在已授權的來源範圍內比較。
+                try:
+                    from app.core_pro.manuscript.scientific_routes import save_advisory
+                    from app.core_pro.manuscript.coc_bundle import html_to_text
+                    contract=payload.get('paragraph_contract') or {}
+                    advisory=save_advisory(payload['pid'],payload['section'],html_to_text(str(ai_response.get('content',''))),
+                        [contract['evidence']] if contract.get('evidence') else [],payload.get('user_id'),
+                        required_conditions=contract.get('conditions',''),origin='generated_draft',basis_version=payload.get('s_ver',''))
+                except Exception:
+                    db.session.rollback()
+                    logger.exception('Scientific advisory unavailable; original draft preserved')
+                    advisory=dict(status='unavailable',advisory_only=True,scientific_proof=False,blocks_writing=False,
+                        message='證據建議暫時無法完成；原稿保留，可繼續寫作及稍後重新比對。')
+                ai_response.setdefault('meta',{})['scientific_advisory']=advisory
+            if not still_authorized():
+                deny_revoked();return
             _emit_job_progress(sid, job_id, 'finalizing', 'Persisting response.', 85)
 
             msg_type = ai_response.get('type', 'text') if isinstance(ai_response, dict) else 'text'
@@ -1763,6 +1780,7 @@ def handle_chat(data):
         coc_bundle = _build_coc_for_request(pid, section)
         required_context = ''
         required_item = None
+        contract = None
         if data.get('paragraph_decision_id'):
             from app.core_pro.manuscript.paragraph_context import get_context, validate_context, prompt_block
             decision = get_context(_citation_data_root(),pid,str(data['paragraph_decision_id']),section)
@@ -1859,6 +1877,7 @@ def handle_chat(data):
                                 'paragraph_decision_id':data.get('paragraph_decision_id')})
 
         payload = {
+            'paragraph_contract':contract,
             'user_id':_session_uid(),
             'auth_session_ref':auth_session_ref() if current_app.config.get('AUTH_MODE')=='session' else '',
             'auth_token':_get_sid_token(sid),
