@@ -56,7 +56,9 @@
             const card=document.createElement('article');card.className='border rounded p-3 mb-3';container.append(card);
             text(card,claim.text,'h3').className='h6';
             text(card,({text_aligned:'文字對齊；仍須核對科學支持',possible_contradiction:'可能矛盾，請人工核對',mixed_evidence:'候選來源相反，需核對條件與上下文',unknown:'尚未建立支持／未知'})[claim.relation] || '尚未建立支持／未知');
-            for(const finding of claim.findings){text(card,finding.message);if(finding.missing)text(card,'本句未明示：'+finding.missing.join('；'));if(finding.unmatched)text(card,'未對應數值：'+finding.unmatched.join('；'));}
+            const leadWhy={direction_differs_arguments_unresolved:'方向相反，但主客體未能對應（可能是被動句、縮寫或不同實驗）',negation_scope_differs:'本句與候選的否定範圍不同',unresolved_stance_scope:'來源帶否認或反駁語氣，範圍未解析',source_does_not_establish_claim:'來源明示尚無證據或未測試',significance_is_not_direction:'未達統計顯著不等於方向相反'};
+            for(const finding of claim.findings){text(card,finding.message);if(finding.missing)text(card,'本句未明示：'+finding.missing.join('；'));if(finding.unmatched)text(card,'未對應數值：'+finding.unmatched.join('；'));
+                for(const entry of finding.leads||[])text(card,`請核對：來源 ${entry.source_id} 第 ${entry.sentence_index+1} 句 — ${entry.signals.map(s=>leadWhy[s]||s).join('；')}`).className='small';}
             for(const comparison of claim.comparisons){
                 const details=document.createElement('details');details.open=true;card.append(details);
                 text(details,`來源 ${comparison.source_id} · 定位 ${JSON.stringify(comparison.locator)} · 句 ${comparison.sentence_index+1}`,'summary');

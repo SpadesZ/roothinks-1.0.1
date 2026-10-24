@@ -8,7 +8,7 @@ import re
 from collections import Counter
 from decimal import Decimal
 
-ENGINE_VERSION='advisory-rules-3'
+ENGINE_VERSION='advisory-rules-4'
 _STOP=set('a an the this that these those is are was were be been being of at on in for to and or with by from as it its we our'.split())
 _LEMMA={w:root for root,words in {
     'increase':'increase increases increased increasing', 'decrease':'decrease decreases decreased decreasing',
@@ -92,6 +92,8 @@ _HEDGE=re.compile(r'\b(may|might|could|hypothes\w*|suggest\w*|potential\w*)\b',r
 _UNESTABLISHED=re.compile(r'\b(?:no|insufficient|lack of) evidence\b|\b(?:unknown|unclear) whether\b|\bnot (?:yet )?(?:tested|established|demonstrated|measured)\b',re.I)
 _REPORTED_STANCE=re.compile(r'\b(?:not true|false that|denies|deny|denied)\b',re.I)
 _NEGATIVE_WORDS={'not','no','never','without','neither'}
+# 已判定但未解析的範圍訊號；只能當待核對線索，不能升格為矛盾判定。
+_LEAD_SCOPE_REASONS={'unresolved_stance_scope','source_does_not_establish_claim','significance_is_not_direction'}
 
 
 def _relation_frame(text):
@@ -131,6 +133,26 @@ def assess_relation(claim,quote):
         return result('unknown','negated_direction_is_not_inverse')
     opposed=(left['sign']!=right['sign']) != (left['negative']!=right['negative'])
     return result('possible_contradiction' if opposed else 'text_aligned','opposed_predicate_or_negation' if opposed else 'ordered_predicate_arguments')
+
+
+def direction_leads(claim,comparisons):
+    """保留未解析的方向／否定／立場差異作為待核對線索；不給關係判定，也不改變標籤。"""
+    left=_relation_frame(claim);leads=[]
+    for rank,comparison in enumerate(comparisons):
+        quote=comparison['quote'];signals=[]
+        right=_relation_frame(quote)
+        # 同一關係族但方向相反，而主客體未能對應：可能是被動句、縮寫或不同實驗，規則無法解析。
+        if left and right and left['family']==right['family'] and (
+            (left['sign']!=right['sign'])!=(left['negative']!=right['negative'])) and (
+            (left['subject'],left['object'])!=(right['subject'],right['object'])):
+            signals.append('direction_differs_arguments_unresolved')
+        if comparison.get('reason') in _LEAD_SCOPE_REASONS:signals.append(comparison['reason'])
+        # 否定存在性不同；沿用既有 0.35 相似度門檻，只看最相近候選，不另設新參數。
+        if rank==0 and bool(_NEGATION.search(claim))!=bool(_NEGATION.search(quote)) and comparison['similarity']>=0.35:
+            signals.append('negation_scope_differs')
+        if signals:leads.append(dict(comparison=rank,source_id=comparison['source_id'],
+            sentence_index=comparison['sentence_index'],signals=signals))
+    return leads
 
 
 def assess_claims(text,sources,*,required_conditions='',retrieval='bm25',assessment='advisory'):
@@ -207,6 +229,9 @@ def assess_claims(text,sources,*,required_conditions='',retrieval='bm25',assessm
                 relation='text_aligned' if 'text_aligned' in observed and not any(i['code'] in {'unsupported_generalization','modality_mismatch','numeric_mismatch'} for i in issues) else 'unknown'
             if comparisons and re.search(r'\bcaus(?:e|es|ed|ing|al)\b',claim,re.I) and re.search(r'\b(?:associat\w*|correlat\w*)\b',comparisons[0]['quote'],re.I) and not re.search(r'\bcaus(?:e|es|ed|ing|al)\b',comparisons[0]['quote'],re.I):
                 flag('causality_not_established','候選原句描述關聯，本句寫成因果；關聯本身不能建立因果，請核對研究設計。',0)
+            # 保守判讀會把方向衝突收斂成 unknown；線索另外列出，避免反證在摘要裡消失。
+            leads=direction_leads(claim,comparisons) if relation not in {'possible_contradiction','mixed_evidence'} else []
+            if leads:flag('counter_evidence_lead','候選原句有未解析的方向／否定／立場差異。這是待人工核對的線索，不是矛盾判定，也不改變上面的關係結論。',leads[0]['comparison'],leads=leads)
             abstention='conditions_or_warnings' if usable or any(c['relation']!='unknown' for c in comparisons) else comparisons[0]['reason'] if comparisons else 'no_evidence'
         if relation=='unknown' and not any(i['code']=='no_evidence' for i in issues):
             flag('support_not_established','這些規則未建立本主張的支持關係；請閱讀對照原文或補充證據，不能當成主張已被否定。')
