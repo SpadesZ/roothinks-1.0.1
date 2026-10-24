@@ -57,7 +57,13 @@ async function main(){
     await page.waitForFunction(()=>document.querySelector('#scientificPanel').classList.contains('show')&&!document.querySelector('#scientificPanel').classList.contains('showing'));
     assert.equal(await page.locator('#scientificPanel').evaluate(n=>{const r=n.getBoundingClientRect();return r.width<=window.innerWidth+1&&r.left>=-1&&r.right<=window.innerWidth+1;}),true);
     await snapshot('mobile-advisory');evidence.checks.push('mobile_panel_fits_viewport');
-    await page.setViewportSize({width:1440,height:1000});await page.goto(base+'/literature?pid='+pid);
+    await page.setViewportSize({width:1440,height:1000});await page.getByRole('button',{name:'關閉科學建議'}).click();
+    await page.evaluate(pid=>window.wsApp.socket.emit('chat_message',{pid,section:'introduction',title:'Synthetic',msg:'Draft an explicit hypothesis.'}),pid);
+    await page.locator('#scientificDraftStatus button').waitFor();
+    await page.locator('#sectionDropdownBtn').click();await page.locator('[data-section-id=results]').click();
+    await page.locator('#scientificDraftStatus button').click();await page.locator('#sciMessage').filter({hasText:'此報告屬於 introduction'}).waitFor();
+    assert.equal(await page.locator('#sciReport article').count(),0);await snapshot('generated-report-chapter-boundary');evidence.checks.push('generated_report_not_mislabeled_in_other_chapter');
+    await page.goto(base+'/literature?pid='+pid);
     await page.waitForFunction(()=>window.literatureOrigins?.pid);
     const uploaded=page.waitForResponse(r=>r.url().endsWith('/api/literature/upload')&&r.request().method()==='POST');
     await page.locator('#pdfUploadInput').setInputFiles({name:'synthetic-browser-csrf.pdf',mimeType:'application/pdf',buffer:Buffer.from('%PDF-synthetic-XHR-preservation-control')});

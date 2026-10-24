@@ -42,11 +42,13 @@
     async function load(id){
         const active=target,token=++generation;
         const result=await api(`/manuscript/api/scientific/reports/${encodeURIComponent(id)}?pid=${encodeURIComponent(active.pid)}`);
-        if(target!==active || token!==generation)return;render(result);
+        if(target!==active || token!==generation)return;
+        if(result.section!==active.section){message(`此報告屬於 ${result.section}；請先切換該章再開啟。`);return;}
+        render(result);
     }
     function render(data){
         report=data;const container=el('sciReport');container.replaceChildren();
-        text(container,data.stale?'來源已變更或不可用。以下是原快照的歷史建議，請重讀來源。':'原文及來源快照已保存；這不代表主張已被科學驗證。').className='alert '+(data.stale?'alert-warning':'alert-info');
+        text(container,data.stale?'來源已變更或不可用。以下是原快照的歷史建議，請重讀來源。':'原文及來源快照已保存；建議只針對下列原文，不代表目前稿件已驗證。').className='alert '+(data.stale?'alert-warning':'alert-info');
         text(container,data.uncertainty,'p').className='small';
         const refresh=document.createElement('button');refresh.type='button';refresh.className='btn btn-outline-secondary mb-3';
         refresh.textContent='重新載入此報告（保留未送出的回應）';refresh.onclick=()=>load(data.report_id).catch(e=>message(e.message));container.append(refresh);
