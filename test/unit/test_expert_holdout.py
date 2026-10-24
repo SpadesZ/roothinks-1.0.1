@@ -37,3 +37,10 @@ def test_seal_tampering_fails_before_export(tmp_path):
 def test_license_and_source_age_are_verified_from_article_metadata(license_url,year):
     xml=f'<article article-type="research-article"><front><article-meta><permissions><license href="{license_url}"/></permissions><abstract>{"Synthetic original context. "*10}</abstract></article-meta></front></article>'.encode()
     with pytest.raises(ValueError):packet.article(xml,dict(pmcid='PMCsynthetic',doi='10.synthetic/source',pubYear=year),'photonics')
+
+
+def test_nested_official_license_link_is_verified_without_relaxing_nc_rejection():
+    xml=('<article article-type="research-article"><front><article-meta><permissions><license><ext-link href="https://creativecommons.org/licenses/by/4.0/">CC BY</ext-link></license></permissions><abstract>'+('Synthetic original context. '*10)+'</abstract></article-meta></front></article>').encode()
+    row=packet.article(xml,dict(pmcid='PMCsynthetic',doi='10.synthetic/source',pubYear=2023),'photonics')
+    assert row['license_url']=='https://creativecommons.org/licenses/by/4.0/'
+    with pytest.raises(ValueError):packet.article(xml.replace(b'/by/4.0/',b'/by-nc/4.0/'),dict(pmcid='PMCsynthetic',doi='10.synthetic/source',pubYear=2023),'photonics')

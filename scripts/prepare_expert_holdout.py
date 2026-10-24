@@ -43,7 +43,7 @@ def fetch(url):
 def article(raw,record,stratum):
     root=ET.fromstring(raw)
     if root.get('article-type')!='research-article':raise ValueError('Not an original research article')
-    links=[v for node in root.findall('./front/article-meta/permissions/license') for v in node.attrib.values()]
+    links=[v for license in root.findall('./front/article-meta/permissions/license') for node in license.iter() for v in node.attrib.values()]
     links+=[''.join(node.itertext()) for node in root.findall('./front/article-meta/permissions/license')]
     licenses=[url for link in links for url in re.findall(r'https?://creativecommons\.org/(?:licenses/by|publicdomain/zero)/[\d.]+/?',link)]
     if not licenses:raise ValueError('No verified CC BY / CC0 license in article XML')
@@ -139,7 +139,9 @@ def prepare(output,seeds=None):
             if source['doi'] in used:continue
             accepted.append(source);used.add(source['doi'])
             if len(accepted)==4:break
-        if len(accepted)!=4:raise ValueError('Insufficient licensed research articles for '+stratum)
+        if len(accepted)!=4:
+            save(output/'preparation-failure.json',dict(stratum=stratum,accepted=len(accepted),rejections=rejected,sealed=False))
+            raise ValueError('Insufficient licensed research articles for '+stratum)
         accepted.sort(key=lambda s:digest(seed+s['doi'].encode()))
         pilot.extend(accepted[:2]);holdout.extend(accepted[2:])
         # 搜尋回應可能透露 holdout 身分，不保留公開的未封存 sidecar。
