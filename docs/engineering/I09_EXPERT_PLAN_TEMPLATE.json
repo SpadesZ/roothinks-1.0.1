@@ -1,0 +1,14 @@
+{
+  "version": "i09-expert-1",
+  "evaluation_id": null,
+  "owner_public_key": null,
+  "dataset_sha256": null,
+  "rubric_sha256": null,
+  "acceptance_criteria": null,
+  "roles": {
+    "custodian": {"id": null, "public_key": null, "expertise": null, "owner_approved": false},
+    "reviewer1": {"id": null, "public_key": null, "expertise": null, "owner_approved": false},
+    "reviewer2": {"id": null, "public_key": null, "expertise": null, "owner_approved": false},
+    "adjudicator": {"id": null, "public_key": null, "expertise": null, "owner_approved": false}
+  }
+}

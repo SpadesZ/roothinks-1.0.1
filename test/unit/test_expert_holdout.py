@@ -44,3 +44,28 @@ def test_nested_official_license_link_is_verified_without_relaxing_nc_rejection(
     row=packet.article(xml,dict(pmcid='PMCsynthetic',doi='10.synthetic/source',pubYear=2023),'photonics')
     assert row['license_url']=='https://creativecommons.org/licenses/by/4.0/'
     with pytest.raises(ValueError):packet.article(xml.replace(b'/by/4.0/',b'/by-nc/4.0/'),dict(pmcid='PMCsynthetic',doi='10.synthetic/source',pubYear=2023),'photonics')
+
+
+def test_external_custodian_key_and_wrong_key_never_export_plaintext(tmp_path):
+    data=tmp_path/'data';data.mkdir();custody=tmp_path/'custody';custody.mkdir();key=custody/'key.json'
+    manifest=packet.seal(data,[source()],[source('10.synthetic/held')],[],{},key_file=key)
+    assert key.exists() and not (data/'evaluator-key.json').exists()
+    assert manifest['external_key_requested'] is True and manifest['independent_custodian_assigned'] is False
+    wrong=custody/'wrong.json';packet.save(wrong,dict(key='AA=='))
+    with pytest.raises(ValueError):packet.open_packet(data,tmp_path/'wrong-export',key_file=wrong)
+    assert not (tmp_path/'wrong-export').exists()
+    packet.open_packet(data,tmp_path/'correct-export',key_file=key)
+    with pytest.raises(FileExistsError):packet.seal(data,[source()],[source('10.synthetic/held')],[],{},key_file=key)
+
+
+def test_colocated_external_key_rejected_and_partial_seal_keeps_recovery_key(tmp_path,monkeypatch):
+    data=tmp_path/'data';data.mkdir();custody=tmp_path/'custody';custody.mkdir();key=custody/'key.json'
+    with pytest.raises(ValueError):packet.seal(data,[source()],[source('10.synthetic/held')],[],{},key_file=data/'key.json')
+    original=packet.save
+    def fail_manifest(path,value):
+        if path.name=='public-manifest.json':raise OSError('synthetic disk failure')
+        original(path,value)
+    monkeypatch.setattr(packet,'save',fail_manifest)
+    with pytest.raises(OSError):packet.seal(data,[source()],[source('10.synthetic/held')],[],{},key_file=key)
+    assert key.exists() and (data/'holdout.aesgcm').exists()
+    assert not (data/'public-manifest.json').exists()  # 不假稱封存完整；保留失敗供保管人恢復。

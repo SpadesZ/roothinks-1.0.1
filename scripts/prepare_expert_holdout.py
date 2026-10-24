@@ -9,6 +9,7 @@ import base64
 from decimal import Decimal
 import hashlib
 import json
+import os
 from pathlib import Path
 import re
 import secrets
@@ -85,21 +86,27 @@ def blank_annotation():
         uncertainty=None,reason=None,confidence=None)
 
 
-def seal(output,pilot,holdout,rejections,queries):
+def seal(output,pilot,holdout,rejections,queries,*,key_file=None):
     if {r['doi'] for r in pilot}&{r['doi'] for r in holdout}:raise ValueError('Source groups overlap')
+    destination=Path(key_file) if key_file else output/'evaluator-key.json'
+    if key_file and (destination.resolve().is_relative_to(output.resolve()) or output.resolve().is_relative_to(destination.resolve().parent)):
+        raise ValueError('External key must use a separate custodian directory')
+    if any(p.exists() for p in [destination]+[output/name for name in ('holdout.aesgcm','pilot-labeling.json','public-manifest.json')]):
+        raise FileExistsError('Existing evaluation artifacts must not be overwritten')
     packet=dict(version=VERSION,sources=holdout,cases=[c for s in holdout for c in cases(s)],expert_labels_complete=False)
     raw=encoded(packet);key=AESGCM.generate_key(bit_length=256);nonce=secrets.token_bytes(12)
     ciphertext=nonce+AESGCM(key).encrypt(nonce,raw,VERSION.encode())
+    # 先保留可恢復的密鑰，再寫密文；中途失敗不能留下無法解密的唯一資料。
+    with os.fdopen(os.open(destination,os.O_WRONLY|os.O_CREAT|os.O_EXCL,0o600),'wb') as handle:
+        handle.write(encoded(dict(version=VERSION,key=base64.b64encode(key).decode())))
     with (output/'holdout.aesgcm').open('xb') as handle:handle.write(ciphertext)
-    save(output/'evaluator-key.json',dict(version=VERSION,key=base64.b64encode(key).decode()))
-    (output/'evaluator-key.json').chmod(0o600)
     save(output/'pilot-labeling.json',dict(version=VERSION,sources=pilot,cases=[c for s in pilot for c in cases(s)],expert_labels_complete=False))
     manifest=dict(version=VERSION,pilot_documents=len(pilot),holdout_documents=len(holdout),
         pilot_cases=sum(len(cases(s)) for s in pilot),holdout_cases=len(packet['cases']),
         domains={d:dict(pilot=sum(s['sampling_stratum']==d for s in pilot),holdout=sum(s['sampling_stratum']==d for s in holdout)) for d in QUERIES},
         holdout_plaintext_sha256=digest(raw),holdout_ciphertext_sha256=digest(ciphertext),
         source_groups_disjoint=True,expert_labels_complete=False,expert_judgments_created=0,
-        inference_performed=False,independent_custodian_assigned=False,queries=queries,rejections=rejections)
+        inference_performed=False,independent_custodian_assigned=False,external_key_requested=bool(key_file),queries=queries,rejections=rejections)
     save(output/'public-manifest.json',manifest)
     return manifest
 
@@ -114,7 +121,7 @@ def record_from_xml(raw,pmcid):
         authorString='; '.join(' '.join(''.join(n.itertext()).split()) for n in meta.findall('contrib-group/contrib/name')))
 
 
-def prepare(output,seeds=None):
+def prepare(output,seeds=None,key_file=None):
     output.mkdir(exist_ok=False);seed=secrets.token_bytes(32);pilot=[];holdout=[];used=set();rejected=[];queries={}
     seed_registry=json.loads(seeds.read_text(encoding='utf-8')) if seeds else None
     if seed_registry and set(seed_registry)!=set(QUERIES):raise ValueError('Seed strata must match protocol')
@@ -146,15 +153,15 @@ def prepare(output,seeds=None):
         pilot.extend(accepted[:2]);holdout.extend(accepted[2:])
         # 搜尋回應可能透露 holdout 身分，不保留公開的未封存 sidecar。
         if not seed_registry:(output/(stratum+'-search.json')).unlink()
-    manifest=seal(output,pilot,holdout,rejected,queries)
+    manifest=seal(output,pilot,holdout,rejected,queries,key_file=key_file)
     print(json.dumps(manifest,ensure_ascii=True))
 
 
-def open_packet(folder,output):
+def open_packet(folder,output,*,key_file=None):
     manifest=json.loads((folder/'public-manifest.json').read_text(encoding='utf-8'))
     data=(folder/'holdout.aesgcm').read_bytes()
     if digest(data)!=manifest['holdout_ciphertext_sha256']:raise ValueError('Ciphertext integrity mismatch')
-    key=base64.b64decode(json.loads((folder/'evaluator-key.json').read_text())['key'])
+    key=base64.b64decode(json.loads((Path(key_file) if key_file else folder/'evaluator-key.json').read_text())['key'],validate=True)
     raw=AESGCM(key).decrypt(data[:12],data[12:],VERSION.encode())
     if digest(raw)!=manifest['holdout_plaintext_sha256']:raise ValueError('Plaintext integrity mismatch')
     output.mkdir(exist_ok=False)
@@ -164,6 +171,7 @@ def open_packet(folder,output):
 
 if __name__=='__main__':
     parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('mode',choices=['prepare','open']);parser.add_argument('paths',nargs='+',type=Path);parser.add_argument('--seeds',type=Path)
+    parser.add_argument('--key-file',type=Path,help='保管人獨立目錄的密鑰檔；獨立權限須由 Owner 在外部建立')
     args=parser.parse_args()
-    if args.mode=='prepare':prepare(*args.paths,seeds=args.seeds)
-    else:open_packet(*args.paths)
+    if args.mode=='prepare':prepare(*args.paths,seeds=args.seeds,key_file=args.key_file)
+    else:open_packet(*args.paths,key_file=args.key_file)
