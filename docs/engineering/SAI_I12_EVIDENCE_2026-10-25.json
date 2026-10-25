@@ -1,0 +1,809 @@
+{
+  "round": "I12",
+  "base_sha": "16f1be36f46ad9948f829eea440ba261447047f4",
+  "branch": "codex/sai-i12-browser-and-semantic-probe",
+  "head_sha": "567e630f654247d1cf00f0078389c109f9e80ce7",
+  "commits": [
+    {
+      "sha": "567e630",
+      "subject": "test(browser): verify study-page assets load and are consumed by the app"
+    }
+  ],
+  "changed_paths": [
+    "test/integration_e2e/sai_assets_browser.cjs"
+  ],
+  "owner_decisions_honoured": {
+    "browser_expanded_within_permissions": true,
+    "cdn_plot_ly_domain_authorized": false,
+    "plotly_from_verified_npm_asset": true,
+    "google_drive_oauth_exercised": false,
+    "unrestricted_networking_enabled": false,
+    "mocked_success_used": false,
+    "i11_passing_checks_preserved": true,
+    "researcher_autonomy_preserved": true,
+    "semantic_engine_integrated": false,
+    "network_permissions_expanded": false,
+    "scientific_thresholds_weakened": false,
+    "fabricated_experts": false,
+    "holdout_accessed": false,
+    "main_merged": false,
+    "deployed": false,
+    "production_data_changed": false,
+    "lava_upstream_modified": false
+  },
+  "i11_record_corrections": [
+    {
+      "claim": "I11 證據寫 cdn.plot.ly plotly「未被這兩條流程請求」",
+      "measured": "錯誤。實測兩條流程都請求 https://cdn.plot.ly/plotly-2.27.0.min.js 並失敗（net::ERR_TUNNEL_CONNECTION_FAILED），科學流程 5 次、自主性流程 16 次。",
+      "root_cause": "I11 的包裝只記錄「被導流的請求」，未記錄未導流與失敗的請求，因此外部主機的失敗在證據裡消失。_header.html 無條件載入 plotly，而 manuscript_workspace.html 用的是 _navbar.html，才造成誤判。",
+      "fix": "I12 包裝改為記錄每一個外部請求、每一次 requestfailed 與 console 錯誤。"
+    },
+    {
+      "claim": "I11 證據完全沒有提到 accounts.google.com",
+      "measured": "manuscript_workspace.html:640 載入 https://accounts.google.com/gsi/client，該主機在本容器**可達且載入成功**（curl 200，瀏覽器無 requestfailed）。",
+      "root_cause": "同上：未記錄非導流請求，所以第四個外部網域從未出現在證據裡。",
+      "fix": "已納入 I12 的外部請求清單；Google Drive OAuth 本身依 Owner 決策未執行。"
+    },
+    {
+      "claim": "I11 證據寫 KaTeX 與 Split.js「未被這兩條流程請求」",
+      "measured": "正確。兩者只在 study.html，而 I11 的兩條流程未造訪該頁。I12 已新增流程涵蓋。",
+      "root_cause": null,
+      "fix": null
+    }
+  ],
+  "real_browser": {
+    "status": "passed",
+    "intercepted_domains": [
+      "cdn.jsdelivr.net",
+      "cdnjs.cloudflare.com",
+      "apis.google.com",
+      "cdn.plot.ly (僅在 I12_SERVE_PLOTLY=1 時，導向本機已驗真 npm 資產，不對該網域發出任何連線)"
+    ],
+    "unrestricted_network": false,
+    "sri_verified_offline": {
+      "checked": 6,
+      "passed": 6
+    },
+    "vendor": {
+      "ex/bootstrap-5.3.0/dist/js/bootstrap.bundle.min.js": {
+        "template_declared_sri": "sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz",
+        "recomputed_from_npm": "sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz",
+        "match": true,
+        "sha256": "aa53d582f97eb594c2a5cc5824574707f9ba9837bce3046bfa5f3556860f4e04"
+      },
+      "ex/bootstrap-5.3.0/dist/css/bootstrap.min.css": {
+        "template_declared_sri": "sha384-9ndCyUaIbzAi2FUVXJi0CjmCapSmO7SnpJef0486qhLnuZ2cdeRhO02iuK6FUUVM",
+        "recomputed_from_npm": "sha384-9ndCyUaIbzAi2FUVXJi0CjmCapSmO7SnpJef0486qhLnuZ2cdeRhO02iuK6FUUVM",
+        "match": true,
+        "sha256": "7f1d37f0d90b6385354c2ac10e2bb91563c46bd7a266ed351222ebcac8496c2a"
+      },
+      "ex/bootstrap-icons-1.11.1/font/bootstrap-icons.css": {
+        "template_declared_sri": "sha384-4LISF5TTJX/fLmGSxO53rV4miRxdg84mZsxmO8Rx5jGtp/LbrixFETvWa5a6sESd",
+        "recomputed_from_npm": "sha384-4LISF5TTJX/fLmGSxO53rV4miRxdg84mZsxmO8Rx5jGtp/LbrixFETvWa5a6sESd",
+        "match": true,
+        "sha256": "bb6fd8cd85394cb367e8ac58e47292f2d68eb288fa12fab68e65430a5ddfce48"
+      },
+      "ex/socket.io-client-4.7.2/dist/socket.io.min.js": {
+        "template_declared_sri": "sha384-mZLF4UVrpi/QTWPA7BjNPEnkIfRFn4ZEO3Qt/HFklTJBj/gBOV8G3HcKn4NfQblz",
+        "recomputed_from_npm": "sha384-mZLF4UVrpi/QTWPA7BjNPEnkIfRFn4ZEO3Qt/HFklTJBj/gBOV8G3HcKn4NfQblz",
+        "match": true,
+        "sha256": "83df4abc7eec941f1d29ae254e80bac0bb82d398fbe2e8ee4ea2a7efc8e704f1"
+      },
+      "ex/split.js-1.6.0/dist/split.min.js": {
+        "template_declared_sri": "sha384-0blL3GqHy6+9fw0cyY2Aoiwg4onHAtslAs4OkqZY7UQBrR65/K4gI+hxLdWDrjpz",
+        "recomputed_from_npm": "sha384-0blL3GqHy6+9fw0cyY2Aoiwg4onHAtslAs4OkqZY7UQBrR65/K4gI+hxLdWDrjpz",
+        "match": true,
+        "sha256": "6529253141c187ed786009b245457ce209ff65b0cefb40ecfaf9faab2f581441"
+      },
+      "ex/plotly_js-dist-min-2.27.0/plotly.min.js": {
+        "template_declared_sri": "sha384-Hl48Kq2HifOWdXEjMsKo6qxqvRLTYqIGbvlENBmkHAxZKIGCXv43H6W1jA671RzC",
+        "recomputed_from_npm": "sha384-Hl48Kq2HifOWdXEjMsKo6qxqvRLTYqIGbvlENBmkHAxZKIGCXv43H6W1jA671RzC",
+        "match": true,
+        "sha256": "7f4930eba8f8541dbec28dca5bd5f787f8eef1cde0369ac9657b70bed230b3e0"
+      },
+      "ex/katex-0.16.9/dist/katex.min.js": {
+        "template_declared_sri": null,
+        "sha256": "dc84b296ec3e884de093158f760fd9d45b6c7abe58b5381557f4e138f46a58ae",
+        "note": "樣板未宣告 integrity，無法以 SRI 證明真品。"
+      },
+      "ex/katex-0.16.9/dist/katex.min.css": {
+        "template_declared_sri": null,
+        "sha256": "505d5f829022bb7b4f24dfee0aa1141cd7bba67afe411d1240335f820960b5c3",
+        "note": "樣板未宣告 integrity，無法以 SRI 證明真品。"
+      },
+      "ex/katex-0.16.9/dist/contrib/auto-render.min.js": {
+        "template_declared_sri": null,
+        "sha256": "9cb8dacfc086c2966c9ec4ba54f4a2dc43b7cbe2b33cec1a2743d886c7fb47a7",
+        "note": "樣板未宣告 integrity，無法以 SRI 證明真品。"
+      },
+      "ex/mermaid-10.9.8/dist/mermaid.min.js": {
+        "template_declared_sri": null,
+        "sha256": "8d607d7ef1d077a8aa202e18e62212bfa992c68bfeabc5cf45d51a128fe6675d",
+        "note": "樣板未宣告 integrity，無法以 SRI 證明真品。"
+      }
+    },
+    "wrapper_sha256": "c4025e0000cfa6c378b76e2c96fc6cd0c1d2d2712518a8bd2f5a2ccab3e2ecdd",
+    "flows": {
+      "scientific": {
+        "output": "/tmp/claude-0/-home-user/26119001-76e5-5f53-b408-3b98c029fc98/scratchpad/i12-browser/repo/output/playwright/scientific-2026-10-25T03-31-24-345Z",
+        "sha": "16f1be36f46ad9948f829eea440ba261447047f4",
+        "checks": [
+          "actionable_source_comparison_original_unchanged",
+          "stale_409_refresh_reason_preserved_append_response",
+          "negative_evidence_and_different_conditions_explained_without_rewriting",
+          "unresolved_counter_evidence_lead_visible_without_verdict",
+          "unknown_advisory_does_not_block_save_export",
+          "mobile_panel_fits_viewport",
+          "generated_report_not_mislabeled_in_other_chapter",
+          "csrf_xhr_upload_original_registered_no_parsing_claim"
+        ],
+        "errors": [],
+        "status": "passed"
+      },
+      "autonomy": {
+        "output": "/tmp/claude-0/-home-user/26119001-76e5-5f53-b408-3b98c029fc98/scratchpad/i12-browser/repo/output/playwright/autonomy-2026-10-25T03-31-36-402Z",
+        "run": "autonomy-2026-10-25T03-31-36-402Z",
+        "sha": "16f1be36f46ad9948f829eea440ba261447047f4",
+        "checks": [
+          {
+            "name": "independent_no_professor",
+            "pid": "8AVAQ0-p",
+            "sectionVersions": [
+              "0.1",
+              "0.2"
+            ],
+            "passed": true
+          },
+          {
+            "name": "impact_explicit_author_paper_original_reviewer_reconfirmation",
+            "passed": true,
+            "review": 1
+          },
+          {
+            "name": "optional_professor_invite_review_response_remove",
+            "reviewId": 1,
+            "passed": true
+          },
+          {
+            "name": "team_scoped_save_export_denial_exit_history",
+            "passed": true
+          }
+        ],
+        "errors": [],
+        "status": "passed"
+      },
+      "assets_without_plotly": {
+        "output": "/tmp/claude-0/-home-user/26119001-76e5-5f53-b408-3b98c029fc98/scratchpad/i12-browser/repo/output/playwright/assets-2026-10-25T03-38-37-653Z",
+        "sha": "16f1be36f46ad9948f829eea440ba261447047f4",
+        "checks": [
+          "splitjs_loaded_and_consumed_by_app",
+          "katex_loaded_and_renders_math",
+          "study_page_usable_without_professor_or_evidence",
+          "authorized_assets_have_no_silent_failures"
+        ],
+        "errors": [],
+        "asset_state": {
+          "split": {
+            "loaded": true,
+            "gutters": 2,
+            "matrix_pane_width": "969px"
+          },
+          "katex": {
+            "loaded": true,
+            "produced_katex_node": true
+          },
+          "autonomy": {
+            "page_title": "ROOTHINKS-B Study Field",
+            "blocking_overlay_count": 0
+          },
+          "plotly_served": false
+        },
+        "failed_requests": [
+          {
+            "url": "https://cdn.plot.ly/plotly-2.27.0.min.js",
+            "error": "net::ERR_TUNNEL_CONNECTION_FAILED"
+          },
+          {
+            "url": "https://cdn.plot.ly/plotly-2.27.0.min.js",
+            "error": "net::ERR_TUNNEL_CONNECTION_FAILED"
+          },
+          {
+            "url": "https://cdn.plot.ly/plotly-2.27.0.min.js",
+            "error": "net::ERR_TUNNEL_CONNECTION_FAILED"
+          }
+        ],
+        "status": "passed"
+      },
+      "assets_with_verified_plotly": {
+        "output": "/tmp/claude-0/-home-user/26119001-76e5-5f53-b408-3b98c029fc98/scratchpad/i12-browser/repo/output/playwright/assets-2026-10-25T03-38-43-963Z",
+        "sha": "16f1be36f46ad9948f829eea440ba261447047f4",
+        "checks": [
+          "splitjs_loaded_and_consumed_by_app",
+          "katex_loaded_and_renders_math",
+          "study_page_usable_without_professor_or_evidence",
+          "authorized_assets_have_no_silent_failures"
+        ],
+        "errors": [],
+        "asset_state": {
+          "split": {
+            "loaded": true,
+            "gutters": 2,
+            "matrix_pane_width": "969px"
+          },
+          "katex": {
+            "loaded": true,
+            "produced_katex_node": true
+          },
+          "autonomy": {
+            "page_title": "ROOTHINKS-B Study Field",
+            "blocking_overlay_count": 0
+          },
+          "plotly_served": true
+        },
+        "failed_requests": [],
+        "status": "passed"
+      }
+    },
+    "request_logs": {
+      "noplotly-sci": {
+        "serve_plotly": false,
+        "served_count": 20,
+        "distinct_served": [
+          "ex/bootstrap-5.3.0/dist/css/bootstrap.min.css",
+          "ex/bootstrap-5.3.0/dist/js/bootstrap.bundle.min.js",
+          "ex/bootstrap-icons-1.11.1/font/bootstrap-icons.css",
+          "ex/bootstrap-icons-1.11.1/font/fonts/bootstrap-icons.woff2",
+          "ex/mermaid-10.9.8/dist/mermaid.min.js",
+          "ex/socket.io-client-4.7.2/dist/socket.io.min.js"
+        ],
+        "external_requests_distinct": [
+          "https://accounts.google.com/gsi/client",
+          "https://apis.google.com/js/api.js",
+          "https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css",
+          "https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/fonts/bootstrap-icons.woff2",
+          "https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css",
+          "https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js",
+          "https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js",
+          "https://cdn.plot.ly/plotly-2.27.0.min.js",
+          "https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.min.js"
+        ],
+        "request_failures_distinct": [
+          "https://apis.google.com/js/api.js",
+          "https://cdn.plot.ly/plotly-2.27.0.min.js"
+        ],
+        "aborted_distinct": [
+          "https://apis.google.com/js/api.js"
+        ],
+        "missing": [],
+        "console_errors": [
+          "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
+          "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED",
+          "Failed to load resource: the server responded with a status of 409 (CONFLICT)"
+        ]
+      },
+      "noplotly-aut": {
+        "serve_plotly": false,
+        "served_count": 94,
+        "distinct_served": [
+          "ex/bootstrap-5.3.0/dist/css/bootstrap.min.css",
+          "ex/bootstrap-5.3.0/dist/js/bootstrap.bundle.min.js",
+          "ex/bootstrap-icons-1.11.1/font/bootstrap-icons.css",
+          "ex/bootstrap-icons-1.11.1/font/fonts/bootstrap-icons.woff2",
+          "ex/mermaid-10.9.8/dist/mermaid.min.js",
+          "ex/socket.io-client-4.7.2/dist/socket.io.min.js"
+        ],
+        "external_requests_distinct": [
+          "https://accounts.google.com/gsi/client",
+          "https://apis.google.com/js/api.js",
+          "https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css",
+          "https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/fonts/bootstrap-icons.woff2",
+          "https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css",
+          "https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js",
+          "https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js",
+          "https://cdn.plot.ly/plotly-2.27.0.min.js",
+          "https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.min.js"
+        ],
+        "request_failures_distinct": [
+          "https://apis.google.com/js/api.js",
+          "https://cdn.plot.ly/plotly-2.27.0.min.js"
+        ],
+        "aborted_distinct": [
+          "https://apis.google.com/js/api.js"
+        ],
+        "missing": [],
+        "console_errors": [
+          "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
+          "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED",
+          "Failed to load resource: the server responded with a status of 403 (FORBIDDEN)",
+          "Failed to load resource: the server responded with a status of 409 (CONFLICT)"
+        ]
+      },
+      "assets-0": {
+        "serve_plotly": false,
+        "served_count": 20,
+        "distinct_served": [
+          "ex/bootstrap-5.3.0/dist/css/bootstrap.min.css",
+          "ex/bootstrap-5.3.0/dist/js/bootstrap.bundle.min.js",
+          "ex/bootstrap-icons-1.11.1/font/bootstrap-icons.css",
+          "ex/bootstrap-icons-1.11.1/font/fonts/bootstrap-icons.woff2",
+          "ex/katex-0.16.9/dist/contrib/auto-render.min.js",
+          "ex/katex-0.16.9/dist/fonts/KaTeX_Main-Regular.woff2",
+          "ex/katex-0.16.9/dist/fonts/KaTeX_Math-Italic.woff2",
+          "ex/katex-0.16.9/dist/katex.min.css",
+          "ex/katex-0.16.9/dist/katex.min.js",
+          "ex/split.js-1.6.0/dist/split.min.js"
+        ],
+        "external_requests_distinct": [
+          "https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css",
+          "https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/fonts/bootstrap-icons.woff2",
+          "https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css",
+          "https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js",
+          "https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js",
+          "https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/fonts/KaTeX_Main-Regular.woff2",
+          "https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/fonts/KaTeX_Math-Italic.woff2",
+          "https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css",
+          "https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js",
+          "https://cdn.plot.ly/plotly-2.27.0.min.js",
+          "https://cdnjs.cloudflare.com/ajax/libs/split.js/1.6.0/split.min.js"
+        ],
+        "request_failures_distinct": [
+          "https://cdn.plot.ly/plotly-2.27.0.min.js"
+        ],
+        "aborted_distinct": [],
+        "missing": [],
+        "console_errors": [
+          "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED",
+          "Failed to load resource: the server responded with a status of 404 (NOT FOUND)"
+        ]
+      },
+      "assets-1": {
+        "serve_plotly": true,
+        "served_count": 23,
+        "distinct_served": [
+          "ex/bootstrap-5.3.0/dist/css/bootstrap.min.css",
+          "ex/bootstrap-5.3.0/dist/js/bootstrap.bundle.min.js",
+          "ex/bootstrap-icons-1.11.1/font/bootstrap-icons.css",
+          "ex/bootstrap-icons-1.11.1/font/fonts/bootstrap-icons.woff2",
+          "ex/katex-0.16.9/dist/contrib/auto-render.min.js",
+          "ex/katex-0.16.9/dist/fonts/KaTeX_Main-Regular.woff2",
+          "ex/katex-0.16.9/dist/fonts/KaTeX_Math-Italic.woff2",
+          "ex/katex-0.16.9/dist/katex.min.css",
+          "ex/katex-0.16.9/dist/katex.min.js",
+          "ex/plotly_js-dist-min-2.27.0/plotly.min.js",
+          "ex/split.js-1.6.0/dist/split.min.js"
+        ],
+        "external_requests_distinct": [
+          "https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css",
+          "https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/fonts/bootstrap-icons.woff2",
+          "https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css",
+          "https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js",
+          "https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js",
+          "https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/fonts/KaTeX_Main-Regular.woff2",
+          "https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/fonts/KaTeX_Math-Italic.woff2",
+          "https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css",
+          "https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js",
+          "https://cdn.plot.ly/plotly-2.27.0.min.js",
+          "https://cdnjs.cloudflare.com/ajax/libs/split.js/1.6.0/split.min.js"
+        ],
+        "request_failures_distinct": [],
+        "aborted_distinct": [],
+        "missing": [],
+        "console_errors": [
+          "Failed to load resource: the server responded with a status of 404 (NOT FOUND)"
+        ]
+      }
+    },
+    "honest_limits": [
+      "資產由本機 vendor 服務，未驗證 CDN 實際出網與 TLS 鏈。",
+      "Google Drive OAuth 流程依 Owner 決策未執行；僅驗證 gsi/client 腳本可載入。",
+      "headless Chromium 的版面與計時可能與真實桌面瀏覽器不同。"
+    ]
+  },
+  "semantic_feasibility": {
+    "note": "可行性探測，未整合、未改動產品引擎；I11 的凍結基線與預先固定門檻不變。",
+    "probe_script": "scripts/semantic_resource_probe.py",
+    "reachability": {
+      "pypi": true,
+      "npm": true,
+      "huggingface": false,
+      "github_com": false,
+      "raw_githubusercontent": true,
+      "spacy_en_core_web_sm": "PyPI /simple/ 回 200 但為空索引（soft-404）；pip: from versions: none → 不可取得",
+      "stanza": "套件可裝，但 resources JSON 的 url 模板指向 huggingface.co（000），nlp.stanford.edu 亦 000 → 不可取得",
+      "nltk_resources_obtained": [
+        "wordnet",
+        "verbnet",
+        "propbank",
+        "framenet_v17",
+        "averaged_perceptron_tagger",
+        "averaged_perceptron_tagger_eng",
+        "punkt",
+        "maxent_ne_chunker",
+        "treebank"
+      ],
+      "nltk_data_bytes": 1129313417
+    },
+    "predicate_inventory": {
+      "current_product": 48,
+      "verbnet": 3626,
+      "propbank": 3319,
+      "union": 4744,
+      "multiplier": 98.8
+    },
+    "coverage_on_161_retrieved_top_candidates": {
+      "source_zero_predicate": {
+        "current": 111,
+        "current_pct": 68.9,
+        "expanded": 2,
+        "expanded_pct": 1.2,
+        "newly_covered": 109
+      },
+      "claim_zero_predicate": {
+        "current": 102,
+        "current_pct": 63.4,
+        "expanded": 13,
+        "expanded_pct": 8.1,
+        "newly_covered": 94
+      },
+      "i11_baseline_for_comparison": "I11 以 WordNet 擴充後仍有 93/161（57.8%）來源句零謂詞"
+    },
+    "ambiguity_after_expansion": {
+      "nltk_tagger": {
+        "zero": 2,
+        "one": 12,
+        "two": 58,
+        "three_plus": 89,
+        "ge_two": 147,
+        "ge_two_pct": 91.3
+      },
+      "wink_tagger": {
+        "zero": 9,
+        "one": 37,
+        "two": 47,
+        "three_plus": 68,
+        "ge_two": 115,
+        "ge_two_pct": 71.4
+      },
+      "note": "兩個詞性標註器對「什麼算 VERB」判準不同，數字不同；wink 較保守。兩者都顯示擴充詞表後多謂詞句成為主要障礙。"
+    },
+    "clause_segmentation": {
+      "sentences": 161,
+      "clauses": 509,
+      "clauses_per_sentence": 3.16,
+      "predicates_per_clause": {
+        "zero": 194,
+        "one": 245,
+        "two": 53,
+        "three_plus": 17
+      },
+      "single_predicate_clause_share": 0.4813,
+      "interpretation": "子句切分把「恰好一個謂詞」的可用比例從整句 23.0% 提升到子句 48.1%，每句平均產出 1.52 個可用子句，實質恢復了單一謂詞紀律。"
+    },
+    "js_candidates": {
+      "packages": {
+        "wink_nlp": {
+          "version": "2.4.0",
+          "license": "MIT"
+        },
+        "wink_eng_lite_web_model": {
+          "version": "1.8.1",
+          "license": "MIT"
+        },
+        "compromise": {
+          "version": "14.19.0",
+          "license": "MIT"
+        }
+      },
+      "install_bytes": 7506232,
+      "load_ms": {
+        "wink": 141,
+        "compromise": 250
+      },
+      "throughput_sentences_per_second": {
+        "wink": 44309,
+        "compromise": 781
+      },
+      "case_results": {
+        "249-source": {
+          "need": "被動語態＋施事者為 upon 片語；需還原 CDCA treatment 為施事者",
+          "wink": {
+            "tokens": 12,
+            "sentences": 1,
+            "verbs": [
+              "increased"
+            ],
+            "nouns_sample": [
+              "body",
+              "energy",
+              "expenditure",
+              "treatment"
+            ],
+            "lemmas_of_verbs": [
+              "increase"
+            ],
+            "passive_candidates": [],
+            "clause_cut_points": []
+          },
+          "compromise": {
+            "verbs": [
+              "was also"
+            ],
+            "nouns": [
+              "Whole-body energy expenditure",
+              "CDCA treatment."
+            ],
+            "is_passive": [],
+            "clauses": 1
+          }
+        },
+        "249-claim": {
+          "need": "主動句；需與來源的縮寫 CDCA 對應",
+          "wink": {
+            "tokens": 10,
+            "sentences": 1,
+            "verbs": [
+              "reduces"
+            ],
+            "nouns_sample": [
+              "acid",
+              "treatment",
+              "body",
+              "energy",
+              "expenditure"
+            ],
+            "lemmas_of_verbs": [
+              "reduce"
+            ],
+            "passive_candidates": [],
+            "clause_cut_points": []
+          },
+          "compromise": {
+            "verbs": [
+              "reduces"
+            ],
+            "nouns": [
+              "Chenodeosycholic acid treatment",
+              "whole-body energy expenditure."
+            ],
+            "is_passive": [],
+            "clauses": 1
+          }
+        },
+        "674-source": {
+          "need": "形容詞化謂詞 causal role",
+          "wink": {
+            "tokens": 14,
+            "sentences": 1,
+            "verbs": [],
+            "nouns_sample": [
+              "cholesterol",
+              "role",
+              "development",
+              "disease"
+            ],
+            "lemmas_of_verbs": [],
+            "passive_candidates": [],
+            "clause_cut_points": []
+          },
+          "compromise": {
+            "verbs": [
+              "has"
+            ],
+            "nouns": [
+              "BACKGROUND LDL cholesterol",
+              "a causal role in the development",
+              "cardiovascular disease."
+            ],
+            "is_passive": [],
+            "clauses": 1
+          }
+        },
+        "674-claim": {
+          "need": "名詞化謂詞 involvement ＋否定",
+          "wink": {
+            "tokens": 12,
+            "sentences": 1,
+            "verbs": [],
+            "nouns_sample": [
+              "cholesterol",
+              "involvement",
+              "development",
+              "disease"
+            ],
+            "lemmas_of_verbs": [],
+            "passive_candidates": [],
+            "clause_cut_points": []
+          },
+          "compromise": {
+            "verbs": [
+              "has no"
+            ],
+            "nouns": [
+              "LDL cholesterol",
+              "involvement in the development",
+              "cardiovascular disease."
+            ],
+            "is_passive": [],
+            "clauses": 1
+          }
+        },
+        "837-source": {
+          "need": "跨子句：不得把兩個子句的論元拼成同一個 frame",
+          "wink": {
+            "tokens": 33,
+            "sentences": 1,
+            "verbs": [
+              "expressed",
+              "abrogated",
+              "reduced"
+            ],
+            "nouns_sample": [
+              "mouse",
+              "endometrium",
+              "culture",
+              "stromal",
+              "cells",
+              "interference",
+              "decidualization",
+              "transcript"
+            ],
+            "lemmas_of_verbs": [
+              "express",
+              "abrogate",
+              "reduce"
+            ],
+            "passive_candidates": [],
+            "clause_cut_points": [
+              "and",
+              ",",
+              "and",
+              ",",
+              "where",
+              "and"
+            ]
+          },
+          "compromise": {
+            "verbs": [
+              "is also expressed",
+              "abrogated"
+            ],
+            "nouns": [
+              "Lrh-1",
+              "the mouse and human endometrium,",
+              "a primary culture of human endometrial stromal cells,",
+              "RNA interference",
+              "decidualization",
+              "reduced NR5A2 transcript abundance."
+            ],
+            "is_passive": [],
+            "clauses": 3
+          }
+        }
+      }
+    },
+    "unsolved": [
+      "沒有任何可取得的依存句法剖析器：主客體關係仍需規則，只是可限制在子句內。",
+      "I10 案 674（involvement／causal role）所有候選都失敗：wink 與 compromise 把 has 標為 AUX，詞性閘門使名詞化謂詞不會觸發；需另外結合 WordNet 派生關係（I11 已有）。",
+      "I10 案 249 需要縮寫對照（CDCA ↔ chenodeoxycholic acid），沒有候選提供。",
+      "沒有 NLI：HuggingFace 不可達，無法取得蘊含模型權重。"
+    ]
+  },
+  "p0_defect_hunt": {
+    "confirmed_p0": 0,
+    "method": "掃描 app/ 全部模組層 import，比對 requirements 宣告；查 openai 釘住範圍的實際相依；審視三條瀏覽器流程的全部 console 錯誤與請求失敗。",
+    "undeclared_direct_imports": {
+      "httpx": {
+        "sites": [
+          "app/llm_service/adapter/llm_google.py:26",
+          "app/llm_service/adapter/llm_openrouter.py:14"
+        ],
+        "currently_satisfied_by": "openai 1.x 的相依",
+        "severity": "not P0 today",
+        "forward_risk": "openai 最新版 3.37.0 已改依賴 httpx2（非 httpx）。requirements 釘 openai>=1.0.0,<2.0 所以目前安全；一旦放寬該 pin，模組層的 import httpx 會直接失敗。"
+      },
+      "sqlalchemy": "經 flask-sqlalchemy 傳遞取得（已宣告）",
+      "werkzeug": "經 flask 傳遞取得（已宣告）",
+      "socketio": "經 flask-socketio→python-socketio 傳遞取得（已宣告）"
+    },
+    "conclusion": "四項都由已宣告套件傳遞保證，今天不會壞，因此**不構成 P0**。屬於相依宣告衛生問題（PEP 508：應宣告你 import 的東西），已照實回報未逕行修改。",
+    "other_findings": [
+      {
+        "item": "前端資產無聲降級",
+        "detail": "study.html:437 以 typeof Split !== \"undefined\" 包住；Split.js 載入失敗時面板只是不可拖動，沒有任何錯誤或提示。I12 的新流程會在已授權網域失敗時斷言失敗，但產品本身仍會無聲降級。",
+        "severity": "not P0；修它會改動產品行為，未自行變更"
+      }
+    ]
+  },
+  "full_regression": {
+    "sha": "567e630f654247d1cf00f0078389c109f9e80ce7",
+    "targets": [
+      "test/unit",
+      "tests",
+      "test/integration_e2e"
+    ],
+    "tests": 1486,
+    "passed": 1470,
+    "skipped": 16,
+    "failures": 0,
+    "errors": 0,
+    "seconds": 187.471,
+    "environment": "product-like: no nltk data, provider/DB credentials unset",
+    "skips": [
+      {
+        "test": "test_sai_process_revision::test_multiple_process_writers_have_one_winner_per_revision[draft_aliases]",
+        "reason": "Windows 路徑別名語意"
+      },
+      {
+        "test": "test_sai_process_revision::test_extended_prefix_and_case_aliases_share_the_same_lock",
+        "reason": "Windows 路徑別名語意"
+      },
+      {
+        "test": "TestRealDatabaseIsNotTouched::test_real_db_is_untouched_by_create_app",
+        "reason": "這台機器沒有正式 data/roothinks.db"
+      },
+      {
+        "test": "test_semantic_frame::test_nominalized_and_passive_restatements_align[Treatment X reduces survival.-Reduction of survival by treatment X was observed.]",
+        "reason": "WordNet 資料不可用"
+      },
+      {
+        "test": "test_semantic_frame::test_nominalized_and_passive_restatements_align[Treatment X increases survival.-Survival was increased by treatment X.]",
+        "reason": "WordNet 資料不可用"
+      },
+      {
+        "test": "test_semantic_frame::test_nominalized_and_passive_restatements_align[Protein X inhibits protein Y.-Inhibition of protein Y by protein X was measured.]",
+        "reason": "WordNet 資料不可用"
+      },
+      {
+        "test": "test_semantic_frame::test_nominalized_and_passive_restatements_align[Treatment X improves outcome.-Outcome was improved by treatment X.]",
+        "reason": "WordNet 資料不可用"
+      },
+      {
+        "test": "test_semantic_frame::test_restored_arguments_must_still_match_in_order[Treatment X reduces survival.-Reduction of treatment X by survival was observed.]",
+        "reason": "WordNet 資料不可用"
+      },
+      {
+        "test": "test_semantic_frame::test_restored_arguments_must_still_match_in_order[Treatment X increases survival.-Treatment X was increased by survival.]",
+        "reason": "WordNet 資料不可用"
+      },
+      {
+        "test": "test_semantic_frame::test_restored_arguments_must_still_match_in_order[Treatment X increases survival.-Survival was increased by treatment Z.]",
+        "reason": "WordNet 資料不可用"
+      },
+      {
+        "test": "test_semantic_frame::test_restored_arguments_must_still_match_in_order[Treatment X increases survival in mice.-Survival was increased by treatment X in rats.]",
+        "reason": "WordNet 資料不可用"
+      },
+      {
+        "test": "test_semantic_frame::test_argument_restoration_never_hides_a_real_direction_conflict[Treatment X increases survival.-Survival was decreased by treatment X.]",
+        "reason": "WordNet 資料不可用"
+      },
+      {
+        "test": "test_semantic_frame::test_argument_restoration_never_hides_a_real_direction_conflict[Treatment X reduces survival.-Increase of survival by treatment X was observed.]",
+        "reason": "WordNet 資料不可用"
+      },
+      {
+        "test": "test_semantic_frame::test_passive_without_an_agent_cannot_invent_a_subject",
+        "reason": "WordNet 資料不可用"
+      },
+      {
+        "test": "test_semantic_frame::test_nominalization_does_not_cross_the_relation_family",
+        "reason": "WordNet 資料不可用"
+      },
+      {
+        "test": "test_semantic_frame::test_adjectival_forms_without_a_wordnet_verb_link_stay_unparsed",
+        "reason": "WordNet 資料不可用"
+      }
+    ]
+  },
+  "not_measured": [
+    "CDN 實際出網與 TLS 鏈",
+    "Google Drive OAuth 流程",
+    "真人專家 gold 與 holdout 成績",
+    "條件／模態／因果品質",
+    "機率校準",
+    "擴充謂詞詞表實際整合後的誤報率（本輪未整合）"
+  ],
+  "scientific_quality_pass": false,
+  "expert_evaluation_complete": false,
+  "builder_sha256": "687092bb3ae577978435ab0628989cf144ee436de639babe060f730300993e9c"
+}

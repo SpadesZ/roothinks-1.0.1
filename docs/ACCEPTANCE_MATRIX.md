@@ -4,7 +4,28 @@
 
 此表為優化實作的驗收依據。Batch A/B 及段落主張 → 證據條件 → 版本師生審閱工程切片已實作；各列標明實際範圍。未執行的案例保留未驗證，不以完整回歸數量推定全需求通過。更新證據時記錄實作 SHA、環境、命令／操作、結果與限制。
 
-## 本輪 I11：真瀏覽器驗證完成、語意實驗量測後不採用
+## 本輪 I12：瀏覽器範圍擴大、語意資源可行性評估、I11 記錄更正
+
+起點 `16f1be3`；實作凍結 `567e630`；分支 `codex/sai-i12-browser-and-semantic-probe`。
+見 [交付與自我稽核](engineering/SAI_I12_DELIVERY_2026-10-25.md)、
+[機器證據](engineering/SAI_I12_EVIDENCE_2026-10-25.json)。
+**本輪未改動產品引擎**（`advisory-rules-4`，hash `4c2034bf…` 不變），I10／I11 基線完整。
+
+| 項目 | 已實作／實際驗證 | 未完成／限制 |
+|---|---|---|
+| 最終工程基線 | `567e630` 完整回歸 **1,470 通過／16 略過／0 失敗**，1,486 項、187.50 秒；與 I11 相同（未改產品程式） | 非全面安全認證 |
+| **瀏覽器範圍擴大** | 四次執行全部 passed。新增 `sai_assets_browser.cjs`：Split.js 實測被程式消費並產生 **2 個 gutter**、KaTeX 實測 `window.katex.render` 產生 `.katex` 節點、study 頁面無教授無證據可用、已授權網域零失敗。I11 的 12 項檢查重跑仍全通過 | 未驗證 CDN 實際出網與 TLS 鏈；Google Drive OAuth 依 Owner 決策未執行；**產品本身仍會無聲降級**（`typeof Split !== 'undefined'` 失敗時無提示），未自行修改 |
+| plotly（Owner 條件授權） | 從 npm 取得 `plotly.js-dist-min@2.27.0`，樣板 SRI **相符** → 與 `cdn.plot.ly` 服務的檔案位元相同。**對該網域沒有發出任何連線**；兩種設定（服務／不服務）都跑並保留結果 | `cdn.plot.ly` 網域本身仍未授權，邊界未擴大 |
+| **I11 記錄更正** | 實測更正兩處錯誤：plotly 其實**兩條流程都請求且失敗**（科學 5 次、自主性 16 次）；`accounts.google.com/gsi/client` 是第四個外部網域且**可達並載入成功**。根因是 I11 只記錄被導流的請求 | I12 包裝已改為記錄全部外部請求、失敗與 console 錯誤 |
+| 語意資源可行性（Owner 選項 A） | 可執行探測：HuggingFace 與 github.com **不可達**；spaCy 模型 soft-404、stanza 模型只在 HuggingFace → 皆**不可得**。可得者為 NLTK 語料與 npm wink-nlp／compromise。謂詞詞表 48 → **4,744**，來源句零謂詞 **68.9% → 1.2%** | **未整合**。Python 路徑只有 **39.0%** 子句單一謂詞、**44.4%** 仍多謂詞（JS wink 為 48.1%／13.7%）→ **效果對實作細節高度敏感**。案 674／249 所有候選皆未解。無依存剖析、無 NLI |
+| 授權與成本（新發現） | WordNet 3.0 Princeton 可商用；wink／compromise MIT | **VerbNet 2.1 與 PropBank I 在 NLTK 包內沒有 LICENSE 檔**，PropBank 是 WSJ（LDC 付費授權）上的標註 → **產品使用前必須法務審查**。最小資料集 **81 MB** 為新的資料相依；FrameNet 847 MB 排除 |
+| P0 缺陷調查 | **確認 0 個**，照實回報。`httpx`／`sqlalchemy`／`werkzeug`／`socketio` 為未宣告的直接相依，但皆由已宣告套件傳遞保證 | 前向風險：`openai` 最新版 3.37.0 已改依賴 `httpx2`；放寬 `openai<2.0` 的 pin 會打斷 `import httpx`。未自行修改 requirements（會動 Docker build） |
+
+**科學能力三輪未變**：SUPPORT TP 1、CONTRADICT TP 0、UNKNOWN 299。本輪未整合任何語意方案。
+真人專家評估依 Owner 決策延後，真 holdout 未開封，真專家 0 人。
+未擴大網路權限、未放寬科學判定門檻、未虛構專家、未部署、未 merge main、未碰 LAVA-Cowork。
+
+## I11 歷史：真瀏覽器驗證完成、語意實驗量測後不採用
 
 起點 `9deaa94`；實作凍結 `780e1e1`；分支 `codex/sai-i11-semantic-and-browser`。
 預先固定的契約見 [I11_PROTOCOL.md](engineering/I11_PROTOCOL.md)（在任何量測之前提交）。
