@@ -1,0 +1,744 @@
+{
+  "track": "python-3.12-migration",
+  "date": "2026-10-25",
+  "branch": "codex/py312-migration",
+  "base_sha": "b7a7bdd8f3abaab566029e899b5e26e6d34cc6d5",
+  "head_sha": "0741191867332b5fae146b5493053238ca7a433d",
+  "commits": [
+    {
+      "sha": "60b672f",
+      "subject": "build(py312): add an isolated Python 3.12 build candidate with hash-pinned lock"
+    },
+    {
+      "sha": "8fade05",
+      "subject": "test(py312): add reproducible runtime and production-command smoke checks"
+    },
+    {
+      "sha": "22cb556",
+      "subject": "docs(py312): interim migration handoff"
+    },
+    {
+      "sha": "95bb679",
+      "subject": "test(py312): add --nllb-real to load the baked NLLB model in a networked build"
+    },
+    {
+      "sha": "97a2d59",
+      "subject": "test(py312): separate easyocr bilingual loading from English accuracy"
+    },
+    {
+      "sha": "0741191",
+      "subject": "docs(py312): migration delivery, Owner Gate, verification files and handoff"
+    }
+  ],
+  "changed_paths": [
+    "Dockerfile.py312",
+    "docs/ACCEPTANCE_MATRIX.md",
+    "docs/engineering/I14_HANDOFF_PROMPT.md",
+    "docs/engineering/PY312_MIGRATION_DELIVERY_2026-10-25.md",
+    "docs/engineering/PY312_MIGRATION_HANDOFF.md",
+    "docs/engineering/py312_verification/Dockerfile.p312v1",
+    "docs/engineering/py312_verification/Dockerfile.p312v2",
+    "docs/engineering/py312_verification/Dockerfile.p312v3",
+    "docs/engineering/py312_verification/README.md",
+    "docs/engineering/py312_verification/py-in-fx.sh",
+    "docs/engineering/py312_verification/run_browser.sh",
+    "docs/engineering/py312_verification/torch-pypi.lock",
+    "docs/engineering/py312_verification/vendor-route.cjs",
+    "requirements-py312.constraints.txt",
+    "requirements-py312.lock",
+    "scripts/py312_gunicorn_smoke.sh",
+    "scripts/py312_lock.py",
+    "scripts/py312_runtime_check.py",
+    "test/unit/test_py312_lock.py"
+  ],
+  "boundaries": {
+    "production_dockerfile_sha256": "9e5607c63f4365095f898aa366b06f725138ff412005514604b456d86c8d2f35",
+    "production_dockerfile_equals_main": true,
+    "requirements_txt_changed": false,
+    "app_code_changed": false,
+    "scientific_engine_sha256": "4c2034bf8fdbf2ad49276d136a0d37c6201240bd2570bffca5b1fbc0f5f7bd82",
+    "merged": false,
+    "deployed": false,
+    "upstream_modified": false,
+    "images_pushed": false
+  },
+  "pins": {
+    "base_image": "python:3.12-slim@sha256:a0f57064cbdcd6285fa45f51237ab0b35ea8ebaed06a1f5973e89e19dfb86704",
+    "base_python": "3.12.15",
+    "base_os": "Debian 13 (trixie)",
+    "rollback_base_image": "python:3.10-slim@sha256:6ff506466f8b1e981719b468cc0023b8ef000b983cdec0eafe119d01f379e31d",
+    "lock_file_sha256": "ca0427de3c6163f7b6b55d3f9b705401550315f1596ee1428131e21a1ce839e8",
+    "lock_packages": 119,
+    "versions_equal_to_python310_resolution": true,
+    "removed_backports": [
+      "async-timeout",
+      "exceptiongroup",
+      "tomli"
+    ],
+    "free_resolution_would_upgrade": 14,
+    "torch": "2.6.0+cpu (version only, no hash: PyTorch index 403)",
+    "torchvision": "0.21.0+cpu (version only, no hash)"
+  },
+  "environment_blockers": {
+    "debian_apt": "deb.debian.org 明文 HTTP 經代理回 405；22 個 Debian HTTPS 來源不可達",
+    "pytorch_cpu_index": "download.pytorch.org：代理 CONNECT 403",
+    "huggingface": "huggingface.co／hf.co 不可達（000）",
+    "reachable": [
+      "pypi.org",
+      "files.pythonhosted.org",
+      "registry-1.docker.io",
+      "archive.ubuntu.com",
+      "security.ubuntu.com",
+      "github.com（easyocr 模型）"
+    ]
+  },
+  "builds": {
+    "production_style": {
+      "dockerfile": "Dockerfile.py312",
+      "passed": false,
+      "failed_step": "[2/11] apt-get update",
+      "cause": "405 Method Not Allowed"
+    },
+    "v1": {
+      "dockerfile": "docs/engineering/py312_verification/Dockerfile.p312v1",
+      "passed": true,
+      "pip_check": "No broken requirements found.",
+      "image": [
+        "[p312-v1:runtime] sha256:ec4a88fba2d9c584bd455c53fb3bc33b4313ccf06d4829d51d47af7192c8b445 2026-10-25T09:38:23.059601908Z",
+        "[p312-v1:test] sha256:3ff1f1518955bb572b7652868424871cfda85154fb64f6a911aeadca756a75a4 2026-10-25T09:42:44.129340236Z"
+      ]
+    },
+    "v2": {
+      "dockerfile": "docs/engineering/py312_verification/Dockerfile.p312v2",
+      "passed": true,
+      "image": "[p312-v2:test] sha256:12347999e35f5758658b46a6c30bb4a0bd0cf991d7cfbe4d492556d5813f3471 2026-10-25T09:39:55.218556384Z"
+    },
+    "v3": {
+      "dockerfile": "docs/engineering/py312_verification/Dockerfile.p312v3",
+      "passed": true,
+      "image": "[p312-v3:test] sha256:d5203c273cff7d6b8359966114ee6a4b2fbf864e22a7c80c1d91f2d0b1be6005 2026-10-25T10:06:43.720618004Z",
+      "note": "前兩次解壓時磁碟滿而失敗；移除 V1 映像後第三次成功"
+    }
+  },
+  "regression": {
+    "host": {
+      "environment": "Python 3.13.17 主機，產品環境",
+      "tests": 1528,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 50,
+      "passed": 1478,
+      "seconds": 200.45,
+      "problems": []
+    },
+    "v1": {
+      "environment": "Debian python:3.12-slim 3.12.15、PyPI torch、無系統函式庫",
+      "tests": 1518,
+      "failures": 0,
+      "errors": 8,
+      "skipped": 51,
+      "passed": 1459,
+      "seconds": 224.81,
+      "problems": [
+        {
+          "kind": "error",
+          "test": "::test.unit.test_arbiter_equation_chain",
+          "message": "collection failure"
+        },
+        {
+          "kind": "error",
+          "test": "::test.unit.test_segmentizer_types",
+          "message": "collection failure"
+        },
+        {
+          "kind": "error",
+          "test": "test.unit.test_source_contract_scope::test_untracked_source_is_in_scope",
+          "message": "failed on setup with \"FileNotFoundError: [Errno 2] No such file or directory: 'git'\""
+        },
+        {
+          "kind": "error",
+          "test": "test.unit.test_source_contract_scope::test_untracked_bad_header_is_reported",
+          "message": "failed on setup with \"FileNotFoundError: [Errno 2] No such file or directory: 'git'\""
+        },
+        {
+          "kind": "error",
+          "test": "test.unit.test_source_contract_scope::test_detailed_style_header_passes",
+          "message": "failed on setup with \"FileNotFoundError: [Errno 2] No such file or directory: 'git'\""
+        },
+        {
+          "kind": "error",
+          "test": "test.unit.test_source_contract_scope::test_gitignored_file_stays_out_of_scope",
+          "message": "failed on setup with \"FileNotFoundError: [Errno 2] No such file or directory: 'git'\""
+        },
+        {
+          "kind": "error",
+          "test": "test.unit.test_source_contract_scope::test_cached_mode_ignores_untracked",
+          "message": "failed on setup with \"FileNotFoundError: [Errno 2] No such file or directory: 'git'\""
+        },
+        {
+          "kind": "error",
+          "test": "test.unit.test_source_contract_scope::test_note_reference_in_untracked_file_counts",
+          "message": "failed on setup with \"FileNotFoundError: [Errno 2] No such file or directory: 'git'\""
+        }
+      ]
+    },
+    "v2": {
+      "environment": "Ubuntu 24.04 Python 3.12.3、系統函式庫＋git、無 torch",
+      "tests": 1528,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 51,
+      "passed": 1477,
+      "seconds": 229.21,
+      "problems": []
+    },
+    "v3": {
+      "environment": "Ubuntu 24.04 Python 3.12.3、系統函式庫＋git＋PyPI torch",
+      "tests": 1528,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 51,
+      "passed": 1477,
+      "seconds": 214.16,
+      "problems": []
+    },
+    "rollback_python310": {
+      "environment": "I13 驗證映像 Python 3.10.22，同一 commit 60b672f",
+      "tests": 1518,
+      "failures": 0,
+      "errors": 8,
+      "skipped": 51,
+      "passed": 1459,
+      "seconds": 240.99,
+      "problems": [
+        {
+          "kind": "error",
+          "test": "::test.unit.test_arbiter_equation_chain",
+          "message": "collection failure"
+        },
+        {
+          "kind": "error",
+          "test": "::test.unit.test_segmentizer_types",
+          "message": "collection failure"
+        },
+        {
+          "kind": "error",
+          "test": "test.unit.test_source_contract_scope::test_untracked_source_is_in_scope",
+          "message": "failed on setup with \"FileNotFoundError: [Errno 2] No such file or directory: 'git'\""
+        },
+        {
+          "kind": "error",
+          "test": "test.unit.test_source_contract_scope::test_untracked_bad_header_is_reported",
+          "message": "failed on setup with \"FileNotFoundError: [Errno 2] No such file or directory: 'git'\""
+        },
+        {
+          "kind": "error",
+          "test": "test.unit.test_source_contract_scope::test_detailed_style_header_passes",
+          "message": "failed on setup with \"FileNotFoundError: [Errno 2] No such file or directory: 'git'\""
+        },
+        {
+          "kind": "error",
+          "test": "test.unit.test_source_contract_scope::test_gitignored_file_stays_out_of_scope",
+          "message": "failed on setup with \"FileNotFoundError: [Errno 2] No such file or directory: 'git'\""
+        },
+        {
+          "kind": "error",
+          "test": "test.unit.test_source_contract_scope::test_cached_mode_ignores_untracked",
+          "message": "failed on setup with \"FileNotFoundError: [Errno 2] No such file or directory: 'git'\""
+        },
+        {
+          "kind": "error",
+          "test": "test.unit.test_source_contract_scope::test_note_reference_in_untracked_file_counts",
+          "message": "failed on setup with \"FileNotFoundError: [Errno 2] No such file or directory: 'git'\""
+        }
+      ]
+    }
+  },
+  "runtime_checks": {
+    "v1": {
+      "python": "3.12.15",
+      "results": {
+        "interpreter": {
+          "status": "passed",
+          "detail": null
+        },
+        "imports": {
+          "status": "failed",
+          "detail": {
+            "failed": {
+              "cv2": "ImportError: libxcb.so.1: cannot open shared object file: No such file or directory",
+              "easyocr": "ImportError: libxcb.so.1: cannot open shared object file: No such file or directory"
+            },
+            "versions": {
+              "flask": "3.0.3",
+              "flask_sqlalchemy": "3.1.1",
+              "flask_socketio": "",
+              "flask_login": "0.6.3",
+              "flask_wtf": "1.2.2",
+              "flask_limiter": "3.12",
+              "gunicorn": "22.0.0",
+              "eventlet": "0.36.1",
+              "redis": "5.3.1",
+              "cryptography": "43.0.3",
+              "filelock": "3.32.7",
+              "alembic": "1.20.1",
+              "google.generativeai": "0.7.2",
+              "openai": "1.109.1",
+              "deep_translator": "1.9.1",
+              "dotenv": "",
+              "requests": "2.34.2",
+              "httpx": "0.28.1",
+              "sqlalchemy": "2.0.55",
+              "werkzeug": "",
+              "socketio": "",
+              "PIL": "10.4.0",
+              "pytesseract": "0.3.13",
+              "numpy": "2.2.6",
+              "pdf2image": "",
+              "layoutparser": "0.3.4",
+              "transformers": "4.57.6",
+              "sentencepiece": "0.2.2",
+              "torch": "2.6.0+cu124",
+              "torchvision": "0.21.0+cu124",
+              "safetensors": "0.8.0",
+              "huggingface_hub": "0.36.2"
+            }
+          }
+        },
+        "torch": {
+          "status": "passed",
+          "detail": {
+            "torch": "2.6.0+cu124",
+            "torchvision": "0.21.0+cu124",
+            "cuda_available": false,
+            "nms": [
+              0,
+              2
+            ],
+            "threads": 4
+          }
+        },
+        "opencv": {
+          "status": "failed",
+          "detail": "ImportError: libxcb.so.1: cannot open shared object file: No such file or directory\nTraceback (most recent call last):\n  File \"/app/scripts/py312_runtime_check.py\", line 36, in run\n    status, detail = func()\n                     ^^^^^^\n  File \"/app/scripts/py312_runtime_check.py\", line 219, in <lambda>\n    ('opencv', lambda: check_opencv(work)), ('eventlet', check_eventlet),\n                       ^^^^^^^^^^^^^^^^^^\n  File \"/app/scripts/py312_runtime_check.py\", line 73, in check_opencv\n    import cv2\nImportError: libxcb.so.1: cannot open shared object file: No such file or directory\n"
+        },
+        "eventlet": {
+          "status": "passed",
+          "detail": {
+            "body": "green-ok",
+            "eventlet": "0.36.1",
+            "ssl_context": "eventlet.green.ssl"
+          }
+        },
+        "nllb_load_path": {
+          "status": "passed",
+          "detail": {
+            "ready": true,
+            "single_type": "str",
+            "batch": 2,
+            "baked_files": [
+              "added_tokens.json",
+              "config.json",
+              "generation_config.json",
+              "model.safetensors",
+              "sentencepiece.bpe.model",
+              "special_tokens_map.json",
+              "tokenizer.json",
+              "tokenizer_config.json"
+            ],
+            "bake_tail": "[bake_nllb] OK -> NLLB baked as safetensors at /tmp/p312-check/nllb: ['added_tokens.json', 'config.json', 'generation_config.json', 'model.safetensors', 'sentencepiece.bpe.model', 'special_tokens_map.json', 'tokenizer.json', 'tokenizer_config.json']",
+            "note": "合成小權重：只驗載入與推論路徑，不代表翻譯品質；真 NLLB 權重需 HuggingFace"
+          }
+        },
+        "easyocr": {
+          "status": "failed",
+          "detail": "ImportError: libxcb.so.1: cannot open shared object file: No such file or directory\nTraceback (most recent call last):\n  File \"/app/scripts/py312_runtime_check.py\", line 36, in run\n    status, detail = func()\n                     ^^^^^^\n  File \"/app/scripts/py312_runtime_check.py\", line 221, in <lambda>\n    ('easyocr', lambda: check_easyocr(work, args.easyocr_dir, args.allow_download)),\n                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/scripts/py312_runtime_check.py\", line 182, in check_easyocr\n    import easyocr\nImportError: libxcb.so.1: cannot open shared object file: No such file or directory\n"
+        },
+        "tesseract_poppler": {
+          "status": "skipped",
+          "detail": "映像沒有 tesseract 或 poppler（生產 Dockerfile 由 apt 安裝）"
+        }
+      }
+    },
+    "v3_first_run": {
+      "python": "3.12.3",
+      "results": {
+        "interpreter": {
+          "status": "passed",
+          "detail": null
+        },
+        "imports": {
+          "status": "passed",
+          "detail": null
+        },
+        "torch": {
+          "status": "passed",
+          "detail": {
+            "torch": "2.6.0+cu124",
+            "torchvision": "0.21.0+cu124",
+            "cuda_available": false,
+            "nms": [
+              0,
+              2
+            ],
+            "threads": 4
+          }
+        },
+        "opencv": {
+          "status": "passed",
+          "detail": {
+            "version": "4.14.0",
+            "file": "/opt/venv/lib/python3.12/site-packages/cv2/__init__.py"
+          }
+        },
+        "eventlet": {
+          "status": "passed",
+          "detail": {
+            "body": "green-ok",
+            "eventlet": "0.36.1",
+            "ssl_context": "eventlet.green.ssl"
+          }
+        },
+        "nllb_load_path": {
+          "status": "passed",
+          "detail": {
+            "ready": true,
+            "single_type": "str",
+            "batch": 2,
+            "baked_files": [
+              "added_tokens.json",
+              "config.json",
+              "generation_config.json",
+              "model.safetensors",
+              "sentencepiece.bpe.model",
+              "special_tokens_map.json",
+              "tokenizer.json",
+              "tokenizer_config.json"
+            ],
+            "bake_tail": "[bake_nllb] OK -> NLLB baked as safetensors at /tmp/p312-check/nllb: ['added_tokens.json', 'config.json', 'generation_config.json', 'model.safetensors', 'sentencepiece.bpe.model', 'special_tokens_map.json', 'tokenizer.json', 'tokenizer_config.json']",
+            "note": "合成小權重：只驗載入與推論路徑，不代表翻譯品質；真 NLLB 權重需 HuggingFace"
+          }
+        },
+        "easyocr": {
+          "status": "failed",
+          "detail": {
+            "version": "1.7.2",
+            "read": "R0oTH||/K$ 2026",
+            "models": [
+              "chinese.pth",
+              "craft_mlt_25k.pth"
+            ]
+          }
+        },
+        "tesseract_poppler": {
+          "status": "passed",
+          "detail": {
+            "tesseract": "5.3.4",
+            "read": "ROOTHINKS 2026",
+            "pdf_pages": 1
+          }
+        }
+      }
+    },
+    "v3_first_run_note": "第一次 V3：雙語 easyocr 讀合成英文字為 R0oTH||/K$ 2026 而判失敗；之後檢查改為雙語有輸出＋英文讀對",
+    "v3": {
+      "python": "3.12.3",
+      "results": {
+        "interpreter": {
+          "status": "passed",
+          "detail": null
+        },
+        "imports": {
+          "status": "passed",
+          "detail": null
+        },
+        "torch": {
+          "status": "passed",
+          "detail": {
+            "torch": "2.6.0+cu124",
+            "torchvision": "0.21.0+cu124",
+            "cuda_available": false,
+            "nms": [
+              0,
+              2
+            ],
+            "threads": 4
+          }
+        },
+        "opencv": {
+          "status": "passed",
+          "detail": {
+            "version": "4.14.0",
+            "file": "/opt/venv/lib/python3.12/site-packages/cv2/__init__.py"
+          }
+        },
+        "eventlet": {
+          "status": "passed",
+          "detail": {
+            "body": "green-ok",
+            "eventlet": "0.36.1",
+            "ssl_context": "eventlet.green.ssl"
+          }
+        },
+        "nllb_load_path": {
+          "status": "passed",
+          "detail": {
+            "ready": true,
+            "single_type": "str",
+            "batch": 2,
+            "baked_files": [
+              "added_tokens.json",
+              "config.json",
+              "generation_config.json",
+              "model.safetensors",
+              "sentencepiece.bpe.model",
+              "special_tokens_map.json",
+              "tokenizer.json",
+              "tokenizer_config.json"
+            ],
+            "bake_tail": "[bake_nllb] OK -> NLLB baked as safetensors at /tmp/p312-check/nllb: ['added_tokens.json', 'config.json', 'generation_config.json', 'model.safetensors', 'sentencepiece.bpe.model', 'special_tokens_map.json', 'tokenizer.json', 'tokenizer_config.json']",
+            "note": "合成小權重：只驗載入與推論路徑，不代表翻譯品質；真 NLLB 權重需 HuggingFace"
+          }
+        },
+        "easyocr": {
+          "status": "passed",
+          "detail": {
+            "version": "1.7.2",
+            "bilingual_read": "R0oTH||/K$ 2026",
+            "english_read": "ROOTHINKS 2026",
+            "models": [
+              "chinese.pth",
+              "craft_mlt_25k.pth",
+              "english_g2.pth"
+            ]
+          }
+        },
+        "tesseract_poppler": {
+          "status": "passed",
+          "detail": {
+            "tesseract": "5.3.4",
+            "read": "ROOTHINKS 2026",
+            "pdf_pages": 1
+          }
+        }
+      }
+    }
+  },
+  "production_command_smoke": {
+    "eventlet": {
+      "worker_class": "eventlet",
+      "login_page_status": 200,
+      "login": {
+        "status": 200,
+        "me_status": 200,
+        "signed_in": true
+      },
+      "home_status": 200,
+      "socketio_polling": {
+        "status": 200,
+        "handshake": true
+      },
+      "upload": {
+        "status": 200,
+        "paper_id": "paper",
+        "linked": true
+      },
+      "source_sha256_matches": true,
+      "recover": [
+        {
+          "status": 200,
+          "paper_id": "paper"
+        },
+        {
+          "status": 200,
+          "paper_id": "paper"
+        }
+      ],
+      "source_unchanged_after_recover": true,
+      "result": "passed",
+      "gunicorn": [
+        "[2026-10-25 09:45:35 +0000] [18] [INFO] Using worker: eventlet",
+        "[2026-10-25 09:45:35 +0000] [20] [INFO] Booting worker with pid: 20"
+      ]
+    },
+    "gthread": {
+      "worker_class": "gthread",
+      "login_page_status": 200,
+      "login": {
+        "status": 200,
+        "me_status": 200,
+        "signed_in": true
+      },
+      "home_status": 200,
+      "socketio_polling": {
+        "status": 200,
+        "handshake": true
+      },
+      "upload": {
+        "status": 200,
+        "paper_id": "paper",
+        "linked": true
+      },
+      "source_sha256_matches": true,
+      "recover": [
+        {
+          "status": 200,
+          "paper_id": "paper"
+        },
+        {
+          "status": 200,
+          "paper_id": "paper"
+        }
+      ],
+      "source_unchanged_after_recover": true,
+      "result": "passed",
+      "gunicorn": [
+        "[2026-10-25 09:45:38 +0000] [18] [INFO] Using worker: gthread",
+        "[2026-10-25 09:45:38 +0000] [20] [INFO] Booting worker with pid: 20"
+      ]
+    },
+    "v3_eventlet": {
+      "worker_class": "eventlet",
+      "login_page_status": 200,
+      "login": {
+        "status": 200,
+        "me_status": 200,
+        "signed_in": true
+      },
+      "home_status": 200,
+      "socketio_polling": {
+        "status": 200,
+        "handshake": true
+      },
+      "upload": {
+        "status": 200,
+        "paper_id": "paper",
+        "linked": true
+      },
+      "source_sha256_matches": true,
+      "recover": [
+        {
+          "status": 200,
+          "paper_id": "paper"
+        },
+        {
+          "status": 200,
+          "paper_id": "paper"
+        }
+      ],
+      "source_unchanged_after_recover": true,
+      "result": "passed",
+      "gunicorn": [
+        "[2026-10-25 10:14:17 +0000] [17] [INFO] Using worker: eventlet",
+        "[2026-10-25 10:14:17 +0000] [19] [INFO] Booting worker with pid: 19"
+      ]
+    },
+    "v3_gthread": {
+      "worker_class": "gthread",
+      "login_page_status": 200,
+      "login": {
+        "status": 200,
+        "me_status": 200,
+        "signed_in": true
+      },
+      "home_status": 200,
+      "socketio_polling": {
+        "status": 200,
+        "handshake": true
+      },
+      "upload": {
+        "status": 200,
+        "paper_id": "paper",
+        "linked": true
+      },
+      "source_sha256_matches": true,
+      "recover": [
+        {
+          "status": 200,
+          "paper_id": "paper"
+        },
+        {
+          "status": 200,
+          "paper_id": "paper"
+        }
+      ],
+      "source_unchanged_after_recover": true,
+      "result": "passed",
+      "gunicorn": [
+        "[2026-10-25 10:14:20 +0000] [18] [INFO] Using worker: gthread",
+        "[2026-10-25 10:14:20 +0000] [20] [INFO] Booting worker with pid: 20"
+      ]
+    }
+  },
+  "browser": {
+    "server": "V1 容器內 sai_browser_fixture.py --autonomy",
+    "vendor_route_sha256": "c4025e0000cfa6c378b76e2c96fc6cd0c1d2d2712518a8bd2f5a2ccab3e2ecdd",
+    "runs": {
+      "noplotly-aut": {
+        "status": "passed",
+        "app_sha": "60b672f4ac79a96c705c1e0a69d64a95a9ea0d1f",
+        "checks": 4,
+        "page_errors": 0,
+        "failed_requests": [],
+        "server_python": "Python 3.12.15"
+      },
+      "noplotly-sci": {
+        "status": "passed",
+        "app_sha": "60b672f4ac79a96c705c1e0a69d64a95a9ea0d1f",
+        "checks": 8,
+        "page_errors": 0,
+        "failed_requests": [],
+        "server_python": "Python 3.12.15"
+      },
+      "assets-0": {
+        "status": "passed",
+        "app_sha": "60b672f4ac79a96c705c1e0a69d64a95a9ea0d1f",
+        "checks": 4,
+        "page_errors": 0,
+        "failed_requests": [
+          "https://cdn.plot.ly/plotly-2.27.0.min.js",
+          "https://cdn.plot.ly/plotly-2.27.0.min.js",
+          "https://cdn.plot.ly/plotly-2.27.0.min.js"
+        ],
+        "server_python": "Python 3.12.15"
+      },
+      "assets-1": {
+        "status": "passed",
+        "app_sha": "60b672f4ac79a96c705c1e0a69d64a95a9ea0d1f",
+        "checks": 4,
+        "page_errors": 0,
+        "failed_requests": [],
+        "server_python": "Python 3.12.15"
+      }
+    }
+  },
+  "scientific_engine_parity": {
+    "note": "SciFact dev 300（已曝光，只作一致性檢查）",
+    "py310": {
+      "engine_sha": "4c2034bf8fdbf2ad49276d136a0d37c6201240bd2570bffca5b1fbc0f5f7bd82",
+      "inputs_sha": "ded7f378b97aca168037271d0725437b035c32f2ac033563d94122178ced1ce5",
+      "predictions_sha": "a7a22bcfa8438daec9e1871ec5b8159e38db5e57c7a42c53ec5d214fd347d09e",
+      "count": 300
+    },
+    "py312": {
+      "engine_sha": "4c2034bf8fdbf2ad49276d136a0d37c6201240bd2570bffca5b1fbc0f5f7bd82",
+      "inputs_sha": "ded7f378b97aca168037271d0725437b035c32f2ac033563d94122178ced1ce5",
+      "predictions_sha": "a7a22bcfa8438daec9e1871ec5b8159e38db5e57c7a42c53ec5d214fd347d09e",
+      "count": 300
+    },
+    "host313": {
+      "engine_sha": "4c2034bf8fdbf2ad49276d136a0d37c6201240bd2570bffca5b1fbc0f5f7bd82",
+      "inputs_sha": "ded7f378b97aca168037271d0725437b035c32f2ac033563d94122178ced1ce5",
+      "predictions_sha": "a7a22bcfa8438daec9e1871ec5b8159e38db5e57c7a42c53ec5d214fd347d09e",
+      "count": 300
+    }
+  },
+  "not_verified": [
+    "PyTorch +cpu cp312 wheel",
+    "真 NLLB 權重 bake 與載入",
+    "生產式映像端到端建置、大小與時間",
+    "Debian apt 套件在 3.12 基底上安裝",
+    "Dockerfile.test 加 git 的效果（Debian）"
+  ],
+  "builder_sha256": "b183f9c68a56068609285011b701767e39f25f732817ff2d718b060439cce2ca"
+}
