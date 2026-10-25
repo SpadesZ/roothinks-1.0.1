@@ -26,7 +26,8 @@ RUN printf '%s\n' \
 
 WORKDIR /app
 COPY requirements-py312.lock /tmp/requirements-py312.lock
-RUN pip install --no-cache-dir --require-hashes --only-binary=:all: -r /tmp/requirements-py312.lock \
+RUN pip install --no-cache-dir --require-hashes --only-binary=:all: -r /tmp/requirements-py312.lock --report /opt/runtime-install-report.json \
+    && python -c "import json; r=json.load(open('/opt/runtime-install-report.json')); assert not any(x['is_yanked'] for x in r['install']), 'Yanked package refused'" \
     && pip check
 
 ENV NLLB_MODEL_DIR=/opt/models/nllb EASYOCR_MODULE_PATH=/opt/models/easyocr \

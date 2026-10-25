@@ -45,7 +45,7 @@ def test_cpu_supply_chain_and_single_cv2_provider():
     pins = locked()
     expected = {
         'torch': '4ca4a9394b0c771238a4f73590fdbbc4debad85ed0fa63d026ae1b085da7d6e2',
-        'torchvision': 'b545d46f4d2f9d30381281cf22874bfe1d32a8a7b0ee8396fccde89f30c6a9d',
+        'torchvision': 'b545d46f4d2f9d30381281cf22874bfe1d32a8a7b0ee8396fccde89f30c6a9d9',
     }
     for name, digest in expected.items():
         assert urlparse(pins[name]['url']).hostname in {'download.pytorch.org', 'download-r2.pytorch.org'}
@@ -60,6 +60,7 @@ def test_production_uses_pinned_312_and_hash_install_without_private_context():
     text = (ROOT / 'Dockerfile').read_text(encoding='utf-8')
     assert re.search(r'^FROM python:3\.12-slim-bookworm@sha256:[0-9a-f]{64} AS runtime$', text, re.M)
     assert '--require-hashes --only-binary=:all: -r /tmp/requirements-py312.lock' in text
+    assert '--report /opt/runtime-install-report.json' in text and "x['is_yanked']" in text
     assert 'COPY . .' not in text
     assert 'EASYOCR_DOWNLOAD_ENABLED=0' in text
     assert 'tesseract-ocr-chi-tra' in text
