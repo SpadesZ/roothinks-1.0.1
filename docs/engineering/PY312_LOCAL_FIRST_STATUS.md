@@ -9,10 +9,10 @@ Owner 於 2026-10-25 核准本機主導、單一隔離整合分支完成後 push
 ## 可驗交付清單
 
 1. [x] 29 項依賴逐項調和；113 套件、wheel/model hashes，詳見 PY312_DEPENDENCY_RECONCILIATION。
-2. [ ] 正式映像已有完整成功證據；查出 Transformers 5.10.0 被撤回，改 5.10.4 並加 build-time yanked guard，待最後重建。
-3. [ ] OCR／翻譯固定控制、tokenizer 警告、Google 失敗／就緒／撤權路徑；先重現再修工程問題。
-4. [ ] 最終凍結完整 regression、三研究流程、auth／PDF／export、科學引擎 parity、隔離 rollback。
-5. [ ] 安全與秘密掃描、驗收、自我稽核與可重現交接；清楚區分自我稽核與獨立外部審查。
+2. [x] 正式映像 84b0ea9 完整重建；Transformers 5.10.4，113 wheels 非 yanked，真 NLLB/OCR。
+3. [x] 固定控制與 tokenizer／Google 工程邊界已驗；真 OAuth 仍未授權，品質限制見交付。
+4. [x] 1,506 passed／50 skipped／0 failed；三流程、有效 PDF、真圖表、300 dev parity 與 3.10 合成回退通過。
+5. [x] 本機安全／秘密掃描、自我稽核、驗收與接手指令已備；獨立外部 auditor 尚未完成，正式 NO-GO。
 6. [ ] 僅 push personal 的本輪整合分支，核對遠端 SHA，停 Owner Gate。
 
 ## 首批調查
@@ -28,3 +28,7 @@ Owner 於 2026-10-25 核准本機主導、單一隔離整合分支完成後 push
 - 300 公開已曝露 SciFact dev 在原 3.10、本機舊 3.12、整合 3.12 byte-identical；不讀 sealed holdout。
 - 12 翻譯控制：舊 numeric exact 10/12，新 11/12；語義條件仍須人工審閱。EasyOCR 雙語錯讀仍在；加入 chi_tra 後 Tesseract 三張合成圖 CER=0，非獨立科學驗收。
 - pip-audit 95 筆降到 1 筆（deep-translator PYSEC-2022-252，官方資料明列 1.11.4 受影響且無修復版，不得逕自忽略）。Gitleaks 本輪歷史 0；Bandit findings 待逐項分流，不能稱全面無漏洞。
+
+## 最後驗證點
+
+產品凍結 `84b0ea9`；其正式 runtime `3f7391ea…`、verification `b2f70583…`。完整結果見 PY312_LOCAL_FIRST_DELIVERY_2026-10-26.md 與 PY312_LOCAL_FIRST_EVIDENCE.json。後續只加文件／已執行的驗證工具，不改產品。正式 container ID／image 保持原值、healthy；不啟動 cloud handoff。

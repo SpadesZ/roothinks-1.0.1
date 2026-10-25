@@ -1,0 +1,2911 @@
+{
+  "schema": "roothinks-local-first-py312-integration-v1",
+  "decision": "PRODUCTION_NO_GO",
+  "frozen_implementation_sha": "84b0ea9b0bf47b16afc71b002458ae5097a21405",
+  "baselines": {
+    "local": "433eec49c547c73abf6301d9f5653588ef8608d8",
+    "cloud": "e64c4e74a7a5bae6537297f31bbd0dfccdc4f6d9"
+  },
+  "runtime_build": {
+    "source_sha": "84b0ea9b0bf47b16afc71b002458ae5097a21405",
+    "command": [
+      "docker",
+      "build",
+      "--platform",
+      "linux/amd64",
+      "--target",
+      "runtime",
+      "--progress",
+      "plain",
+      "--iidfile",
+      "D:\\Documents\\RootThinksValidation\\py312-integration-20261025\\frozen-v5\\runtime-v1.iid",
+      "-f",
+      "Dockerfile",
+      "-t",
+      "roothinks-py312-local:runtime-84b0ea9b",
+      "D:\\Documents\\RootThinksValidation\\py312-integration-20261025\\frozen-v5\\context"
+    ],
+    "tag": "roothinks-py312-local:runtime-84b0ea9b",
+    "base_config_id": null,
+    "started_utc": "2026-10-25T22:11:02.086045+00:00",
+    "exit_code": 0,
+    "status": "passed",
+    "ended_utc": "2026-10-25T22:11:08.903770+00:00",
+    "image_id": "sha256:3f7391eaa7146963e64e805744e9c17d7ff734aac8ef72d903d6877fbcc77920"
+  },
+  "verification_build": {
+    "source_sha": "84b0ea9b0bf47b16afc71b002458ae5097a21405",
+    "command": [
+      "docker",
+      "build",
+      "--platform",
+      "linux/amd64",
+      "--target",
+      "verification",
+      "--progress",
+      "plain",
+      "--iidfile",
+      "D:\\Documents\\RootThinksValidation\\py312-integration-20261025\\frozen-v5\\verification-v1.iid",
+      "-f",
+      "Dockerfile.test",
+      "-t",
+      "roothinks-py312-local:verification-84b0ea9b",
+      "--build-arg",
+      "BASE_IMAGE=roothinks-py312-local:runtime-84b0ea9b",
+      "D:\\Documents\\RootThinksValidation\\py312-integration-20261025\\frozen-v5\\context"
+    ],
+    "tag": "roothinks-py312-local:verification-84b0ea9b",
+    "base_config_id": "sha256:3f7391eaa7146963e64e805744e9c17d7ff734aac8ef72d903d6877fbcc77920",
+    "started_utc": "2026-10-25T22:11:10.318052+00:00",
+    "exit_code": 0,
+    "status": "passed",
+    "ended_utc": "2026-10-25T22:11:56.493955+00:00",
+    "image_id": "sha256:b2f70583ff63b5d918edd1bbb688719a6961d0b42ea0521e5c5b76ba78f4bc6a"
+  },
+  "full_regression": {
+    "counts": {
+      "total": 1556,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 50,
+      "passed": 1506
+    },
+    "skip_reasons": {
+      "NLTK 詞性或 VerbNet 資料不可用": 34,
+      "取不到 32e1949 的檔案（淺複製？）": 1,
+      "Windows 路徑別名語意": 2,
+      "WordNet 資料不可用": 13
+    },
+    "receipt": {
+      "source_sha": "84b0ea9b0bf47b16afc71b002458ae5097a21405",
+      "image_id": "sha256:b2f70583ff63b5d918edd1bbb688719a6961d0b42ea0521e5c5b76ba78f4bc6a",
+      "command": [
+        "docker",
+        "run",
+        "--rm",
+        "--network",
+        "none",
+        "--cpus",
+        "2",
+        "--memory",
+        "4g",
+        "--security-opt",
+        "no-new-privileges",
+        "-e",
+        "SOCKETIO_ASYNC_MODE=threading",
+        "--mount",
+        "type=bind,source=D:\\Documents\\RootThinksValidation\\py312-integration-20261025\\regression-delivery,target=/evidence",
+        "sha256:b2f70583ff63b5d918edd1bbb688719a6961d0b42ea0521e5c5b76ba78f4bc6a",
+        "python",
+        "scripts/prepare_test_runtime.py",
+        "python",
+        "-m",
+        "pytest",
+        "test/unit",
+        "tests",
+        "test/integration_e2e",
+        "test/integration_smoke",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "--tb=short",
+        "--junitxml=/evidence/full.xml"
+      ],
+      "started_utc": "2026-10-25T22:11:57.093160+00:00",
+      "exit_code": 0,
+      "ended_utc": "2026-10-25T22:25:22.982456+00:00"
+    },
+    "junit_sha256": "d4707377e870570daf7b25e2a7ce91e14dacb4948b82400711da5a6f41c57fae"
+  },
+  "former_error_modules": {
+    "test_arbiter_equation_chain": [
+      "test_iou_gap_block_with_distinct_content_is_rescued",
+      "test_iou_gap_block_with_duplicate_content_not_duplicated",
+      "test_latex_retry_upscale_invoked_on_failure",
+      "test_latex_retry_disabled_single_attempt",
+      "test_equation_excluded_from_textual_fix",
+      "test_low_confidence_equation_flagged"
+    ],
+    "test_segmentizer_types": [
+      "test_llm_title_labels_no_longer_unknown",
+      "test_llm_heading_hint_promotes_type",
+      "test_llm_heading_hint_low_confidence_ignored",
+      "test_running_header_flagged_on_non_first_page",
+      "test_first_page_title_zone_never_header",
+      "test_eq_wratio_default_and_env_override"
+    ],
+    "test_source_contract_scope": [
+      "test_untracked_source_is_in_scope",
+      "test_untracked_bad_header_is_reported",
+      "test_detailed_style_header_passes",
+      "test_gitignored_file_stays_out_of_scope",
+      "test_cached_mode_ignores_untracked",
+      "test_note_reference_in_untracked_file_counts"
+    ]
+  },
+  "process_revision_tests": [
+    "test_multiple_process_writers_have_one_winner_per_revision[notes]",
+    "test_multiple_process_writers_have_one_winner_per_revision[draft]",
+    "test_multiple_process_writers_have_one_winner_per_revision[library]",
+    "test_multiple_process_writers_have_one_winner_per_revision[draft_aliases]",
+    "test_process_death_before_atomic_publish_preserves_revision_and_releases_lock",
+    "test_windows_replace_denial_is_bounded_and_preserves_old_file[False]",
+    "test_windows_replace_denial_is_bounded_and_preserves_old_file[True]",
+    "test_extended_prefix_and_case_aliases_share_the_same_lock"
+  ],
+  "node_checks": {
+    "test_csrf_transport.cjs": 0,
+    "test_google_drive_safety.cjs": 0,
+    "test_literature_decision_integrity.cjs": 0,
+    "test_manuscript_draft_integrity.cjs": 0,
+    "test_manuscript_input_boundary.cjs": 0,
+    "test_manuscript_visible_section.cjs": 0,
+    "test_mentor_review_race.cjs": 0,
+    "test_mermaid_optional.cjs": 0,
+    "test_origins_upload_csrf.cjs": 0,
+    "test_scientific_lead_rendering.cjs": 0,
+    "test_study_notes_integrity.cjs": 0
+  },
+  "browsers": {
+    "autonomy": {
+      "status": "passed",
+      "checks": [
+        {
+          "name": "independent_no_professor",
+          "pid": "I20JCD-p",
+          "sectionVersions": [
+            "0.1",
+            "0.2"
+          ],
+          "passed": true
+        },
+        {
+          "name": "impact_explicit_author_paper_original_reviewer_reconfirmation",
+          "passed": true,
+          "review": 1
+        },
+        {
+          "name": "optional_professor_invite_review_response_remove",
+          "reviewId": 1,
+          "passed": true
+        },
+        {
+          "name": "team_scoped_save_export_denial_exit_history",
+          "passed": true
+        }
+      ],
+      "receipt": {
+        "command": [
+          "C:\\Users\\Franky Kuo\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\node\\bin\\node.exe",
+          "--require",
+          "C:\\Users\\Franky Kuo\\.codex\\worktrees\\sai-py312-local\\roothinks-1.0.1\\validation\\python312\\browser_hook.cjs",
+          "--require",
+          "D:\\Documents\\RootThinksValidation\\py312-integration-20261025\\network_probe.cjs",
+          "test/integration_e2e/sai_autonomy_browser.cjs"
+        ],
+        "source_sha": "84b0ea9b0bf47b16afc71b002458ae5097a21405",
+        "started_utc": "2026-10-25T22:13:06.785142+00:00",
+        "exit_code": 0,
+        "status": "passed",
+        "ended_utc": "2026-10-25T22:14:45.241270+00:00"
+      }
+    },
+    "scientific": {
+      "status": "passed",
+      "checks": [
+        "actionable_source_comparison_original_unchanged",
+        "stale_409_refresh_reason_preserved_append_response",
+        "negative_evidence_and_different_conditions_explained_without_rewriting",
+        "unresolved_counter_evidence_lead_visible_without_verdict",
+        "unknown_advisory_does_not_block_save_export",
+        "mobile_panel_fits_viewport",
+        "generated_report_not_mislabeled_in_other_chapter",
+        "csrf_xhr_upload_original_registered_no_parsing_claim"
+      ],
+      "receipt": {
+        "command": [
+          "C:\\Users\\Franky Kuo\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\node\\bin\\node.exe",
+          "--require",
+          "C:\\Users\\Franky Kuo\\.codex\\worktrees\\sai-py312-local\\roothinks-1.0.1\\validation\\python312\\browser_hook.cjs",
+          "--require",
+          "D:\\Documents\\RootThinksValidation\\py312-integration-20261025\\network_probe.cjs",
+          "test/integration_e2e/sai_scientific_browser.cjs"
+        ],
+        "source_sha": "84b0ea9b0bf47b16afc71b002458ae5097a21405",
+        "started_utc": "2026-10-25T22:15:14.417956+00:00",
+        "exit_code": 0,
+        "status": "passed",
+        "ended_utc": "2026-10-25T22:16:27.390362+00:00"
+      }
+    },
+    "assets": {
+      "status": "passed",
+      "checks": [
+        "splitjs_loaded_and_consumed_by_app",
+        "katex_loaded_and_renders_math",
+        "study_page_usable_without_professor_or_evidence",
+        "authorized_assets_have_no_silent_failures"
+      ],
+      "receipt": {
+        "command": [
+          "C:\\Users\\Franky Kuo\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\node\\bin\\node.exe",
+          "--require",
+          "C:\\Users\\Franky Kuo\\.codex\\worktrees\\sai-py312-local\\roothinks-1.0.1\\validation\\python312\\browser_hook.cjs",
+          "--require",
+          "D:\\Documents\\RootThinksValidation\\py312-integration-20261025\\network_probe.cjs",
+          "test/integration_e2e/sai_assets_browser.cjs"
+        ],
+        "source_sha": "84b0ea9b0bf47b16afc71b002458ae5097a21405",
+        "started_utc": "2026-10-25T22:14:45.900573+00:00",
+        "exit_code": 0,
+        "status": "passed",
+        "ended_utc": "2026-10-25T22:14:59.312797+00:00"
+      }
+    }
+  },
+  "pdf": {
+    "sha": "84b0ea9b0bf47b16afc71b002458ae5097a21405",
+    "checks": [
+      "browser_xhr_csrf_and_original_bytes",
+      "idempotent_recovery_preserves_identity_and_original",
+      "poppler_text_pdf2image_tesseract_real_one_page"
+    ],
+    "errors": [],
+    "upload": {
+      "linked_entry_id": "upload-86abbe0c2c80b251",
+      "paper_id": "local-valid-control",
+      "status": "success"
+    },
+    "sha256": "bcf5d817cb03b6a5a1a18dbf204753ff2fe68d16df1e5140044c544c303edbdc",
+    "recovery": [
+      {
+        "linked_entry_id": "upload-86abbe0c2c80b251",
+        "paper_id": "local-valid-control",
+        "status": "success"
+      },
+      {
+        "linked_entry_id": "upload-86abbe0c2c80b251",
+        "paper_id": "local-valid-control",
+        "status": "success"
+      }
+    ],
+    "parsing": {
+      "sha256": "bcf5d817cb03b6a5a1a18dbf204753ff2fe68d16df1e5140044c544c303edbdc",
+      "text": "Local PDF 300 K",
+      "pages": 1,
+      "tesseract": "Local PDF 300 K",
+      "registration": "complete"
+    },
+    "status": "passed"
+  },
+  "optional_browser": {
+    "status": "passed",
+    "lazy_real_mermaid_svg": true,
+    "literal_parse_error": true,
+    "unconfigured_google_nonblocking": true,
+    "live_oauth_verified": false,
+    "editor_unchanged": true,
+    "errors": []
+  },
+  "runtime_suite": {
+    "final-capabilities": 0,
+    "final-model": 0,
+    "final-translation-quality": 0,
+    "final-ocr-quality": 0,
+    "final-gunicorn-eventlet": 0,
+    "final-gunicorn-gthread": 0,
+    "final-easyocr": 0
+  },
+  "capabilities": {
+    "python": "3.12.15 (main, Oct 21 2026, 01:08:07) [GCC 12.2.0]",
+    "platform": "Linux-6.6.87.2-microsoft-standard-WSL2-x86_64-with-glibc2.36",
+    "versions": {
+      "torch": "2.13.0+cpu",
+      "torchvision": "0.28.0+cpu",
+      "eventlet": "0.40.3",
+      "opencv-python-headless": "4.11.0.86",
+      "numpy": "1.26.4",
+      "easyocr": "1.7.2",
+      "transformers": "5.10.4",
+      "sentencepiece": "0.2.2",
+      "huggingface-hub": "1.33.0",
+      "flask": "3.1.3",
+      "python-socketio": "5.17.0",
+      "gunicorn": "22.0.0"
+    },
+    "cpu_only": true,
+    "torchvision_native_nms": true,
+    "cv2_png_roundtrip": true,
+    "single_cv2_provider": true,
+    "eventlet_subprocess": "eventlet worker import and green task passed",
+    "easyocr_import": true,
+    "easyocr_weights_loaded": false,
+    "system_pdf_ocr_tools": true,
+    "scientific_quality_measured": false
+  },
+  "nllb_delivery": {
+    "ready": true,
+    "adapter": "NLLBTranslator",
+    "source": "The sample was measured at 300 K.",
+    "translated": "標本的尺寸是300K.",
+    "batch": [
+      "標本的尺寸是300K.",
+      "這是一個地方的測試."
+    ],
+    "offline": true,
+    "scientific_quality_measured": false,
+    "translation_quality_measured": false
+  },
+  "worker_delivery": {
+    "eventlet": {
+      "command": [
+        "docker",
+        "run",
+        "--rm",
+        "--network",
+        "none",
+        "--cpus",
+        "2",
+        "--memory",
+        "3g",
+        "--security-opt",
+        "no-new-privileges",
+        "-e",
+        "GUNICORN_WORKER_CLASS=eventlet",
+        "--entrypoint",
+        "sh",
+        "sha256:3f7391eaa7146963e64e805744e9c17d7ff734aac8ef72d903d6877fbcc77920",
+        "scripts/py312_gunicorn_smoke.sh"
+      ],
+      "source_sha": "84b0ea9b0bf47b16afc71b002458ae5097a21405",
+      "started_utc": "2026-10-25T22:45:48.168031+00:00",
+      "exit_code": 0,
+      "status": "passed",
+      "ended_utc": "2026-10-25T22:45:57.823145+00:00"
+    },
+    "gthread": {
+      "command": [
+        "docker",
+        "run",
+        "--rm",
+        "--network",
+        "none",
+        "--cpus",
+        "2",
+        "--memory",
+        "3g",
+        "--security-opt",
+        "no-new-privileges",
+        "-e",
+        "GUNICORN_WORKER_CLASS=gthread",
+        "--entrypoint",
+        "sh",
+        "sha256:3f7391eaa7146963e64e805744e9c17d7ff734aac8ef72d903d6877fbcc77920",
+        "scripts/py312_gunicorn_smoke.sh"
+      ],
+      "source_sha": "84b0ea9b0bf47b16afc71b002458ae5097a21405",
+      "started_utc": "2026-10-25T22:45:48.169033+00:00",
+      "exit_code": 0,
+      "status": "passed",
+      "ended_utc": "2026-10-25T22:45:57.652778+00:00"
+    }
+  },
+  "installed_supply_chain": {
+    "image_id": "sha256:3f7391eaa7146963e64e805744e9c17d7ff734aac8ef72d903d6877fbcc77920",
+    "packages": {
+      "alembic": {
+        "version": "1.20.1",
+        "url": "https://files.pythonhosted.org/packages/11/3c/8740f5b4e1bd57333e4f84265b9b6363da4f7cf70f5622dd1e2fde7a0bd5/alembic-1.20.1-py3-none-any.whl",
+        "archive_info": {
+          "hash": "sha256=9970712cfb81ea26c8658d378aaa5b8f6ff9146e5bb111d70497c164016cf598",
+          "hashes": {
+            "sha256": "9970712cfb81ea26c8658d378aaa5b8f6ff9146e5bb111d70497c164016cf598"
+          }
+        }
+      },
+      "annotated-doc": {
+        "version": "0.0.5",
+        "url": "https://files.pythonhosted.org/packages/3e/30/e900b21425a860e195f32e37657aa1f7c7f2b1bfb26f03ca209b90933c06/annotated_doc-0.0.5-py3-none-any.whl",
+        "archive_info": {
+          "hash": "sha256=117bac03a25ede5df5440e855b32d556049ca169ead221505badf432fed4b101",
+          "hashes": {
+            "sha256": "117bac03a25ede5df5440e855b32d556049ca169ead221505badf432fed4b101"
+          }
+        }
+      },
+      "annotated-types": {
+        "version": "0.8.0",
+        "url": "https://files.pythonhosted.org/packages/99/91/8acff4f5e50511b911bbccb72b8628a49c68ce14148cd9f6431094859a90/annotated_types-0.8.0-py3-none-any.whl",
+        "archive_info": {
+          "hash": "sha256=f072f4d804ea359e4eaf198b1af7a8b0943881a87f31bb764f8bf219bb9419e0",
+          "hashes": {
+            "sha256": "f072f4d804ea359e4eaf198b1af7a8b0943881a87f31bb764f8bf219bb9419e0"
+          }
+        }
+      },
+      "anyio": {
+        "version": "4.15.1",
+        "url": "https://files.pythonhosted.org/packages/12/b8/4bd346e22b28902df4d651910f5242c28d84e4a5c2435ca5c3f797ed7e2e/anyio-4.15.1-py3-none-any.whl",
+        "archive_info": {
+          "hash": "sha256=6152fdbbf9a77fdec97731721bebf7c4c44f7c29b424b0065826173efc7ed101",
+          "hashes": {
+            "sha256": "6152fdbbf9a77fdec97731721bebf7c4c44f7c29b424b0065826173efc7ed101"
+          }
+        }
+      },
+      "beautifulsoup4": {
+        "version": "4.15.0",
+        "url": "https://files.pythonhosted.org/packages/88/c6/92fcd42f1ba33e1184263f25bfabf3d27c383410470f169e4b8163bf9c17/beautifulsoup4-4.15.0-py3-none-any.whl",
+        "archive_info": {
+          "hash": "sha256=d6f88de62e1d4e38ecb1077eb9724cd0eff29d2a08ca16a401e9b9e93f117cf9",
+          "hashes": {
+            "sha256": "d6f88de62e1d4e38ecb1077eb9724cd0eff29d2a08ca16a401e9b9e93f117cf9"
+          }
+        }
+      },
+      "bidict": {
+        "version": "0.24.1",
+        "url": "https://files.pythonhosted.org/packages/97/53/2a3c7d562271ec6b6e38e7216b3104899f8aa4180c0713cb8aaf69e29cd5/bidict-0.24.1-py3-none-any.whl",
+        "archive_info": {
+          "hash": "sha256=fd3eaa737917d8a14f4baa391670c433c4e3f6f5fd2cd99d4bf436437f432364",
+          "hashes": {
+            "sha256": "fd3eaa737917d8a14f4baa391670c433c4e3f6f5fd2cd99d4bf436437f432364"
+          }
+        }
+      },
+      "blinker": {
+        "version": "1.9.0",
+        "url": "https://files.pythonhosted.org/packages/10/cb/f2ad4230dc2eb1a74edf38f1a38b9b52277f75bef262d8908e60d957e13c/blinker-1.9.0-py3-none-any.whl",
+        "archive_info": {
+          "hash": "sha256=ba0efaa9080b619ff2f3459d1d500c57bddea4a6b424b60a91141db6fd2f08bc",
+          "hashes": {
+            "sha256": "ba0efaa9080b619ff2f3459d1d500c57bddea4a6b424b60a91141db6fd2f08bc"
+          }
+        }
+      },
+      "certifi": {
+        "version": "2026.10.23",
+        "url": "https://files.pythonhosted.org/packages/32/d1/a3652fe2c19134d0d15922177821d863cbd7e842d53a21bbe7e8e3a1b5ac/certifi-2026.10.23-py3-none-any.whl",
+        "archive_info": {
+          "hash": "sha256=e9b54de76e530bb6cf0ccd036787103acb58fd42ba930ea8bf948ddbaa2f61d1",
+          "hashes": {
+            "sha256": "e9b54de76e530bb6cf0ccd036787103acb58fd42ba930ea8bf948ddbaa2f61d1"
+          }
+        }
+      },
+      "cffi": {
+        "version": "2.1.1",
+        "url": "https://files.pythonhosted.org/packages/b1/db/dceb9dd5b231e1da801793f8acc9f3c52a7e1afe40bb1aae37e02b0faad5/cffi-2.1.1-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.whl",
+        "archive_info": {
+          "hash": "sha256=c1453022f490d2459a11819d83ad1d586e9ff65a12ac3e705ffebd46d3685dcf",
+          "hashes": {
+            "sha256": "c1453022f490d2459a11819d83ad1d586e9ff65a12ac3e705ffebd46d3685dcf"
+          }
+        }
+      },
+      "charset-normalizer": {
+        "version": "3.5.2",
+        "url": "https://files.pythonhosted.org/packages/7f/c5/38806a25ab5e65fc178f39affeda20858efafede2fce1ffc2556cfc9fe73/charset_normalizer-3.5.2-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl",
+        "archive_info": {
+          "hash": "sha256=3d31298449090ab8d47b7b1b2a555ff73cac7ed438a08b7ac160980c7ebed649",
+          "hashes": {
+            "sha256": "3d31298449090ab8d47b7b1b2a555ff73cac7ed438a08b7ac160980c7ebed649"
+          }
+        }
+      },
+      "click": {
+        "version": "8.5.0",
+        "url": "https://files.pythonhosted.org/packages/58/50/6c0d534c5f134586a8e1ba4e330569e32f057e33372ae556463212fb4cd3/click-8.5.0-py3-none-any.whl",
+        "archive_info": {
+          "hash": "sha256=255bc9599cf7748b4b1a446ccc735421bd08a2ae529a8b88597d3de5664ee360",
+          "hashes": {
+            "sha256": "255bc9599cf7748b4b1a446ccc735421bd08a2ae529a8b88597d3de5664ee360"
+          }
+        }
+      },
+      "cryptography": {
+        "version": "50.0.0",
+        "url": "https://files.pythonhosted.org/packages/da/3a/f05e32c99d440c9bb891ea0e36c9091891e36be5a9a87ab2ee6ea20729f6/cryptography-50.0.0-cp311-abi3-manylinux_2_34_x86_64.whl",
+        "archive_info": {
+          "hash": "sha256=82148ec5bddac30b51a5b3c1945075f896fa022cb93f8e4a01e9f6ee95292c5f",
+          "hashes": {
+            "sha256": "82148ec5bddac30b51a5b3c1945075f896fa022cb93f8e4a01e9f6ee95292c5f"
+          }
+        }
+      },
+      "deep-translator": {
+        "version": "1.11.4",
+        "url": "https://files.pythonhosted.org/packages/38/3f/61a8ef73236dbea83a1a063a8af2f8e1e41a0df64f122233938391d0f175/deep_translator-1.11.4-py3-none-any.whl",
+        "archive_info": {
+          "hash": "sha256=d635df037e23fa35d12fd42dab72a0b55c9dd19e6292009ee7207e3f30b9e60a",
+          "hashes": {
+            "sha256": "d635df037e23fa35d12fd42dab72a0b55c9dd19e6292009ee7207e3f30b9e60a"
+          }
+        }
+      },
+      "Deprecated": {
+        "version": "3.0.0",
+        "url": "https://files.pythonhosted.org/packages/83/ae/676feae8e4644a6d7169951a97f61c56f416c73f67bf1761f2461d75cc81/deprecated-3.0.0-py3-none-any.whl",
+        "archive_info": {
+          "hash": "sha256=58204cf4a7f6270d547af5c278ee7a6bb56045a4b3d8441a1cd11660f41b7939",
+          "hashes": {
+            "sha256": "58204cf4a7f6270d547af5c278ee7a6bb56045a4b3d8441a1cd11660f41b7939"
+          }
+        }
+      },
+      "distro": {
+        "version": "1.9.0",
+        "url": "https://files.pythonhosted.org/packages/12/b3/231ffd4ab1fc9d679809f356cebee130ac7daa00d6d6f3206dd4fd137e9e/distro-1.9.0-py3-none-any.whl",
+        "archive_info": {
+          "hash": "sha256=7bffd925d65168f85027d8da9af6bddab658135b840670a223589bc0c8ef02b2",
+          "hashes": {
+            "sha256": "7bffd925d65168f85027d8da9af6bddab658135b840670a223589bc0c8ef02b2"
+          }
+        }
+      },
+      "dnspython": {
+        "version": "2.9.0",
+        "url": "https://files.pythonhosted.org/packages/10/02/cdcc9b7c051786a103c3b09e1003a82fa0c66bcb91ffbdabcfbf7b4163b9/dnspython-2.9.0-py3-none-any.whl",
+        "archive_info": {
+          "hash": "sha256=9a4aedb833c3c1b49214d04d44d3032ab7a9135f7c1d29a549b4ff78fd82fda9",
+          "hashes": {
+            "sha256": "9a4aedb833c3c1b49214d04d44d3032ab7a9135f7c1d29a549b4ff78fd82fda9"
+          }
+        }
+      },
+      "easyocr": {
+        "version": "1.7.2",
+        "url": "https://files.pythonhosted.org/packages/bb/84/4a2cab0e6adde6a85e7ba543862e5fc0250c51f3ac721a078a55cdcff250/easyocr-1.7.2-py3-none-any.whl",
+        "archive_info": {
+          "hash": "sha256=5be12f9b0e595d443c9c3d10b0542074b50f0ec2d98b141a109cd961fd1c177c",
+          "hashes": {
+            "sha256": "5be12f9b0e595d443c9c3d10b0542074b50f0ec2d98b141a109cd961fd1c177c"
+          }
+        }
+      },
+      "eventlet": {
+        "version": "0.40.3",
+        "url": "https://files.pythonhosted.org/packages/6e/b4/981362608131dc4ee8de9fdca6a38ef19e3da66ab6a13937bd158882db91/eventlet-0.40.3-py3-none-any.whl",
+        "archive_info": {
+          "hash": "sha256=e681cae6ee956cfb066a966b5c0541e734cc14879bda6058024104790595ac9d",
+          "hashes": {
+            "sha256": "e681cae6ee956cfb066a966b5c0541e734cc14879bda6058024104790595ac9d"
+          }
+        }
+      },
+      "filelock": {
+        "version": "4.2.1",
+        "url": "https://files.pythonhosted.org/packages/28/00/db89d339bc4ecdc8087fa7b8607ba22ffc27bf96286f340c9620bea428b3/filelock-4.2.1-py3-none-any.whl",
+        "archive_info": {
+          "hash": "sha256=7be2662e9e826b9bba28afc0f843a123280d799a2ea44bb5d35ccec67905ae44",
+          "hashes": {
+            "sha256": "7be2662e9e826b9bba28afc0f843a123280d799a2ea44bb5d35ccec67905ae44"
+          }
+        }
+      },
+      "Flask": {
+        "version": "3.1.3",
+        "url": "https://files.pythonhosted.org/packages/7f/9c/34f6962f9b9e9c71f6e5ed806e0d0ff03c9d1b0b2340088a0cf4bce09b18/flask-3.1.3-py3-none-any.whl",
+        "archive_info": {
+          "hash": "sha256=f4bcbefc124291925f1a26446da31a5178f9483862233b23c0c96a20701f670c",
+          "hashes": {
+            "sha256": "f4bcbefc124291925f1a26446da31a5178f9483862233b23c0c96a20701f670c"
+          }
+        }
+      },
+      "Flask-Limiter": {
+        "version": "3.12",
+        "url": "https://files.pythonhosted.org/packages/66/ba/40dafa278ee6a4300179d2bf59a1aa415165c26f74cfa17462132996186b/flask_limiter-3.12-py3-none-any.whl",
+        "archive_info": {
+          "hash": "sha256=b94c9e9584df98209542686947cf647f1ede35ed7e4ab564934a2bb9ed46b143",
+          "hashes": {
+            "sha256": "b94c9e9584df98209542686947cf647f1ede35ed7e4ab564934a2bb9ed46b143"
+          }
+        }
+      },
+      "Flask-Login": {
+        "version": "0.6.3",
+        "url": "https://files.pythonhosted.org/packages/59/f5/67e9cc5c2036f58115f9fe0f00d203cf6780c3ff8ae0e705e7a9d9e8ff9e/Flask_Login-0.6.3-py3-none-any.whl",
+        "archive_info": {
+          "hash": "sha256=849b25b82a436bf830a054e74214074af59097171562ab10bfa999e6b78aae5d",
+          "hashes": {
+            "sha256": "849b25b82a436bf830a054e74214074af59097171562ab10bfa999e6b78aae5d"
+          }
+        }
+      },
+      "Flask-SocketIO": {
+        "version": "5.7.0",
+        "url": "https://files.pythonhosted.org/packages/35/40/79ed0a2086b6eb0d310dca81e4813b8e385a33b2938df83702e7036a6905/flask_socketio-5.7.0-py3-none-any.whl",
+        "archive_info": {
+          "hash": "sha256=2e399a4a747c6248baec188d3b1294081fda8a85597d11815a2219836bafcbad",
+          "hashes": {
+            "sha256": "2e399a4a747c6248baec188d3b1294081fda8a85597d11815a2219836bafcbad"
+          }
+        }
+      },
+      "Flask-SQLAlchemy": {
+        "version": "3.1.1",
+        "url": "https://files.pythonhosted.org/packages/1d/6a/89963a5c6ecf166e8be29e0d1bf6806051ee8fe6c82e232842e3aeac9204/flask_sqlalchemy-3.1.1-py3-none-any.whl",
+        "archive_info": {
+          "hash": "sha256=4ba4be7f419dc72f4efd8802d69974803c37259dd42f3913b0dcf75c9447e0a0",
+          "hashes": {
+            "sha256": "4ba4be7f419dc72f4efd8802d69974803c37259dd42f3913b0dcf75c9447e0a0"
+          }
+        }
+      },
+      "Flask-WTF": {
+        "version": "1.2.2",
+        "url": "https://files.pythonhosted.org/packages/dc/19/354449145fbebb65e7c621235b6ad69bebcfaec2142481f044d0ddc5b5c5/flask_wtf-1.2.2-py3-none-any.whl",
+        "archive_info": {
+          "hash": "sha256=e93160c5c5b6b571cf99300b6e01b72f9a101027cab1579901f8b10c5daf0b70",
+          "hashes": {
+            "sha256": "e93160c5c5b6b571cf99300b6e01b72f9a101027cab1579901f8b10c5daf0b70"
+          }
+        }
+      },
+      "fsspec": {
+        "version": "2026.9.0",
+        "url": "https://files.pythonhosted.org/packages/6c/c0/a98505f18594f1bce828bb159cec0fcf9860562f1a2c85913409fc8f3d9e/fsspec-2026.9.0-py3-none-any.whl",
+        "archive_info": {
+          "hash": "sha256=8dd6e646e99ea382bd85f97a45e6b526a442d79423a7dc673f1e2756d05fcb5f",
+          "hashes": {
+            "sha256": "8dd6e646e99ea382bd85f97a45e6b526a442d79423a7dc673f1e2756d05fcb5f"
+          }
+        }
+      },
+      "google-ai-generativelanguage": {
+        "version": "0.6.15",
+        "url": "https://files.pythonhosted.org/packages/7c/a3/67b8a6ff5001a1d8864922f2d6488dc2a14367ceb651bc3f09a947f2f306/google_ai_generativelanguage-0.6.15-py3-none-any.whl",
+        "archive_info": {
+          "hash": "sha256=5a03ef86377aa184ffef3662ca28f19eeee158733e45d7947982eb953c6ebb6c",
+          "hashes": {
+            "sha256": "5a03ef86377aa184ffef3662ca28f19eeee158733e45d7947982eb953c6ebb6c"
+          }
+        }
+      },
+      "google-api-core": {
+        "version": "2.30.3",
+        "url": "https://files.pythonhosted.org/packages/03/15/e56f351cf6ef1cfea58e6ac226a7318ed1deb2218c4b3cc9bd9e4b786c5a/google_api_core-2.30.3-py3-none-any.whl",
+        "archive_info": {
+          "hash": "sha256=a85761ba72c444dad5d611c2220633480b2b6be2521eca69cca2dbb3ffd6bfe8",
+          "hashes": {
+            "sha256": "a85761ba72c444dad5d611c2220633480b2b6be2521eca69cca2dbb3ffd6bfe8"
+          }
+        }
+      },
+      "google-api-python-client": {
+        "version": "2.201.0",
+        "url": "https://files.pythonhosted.org/packages/8b/c0/221313acdee33b8e5d3fe8a06ba398fc18cfd14627816764bb00318a6065/google_api_python_client-2.201.0-py3-none-any.whl",
+        "archive_info": {
+          "hash": "sha256=2d9bf1ba3f12eee8ed3d0f1791ce0605d163432f496baa72d3677faa2cf097d6",
+          "hashes": {
+            "sha256": "2d9bf1ba3f12eee8ed3d0f1791ce0605d163432f496baa72d3677faa2cf097d6"
+          }
+        }
+      },
+      "google-auth": {
+        "version": "2.62.0",
+        "url": "https://files.pythonhosted.org/packages/eb/a3/87fe9b7203ec2e56ea6a57c75e6d632eaf9487c7f7978cdad1d801bee0af/google_auth-2.62.0-py3-none-any.whl",
+        "archive_info": {
+          "hash": "sha256=4ff4319aeb4ad128409759d397a9fcafad126d0031d241cc0dd6b9a00b43e3f3",
+          "hashes": {
+            "sha256": "4ff4319aeb4ad128409759d397a9fcafad126d0031d241cc0dd6b9a00b43e3f3"
+          }
+        }
+      },
+      "google-auth-httplib2": {
+        "version": "0.4.4",
+        "url": "https://files.pythonhosted.org/packages/de/ea/27cf5d623efdc1cdb2632b4c872ac5092cd3895671ba1d5004e73c3f1a7c/google_auth_httplib2-0.4.4-py3-none-any.whl",
+        "archive_info": {
+          "hash": "sha256=bbe5d7b2401bb3a4017f4720e1e91bd273ab9a2bb60b84e65edbc0de127852da",
+          "hashes": {
+            "sha256": "bbe5d7b2401bb3a4017f4720e1e91bd273ab9a2bb60b84e65edbc0de127852da"
+          }
+        }
+      },
+      "google-generativeai": {
+        "version": "0.8.6",
+        "url": "https://files.pythonhosted.org/packages/97/0f/ef33b5bb71437966590c6297104c81051feae95d54b11ece08533ef937d3/google_generativeai-0.8.6-py3-none-any.whl",
+        "archive_info": {
+          "hash": "sha256=37a0eaaa95e5bbf888828e20a4a1b2c196cc9527d194706e58a68ff388aeb0fa",
+          "hashes": {
+            "sha256": "37a0eaaa95e5bbf888828e20a4a1b2c196cc9527d194706e58a68ff388aeb0fa"
+          }
+        }
+      },
+      "googleapis-common-protos": {
+        "version": "1.75.0",
+        "url": "https://files.pythonhosted.org/packages/e7/c8/e2645aa8ed02fd4c7a2f59d68783b65b1f3cbdfe39a6308e156509d1fee8/googleapis_common_protos-1.75.0-py3-none-any.whl",
+        "archive_info": {
+          "hash": "sha256=961ed60399c457ceb0ee8f285a84c870aabc9c6a832b9d37bb281b5bebde43ed",
+          "hashes": {
+            "sha256": "961ed60399c457ceb0ee8f285a84c870aabc9c6a832b9d37bb281b5bebde43ed"
+          }
+        }
+      },
+      "greenlet": {
+        "version": "3.5.6",
+        "url": "https://files.pythonhosted.org/packages/66/6a/1594f3869c57c149abdb380492529e04d4c0229b5e4d79572c5bd0aaa673/greenlet-3.5.6-cp312-cp312-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl",
+        "archive_info": {
+          "hash": "sha256=975736b002ed080d124cf81a79cb7e05cb26d6b3f5c7a7b651c0fcce70353aa1",
+          "hashes": {
+            "sha256": "975736b002ed080d124cf81a79cb7e05cb26d6b3f5c7a7b651c0fcce70353aa1"
+          }
+        }
+      },
+      "grpcio": {
+        "version": "1.84.1",
+        "url": "https://files.pythonhosted.org/packages/00/98/456ef643a796ba04ad737e39a820c27291c238db87f7d168355dbdaf7b4b/grpcio-1.84.1-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.whl",
+        "archive_info": {
+          "hash": "sha256=474408c92b27c823ea6aab2315e2ea52d5a4e0040b37ce1e65e89d9149c48205",
+          "hashes": {
+            "sha256": "474408c92b27c823ea6aab2315e2ea52d5a4e0040b37ce1e65e89d9149c48205"
+          }
+        }
+      },
+      "grpcio-status": {
+        "version": "1.62.3",
+        "url": "https://files.pythonhosted.org/packages/90/40/972271de05f9315c0d69f9f7ebbcadd83bc85322f538637d11bb8c67803d/grpcio_status-1.62.3-py3-none-any.whl",
+        "archive_info": {
+          "hash": "sha256=f9049b762ba8de6b1086789d8315846e094edac2c50beaf462338b301a8fd4b8",
+          "hashes": {
+            "sha256": "f9049b762ba8de6b1086789d8315846e094edac2c50beaf462338b301a8fd4b8"
+          }
+        }
+      },
+      "gunicorn": {
+        "version": "22.0.0",
+        "url": "https://files.pythonhosted.org/packages/29/97/6d610ae77b5633d24b69c2ff1ac3044e0e565ecbd1ec188f02c45073054c/gunicorn-22.0.0-py3-none-any.whl",
+        "archive_info": {
+          "hash": "sha256=350679f91b24062c86e386e198a15438d53a7a8207235a78ba1b53df4c4378d9",
+          "hashes": {
+            "sha256": "350679f91b24062c86e386e198a15438d53a7a8207235a78ba1b53df4c4378d9"
+          }
+        }
+      },
+      "h11": {
+        "version": "0.16.0",
+        "url": "https://files.pythonhosted.org/packages/04/4b/29cac41a4d98d144bf5f6d33995617b185d14b22401f75ca86f384e87ff1/h11-0.16.0-py3-none-any.whl",
+        "archive_info": {
+          "hash": "sha256=63cf8bbe7522de3bf65932fda1d9c2772064ffb3dae62d55932da54b31cb6c86",
+          "hashes": {
+            "sha256": "63cf8bbe7522de3bf65932fda1d9c2772064ffb3dae62d55932da54b31cb6c86"
+          }
+        }
+      },
+      "hf-xet": {
+        "version": "1.7.0",
+        "url": "https://files.pythonhosted.org/packages/a3/4c/2bf3b66c215d409655f28de1622393dde04c9461280d48c7924bb3b2decd/hf_xet-1.7.0-cp38-abi3-manylinux2014_x86_64.manylinux_2_17_x86_64.whl",
+        "archive_info": {
+          "hash": "sha256=2814a6e999d13464c4d679b788cc5d784eb5a4edfc638a31f10e9a11ab531ef8",
+          "hashes": {
+            "sha256": "2814a6e999d13464c4d679b788cc5d784eb5a4edfc638a31f10e9a11ab531ef8"
+          }
+        }
+      },
+      "httpcore": {
+        "version": "1.0.9",
+        "url": "https://files.pythonhosted.org/packages/7e/f5/f66802a942d491edb555dd61e3a9961140fd64c90bce1eafd741609d334d/httpcore-1.0.9-py3-none-any.whl",
+        "archive_info": {
+          "hash": "sha256=2d400746a40668fc9dec9810239072b40b4484b640a8c38fd654a024c7a1bf55",
+          "hashes": {
+            "sha256": "2d400746a40668fc9dec9810239072b40b4484b640a8c38fd654a024c7a1bf55"
+          }
+        }
+      },
+      "httplib2": {
+        "version": "0.32.0",
+        "url": "https://files.pythonhosted.org/packages/33/a0/550eec327e5f5c7b732531c489f5307efec41f047b0d703bd4ca1e5ad2db/httplib2-0.32.0-py3-none-any.whl",
+        "archive_info": {
+          "hash": "sha256=dc6705cacdf3fb0a2aba7629fa33c90fd93e30035db0c157325826be177e4816",
+          "hashes": {
+            "sha256": "dc6705cacdf3fb0a2aba7629fa33c90fd93e30035db0c157325826be177e4816"
+          }
+        }
+      },
+      "httpx": {
+        "version": "0.28.1",
+        "url": "https://files.pythonhosted.org/packages/2a/39/e50c7c3a983047577ee07d2a9e53faf5a69493943ec3f6a384bdc792deb2/httpx-0.28.1-py3-none-any.whl",
+        "archive_info": {
+          "hash": "sha256=d909fcccc110f8c7faf814ca82a9a4d816bc5a6dbfea25d6591d6985b8ba59ad",
+          "hashes": {
+            "sha256": "d909fcccc110f8c7faf814ca82a9a4d816bc5a6dbfea25d6591d6985b8ba59ad"
+          }
+        }
+      },
+      "huggingface_hub": {
+        "version": "1.33.0",
+        "url": "https://files.pythonhosted.org/packages/fc/16/963096d224b80909432dc16561a615fd33d2d13beef3ce4c63fa25e40867/huggingface_hub-1.33.0-py3-none-any.whl",
+        "archive_info": {
+          "hash": "sha256=04e434b06e100eddbce9a6e817d72693a7884b10a79bd67ab48080d5c07eb899",
+          "hashes": {
+            "sha256": "04e434b06e100eddbce9a6e817d72693a7884b10a79bd67ab48080d5c07eb899"
+          }
+        }
+      },
+      "idna": {
+        "version": "3.20",
+        "url": "https://files.pythonhosted.org/packages/58/a2/bb081bab032533a855d44de1d56f8e8426114ff1ba5d1f07a438a0a654f8/idna-3.20-py3-none-any.whl",
+        "archive_info": {
+          "hash": "sha256=ab7ae7122974553370f0bdb919e1a960b2cd1bc1ef0276416d896db81c14582c",
+          "hashes": {
+            "sha256": "ab7ae7122974553370f0bdb919e1a960b2cd1bc1ef0276416d896db81c14582c"
+          }
+        }
+      },
+      "ImageIO": {
+        "version": "2.38.1",
+        "url": "https://files.pythonhosted.org/packages/7d/8a/3b7f62b9df56460959f1b9bef094248d2a4d7f393c5b0d2da8efcdf0e40e/imageio-2.38.1-py3-none-any.whl",
+        "archive_info": {
+          "hash": "sha256=36d23eb7423d2fb63f637098758edb3d2df3687f7125e0a5ce8596572022dcf9",
+          "hashes": {
+            "sha256": "36d23eb7423d2fb63f637098758edb3d2df3687f7125e0a5ce8596572022dcf9"
+          }
+        }
+      },
+      "itsdangerous": {
+        "version": "2.2.0",
+        "url": "https://files.pythonhosted.org/packages/04/96/92447566d16df59b2a776c0fb82dbc4d9e07cd95062562af01e408583fc4/itsdangerous-2.2.0-py3-none-any.whl",
+        "archive_info": {
+          "hash": "sha256=c6242fc49e35958c8b15141343aa660db5fc54d4f13a1db01a3f5891b98700ef",
+          "hashes": {
+            "sha256": "c6242fc49e35958c8b15141343aa660db5fc54d4f13a1db01a3f5891b98700ef"
+          }
+        }
+      },
+      "Jinja2": {
+        "version": "3.1.6",
+        "url": "https://files.pythonhosted.org/packages/62/a1/3d680cbfd5f4b8f15abc1d571870c5fc3e594bb582bc3b64ea099db13e56/jinja2-3.1.6-py3-none-any.whl",
+        "archive_info": {
+          "hash": "sha256=85ece4451f492d0c13c5dd7c13a64681a86afae63a5f347908daf103ce6d2f67",
+          "hashes": {
+            "sha256": "85ece4451f492d0c13c5dd7c13a64681a86afae63a5f347908daf103ce6d2f67"
+          }
+        }
+      },
+      "jiter": {
+        "version": "0.18.0",
+        "url": "https://files.pythonhosted.org/packages/74/6a/b13407f609ddaf9a1f0cdf1336326dc5c8c7fc56943e8450a04a542f5edf/jiter-0.18.0-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+        "archive_info": {
+          "hash": "sha256=b3c741e6b778c951a6861964ee475118812a33208426c54fb92bf4e318bda834",
+          "hashes": {
+            "sha256": "b3c741e6b778c951a6861964ee475118812a33208426c54fb92bf4e318bda834"
+          }
+        }
+      },
+      "lazy-loader": {
+        "version": "0.6",
+        "url": "https://files.pythonhosted.org/packages/23/93/4e45e37f26c820216704b36b8e67cc55c490a7abd287a78a26a2c0e21386/lazy_loader-0.6-py3-none-any.whl",
+        "archive_info": {
+          "hash": "sha256=77253be3391b06124a0e16105bd663b6c54470af1a9ca8e1cf026f38d58ed056",
+          "hashes": {
+            "sha256": "77253be3391b06124a0e16105bd663b6c54470af1a9ca8e1cf026f38d58ed056"
+          }
+        }
+      },
+      "limits": {
+        "version": "5.8.0",
+        "url": "https://files.pythonhosted.org/packages/b9/98/cb5ca20618d205a09d5bec7591fbc4130369c7e6308d9a676a28ff3ab22c/limits-5.8.0-py3-none-any.whl",
+        "archive_info": {
+          "hash": "sha256=ae1b008a43eb43073c3c579398bd4eb4c795de60952532dc24720ab45e1ac6b8",
+          "hashes": {
+            "sha256": "ae1b008a43eb43073c3c579398bd4eb4c795de60952532dc24720ab45e1ac6b8"
+          }
+        }
+      },
+      "Mako": {
+        "version": "1.4.3",
+        "url": "https://files.pythonhosted.org/packages/6d/a0/053d6af3e8f871e0073b4a36732d9e65be77a72e5434c31b94f6af78a6bb/mako-1.4.3-py3-none-any.whl",
+        "archive_info": {
+          "hash": "sha256=723296007c870bfd6b3f0c3230dba7198096e5269297ebf5e4eff9e7ffa39d4f",
+          "hashes": {
+            "sha256": "723296007c870bfd6b3f0c3230dba7198096e5269297ebf5e4eff9e7ffa39d4f"
+          }
+        }
+      },
+      "markdown-it-py": {
+        "version": "4.2.0",
+        "url": "https://files.pythonhosted.org/packages/b3/81/4da04ced5a082363ecfa159c010d200ecbd959ae410c10c0264a38cac0f5/markdown_it_py-4.2.0-py3-none-any.whl",
+        "archive_info": {
+          "hash": "sha256=9f7ebbcd14fe59494226453aed97c1070d83f8d24b6fc3a3bcf9a38092641c4a",
+          "hashes": {
+            "sha256": "9f7ebbcd14fe59494226453aed97c1070d83f8d24b6fc3a3bcf9a38092641c4a"
+          }
+        }
+      },
+      "MarkupSafe": {
+        "version": "3.0.4",
+        "url": "https://files.pythonhosted.org/packages/4f/a7/aeedb5140afa41fc74c225e9184ab96723a6e873b6ee1c9fede7283456d8/markupsafe-3.0.4-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl",
+        "archive_info": {
+          "hash": "sha256=8e124f974786f831d6043728e38296969d3579db8896fe004682f5758e613581",
+          "hashes": {
+            "sha256": "8e124f974786f831d6043728e38296969d3579db8896fe004682f5758e613581"
+          }
+        }
+      },
+      "mdurl": {
+        "version": "0.1.2",
+        "url": "https://files.pythonhosted.org/packages/b3/38/89ba8ad64ae25be8de66a6d463314cf1eb366222074cfda9ee839c56a4b4/mdurl-0.1.2-py3-none-any.whl",
+        "archive_info": {
+          "hash": "sha256=84008a41e51615a49fc9966191ff91509e3c40b939176e643fd50a5c2196b8f8",
+          "hashes": {
+            "sha256": "84008a41e51615a49fc9966191ff91509e3c40b939176e643fd50a5c2196b8f8"
+          }
+        }
+      },
+      "mpmath": {
+        "version": "1.3.0",
+        "url": "https://files.pythonhosted.org/packages/43/e3/7d92a15f894aa0c9c4b49b8ee9ac9850d6e63b03c9c32c0367a13ae62209/mpmath-1.3.0-py3-none-any.whl",
+        "archive_info": {
+          "hash": "sha256=a0b2b9fe80bbcd81a6647ff13108738cfb482d481d826cc0e02f5b35e5c88d2c",
+          "hashes": {
+            "sha256": "a0b2b9fe80bbcd81a6647ff13108738cfb482d481d826cc0e02f5b35e5c88d2c"
+          }
+        }
+      },
+      "networkx": {
+        "version": "3.7",
+        "url": "https://files.pythonhosted.org/packages/7e/cd/fe58041e9011f307c490e3e17dd48cc516448f7c698a3f2d9d9d65d7e6a8/networkx-3.7-py3-none-any.whl",
+        "archive_info": {
+          "hash": "sha256=e3fd2c13a7814cee3746340d8d7f8598a67f16a58bf47fb7f8793fab6efca1b0",
+          "hashes": {
+            "sha256": "e3fd2c13a7814cee3746340d8d7f8598a67f16a58bf47fb7f8793fab6efca1b0"
+          }
+        }
+      },
+      "ninja": {
+        "version": "1.13.2",
+        "url": "https://files.pythonhosted.org/packages/6e/53/ebfed7b689c338dd8ebeec9c0730c8d56821292f14e2536e5f3ef1a05744/ninja-1.13.2-py3-none-manylinux2014_x86_64.manylinux_2_17_x86_64.whl",
+        "archive_info": {
+          "hash": "sha256=65a24341b5ac09fcadcc37082660be40a94174e51a937fabf6e2cae26225fa2c",
+          "hashes": {
+            "sha256": "65a24341b5ac09fcadcc37082660be40a94174e51a937fabf6e2cae26225fa2c"
+          }
+        }
+      },
+      "numpy": {
+        "version": "1.26.4",
+        "url": "https://files.pythonhosted.org/packages/0f/50/de23fde84e45f5c4fda2488c759b69990fd4512387a8632860f3ac9cd225/numpy-1.26.4-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+        "archive_info": {
+          "hash": "sha256=675d61ffbfa78604709862923189bad94014bef562cc35cf61d3a07bba02a7ed",
+          "hashes": {
+            "sha256": "675d61ffbfa78604709862923189bad94014bef562cc35cf61d3a07bba02a7ed"
+          }
+        }
+      },
+      "openai": {
+        "version": "1.109.1",
+        "url": "https://files.pythonhosted.org/packages/1d/2a/7dd3d207ec669cacc1f186fd856a0f61dbc255d24f6fdc1a6715d6051b0f/openai-1.109.1-py3-none-any.whl",
+        "archive_info": {
+          "hash": "sha256=6bcaf57086cf59159b8e27447e4e7dd019db5d29a438072fbd49c290c7e65315",
+          "hashes": {
+            "sha256": "6bcaf57086cf59159b8e27447e4e7dd019db5d29a438072fbd49c290c7e65315"
+          }
+        }
+      },
+      "opencv-python-headless": {
+        "version": "4.11.0.86",
+        "url": "https://files.pythonhosted.org/packages/dd/5c/c139a7876099916879609372bfa513b7f1257f7f1a908b0bdc1c2328241b/opencv_python_headless-4.11.0.86-cp37-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+        "archive_info": {
+          "hash": "sha256=0e0a27c19dd1f40ddff94976cfe43066fbbe9dfbb2ec1907d66c19caef42a57b",
+          "hashes": {
+            "sha256": "0e0a27c19dd1f40ddff94976cfe43066fbbe9dfbb2ec1907d66c19caef42a57b"
+          }
+        }
+      },
+      "ordered-set": {
+        "version": "4.1.0",
+        "url": "https://files.pythonhosted.org/packages/33/55/af02708f230eb77084a299d7b08175cff006dea4f2721074b92cdb0296c0/ordered_set-4.1.0-py3-none-any.whl",
+        "archive_info": {
+          "hash": "sha256=046e1132c71fcf3330438a539928932caf51ddbc582496833e23de611de14562",
+          "hashes": {
+            "sha256": "046e1132c71fcf3330438a539928932caf51ddbc582496833e23de611de14562"
+          }
+        }
+      },
+      "packaging": {
+        "version": "26.3",
+        "url": "https://files.pythonhosted.org/packages/63/34/ba1c580383c9eada3711951fef0795c80b829a078d72188184bcab9dd527/packaging-26.3-py3-none-any.whl",
+        "archive_info": {
+          "hash": "sha256=d7193f7c8e4e93f444fde0262bf90af30e16fa0ad0ad44cb553c87339b23cd1c",
+          "hashes": {
+            "sha256": "d7193f7c8e4e93f444fde0262bf90af30e16fa0ad0ad44cb553c87339b23cd1c"
+          }
+        }
+      },
+      "pdf2image": {
+        "version": "1.17.0",
+        "url": "https://files.pythonhosted.org/packages/62/33/61766ae033518957f877ab246f87ca30a85b778ebaad65b7f74fa7e52988/pdf2image-1.17.0-py3-none-any.whl",
+        "archive_info": {
+          "hash": "sha256=ecdd58d7afb810dffe21ef2b1bbc057ef434dabbac6c33778a38a3f7744a27e2",
+          "hashes": {
+            "sha256": "ecdd58d7afb810dffe21ef2b1bbc057ef434dabbac6c33778a38a3f7744a27e2"
+          }
+        }
+      },
+      "pillow": {
+        "version": "13.0.0",
+        "url": "https://files.pythonhosted.org/packages/e6/99/fdf65cc539e266ab93546c261bdf98411fe165c6e4e13f9dbf597097192b/pillow-13.0.0-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl",
+        "archive_info": {
+          "hash": "sha256=42d63be3af4f9b951b199b0a9d23365d37ab14687e6d77b74940432c8515c4ca",
+          "hashes": {
+            "sha256": "42d63be3af4f9b951b199b0a9d23365d37ab14687e6d77b74940432c8515c4ca"
+          }
+        }
+      },
+      "pip": {
+        "version": "26.2",
+        "url": "https://files.pythonhosted.org/packages/62/36/a3aed958d60531cb442b7ab4596cda7b3621cfb916f8ae1d6769795c7dc1/pip-26.2-py3-none-any.whl",
+        "archive_info": {
+          "hash": "sha256=931c303696af6fa3417112103b1cad26890e5a07eccb5b99783700e33f2b8aad",
+          "hashes": {
+            "sha256": "931c303696af6fa3417112103b1cad26890e5a07eccb5b99783700e33f2b8aad"
+          }
+        }
+      },
+      "proto-plus": {
+        "version": "1.28.2",
+        "url": "https://files.pythonhosted.org/packages/9d/84/4e9a53a062d4073c74897a6bd20fff74d55307341b3e85c081002462b3ef/proto_plus-1.28.2-py3-none-any.whl",
+        "archive_info": {
+          "hash": "sha256=b874236fcac2358f601e4330bcb76cb8b89c851303ccf4078408b3d4774d1c52",
+          "hashes": {
+            "sha256": "b874236fcac2358f601e4330bcb76cb8b89c851303ccf4078408b3d4774d1c52"
+          }
+        }
+      },
+      "protobuf": {
+        "version": "5.29.6",
+        "url": "https://files.pythonhosted.org/packages/e3/dd/cadd6ec43069247d91f6345fa7a0d2858bef6af366dbd7ba8f05d2c77d3b/protobuf-5.29.6-cp38-abi3-manylinux2014_x86_64.whl",
+        "archive_info": {
+          "hash": "sha256=e3387f44798ac1106af0233c04fb8abf543772ff241169946f698b3a9a3d3ab9",
+          "hashes": {
+            "sha256": "e3387f44798ac1106af0233c04fb8abf543772ff241169946f698b3a9a3d3ab9"
+          }
+        }
+      },
+      "pyasn1": {
+        "version": "0.6.4",
+        "url": "https://files.pythonhosted.org/packages/9a/3b/6163796d69c3977d1e4287bea4a6979161cbbdd170ebb430511e8e1999ce/pyasn1-0.6.4-py3-none-any.whl",
+        "archive_info": {
+          "hash": "sha256=deda9277cfd454080ec40b207fb6df82206a3a2688735233cdcd8d3d565f088b",
+          "hashes": {
+            "sha256": "deda9277cfd454080ec40b207fb6df82206a3a2688735233cdcd8d3d565f088b"
+          }
+        }
+      },
+      "pyasn1_modules": {
+        "version": "0.4.2",
+        "url": "https://files.pythonhosted.org/packages/47/8d/d529b5d697919ba8c11ad626e835d4039be708a35b0d22de83a269a6682c/pyasn1_modules-0.4.2-py3-none-any.whl",
+        "archive_info": {
+          "hash": "sha256=29253a9207ce32b64c3ac6600edc75368f98473906e8fd1043bd6b5b1de2c14a",
+          "hashes": {
+            "sha256": "29253a9207ce32b64c3ac6600edc75368f98473906e8fd1043bd6b5b1de2c14a"
+          }
+        }
+      },
+      "pyclipper": {
+        "version": "1.4.0",
+        "url": "https://files.pythonhosted.org/packages/7a/06/6e3e241882bf7d6ab23d9c69ba4e85f1ec47397cbbeee948a16cf75e21ed/pyclipper-1.4.0-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.whl",
+        "archive_info": {
+          "hash": "sha256=d1f807e2b4760a8e5c6d6b4e8c1d71ef52b7fe1946ff088f4fa41e16a881a5ca",
+          "hashes": {
+            "sha256": "d1f807e2b4760a8e5c6d6b4e8c1d71ef52b7fe1946ff088f4fa41e16a881a5ca"
+          }
+        }
+      },
+      "pycparser": {
+        "version": "3.12",
+        "url": "https://files.pythonhosted.org/packages/b6/ae/315bbeee126a769cbde43cf4908acb4b40408d8bf8bbf334dd7368d8dadf/pycparser-3.12-py3-none-any.whl",
+        "archive_info": {
+          "hash": "sha256=a076f3f489b39b43ed13563a1dafe42447445bec2e294154ec5c57fcdda4c85e",
+          "hashes": {
+            "sha256": "a076f3f489b39b43ed13563a1dafe42447445bec2e294154ec5c57fcdda4c85e"
+          }
+        }
+      },
+      "pydantic": {
+        "version": "2.14.1",
+        "url": "https://files.pythonhosted.org/packages/35/ea/a56b9fe5066f3537b7882f77e9c5dfb26d8c2eefdaed9b5fc73d57b4dc22/pydantic-2.14.1-py3-none-any.whl",
+        "archive_info": {
+          "hash": "sha256=9195d967ec791692a04438115466764fb8b9a27b31f14a760437694f40d6b454",
+          "hashes": {
+            "sha256": "9195d967ec791692a04438115466764fb8b9a27b31f14a760437694f40d6b454"
+          }
+        }
+      },
+      "pydantic_core": {
+        "version": "2.50.1",
+        "url": "https://files.pythonhosted.org/packages/90/24/48cd98388e4ac2c08d0800af36d15413db15e20387f1038123a2c86cb2f6/pydantic_core-2.50.1-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+        "archive_info": {
+          "hash": "sha256=93ba4e9d8210d941c200431a56b2c0400b131865947903937ed3ec5404307d2e",
+          "hashes": {
+            "sha256": "93ba4e9d8210d941c200431a56b2c0400b131865947903937ed3ec5404307d2e"
+          }
+        }
+      },
+      "Pygments": {
+        "version": "2.21.0",
+        "url": "https://files.pythonhosted.org/packages/71/46/17f022dd3e953bf20a04a028a21ec746d942f8d2af30fa0f124fa0e6a684/pygments-2.21.0-py3-none-any.whl",
+        "archive_info": {
+          "hash": "sha256=2363c69b61c4a97c838da3b130dcd6468f4848992b21a82f2a63ec34377137d9",
+          "hashes": {
+            "sha256": "2363c69b61c4a97c838da3b130dcd6468f4848992b21a82f2a63ec34377137d9"
+          }
+        }
+      },
+      "PyJWT": {
+        "version": "2.15.1",
+        "url": "https://files.pythonhosted.org/packages/50/ca/44de4e75f8aadc457f0634be3b542815078ded46dca30efb960edeecad6e/pyjwt-2.15.1-py3-none-any.whl",
+        "archive_info": {
+          "hash": "sha256=42d59d631f7768a1028a64c7ff581a9bf7519804daf91fc5b6c56e30eec5e193",
+          "hashes": {
+            "sha256": "42d59d631f7768a1028a64c7ff581a9bf7519804daf91fc5b6c56e30eec5e193"
+          }
+        }
+      },
+      "pyparsing": {
+        "version": "3.3.3",
+        "url": "https://files.pythonhosted.org/packages/38/bb/d215ee7c73b61497b28a5503f9f53523f294fcc936762b7caf90e0c1c2b5/pyparsing-3.3.3-py3-none-any.whl",
+        "archive_info": {
+          "hash": "sha256=ece8c00a69cf01b45d0b1dedabb469c90d8caf996d4fda40f147627a122849a4",
+          "hashes": {
+            "sha256": "ece8c00a69cf01b45d0b1dedabb469c90d8caf996d4fda40f147627a122849a4"
+          }
+        }
+      },
+      "pytesseract": {
+        "version": "0.3.13",
+        "url": "https://files.pythonhosted.org/packages/7a/33/8312d7ce74670c9d39a532b2c246a853861120486be9443eebf048043637/pytesseract-0.3.13-py3-none-any.whl",
+        "archive_info": {
+          "hash": "sha256=7a99c6c2ac598360693d83a416e36e0b33a67638bb9d77fdcac094a3589d4b34",
+          "hashes": {
+            "sha256": "7a99c6c2ac598360693d83a416e36e0b33a67638bb9d77fdcac094a3589d4b34"
+          }
+        }
+      },
+      "python-bidi": {
+        "version": "0.6.12",
+        "url": "https://files.pythonhosted.org/packages/c7/bb/c9e59576e929f3bc5cf3eb3ebed88544cdfb90418214b22602e488167081/python_bidi-0.6.12-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+        "archive_info": {
+          "hash": "sha256=37dc0384605729d1556cfe47aa84900ae67963f17d6a19c930449d1493a01f96",
+          "hashes": {
+            "sha256": "37dc0384605729d1556cfe47aa84900ae67963f17d6a19c930449d1493a01f96"
+          }
+        }
+      },
+      "python-dotenv": {
+        "version": "1.2.4",
+        "url": "https://files.pythonhosted.org/packages/60/d1/38f3a3405989a89ac18390803e70c6ad7c7760da4f9b83cbeca0c44a0c72/python_dotenv-1.2.4-py3-none-any.whl",
+        "archive_info": {
+          "hash": "sha256=42269a8a5b3fd54ffa6f3d84b18abed50064717576b4ecf03dc4a55d8aa04fdc",
+          "hashes": {
+            "sha256": "42269a8a5b3fd54ffa6f3d84b18abed50064717576b4ecf03dc4a55d8aa04fdc"
+          }
+        }
+      },
+      "python-engineio": {
+        "version": "4.14.0",
+        "url": "https://files.pythonhosted.org/packages/e5/de/07cfd386974c2a26a7bde41f2111be29bbfc92b9ea0bb76694415a4a1a78/python_engineio-4.14.0-py3-none-any.whl",
+        "archive_info": {
+          "hash": "sha256=9f0fe275fb7d67bfc1a632421adf22949fd4843bd9c458c004b0a89cede302a2",
+          "hashes": {
+            "sha256": "9f0fe275fb7d67bfc1a632421adf22949fd4843bd9c458c004b0a89cede302a2"
+          }
+        }
+      },
+      "python-socketio": {
+        "version": "5.17.0",
+        "url": "https://files.pythonhosted.org/packages/ee/be/44b558c944bc16618483967ecd3424c578705aa33ceee7df8c1e4ab43ea0/python_socketio-5.17.0-py3-none-any.whl",
+        "archive_info": {
+          "hash": "sha256=b5826fd2f8aa02e11347816349b74ac6b53e8a4f4e4b1cf1388e1aff19b7f3f4",
+          "hashes": {
+            "sha256": "b5826fd2f8aa02e11347816349b74ac6b53e8a4f4e4b1cf1388e1aff19b7f3f4"
+          }
+        }
+      },
+      "PyYAML": {
+        "version": "6.0.3",
+        "url": "https://files.pythonhosted.org/packages/8b/9d/b3589d3877982d4f2329302ef98a8026e7f4443c765c46cfecc8858c6b4b/pyyaml-6.0.3-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl",
+        "archive_info": {
+          "hash": "sha256=ba1cc08a7ccde2d2ec775841541641e4548226580ab850948cbfda66a1befcdc",
+          "hashes": {
+            "sha256": "ba1cc08a7ccde2d2ec775841541641e4548226580ab850948cbfda66a1befcdc"
+          }
+        }
+      },
+      "redis": {
+        "version": "5.3.1",
+        "url": "https://files.pythonhosted.org/packages/7f/26/5c5fa0e83c3621db835cfc1f1d789b37e7fa99ed54423b5f519beb931aa7/redis-5.3.1-py3-none-any.whl",
+        "archive_info": {
+          "hash": "sha256=dc1909bd24669cc31b5f67a039700b16ec30571096c5f1f0d9d2324bff31af97",
+          "hashes": {
+            "sha256": "dc1909bd24669cc31b5f67a039700b16ec30571096c5f1f0d9d2324bff31af97"
+          }
+        }
+      },
+      "regex": {
+        "version": "2026.9.29",
+        "url": "https://files.pythonhosted.org/packages/26/83/d2fbd2e4e3afb1167daa825187d196f313cbaa1a4768f311fb041bb0e3d2/regex-2026.9.29-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl",
+        "archive_info": {
+          "hash": "sha256=39ab5894d971f9ac68baa6eca5c50387db579cfcacf36ae8df3feceb1815e6d0",
+          "hashes": {
+            "sha256": "39ab5894d971f9ac68baa6eca5c50387db579cfcacf36ae8df3feceb1815e6d0"
+          }
+        }
+      },
+      "requests": {
+        "version": "2.34.2",
+        "url": "https://files.pythonhosted.org/packages/a0/f4/c67b0b3f1b9245e8d266f0f112c500d50e5b4e83cb6f3b71b6528104182a/requests-2.34.2-py3-none-any.whl",
+        "archive_info": {
+          "hash": "sha256=2a0d60c172f83ac6ab31e4554906c0f3b3588d37b5cb939b1c061f4907e278e0",
+          "hashes": {
+            "sha256": "2a0d60c172f83ac6ab31e4554906c0f3b3588d37b5cb939b1c061f4907e278e0"
+          }
+        }
+      },
+      "rich": {
+        "version": "13.9.4",
+        "url": "https://files.pythonhosted.org/packages/19/71/39c7c0d87f8d4e6c020a393182060eaefeeae6c01dab6a84ec346f2567df/rich-13.9.4-py3-none-any.whl",
+        "archive_info": {
+          "hash": "sha256=6049d5e6ec054bf2779ab3358186963bac2ea89175919d699e378b99738c2a90",
+          "hashes": {
+            "sha256": "6049d5e6ec054bf2779ab3358186963bac2ea89175919d699e378b99738c2a90"
+          }
+        }
+      },
+      "safetensors": {
+        "version": "0.8.0",
+        "url": "https://files.pythonhosted.org/packages/28/50/f203ff3a3ddfe19308efc83c5a3a29ed02bf786732ec35e68bf9162f3365/safetensors-0.8.0-cp310-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+        "archive_info": {
+          "hash": "sha256=fd6f3f93c9a0a7cc2788ee63fb763353d4bd2e89b0751bc78fcf7dda00bea774",
+          "hashes": {
+            "sha256": "fd6f3f93c9a0a7cc2788ee63fb763353d4bd2e89b0751bc78fcf7dda00bea774"
+          }
+        }
+      },
+      "scikit-image": {
+        "version": "0.26.0",
+        "url": "https://files.pythonhosted.org/packages/f4/a2/70401a107d6d7466d64b466927e6b96fcefa99d57494b972608e2f8be50f/scikit_image-0.26.0-cp312-cp312-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl",
+        "archive_info": {
+          "hash": "sha256=7df650e79031634ac90b11e64a9eedaf5a5e06fcd09bcd03a34be01745744466",
+          "hashes": {
+            "sha256": "7df650e79031634ac90b11e64a9eedaf5a5e06fcd09bcd03a34be01745744466"
+          }
+        }
+      },
+      "scipy": {
+        "version": "1.17.1",
+        "url": "https://files.pythonhosted.org/packages/01/8e/1e35281b8ab6d5d72ebe9911edcdffa3f36b04ed9d51dec6dd140396e220/scipy-1.17.1-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl",
+        "archive_info": {
+          "hash": "sha256=02ae3b274fde71c5e92ac4d54bc06c42d80e399fec704383dcd99b301df37458",
+          "hashes": {
+            "sha256": "02ae3b274fde71c5e92ac4d54bc06c42d80e399fec704383dcd99b301df37458"
+          }
+        }
+      },
+      "sentencepiece": {
+        "version": "0.2.2",
+        "url": "https://files.pythonhosted.org/packages/b6/2d/37e3da037318a70066ded0d51bc2a7f35491ae6338dd993d5eb1503fc3b5/sentencepiece-0.2.2-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl",
+        "archive_info": {
+          "hash": "sha256=c8a168b040bc61681293f79a949b5d911c8e25086f4260285b8d97ab5f1195da",
+          "hashes": {
+            "sha256": "c8a168b040bc61681293f79a949b5d911c8e25086f4260285b8d97ab5f1195da"
+          }
+        }
+      },
+      "setuptools": {
+        "version": "84.2.1",
+        "url": "https://files.pythonhosted.org/packages/ef/55/6dc6d6bb953bdfc52519a0059592c52b6e3b8ad51cf8256dffceb55b0610/setuptools-84.2.1-py3-none-any.whl",
+        "archive_info": {
+          "hash": "sha256=ca140b45d5325a9478f880e351484f62fef15f336462e449ca0c03c873d589c2",
+          "hashes": {
+            "sha256": "ca140b45d5325a9478f880e351484f62fef15f336462e449ca0c03c873d589c2"
+          }
+        }
+      },
+      "shapely": {
+        "version": "2.2.0",
+        "url": "https://files.pythonhosted.org/packages/ad/87/6842e4c996914a47b6bfd3ef14a543e67e993f86a9ea5679c34efc9314ab/shapely-2.2.0-cp312-cp312-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl",
+        "archive_info": {
+          "hash": "sha256=650a5f4d8a8e3c96982079d8c99b6ddbe6602bbd1e34c75c2b95dbc0d28ac997",
+          "hashes": {
+            "sha256": "650a5f4d8a8e3c96982079d8c99b6ddbe6602bbd1e34c75c2b95dbc0d28ac997"
+          }
+        }
+      },
+      "shellingham": {
+        "version": "1.5.4",
+        "url": "https://files.pythonhosted.org/packages/e0/f9/0595336914c5619e5f28a1fb793285925a8cd4b432c9da0a987836c7f822/shellingham-1.5.4-py2.py3-none-any.whl",
+        "archive_info": {
+          "hash": "sha256=7ecfff8f2fd72616f7481040475a65b2bf8af90a56c89140852d1120324e8686",
+          "hashes": {
+            "sha256": "7ecfff8f2fd72616f7481040475a65b2bf8af90a56c89140852d1120324e8686"
+          }
+        }
+      },
+      "simple-websocket": {
+        "version": "1.1.0",
+        "url": "https://files.pythonhosted.org/packages/52/59/0782e51887ac6b07ffd1570e0364cf901ebc36345fea669969d2084baebb/simple_websocket-1.1.0-py3-none-any.whl",
+        "archive_info": {
+          "hash": "sha256=4af6069630a38ed6c561010f0e11a5bc0d4ca569b36306eb257cd9a192497c8c",
+          "hashes": {
+            "sha256": "4af6069630a38ed6c561010f0e11a5bc0d4ca569b36306eb257cd9a192497c8c"
+          }
+        }
+      },
+      "sniffio": {
+        "version": "1.3.1",
+        "url": "https://files.pythonhosted.org/packages/e9/44/75a9c9421471a6c4805dbf2356f7c181a29c1879239abab1ea2cc8f38b40/sniffio-1.3.1-py3-none-any.whl",
+        "archive_info": {
+          "hash": "sha256=2f6da418d1f1e0fddd844478f41680e794e6051915791a034ff65e5f100525a2",
+          "hashes": {
+            "sha256": "2f6da418d1f1e0fddd844478f41680e794e6051915791a034ff65e5f100525a2"
+          }
+        }
+      },
+      "soupsieve": {
+        "version": "3.0.4",
+        "url": "https://files.pythonhosted.org/packages/07/66/473f7ca0be0b06e38ee8c85ee2db184e3981bd769fac2e7c19c8a8865211/soupsieve-3.0.4-py3-none-any.whl",
+        "archive_info": {
+          "hash": "sha256=8412826614f9c632227067d0985aeb9f584bd15efc852955430e097a9fe7afbf",
+          "hashes": {
+            "sha256": "8412826614f9c632227067d0985aeb9f584bd15efc852955430e097a9fe7afbf"
+          }
+        }
+      },
+      "SQLAlchemy": {
+        "version": "2.1.6",
+        "url": "https://files.pythonhosted.org/packages/ad/d8/8fbe61673b1bb9f5e98d9a9b28455d408ed8bbf6efaf0b03db13357c763d/sqlalchemy-2.1.6-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl",
+        "archive_info": {
+          "hash": "sha256=d5e4b4dcf85d7f289def0e3167f15aaad101b7744a065fb2019476edf306712c",
+          "hashes": {
+            "sha256": "d5e4b4dcf85d7f289def0e3167f15aaad101b7744a065fb2019476edf306712c"
+          }
+        }
+      },
+      "sympy": {
+        "version": "1.14.0",
+        "url": "https://files.pythonhosted.org/packages/a2/09/77d55d46fd61b4a135c444fc97158ef34a095e5681d0a6c10b75bf356191/sympy-1.14.0-py3-none-any.whl",
+        "archive_info": {
+          "hash": "sha256=e091cc3e99d2141a0ba2847328f5479b05d94a6635cb96148ccb3f34671bd8f5",
+          "hashes": {
+            "sha256": "e091cc3e99d2141a0ba2847328f5479b05d94a6635cb96148ccb3f34671bd8f5"
+          }
+        }
+      },
+      "tifffile": {
+        "version": "2026.3.3",
+        "url": "https://files.pythonhosted.org/packages/1a/e4/e804505f87627cd8cdae9c010c47c4485fd8c1ce31a7dd0ab7fcc4707377/tifffile-2026.3.3-py3-none-any.whl",
+        "archive_info": {
+          "hash": "sha256=e8be15c94273113d31ecb7aa3a39822189dd11c4967e3cc88c178f1ad2fd1170",
+          "hashes": {
+            "sha256": "e8be15c94273113d31ecb7aa3a39822189dd11c4967e3cc88c178f1ad2fd1170"
+          }
+        }
+      },
+      "tokenizers": {
+        "version": "0.22.2",
+        "url": "https://files.pythonhosted.org/packages/2e/76/932be4b50ef6ccedf9d3c6639b056a967a86258c6d9200643f01269211ca/tokenizers-0.22.2-cp39-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+        "archive_info": {
+          "hash": "sha256=369cc9fc8cc10cb24143873a0d95438bb8ee257bb80c71989e3ee290e8d72c67",
+          "hashes": {
+            "sha256": "369cc9fc8cc10cb24143873a0d95438bb8ee257bb80c71989e3ee290e8d72c67"
+          }
+        }
+      },
+      "tqdm": {
+        "version": "4.70.1",
+        "url": "https://files.pythonhosted.org/packages/a7/03/921a3d3c75785aca9ebfbfcabfbc3a1be12e2ab5265deb026d55a5a3f83e/tqdm-4.70.1-py3-none-any.whl",
+        "archive_info": {
+          "hash": "sha256=c293e525e6fef9c20e8728fd4612df02a0aa31bb5fe91ecd93e123b1b7bffa73",
+          "hashes": {
+            "sha256": "c293e525e6fef9c20e8728fd4612df02a0aa31bb5fe91ecd93e123b1b7bffa73"
+          }
+        }
+      },
+      "transformers": {
+        "version": "5.10.4",
+        "url": "https://files.pythonhosted.org/packages/d7/f1/d66881f28d3e64002a21d043c7c8db306c0ad5a711c85337ff551bfbc040/transformers-5.10.4-py3-none-any.whl",
+        "archive_info": {
+          "hash": "sha256=8c5b99b141b53619435a76629b0284f04d27ff46d788b463fc0ecb23b8ff130e",
+          "hashes": {
+            "sha256": "8c5b99b141b53619435a76629b0284f04d27ff46d788b463fc0ecb23b8ff130e"
+          }
+        }
+      },
+      "typer": {
+        "version": "0.27.3",
+        "url": "https://files.pythonhosted.org/packages/07/ea/2e31b67051e91a133189e9c000c222502ddc6969856416de0d095de4c0b0/typer-0.27.3-py3-none-any.whl",
+        "archive_info": {
+          "hash": "sha256=e50022f28b82a86313e54501317a1db64bf8f8d036ff8cfe5ca7e47675454aff",
+          "hashes": {
+            "sha256": "e50022f28b82a86313e54501317a1db64bf8f8d036ff8cfe5ca7e47675454aff"
+          }
+        }
+      },
+      "typing_extensions": {
+        "version": "4.16.0",
+        "url": "https://files.pythonhosted.org/packages/49/d3/b8441a820a491ddfc024b0b0cf0393375b75ea13866d9c66727e54c2fc80/typing_extensions-4.16.0-py3-none-any.whl",
+        "archive_info": {
+          "hash": "sha256=481caa481374e813c1b176ada14e97f1f67a4539ce9cfeb3f350d78d6370c2e8",
+          "hashes": {
+            "sha256": "481caa481374e813c1b176ada14e97f1f67a4539ce9cfeb3f350d78d6370c2e8"
+          }
+        }
+      },
+      "typing-inspection": {
+        "version": "0.4.4",
+        "url": "https://files.pythonhosted.org/packages/67/81/4add07e5172b7ac40d8ed5ff580409a7801a4fe26d529bdd915401dabfbe/typing_inspection-0.4.4-py3-none-any.whl",
+        "archive_info": {
+          "hash": "sha256=65b8397ba37ccbce054456aaccddfc91e6e3083c92824df348d96ca832f3f147",
+          "hashes": {
+            "sha256": "65b8397ba37ccbce054456aaccddfc91e6e3083c92824df348d96ca832f3f147"
+          }
+        }
+      },
+      "uritemplate": {
+        "version": "4.2.0",
+        "url": "https://files.pythonhosted.org/packages/a9/99/3ae339466c9183ea5b8ae87b34c0b897eda475d2aec2307cae60e5cd4f29/uritemplate-4.2.0-py3-none-any.whl",
+        "archive_info": {
+          "hash": "sha256=962201ba1c4edcab02e60f9a0d3821e82dfc5d2d6662a21abd533879bdb8a686",
+          "hashes": {
+            "sha256": "962201ba1c4edcab02e60f9a0d3821e82dfc5d2d6662a21abd533879bdb8a686"
+          }
+        }
+      },
+      "urllib3": {
+        "version": "2.8.0",
+        "url": "https://files.pythonhosted.org/packages/92/9d/c4e665119135114480843e7ab388fa94d8480650450e6f8e26b70d323a4c/urllib3-2.8.0-py3-none-any.whl",
+        "archive_info": {
+          "hash": "sha256=0cf3cae568d36aa9576b28dfb35f11328f1cb974ca7647d9475ebb86c75ac6e3",
+          "hashes": {
+            "sha256": "0cf3cae568d36aa9576b28dfb35f11328f1cb974ca7647d9475ebb86c75ac6e3"
+          }
+        }
+      },
+      "Werkzeug": {
+        "version": "3.1.9",
+        "url": "https://files.pythonhosted.org/packages/a1/38/df03f564f43cec2684823f3cccae1a652ee7face1cbaa76fb223096e64d7/werkzeug-3.1.9-py3-none-any.whl",
+        "archive_info": {
+          "hash": "sha256=6392e50c78460ba618e5b21f08a71f59c99ce99cdc6cf6e3dd7e6ccca8754fab",
+          "hashes": {
+            "sha256": "6392e50c78460ba618e5b21f08a71f59c99ce99cdc6cf6e3dd7e6ccca8754fab"
+          }
+        }
+      },
+      "wrapt": {
+        "version": "2.5.1",
+        "url": "https://files.pythonhosted.org/packages/4a/5a/2a34ba5a468e9d3d6e5b0733280e1ae3c850bfc5f1d681fc0e97f564d1f2/wrapt-2.5.1-cp312-cp312-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl",
+        "archive_info": {
+          "hash": "sha256=bfaa998ceeea4d0aa72b40cdd0023d19409504e244b439ff2aa9f01729341c5f",
+          "hashes": {
+            "sha256": "bfaa998ceeea4d0aa72b40cdd0023d19409504e244b439ff2aa9f01729341c5f"
+          }
+        }
+      },
+      "wsproto": {
+        "version": "1.3.2",
+        "url": "https://files.pythonhosted.org/packages/a4/f5/10b68b7b1544245097b2a1b8238f66f2fc6dcaeb24ba5d917f52bd2eed4f/wsproto-1.3.2-py3-none-any.whl",
+        "archive_info": {
+          "hash": "sha256=61eea322cdf56e8cc904bd3ad7573359a242ba65688716b0710a5eb12beab584",
+          "hashes": {
+            "sha256": "61eea322cdf56e8cc904bd3ad7573359a242ba65688716b0710a5eb12beab584"
+          }
+        }
+      },
+      "WTForms": {
+        "version": "3.3.1",
+        "url": "https://files.pythonhosted.org/packages/a6/67/0f56cd0f8ac699259476fc9a520aa6b09b0e7e4da776f91c48f6965dc486/wtforms-3.3.1-py3-none-any.whl",
+        "archive_info": {
+          "hash": "sha256=2f4728ef3f67173c22590e60e845937598af7455474330fdb84354a609d67ec1",
+          "hashes": {
+            "sha256": "2f4728ef3f67173c22590e60e845937598af7455474330fdb84354a609d67ec1"
+          }
+        }
+      },
+      "torch": {
+        "version": "2.13.0+cpu",
+        "url": "https://download-r2.pytorch.org/whl/cpu/torch-2.13.0%2Bcpu-cp312-cp312-manylinux_2_28_x86_64.whl",
+        "archive_info": {
+          "hash": "sha256=4ca4a9394b0c771238a4f73590fdbbc4debad85ed0fa63d026ae1b085da7d6e2",
+          "hashes": {
+            "sha256": "4ca4a9394b0c771238a4f73590fdbbc4debad85ed0fa63d026ae1b085da7d6e2"
+          }
+        }
+      },
+      "torchvision": {
+        "version": "0.28.0+cpu",
+        "url": "https://download-r2.pytorch.org/whl/cpu/torchvision-0.28.0%2Bcpu-cp312-cp312-manylinux_2_28_x86_64.whl",
+        "archive_info": {
+          "hash": "sha256=b545d46f4d2f9d30381281cf22874bfe1d32a8a7b0ee8396fccde89f30c6a9d9",
+          "hashes": {
+            "sha256": "b545d46f4d2f9d30381281cf22874bfe1d32a8a7b0ee8396fccde89f30c6a9d9"
+          }
+        }
+      }
+    },
+    "yanked_rejected": true,
+    "models": {
+      "nllb": {
+        "files": {
+          "README.md": {
+            "git_blob": "489890f6973db2448e698120b132fc8e2fcfb304",
+            "sha256": "0964c46d35be00825c73b3a9ca212043b4b4e4f38e18e88c22e4490d31f9f1a3"
+          },
+          "config.json": {
+            "git_blob": "91ba54326eccfdb17a06a7d110df3d71f39b84b8",
+            "sha256": "f9b4081d3d108e9d06532ea8d92b932c04ed3a15ff2f87e6982f8e14db51fbc5"
+          },
+          "pytorch_model.bin": {
+            "bytes": 2460457927,
+            "sha256": "c266c2cfd19758b6d09c1fc31ecdf1e485509035f6b51dfe84f1ada83eefcc42"
+          },
+          "sentencepiece.bpe.model": {
+            "bytes": 4852054,
+            "sha256": "14bb8dfb35c0ffdea7bc01e56cea38b9e3d5efcdcb9c251d6b40538e1aab555a"
+          },
+          "special_tokens_map.json": {
+            "git_blob": "02fba84e401dd2017999a39cac2c1278591c3a03",
+            "sha256": "992bd4ed610d644d6823081937bcc91bb8878dd556cea4ae5327f2480361330e"
+          },
+          "tokenizer.json": {
+            "bytes": 17331176,
+            "sha256": "e316b82de11d0f951f370943b3c438311629547285129b0b81dadabd01bca665"
+          },
+          "tokenizer_config.json": {
+            "git_blob": "742aa330eae62f661fe28ff3fdd1d216d1481294",
+            "sha256": "d1aa8c3697d3e35674f97b5b7e9c99d22b010f528e80140257d97316be90d044"
+          }
+        },
+        "license": "cc-by-nc-4.0",
+        "output_sha256": {
+          "SOURCE_README.md": "0964c46d35be00825c73b3a9ca212043b4b4e4f38e18e88c22e4490d31f9f1a3",
+          "config.json": "7e5d77d89cb8bba5f414ed740ad3c448a01d43654eae7198f31d0a4ebcfdbf44",
+          "generation_config.json": "f2fd5fd3a3919925cd63640ac77150868bd605dc18885e48464789726a968cc0",
+          "model-00001-of-00002.safetensors": "dbe1cdd7c690113629a3d10b1b9ea88d3089dcd922a46cc7e031824f4ef70ef9",
+          "model-00002-of-00002.safetensors": "e936a5e5a3236d4e1f2aeecf749caa2341e99350e5fe1638dc0b55e0f02e4366",
+          "model.safetensors.index.json": "5439ec4cbe196ee05d6237f0df1e3c8e545728da3ac9cc81dc6e4caf0d17fdc7",
+          "tokenizer.json": "b3be18cc91c94d4a1d83731ace4dac0b90a7db024edecdeb9fe7d19ec01ce901",
+          "tokenizer_config.json": "fb8d43dbf7d6d42457ca67db6778045619725d837a770a8cf30159246930774e"
+        },
+        "repository": "facebook/nllb-200-distilled-600M",
+        "revision": "f8d333a098d19b4fd9a8b18f94170487ad3f821d",
+        "source_sha256": {
+          "README.md": "0964c46d35be00825c73b3a9ca212043b4b4e4f38e18e88c22e4490d31f9f1a3",
+          "config.json": "f9b4081d3d108e9d06532ea8d92b932c04ed3a15ff2f87e6982f8e14db51fbc5",
+          "pytorch_model.bin": "c266c2cfd19758b6d09c1fc31ecdf1e485509035f6b51dfe84f1ada83eefcc42",
+          "sentencepiece.bpe.model": "14bb8dfb35c0ffdea7bc01e56cea38b9e3d5efcdcb9c251d6b40538e1aab555a",
+          "special_tokens_map.json": "992bd4ed610d644d6823081937bcc91bb8878dd556cea4ae5327f2480361330e",
+          "tokenizer.json": "e316b82de11d0f951f370943b3c438311629547285129b0b81dadabd01bca665",
+          "tokenizer_config.json": "d1aa8c3697d3e35674f97b5b7e9c99d22b010f528e80140257d97316be90d044"
+        }
+      },
+      "easyocr": {
+        "repository": "JaidedAI/EasyOCR",
+        "sdk": "1.7.2",
+        "files": [
+          {
+            "url": "https://github.com/JaidedAI/EasyOCR/releases/download/pre-v1.1.6/craft_mlt_25k.zip",
+            "filename": "craft_mlt_25k.pth",
+            "sdk_md5": "2f8227d2def4037cdb3b34389dcf9ec1",
+            "sha256": "4a5efbfb48b4081100544e75e1e2b57f8de3d84f213004b14b85fd4b3748db17",
+            "archive_sha256": "8dc6a1c703a89ed56308ef742d26ebd45c656248cbbbda6e7fe60e569f873e65"
+          },
+          {
+            "url": "https://github.com/JaidedAI/EasyOCR/releases/download/pre-v1.1.6/chinese.zip",
+            "filename": "chinese.pth",
+            "sdk_md5": "dfba8e364cd98ed4fed7ad54d71e3965",
+            "sha256": "19ecc60f4e079eb2cd7f25f3513fc996cf80819fc1f1d0aee24c58402cc4776d",
+            "archive_sha256": "71cb95f601ce0c062860224ff3e1d2e807d784f2be92bf53ba500bb1736dabd5"
+          },
+          {
+            "url": "https://github.com/JaidedAI/EasyOCR/releases/download/v1.3/english_g2.zip",
+            "filename": "english_g2.pth",
+            "sdk_md5": "5864788e1821be9e454ec108d61b887d",
+            "sha256": "e2272681d9d67a04e2dff396b6e95077bc19001f8f6d3593c307b9852e1c29e8",
+            "archive_sha256": "1b5eaebf1c062de6205560c97ffcfa8dc0e6f413c340e8adc5cfc57e159f61ff"
+          }
+        ]
+      }
+    }
+  },
+  "quality": {
+    "translation": {
+      "baseline": {
+        "strict_numeric_sequence": 10,
+        "numeric_multiset": 12,
+        "count": 12
+      },
+      "final": {
+        "strict_numeric_sequence": 11,
+        "numeric_multiset": 12,
+        "count": 12
+      }
+    },
+    "scientific_quality_pass": false,
+    "note": "A reordered numeric sequence is not itself loss; original raw metrics retained. Synthetic controls only."
+  },
+  "ocr": {
+    "rows": [
+      {
+        "id": "english",
+        "text": "ROOTHINKS 2026",
+        "image_sha256": "f7fdbe3fbcfdda85887891bc75c2b8336beee8e7025836eab8fa913bc4795da5",
+        "easyocr": "R00TH||l|$2026",
+        "tesseract": "ROOTHINKS 2026",
+        "easyocr_cer": 0.5384615384615384,
+        "tesseract_cer": 0.0
+      },
+      {
+        "id": "conditions",
+        "text": "研究樣本 A 於 300 K 量測",
+        "image_sha256": "eb0ebc1b804a0bb24f0564aaca502c6a50a86d573e36301f8e62e50733396013",
+        "easyocr": "研究樣本 A於 3O0 K量測",
+        "tesseract": "研究 樣本 A 於 300K 量 測",
+        "easyocr_cer": 0.08333333333333333,
+        "tesseract_cer": 0.0
+      },
+      {
+        "id": "modality",
+        "text": "模擬結果不代表實測",
+        "image_sha256": "6d5562b06c441f6965eb0e082554505bef9c02828dca66744143a39b17a13183",
+        "easyocr": "模擬結果不代表實測",
+        "tesseract": "模擬 結果 不 代表 實測",
+        "easyocr_cer": 0.0,
+        "tesseract_cer": 0.0
+      }
+    ],
+    "tesseract_languages": [
+      "chi_tra",
+      "eng",
+      "osd"
+    ],
+    "tesseract_used": "eng+chi_tra",
+    "missing_chi_tra": false,
+    "independent_validation": false,
+    "scientific_quality_pass": false
+  },
+  "tokenizer": {
+    "all_ids_identical": true,
+    "count": 12,
+    "baseline_class": "NllbTokenizerFast",
+    "delivery_class": "NllbTokenizer"
+  },
+  "scientific_parity": {
+    "images": {
+      "py310": "sha256:47d74fc67670303dfa0c3916ed00bbfe935c20890eddf3a0446679b253f4baf9",
+      "local312": "sha256:b0b93fb77ea99b306723d8795431cb0ee7c0e54b980b79fb224d71211f317017",
+      "integrated312": "sha256:6505cba504874300e9f134ed22f79cbcf10dc0911698d9f3787dc53d99448d6d"
+    },
+    "prediction_sha256": {
+      "py310": "a7a22bcfa8438daec9e1871ec5b8159e38db5e57c7a42c53ec5d214fd347d09e",
+      "local312": "a7a22bcfa8438daec9e1871ec5b8159e38db5e57c7a42c53ec5d214fd347d09e",
+      "integrated312": "a7a22bcfa8438daec9e1871ec5b8159e38db5e57c7a42c53ec5d214fd347d09e"
+    },
+    "errors": {
+      "py310": 0,
+      "local312": 0,
+      "integrated312": 0
+    },
+    "count": 300,
+    "bit_identical": true,
+    "sealed_holdout_access": false,
+    "scientific_quality_measured": false,
+    "delivery_image": "sha256:3f7391eaa7146963e64e805744e9c17d7ff734aac8ef72d903d6877fbcc77920",
+    "delivery_prediction_sha256": "a7a22bcfa8438daec9e1871ec5b8159e38db5e57c7a42c53ec5d214fd347d09e"
+  },
+  "public_dev_source": {
+    "url": "https://scifact.s3-us-west-2.amazonaws.com/release/latest/data.tar.gz",
+    "archive_sha256": "11c621288d41ac144d29b13b0f8503b3820b7d6e8b1f6ff24dff335c196d76be",
+    "inputs_sha256": "ded7f378b97aca168037271d0725437b035c32f2ac033563d94122178ced1ce5",
+    "count": 300,
+    "gold_read_for_evaluation": false,
+    "sealed_holdout_access": false,
+    "scientific_quality_measured": false
+  },
+  "rollback": {
+    "python": "3.10.20 (main, Jul  6 2026, 21:47:13) [GCC 14.2.0]",
+    "all_research_rows_preserved": true,
+    "professor_history_and_revocation": true,
+    "old_paper_unchanged": true,
+    "new_section_saved": true,
+    "authenticated_export": true,
+    "anonymous_export": 401,
+    "docx_sha256": "37135b4df5a771b87cd69e2db58617712251e49ca510aff2ada0780784217a83",
+    "production_data_access": false
+  },
+  "security": {
+    "pip_audit": [
+      {
+        "package": "deep-translator",
+        "version": "1.11.4",
+        "vulnerabilities": [
+          {
+            "id": "PYSEC-2022-252",
+            "fix_versions": []
+          }
+        ]
+      }
+    ],
+    "bandit_metrics": {
+      "CONFIDENCE.HIGH": 160,
+      "CONFIDENCE.LOW": 1,
+      "CONFIDENCE.MEDIUM": 19,
+      "CONFIDENCE.UNDEFINED": 0,
+      "SEVERITY.HIGH": 11,
+      "SEVERITY.LOW": 143,
+      "SEVERITY.MEDIUM": 26,
+      "SEVERITY.UNDEFINED": 0,
+      "loc": 38302,
+      "nosec": 0,
+      "skipped_tests": 0
+    },
+    "bandit_findings": [
+      {
+        "file": "app\\__init__.py",
+        "line": 139,
+        "rule": "B108",
+        "severity": "MEDIUM"
+      },
+      {
+        "file": "app\\__init__.py",
+        "line": 347,
+        "rule": "B105",
+        "severity": "LOW"
+      },
+      {
+        "file": "app\\core_pro\\literature\\literature_batch_routes.py",
+        "line": 216,
+        "rule": "B108",
+        "severity": "MEDIUM"
+      },
+      {
+        "file": "app\\core_pro\\literature\\literature_batch_routes.py",
+        "line": 253,
+        "rule": "B110",
+        "severity": "LOW"
+      },
+      {
+        "file": "app\\core_pro\\literature\\literature_batch_routes.py",
+        "line": 333,
+        "rule": "B108",
+        "severity": "MEDIUM"
+      },
+      {
+        "file": "app\\core_pro\\literature\\literature_batch_routes.py",
+        "line": 335,
+        "rule": "B110",
+        "severity": "LOW"
+      },
+      {
+        "file": "app\\core_pro\\literature\\literature_bflow.py",
+        "line": 19,
+        "rule": "B404",
+        "severity": "LOW"
+      },
+      {
+        "file": "app\\core_pro\\literature\\literature_bflow.py",
+        "line": 731,
+        "rule": "B110",
+        "severity": "LOW"
+      },
+      {
+        "file": "app\\core_pro\\literature\\literature_bflow.py",
+        "line": 872,
+        "rule": "B110",
+        "severity": "LOW"
+      },
+      {
+        "file": "app\\core_pro\\literature\\literature_bflow.py",
+        "line": 896,
+        "rule": "B603",
+        "severity": "LOW"
+      },
+      {
+        "file": "app\\core_pro\\literature\\literature_bflow.py",
+        "line": 977,
+        "rule": "B110",
+        "severity": "LOW"
+      },
+      {
+        "file": "app\\core_pro\\literature\\literature_bflow.py",
+        "line": 982,
+        "rule": "B110",
+        "severity": "LOW"
+      },
+      {
+        "file": "app\\core_pro\\literature\\literature_cvpipeline.py",
+        "line": 142,
+        "rule": "B112",
+        "severity": "LOW"
+      },
+      {
+        "file": "app\\core_pro\\literature\\literature_cvpipeline.py",
+        "line": 351,
+        "rule": "B110",
+        "severity": "LOW"
+      },
+      {
+        "file": "app\\core_pro\\literature\\literature_cvpipeline.py",
+        "line": 373,
+        "rule": "B110",
+        "severity": "LOW"
+      },
+      {
+        "file": "app\\core_pro\\literature\\literature_latex_ocr.py",
+        "line": 25,
+        "rule": "B404",
+        "severity": "LOW"
+      },
+      {
+        "file": "app\\core_pro\\literature\\literature_latex_ocr.py",
+        "line": 180,
+        "rule": "B110",
+        "severity": "LOW"
+      },
+      {
+        "file": "app\\core_pro\\literature\\literature_latex_ocr.py",
+        "line": 229,
+        "rule": "B110",
+        "severity": "LOW"
+      },
+      {
+        "file": "app\\core_pro\\literature\\literature_latex_ocr.py",
+        "line": 474,
+        "rule": "B602",
+        "severity": "HIGH"
+      },
+      {
+        "file": "app\\core_pro\\literature\\literature_latex_ocr.py",
+        "line": 615,
+        "rule": "B110",
+        "severity": "LOW"
+      },
+      {
+        "file": "app\\core_pro\\literature\\literature_nllb.py",
+        "line": 77,
+        "rule": "B615",
+        "severity": "MEDIUM"
+      },
+      {
+        "file": "app\\core_pro\\literature\\literature_nllb.py",
+        "line": 78,
+        "rule": "B615",
+        "severity": "MEDIUM"
+      },
+      {
+        "file": "app\\core_pro\\literature\\literature_processing_ops.py",
+        "line": 313,
+        "rule": "B110",
+        "severity": "LOW"
+      },
+      {
+        "file": "app\\core_pro\\literature\\literature_processing_ops.py",
+        "line": 887,
+        "rule": "B108",
+        "severity": "MEDIUM"
+      },
+      {
+        "file": "app\\core_pro\\literature\\literature_processing_ops.py",
+        "line": 895,
+        "rule": "B110",
+        "severity": "LOW"
+      },
+      {
+        "file": "app\\core_pro\\literature\\literature_routes.py",
+        "line": 38,
+        "rule": "B404",
+        "severity": "LOW"
+      },
+      {
+        "file": "app\\core_pro\\literature\\literature_routes.py",
+        "line": 177,
+        "rule": "B110",
+        "severity": "LOW"
+      },
+      {
+        "file": "app\\core_pro\\literature\\literature_routes.py",
+        "line": 181,
+        "rule": "B110",
+        "severity": "LOW"
+      },
+      {
+        "file": "app\\core_pro\\literature\\literature_routes.py",
+        "line": 200,
+        "rule": "B110",
+        "severity": "LOW"
+      },
+      {
+        "file": "app\\core_pro\\literature\\literature_routes.py",
+        "line": 221,
+        "rule": "B110",
+        "severity": "LOW"
+      },
+      {
+        "file": "app\\core_pro\\literature\\literature_routes.py",
+        "line": 424,
+        "rule": "B110",
+        "severity": "LOW"
+      },
+      {
+        "file": "app\\core_pro\\literature\\literature_routes.py",
+        "line": 543,
+        "rule": "B112",
+        "severity": "LOW"
+      },
+      {
+        "file": "app\\core_pro\\literature\\literature_routes.py",
+        "line": 562,
+        "rule": "B112",
+        "severity": "LOW"
+      },
+      {
+        "file": "app\\core_pro\\literature\\literature_routes.py",
+        "line": 569,
+        "rule": "B112",
+        "severity": "LOW"
+      },
+      {
+        "file": "app\\core_pro\\literature\\literature_routes.py",
+        "line": 652,
+        "rule": "B110",
+        "severity": "LOW"
+      },
+      {
+        "file": "app\\core_pro\\literature\\literature_routes.py",
+        "line": 660,
+        "rule": "B110",
+        "severity": "LOW"
+      },
+      {
+        "file": "app\\core_pro\\literature\\literature_segmentizer.py",
+        "line": 244,
+        "rule": "B110",
+        "severity": "LOW"
+      },
+      {
+        "file": "app\\core_pro\\literature\\literature_segmentizer.py",
+        "line": 1699,
+        "rule": "B110",
+        "severity": "LOW"
+      },
+      {
+        "file": "app\\core_pro\\literature\\literature_segmentizer.py",
+        "line": 1915,
+        "rule": "B110",
+        "severity": "LOW"
+      },
+      {
+        "file": "app\\core_pro\\literature\\literature_segmentizer.py",
+        "line": 1931,
+        "rule": "B112",
+        "severity": "LOW"
+      },
+      {
+        "file": "app\\core_pro\\literature\\literature_stackb.py",
+        "line": 511,
+        "rule": "B110",
+        "severity": "LOW"
+      },
+      {
+        "file": "app\\core_pro\\literature\\literature_stackb.py",
+        "line": 526,
+        "rule": "B112",
+        "severity": "LOW"
+      },
+      {
+        "file": "app\\core_pro\\literature\\literature_translator.py",
+        "line": 847,
+        "rule": "B110",
+        "severity": "LOW"
+      },
+      {
+        "file": "app\\core_pro\\manuscript\\coc_producers.py",
+        "line": 62,
+        "rule": "B324",
+        "severity": "HIGH"
+      },
+      {
+        "file": "app\\core_pro\\manuscript\\context_inject.py",
+        "line": 251,
+        "rule": "B110",
+        "severity": "LOW"
+      },
+      {
+        "file": "app\\core_pro\\manuscript\\manuscript_io.py",
+        "line": 88,
+        "rule": "B110",
+        "severity": "LOW"
+      },
+      {
+        "file": "app\\core_pro\\manuscript\\manuscript_io.py",
+        "line": 222,
+        "rule": "B110",
+        "severity": "LOW"
+      },
+      {
+        "file": "app\\core_pro\\manuscript\\manuscript_io.py",
+        "line": 292,
+        "rule": "B324",
+        "severity": "HIGH"
+      },
+      {
+        "file": "app\\core_pro\\manuscript\\manuscript_io.py",
+        "line": 464,
+        "rule": "B324",
+        "severity": "HIGH"
+      },
+      {
+        "file": "app\\core_pro\\manuscript\\manuscript_routes.py",
+        "line": 272,
+        "rule": "B110",
+        "severity": "LOW"
+      },
+      {
+        "file": "app\\core_pro\\manuscript\\manuscript_routes.py",
+        "line": 304,
+        "rule": "B110",
+        "severity": "LOW"
+      },
+      {
+        "file": "app\\core_pro\\manuscript\\manuscript_routes.py",
+        "line": 673,
+        "rule": "B110",
+        "severity": "LOW"
+      },
+      {
+        "file": "app\\core_pro\\manuscript\\manuscript_routes.py",
+        "line": 823,
+        "rule": "B110",
+        "severity": "LOW"
+      },
+      {
+        "file": "app\\core_pro\\manuscript\\manuscript_routes.py",
+        "line": 837,
+        "rule": "B110",
+        "severity": "LOW"
+      },
+      {
+        "file": "app\\core_pro\\manuscript\\manuscript_routes.py",
+        "line": 860,
+        "rule": "B110",
+        "severity": "LOW"
+      },
+      {
+        "file": "app\\core_pro\\manuscript\\manuscript_ruling.py",
+        "line": 372,
+        "rule": "B110",
+        "severity": "LOW"
+      },
+      {
+        "file": "app\\core_pro\\paq\\paq_routes.py",
+        "line": 59,
+        "rule": "B110",
+        "severity": "LOW"
+      },
+      {
+        "file": "app\\core_pro\\study\\study_index.py",
+        "line": 39,
+        "rule": "B110",
+        "severity": "LOW"
+      },
+      {
+        "file": "app\\core_pro\\study\\study_matrix.py",
+        "line": 169,
+        "rule": "B110",
+        "severity": "LOW"
+      },
+      {
+        "file": "app\\core_pro\\study\\study_routes.py",
+        "line": 553,
+        "rule": "B110",
+        "severity": "LOW"
+      },
+      {
+        "file": "app\\core_pro\\study\\study_routes.py",
+        "line": 579,
+        "rule": "B110",
+        "severity": "LOW"
+      },
+      {
+        "file": "app\\core_pro\\study\\study_routes.py",
+        "line": 602,
+        "rule": "B110",
+        "severity": "LOW"
+      },
+      {
+        "file": "app\\core_pro\\study\\study_routes.py",
+        "line": 643,
+        "rule": "B110",
+        "severity": "LOW"
+      },
+      {
+        "file": "app\\core_pro\\study\\study_routes.py",
+        "line": 777,
+        "rule": "B112",
+        "severity": "LOW"
+      },
+      {
+        "file": "app\\core_pro\\study\\study_routes.py",
+        "line": 934,
+        "rule": "B110",
+        "severity": "LOW"
+      },
+      {
+        "file": "app\\core_pro\\study\\study_routes.py",
+        "line": 1093,
+        "rule": "B112",
+        "severity": "LOW"
+      },
+      {
+        "file": "app\\core_pro\\study\\study_routes.py",
+        "line": 1239,
+        "rule": "B110",
+        "severity": "LOW"
+      },
+      {
+        "file": "app\\errors.py",
+        "line": 41,
+        "rule": "B105",
+        "severity": "LOW"
+      },
+      {
+        "file": "app\\llm_service\\adapter\\llm_google.py",
+        "line": 170,
+        "rule": "B110",
+        "severity": "LOW"
+      },
+      {
+        "file": "app\\llm_service\\adapter\\llm_google.py",
+        "line": 177,
+        "rule": "B110",
+        "severity": "LOW"
+      },
+      {
+        "file": "app\\llm_service\\adapter\\llm_google.py",
+        "line": 324,
+        "rule": "B112",
+        "severity": "LOW"
+      },
+      {
+        "file": "app\\llm_service\\adapter\\llm_google.py",
+        "line": 721,
+        "rule": "B110",
+        "severity": "LOW"
+      },
+      {
+        "file": "app\\llm_service\\adapter\\llm_openai.py",
+        "line": 156,
+        "rule": "B110",
+        "severity": "LOW"
+      },
+      {
+        "file": "app\\llm_service\\adapter\\llm_openai.py",
+        "line": 163,
+        "rule": "B110",
+        "severity": "LOW"
+      },
+      {
+        "file": "app\\llm_service\\adapter\\llm_openai.py",
+        "line": 310,
+        "rule": "B112",
+        "severity": "LOW"
+      },
+      {
+        "file": "app\\llm_service\\adapter\\llm_openrouter.py",
+        "line": 179,
+        "rule": "B112",
+        "severity": "LOW"
+      },
+      {
+        "file": "app\\llm_service\\adapter\\llm_stub.py",
+        "line": 71,
+        "rule": "B110",
+        "severity": "LOW"
+      },
+      {
+        "file": "app\\llm_service\\adapter\\llm_stub.py",
+        "line": 122,
+        "rule": "B110",
+        "severity": "LOW"
+      },
+      {
+        "file": "app\\llm_service\\llm_model.py",
+        "line": 335,
+        "rule": "B608",
+        "severity": "MEDIUM"
+      },
+      {
+        "file": "app\\llm_service\\matching_tasks\\task_3bc_scout.py",
+        "line": 327,
+        "rule": "B112",
+        "severity": "LOW"
+      },
+      {
+        "file": "app\\llm_service\\matching_tasks\\task_3search.py",
+        "line": 21,
+        "rule": "B405",
+        "severity": "LOW"
+      },
+      {
+        "file": "app\\llm_service\\matching_tasks\\task_3search.py",
+        "line": 161,
+        "rule": "B324",
+        "severity": "HIGH"
+      },
+      {
+        "file": "app\\llm_service\\matching_tasks\\task_3search.py",
+        "line": 263,
+        "rule": "B110",
+        "severity": "LOW"
+      },
+      {
+        "file": "app\\llm_service\\matching_tasks\\task_3search.py",
+        "line": 367,
+        "rule": "B110",
+        "severity": "LOW"
+      },
+      {
+        "file": "app\\llm_service\\matching_tasks\\task_3search.py",
+        "line": 375,
+        "rule": "B314",
+        "severity": "MEDIUM"
+      },
+      {
+        "file": "app\\llm_service\\matching_tasks\\task_3search.py",
+        "line": 568,
+        "rule": "B112",
+        "severity": "LOW"
+      },
+      {
+        "file": "app\\llm_service\\matching_tasks\\task_3search.py",
+        "line": 742,
+        "rule": "B110",
+        "severity": "LOW"
+      },
+      {
+        "file": "app\\llm_service\\matching_tasks\\task_4cv.py",
+        "line": 131,
+        "rule": "B110",
+        "severity": "LOW"
+      },
+      {
+        "file": "app\\llm_service\\matching_tasks\\task_4cv.py",
+        "line": 158,
+        "rule": "B110",
+        "severity": "LOW"
+      },
+      {
+        "file": "app\\llm_service\\matching_tasks\\task_4cv.py",
+        "line": 208,
+        "rule": "B110",
+        "severity": "LOW"
+      },
+      {
+        "file": "app\\llm_service\\matching_tasks\\task_4cv.py",
+        "line": 270,
+        "rule": "B110",
+        "severity": "LOW"
+      },
+      {
+        "file": "app\\llm_service\\matching_tasks\\task_5interpret.py",
+        "line": 84,
+        "rule": "B110",
+        "severity": "LOW"
+      },
+      {
+        "file": "app\\llm_service\\matching_tasks\\task_5interpret.py",
+        "line": 276,
+        "rule": "B110",
+        "severity": "LOW"
+      },
+      {
+        "file": "app\\llm_service\\matching_tasks\\task_5interpret.py",
+        "line": 285,
+        "rule": "B110",
+        "severity": "LOW"
+      },
+      {
+        "file": "app\\llm_service\\matching_tasks\\task_8drafter.py",
+        "line": 21,
+        "rule": "B405",
+        "severity": "LOW"
+      },
+      {
+        "file": "app\\llm_service\\matching_tasks\\task_8drafter.py",
+        "line": 185,
+        "rule": "B314",
+        "severity": "MEDIUM"
+      },
+      {
+        "file": "app\\llm_service\\matching_tasks\\task_8drafter.py",
+        "line": 236,
+        "rule": "B112",
+        "severity": "LOW"
+      },
+      {
+        "file": "app\\llm_service\\matching_tasks\\task_8drafter.py",
+        "line": 288,
+        "rule": "B112",
+        "severity": "LOW"
+      },
+      {
+        "file": "app\\project_portfolio\\project_routes.py",
+        "line": 212,
+        "rule": "B110",
+        "severity": "LOW"
+      },
+      {
+        "file": "app\\project_portfolio\\project_service.py",
+        "line": 58,
+        "rule": "B311",
+        "severity": "LOW"
+      },
+      {
+        "file": "app\\research_backup.py",
+        "line": 167,
+        "rule": "B608",
+        "severity": "MEDIUM"
+      },
+      {
+        "file": "app\\security.py",
+        "line": 218,
+        "rule": "B105",
+        "severity": "LOW"
+      },
+      {
+        "file": "app\\security.py",
+        "line": 746,
+        "rule": "B108",
+        "severity": "MEDIUM"
+      },
+      {
+        "file": "app\\security.py",
+        "line": 757,
+        "rule": "B110",
+        "severity": "LOW"
+      },
+      {
+        "file": "app\\security.py",
+        "line": 773,
+        "rule": "B324",
+        "severity": "HIGH"
+      },
+      {
+        "file": "app\\services\\context_chain_service.py",
+        "line": 129,
+        "rule": "B110",
+        "severity": "LOW"
+      },
+      {
+        "file": "app\\services\\context_chain_service.py",
+        "line": 148,
+        "rule": "B110",
+        "severity": "LOW"
+      },
+      {
+        "file": "app\\services\\context_chain_service.py",
+        "line": 157,
+        "rule": "B324",
+        "severity": "HIGH"
+      },
+      {
+        "file": "app\\services\\evidence_index_service.py",
+        "line": 76,
+        "rule": "B324",
+        "severity": "HIGH"
+      },
+      {
+        "file": "app\\services\\evidence_index_service.py",
+        "line": 368,
+        "rule": "B110",
+        "severity": "LOW"
+      },
+      {
+        "file": "app\\services\\literature_chat_store.py",
+        "line": 72,
+        "rule": "B324",
+        "severity": "HIGH"
+      },
+      {
+        "file": "app\\services\\literature_library.py",
+        "line": 78,
+        "rule": "B324",
+        "severity": "HIGH"
+      },
+      {
+        "file": "app\\system_runtime.py",
+        "line": 152,
+        "rule": "B110",
+        "severity": "LOW"
+      },
+      {
+        "file": "app\\system_runtime.py",
+        "line": 158,
+        "rule": "B110",
+        "severity": "LOW"
+      },
+      {
+        "file": "app\\system_runtime.py",
+        "line": 208,
+        "rule": "B110",
+        "severity": "LOW"
+      },
+      {
+        "file": "app\\system_runtime.py",
+        "line": 217,
+        "rule": "B110",
+        "severity": "LOW"
+      },
+      {
+        "file": "app\\system_runtime.py",
+        "line": 232,
+        "rule": "B110",
+        "severity": "LOW"
+      },
+      {
+        "file": "app\\system_runtime.py",
+        "line": 238,
+        "rule": "B110",
+        "severity": "LOW"
+      },
+      {
+        "file": "app\\system_runtime.py",
+        "line": 248,
+        "rule": "B110",
+        "severity": "LOW"
+      },
+      {
+        "file": "app\\system_runtime.py",
+        "line": 254,
+        "rule": "B110",
+        "severity": "LOW"
+      },
+      {
+        "file": "scripts\\audit_source_contract.py",
+        "line": 18,
+        "rule": "B404",
+        "severity": "LOW"
+      },
+      {
+        "file": "scripts\\audit_source_contract.py",
+        "line": 80,
+        "rule": "B607",
+        "severity": "LOW"
+      },
+      {
+        "file": "scripts\\audit_source_contract.py",
+        "line": 80,
+        "rule": "B603",
+        "severity": "LOW"
+      },
+      {
+        "file": "scripts\\audit_source_contract.py",
+        "line": 156,
+        "rule": "B607",
+        "severity": "LOW"
+      },
+      {
+        "file": "scripts\\audit_source_contract.py",
+        "line": 156,
+        "rule": "B603",
+        "severity": "LOW"
+      },
+      {
+        "file": "scripts\\audit_source_contract.py",
+        "line": 169,
+        "rule": "B607",
+        "severity": "LOW"
+      },
+      {
+        "file": "scripts\\audit_source_contract.py",
+        "line": 169,
+        "rule": "B603",
+        "severity": "LOW"
+      },
+      {
+        "file": "scripts\\audit_source_contract.py",
+        "line": 230,
+        "rule": "B101",
+        "severity": "LOW"
+      },
+      {
+        "file": "scripts\\audit_source_contract.py",
+        "line": 231,
+        "rule": "B101",
+        "severity": "LOW"
+      },
+      {
+        "file": "scripts\\audit_source_contract.py",
+        "line": 244,
+        "rule": "B101",
+        "severity": "LOW"
+      },
+      {
+        "file": "scripts\\audit_source_contract.py",
+        "line": 246,
+        "rule": "B101",
+        "severity": "LOW"
+      },
+      {
+        "file": "scripts\\audit_source_contract.py",
+        "line": 250,
+        "rule": "B101",
+        "severity": "LOW"
+      },
+      {
+        "file": "scripts\\audit_source_contract.py",
+        "line": 251,
+        "rule": "B101",
+        "severity": "LOW"
+      },
+      {
+        "file": "scripts\\audit_source_contract.py",
+        "line": 254,
+        "rule": "B101",
+        "severity": "LOW"
+      },
+      {
+        "file": "scripts\\bake_easyocr.py",
+        "line": 22,
+        "rule": "B310",
+        "severity": "MEDIUM"
+      },
+      {
+        "file": "scripts\\bake_nllb.py",
+        "line": 33,
+        "rule": "B615",
+        "severity": "MEDIUM"
+      },
+      {
+        "file": "scripts\\bake_nllb.py",
+        "line": 34,
+        "rule": "B108",
+        "severity": "MEDIUM"
+      },
+      {
+        "file": "scripts\\bake_nllb.py",
+        "line": 40,
+        "rule": "B324",
+        "severity": "HIGH"
+      },
+      {
+        "file": "scripts\\bake_nllb.py",
+        "line": 43,
+        "rule": "B615",
+        "severity": "MEDIUM"
+      },
+      {
+        "file": "scripts\\bake_nllb.py",
+        "line": 44,
+        "rule": "B615",
+        "severity": "MEDIUM"
+      },
+      {
+        "file": "scripts\\bake_nllb.py",
+        "line": 51,
+        "rule": "B615",
+        "severity": "MEDIUM"
+      },
+      {
+        "file": "scripts\\bake_nllb.py",
+        "line": 58,
+        "rule": "B108",
+        "severity": "MEDIUM"
+      },
+      {
+        "file": "scripts\\clause_frame_evaluate.py",
+        "line": 113,
+        "rule": "B311",
+        "severity": "LOW"
+      },
+      {
+        "file": "scripts\\cleanup_legacy_users.py",
+        "line": 93,
+        "rule": "B608",
+        "severity": "MEDIUM"
+      },
+      {
+        "file": "scripts\\cleanup_legacy_users.py",
+        "line": 100,
+        "rule": "B608",
+        "severity": "MEDIUM"
+      },
+      {
+        "file": "scripts\\cleanup_legacy_users.py",
+        "line": 113,
+        "rule": "B608",
+        "severity": "MEDIUM"
+      },
+      {
+        "file": "scripts\\cleanup_legacy_users.py",
+        "line": 118,
+        "rule": "B608",
+        "severity": "MEDIUM"
+      },
+      {
+        "file": "scripts\\cleanup_legacy_users.py",
+        "line": 121,
+        "rule": "B608",
+        "severity": "MEDIUM"
+      },
+      {
+        "file": "scripts\\prepare_expert_holdout.py",
+        "line": 18,
+        "rule": "B405",
+        "severity": "LOW"
+      },
+      {
+        "file": "scripts\\prepare_expert_holdout.py",
+        "line": 38,
+        "rule": "B310",
+        "severity": "MEDIUM"
+      },
+      {
+        "file": "scripts\\prepare_expert_holdout.py",
+        "line": 45,
+        "rule": "B314",
+        "severity": "MEDIUM"
+      },
+      {
+        "file": "scripts\\prepare_expert_holdout.py",
+        "line": 115,
+        "rule": "B314",
+        "severity": "MEDIUM"
+      },
+      {
+        "file": "scripts\\prepare_test_runtime.py",
+        "line": 38,
+        "rule": "B606",
+        "severity": "LOW"
+      },
+      {
+        "file": "scripts\\py312_runtime_check.py",
+        "line": 14,
+        "rule": "B404",
+        "severity": "LOW"
+      },
+      {
+        "file": "scripts\\py312_runtime_check.py",
+        "line": 24,
+        "rule": "B101",
+        "severity": "LOW"
+      },
+      {
+        "file": "scripts\\py312_runtime_check.py",
+        "line": 25,
+        "rule": "B101",
+        "severity": "LOW"
+      },
+      {
+        "file": "scripts\\py312_runtime_check.py",
+        "line": 26,
+        "rule": "B101",
+        "severity": "LOW"
+      },
+      {
+        "file": "scripts\\py312_runtime_check.py",
+        "line": 27,
+        "rule": "B101",
+        "severity": "LOW"
+      },
+      {
+        "file": "scripts\\py312_runtime_check.py",
+        "line": 28,
+        "rule": "B101",
+        "severity": "LOW"
+      },
+      {
+        "file": "scripts\\py312_runtime_check.py",
+        "line": 30,
+        "rule": "B101",
+        "severity": "LOW"
+      },
+      {
+        "file": "scripts\\py312_runtime_check.py",
+        "line": 32,
+        "rule": "B101",
+        "severity": "LOW"
+      },
+      {
+        "file": "scripts\\py312_runtime_check.py",
+        "line": 33,
+        "rule": "B101",
+        "severity": "LOW"
+      },
+      {
+        "file": "scripts\\py312_runtime_check.py",
+        "line": 35,
+        "rule": "B101",
+        "severity": "LOW"
+      },
+      {
+        "file": "scripts\\py312_runtime_check.py",
+        "line": 37,
+        "rule": "B603",
+        "severity": "LOW"
+      },
+      {
+        "file": "scripts\\py312_runtime_check.py",
+        "line": 38,
+        "rule": "B101",
+        "severity": "LOW"
+      },
+      {
+        "file": "scripts\\py312_runtime_check.py",
+        "line": 39,
+        "rule": "B101",
+        "severity": "LOW"
+      },
+      {
+        "file": "scripts\\py312_runtime_check.py",
+        "line": 49,
+        "rule": "B101",
+        "severity": "LOW"
+      },
+      {
+        "file": "scripts\\py312_runtime_check.py",
+        "line": 52,
+        "rule": "B101",
+        "severity": "LOW"
+      },
+      {
+        "file": "scripts\\py312_runtime_check.py",
+        "line": 54,
+        "rule": "B101",
+        "severity": "LOW"
+      },
+      {
+        "file": "scripts\\scientific_benchmark.py",
+        "line": 44,
+        "rule": "B101",
+        "severity": "LOW"
+      },
+      {
+        "file": "scripts\\scientific_benchmark.py",
+        "line": 60,
+        "rule": "B101",
+        "severity": "LOW"
+      },
+      {
+        "file": "scripts\\scientific_benchmark.py",
+        "line": 61,
+        "rule": "B101",
+        "severity": "LOW"
+      },
+      {
+        "file": "scripts\\scientific_benchmark.py",
+        "line": 86,
+        "rule": "B101",
+        "severity": "LOW"
+      },
+      {
+        "file": "scripts\\scientific_benchmark.py",
+        "line": 87,
+        "rule": "B101",
+        "severity": "LOW"
+      },
+      {
+        "file": "scripts\\scientific_control_report.py",
+        "line": 33,
+        "rule": "B101",
+        "severity": "LOW"
+      },
+      {
+        "file": "scripts\\scientific_control_report.py",
+        "line": 34,
+        "rule": "B101",
+        "severity": "LOW"
+      },
+      {
+        "file": "scripts\\seed_manuscript_preview.py",
+        "line": 34,
+        "rule": "B105",
+        "severity": "LOW"
+      },
+      {
+        "file": "scripts\\seed_paq_preview.py",
+        "line": 35,
+        "rule": "B105",
+        "severity": "LOW"
+      },
+      {
+        "file": "scripts\\verify_fresh_bootstrap.py",
+        "line": 36,
+        "rule": "B404",
+        "severity": "LOW"
+      },
+      {
+        "file": "scripts\\verify_fresh_bootstrap.py",
+        "line": 81,
+        "rule": "B603",
+        "severity": "LOW"
+      }
+    ],
+    "gitleaks_new_history": [],
+    "gitleaks_context_findings": [
+      {
+        "file": "D:/Documents/RootThinksValidation/py312-integration-20261025/frozen-v4/context/deploy_preflight.py",
+        "line": 247,
+        "rule": "generic-api-key",
+        "classification": "diagnostic string false positive; no credential value"
+      }
+    ],
+    "independent_tools": true,
+    "independent_external_audit": false,
+    "os_cve_audit": false
+  },
+  "production_unchanged": {
+    "container_id": "5a7d0832977066954bea86266c53e33513b0b285d9664d3b3493f9995cf05537",
+    "image": "sha256:47d74fc67670303dfa0c3916ed00bbfe935c20890eddf3a0446679b253f4baf9",
+    "status": "running",
+    "health": "healthy"
+  },
+  "scope": {
+    "main_merge": false,
+    "deployment": false,
+    "lava_cowork_changed": false,
+    "production_data_access": false,
+    "sealed_holdout_access": false,
+    "cloud_handoff_started": false
+  },
+  "constraints": [
+    "deep-translator advisory unresolved; no fixed version listed",
+    "live Google consent/Picker/revocation not verified",
+    "Windows NTFS bind latency/durability not accepted",
+    "synthetic controls are not independent scientific/OCR/translation quality validation",
+    "legacy SHA1 identities and optional shell command remain audit items; historical IDs preserved",
+    "external independent auditor still required"
+  ],
+  "frozen_source_manifest_sha256": "52a68210793c3d5391d4d17b39bbcc7f1104766098368cbcb1d7b38762d98c22",
+  "reproduction_tools": {
+    "validation/python312/bake_model.py": "4b31755fc5beb03f6e513b33982d5e638009f51f8592ad5c2b487c15880b13d6",
+    "validation/python312/browser_assets.py": "b68fb8846a801435c4299e9b3a1dfda69b1221818377556fa2ca97611512394a",
+    "validation/python312/browser_fixture.py": "31af7c1ea2e93276e11d5a08ab5bcca76659e56bb38fcea530903c472778b411",
+    "validation/python312/browser_hook.cjs": "43b99ad7a214215adef22e8459a4a3f15127dc9308c4d0b20cfb3dee6e68ce06",
+    "validation/python312/browser_optional.cjs": "7c467810256e9e2e8a64145494a8971f6224a73e9568079011a18b865ca14485",
+    "validation/python312/Dockerfile": "9629928ccfb9302b35302d0568d0be45bfd5f0217128a8d7e632dd832dd06368",
+    "validation/python312/easyocr_probe.py": "d83f3730d51b6f902d64cd83902aaa367eda31f69bf9be20f393a23e226e0a81",
+    "validation/python312/local_build.py": "a3abfa66ccce44459a2b939699e997b20d23ba4c1209c20c0fdd45565a104d70",
+    "validation/python312/nllb-source.json": "abe347b40236ecaf7c1b91bc5f6534f61be45fa63f5cf0b73e9c212e421e9fc2",
+    "validation/python312/pdf_browser.cjs": "d62a595e88ae03392ca1933312bb705da209a25184fa3a3f1ac2ff19b22c3cbe",
+    "validation/python312/pdf_check.py": "ed2f5da24dab525cc6ed9a162c007bee66c9aa171043a6e78132b58d6082ae38",
+    "validation/python312/quality_controls.json": "d0806a9e1df6fa89df4b82a32c883336713fa7582b68a95551756d0d1d5df1c5",
+    "validation/python312/quality_diagnostic.py": "b05e8b0fdd73c3ae02919dc17106a3380549fd092553df7f76d01dc71552158b",
+    "validation/python312/regression.py": "c8ff25ed8d74c70a606bc97c2f2b38cca58921c015025f9c48b8636c88c9c6b4",
+    "validation/python312/requirements-test.in": "e30457bd58f86396d058f111bcdb087a8650325a43c84da11b95df5db20bee40",
+    "validation/python312/requirements-test.lock": "80ef3554725f92fe8ef5073ab8fe9e19b9ec1a02e95e4eea9be7847dc1787aa4",
+    "validation/python312/requirements.in": "088d22458b6daf37fefb50f02f34660d5a87d0618e7ad47e037aa0a92b236cf4",
+    "validation/python312/requirements.lock": "a510e0339816779463681449800eb3631e0c7bca1ebd3a1579b4ca6ae08eeb05",
+    "validation/python312/rollback_probe.py": "38000f34617dfdad623079b930ac93067d2e03494494c8a7bb2e1d13ea3d35f5",
+    "validation/python312/runtime_checks.py": "593f324bad9d5a49548ef33b791cb0c28daf89a7857f86f97cc621b58dc7f070"
+  },
+  "failed_evidence": [
+    "regression-frozen: one exact-hash test typo",
+    "resolve-secure-candidate-v3 follows preserved failed resolver rounds",
+    "secure-runtime-path-v2: removed translation pipeline",
+    "build-v1/verification-v1: bare FROM image ID",
+    "integrated-sai-autonomy/retry/final/linux: original timeouts retained",
+    "diagram-control before startup precondition: detached bootstrap DOM"
+  ]
+}

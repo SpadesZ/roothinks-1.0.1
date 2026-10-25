@@ -5,7 +5,7 @@ const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('n
 const {createHash}=require('node:crypto'),{execFileSync}=require('node:child_process');
 const output=process.env.PY312_PDF_EVIDENCE,host=process.env.SAI_SYNTHETIC_ROOT;
 const container=process.env.PY312_BROWSER_CONTAINER,remote=process.env.PY312_CONTAINER_SYNTHETIC_ROOT;
-assert.ok(output && host && container?.startsWith('roothinks-py312-local-') && remote?.startsWith('/qa-tmp/roothinks-sai-browser-'));
+assert.ok(output && host && container?.startsWith('roothinks-py312-local-') && (remote?.startsWith('/qa-tmp/roothinks-sai-browser-')||remote?.startsWith('/tmp/roothinks-sai-browser-')));
 fs.mkdirSync(output,{recursive:false});
 const hash=bytes=>createHash('sha256').update(bytes).digest('hex');
 // ponytail: 固定一頁 PDF 即足以驗三種解析路徑；不建立通用 PDF generator。

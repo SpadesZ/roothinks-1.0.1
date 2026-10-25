@@ -292,3 +292,17 @@ I05 歷史完整回歸：**1,254 通過、0 失敗、0 略過**，pytest 摘要 
 | 研究科學品質與正式切換 | 未驗收 | 真專家／holdout、數值跨依賴一致性、Owner 授權 |
 
 判定：本機環境驗證完成，**停在整合 Owner Gate**。採[整合方案](engineering/LOCAL_PY312_INTEGRATION_PLAN_2026-10-25.md)，不得把兩邊不同映像的結果加總成最終映像通過。
+
+## LOCAL-FIRST 整合（2026-10-26）
+
+Owner 已改採本機主導；新隔離分支 `codex/py312-local-first-integration-20261025`。凍結產品 `84b0ea9` 的正式 Dockerfile 完整 build，真 CPU Torch/NLLB/OCR，完整回歸 **1,506 passed／50 skipped／0 failed／0 errors**。原八個環境錯誤對應案例、Linux 程序競爭／恢復、三種研究流程與教授撤權歷史、有效 PDF／真 DOCX、兩 worker、300 公開 dev parity、3.10 合成回退另有逐項證據。
+
+| 維度 | 判定 | 仍開放 |
+|---|---|---|
+| 29 項依賴調和、固定來源、hash、非 yanked 正式映像 | 已實作並實測 | 保留供應鏈通報，不把固定版本視為無漏洞 |
+| Google SDK／舊脈絡回應、可選圖表阻塞／錯誤 HTML | 紅測試後修復，Node 及真 browser 驗證 | 真 Google consent／Picker／撤權未驗 |
+| 三流程與研究歷史／原件／回退 | 隔離合成資料實測 | 正式資料、NTFS／網路磁碟耐久性、多主機、容量未驗 |
+| OCR／翻譯、科學品質 | 只有固定合成診斷；引擎規則保持不變 | EasyOCR 錯讀仍在；數字集合舊／新皆 12/12，無科學品質改善結論 |
+| 安全與正式 migration | **NO-GO** | deep-translator 1.11.4 通報無修復版、既有 shell／SHA1 風險、獨立外部 auditor 待完成 |
+
+見[本輪交付](engineering/PY312_LOCAL_FIRST_DELIVERY_2026-10-26.md)、[機器證據](engineering/PY312_LOCAL_FIRST_EVIDENCE.json)與[Owner 啟動的接手指令](engineering/PY312_LOCAL_FIRST_CLOUD_HANDOFF.md)。獨立 scanner 與自我稽核不等於獨立外部審查；不得直接 merge／部署。
