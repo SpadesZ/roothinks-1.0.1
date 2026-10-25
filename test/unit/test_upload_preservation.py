@@ -176,3 +176,23 @@ def test_link_failure_preserves_candidate_and_recovery_never_reactivates_old_pdf
         now = library.load(PID)['entries'][target['entry_id']]
         assert now['paper_id']==second.json['paper_id'] and now['_rev']==updated['_rev']
     assert len(list(root.glob('**/source.pdf')))==2
+
+
+def test_upload_and_recovery_work_on_python310_without_file_digest(uploads,monkeypatch):
+    """生產 Dockerfile 是 Python 3.10，沒有 3.11 才加入的 hashlib.file_digest。"""
+    import hashlib
+    from app.services.literature_library import LiteratureLibrary
+    app,routes,root = uploads
+    monkeypatch.delattr(hashlib,'file_digest',raising=False)
+    response = upload(app,b'%PDF-py310-source')
+    assert response.status_code == 200
+    with app.app_context():
+        entries = routes.get_literature_library().list_entries(PID)
+    assert entries[0]['uploaded_sources'][0]['sha256'] == hashlib.sha256(b'%PDF-py310-source').hexdigest()
+    with monkeypatch.context() as patch:
+        def fail(*a,**k):
+            raise RuntimeError('synthetic registration failure')
+        patch.setattr(LiteratureLibrary,'register_upload',fail)
+        pending = upload(app,b'%PDF-py310-recover')
+    assert pending.status_code == 503 and pending.json['original_saved']
+    assert recover(app,pending.json['paper_id']).status_code == 200

@@ -5,7 +5,7 @@
 # 上下游: Literature routes/runner 呼叫本層，讀寫 data/<pid>/literature、EvidenceSegment 與 LLM task，結果回到 Literature UI。
 # 維護邊界: 維持 PID/paper_id 隔離、來源 lineage、segment identity 與可重跑性；fallback 不得冒充高品質完成。
 # 驗證: python -m pytest test/unit tests -q
-#路徑(app/core_pro/literature/literature_batch_routes.py) #版本 v0.1 #更版時間 20260429
+#路徑(app/core_pro/literature/literature_batch_routes.py) #版本 v0.2 #更版時間 20261025
 #功能概要:
 #1. 註冊 upload/run_batch/run_translation 路由。
 #2. 處理檔案上傳與 Flow A 批次背景任務排程。
@@ -26,6 +26,14 @@ from app.security import build_lock_path
 from werkzeug.exceptions import Conflict
 
 
+def _sha256_hex(handle):
+    """生產 Dockerfile 是 Python 3.10；hashlib.file_digest 要 3.11 才有。"""
+    digest = hashlib.sha256()
+    for chunk in iter(lambda:handle.read(1024*1024),b''):
+        digest.update(chunk)
+    return digest.hexdigest()
+
+
 def register_batch_routes(literature_bp, deps):
     def register_original(pid, paper_id, entry_id='', base_rev=None):
         """原件不可變；恢復只補登記。完成後重試不得重設作者已選的新 PDF。"""
@@ -36,7 +44,7 @@ def register_batch_routes(literature_bp, deps):
         if not meta.get('sha256') or not os.path.isfile(source_path):
             raise Conflict('缺少完整原件或來源指紋，無法自動恢復。')
         with open(source_path,'rb') as source:
-            digest = hashlib.file_digest(source,'sha256').hexdigest()
+            digest = _sha256_hex(source)
         if digest != meta['sha256']:
             raise Conflict('原件指紋已變更；停止登記並保留現況。')
         library = deps.get_literature_library()
@@ -162,7 +170,7 @@ def register_batch_routes(literature_bp, deps):
                                     os.fsync(target.fileno())
                             source_type = 'image_to_pdf'
                         with open(staged,'rb') as source:
-                            digest = hashlib.file_digest(source,'sha256').hexdigest()
+                            digest = _sha256_hex(source)
                         deps.write_json_locked(deps.safe_join_under(save_dir,'metadata.json'),{
                             'original_filename':filename,'upload_time':time.time(),'source_type':source_type,
                             'sha256':digest,'size_bytes':os.path.getsize(staged),
