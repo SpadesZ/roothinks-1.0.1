@@ -24,7 +24,9 @@
 | `8fade05` | `scripts/py312_runtime_check.py`、`scripts/py312_gunicorn_smoke.sh` |
 | `95bb679` | 執行期檢查加 `--nllb-real` |
 | `97a2d59` | easyocr 檢查分成「雙語載入」與「英文準確度」（看到第一次結果後才改，已揭露） |
-| 之後 | 交付文件、證據、驗收矩陣、`py312_verification/`、本文件 |
+| `0741191`、`4df272e` | 交付文件、證據、驗收矩陣、`py312_verification/`、本文件 |
+
+已推送到個人倉庫（`4df272e` 起）。推送前後核對：main（`9655546`）與 I08～I13 分支的遠端 SHA 都沒變；隔離 dockerd 已停；驗證映像只在暫存區、沒有推到任何 registry。
 
 ## 結果摘要（不可誤讀）
 
