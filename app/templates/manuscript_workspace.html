@@ -642,20 +642,12 @@
     <script async defer src="https://accounts.google.com/gsi/client" onload="window.driveAdapter.loadGis()" onerror="window.driveAdapter.sdkUnavailable()"></script>
     {% endif %}
 
-    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
-    <script>
-        mermaid.initialize({
-            startOnLoad: false,
-            theme: 'default',
-            securityLevel: 'strict'
-        });
-        console.log("[ManuscriptWS] Mermaid loaded.");
-    </script>
+    {# Mermaid 由 ManuImage 首次繪圖時才載入，寫作／保存不等待圖表 bundle。 #}
     
     <script src="{{ url_for('static', filename='js/manuscript_ioruling.js') }}?v=0.1"></script>
     
-    <script src="{{ url_for('static', filename='js/manuscript_wsui.js') }}?v=1.9"></script>
-    <script src="{{ url_for('static', filename='js/manuscript_image.js') }}?v=1.9"></script>
+    <script src="{{ url_for('static', filename='js/manuscript_wsui.js') }}?v=2.0"></script>
+    <script src="{{ url_for('static', filename='js/manuscript_image.js') }}?v=2.0"></script>
     <script src="{{ url_for('static', filename='js/manuscript_soed.js') }}?v=3.8"></script>
     <script src="{{ url_for('static', filename='js/manuscript_collab.js') }}?v=1.9"></script>
     <script src="{{ url_for('static', filename='js/manuscript_progress.js') }}?v=0.1"></script>

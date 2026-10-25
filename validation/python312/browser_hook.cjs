@@ -4,13 +4,29 @@ const fs=require('node:fs'),path=require('node:path');
 const {chromium}=require('playwright');
 // SQLite 寫入留在同一 Linux 容器，避免 Windows/Linux 共用 bind mount 的鎖語意混用。
 const child=require('node:child_process'),nativeExec=child.execFileSync;
+const syntheticRemote=remote=>remote?.startsWith('/qa-tmp/roothinks-sai-browser-')||remote?.startsWith('/tmp/roothinks-sai-browser-');
 child.execFileSync=(file,args,options)=>{
     if(!process.env.PY312_BROWSER_CONTAINER || file!==process.env.SAI_TEST_PYTHON)return nativeExec(file,args,options);
     const container=process.env.PY312_BROWSER_CONTAINER,host=process.env.SAI_SYNTHETIC_ROOT,remote=process.env.PY312_CONTAINER_SYNTHETIC_ROOT;
-    if(!container.startsWith('roothinks-py312-local-')||!host||!remote?.startsWith('/qa-tmp/roothinks-sai-browser-'))throw Error('Only this synthetic fixture may receive DB writes');
+    if(!container.startsWith('roothinks-py312-local-')||!host||!syntheticRemote(remote))throw Error('Only this synthetic fixture may receive DB writes');
     const mapped=args.map(v=>typeof v==='string'&&v.startsWith(host+path.sep)?remote+v.slice(host.length).replaceAll('\\','/'):v);
     return nativeExec('docker',['exec',container,'python',...mapped],options);
 };
+// Linux 原生 fixture 避免 NTFS bind 的 fsync 延遲；原 bytes 斷言仍讀同一容器的真正原件。
+function readSynthetic(file,options){
+    const host=process.env.SAI_SYNTHETIC_ROOT,remote=process.env.PY312_CONTAINER_SYNTHETIC_ROOT,container=process.env.PY312_BROWSER_CONTAINER;
+    if(process.env.PY312_LINUX_FIXTURE!=='1'||typeof file!=='string'||!host||!file.startsWith(host+path.sep))return null;
+    if(!container?.startsWith('roothinks-py312-local-')||!syntheticRemote(remote))throw Error('Only the synthetic Linux fixture may be read');
+    const relative=path.relative(path.resolve(host),path.resolve(file));
+    if(relative==='..'||relative.startsWith('..'+path.sep)||path.isAbsolute(relative))throw Error('Synthetic path escaped its root');
+    const bytes=nativeExec('docker',['exec',container,'cat','--',remote+'/'+relative.replaceAll('\\','/')]);
+    const encoding=typeof options==='string'?options:options?.encoding;
+    return {value:encoding?bytes.toString(encoding):bytes};
+}
+const nativeRead=fs.readFileSync;
+fs.readFileSync=(file,options)=>readSynthetic(file,options)?.value??nativeRead(file,options);
+const promises=require('node:fs/promises'),nativeAsyncRead=promises.readFile.bind(promises);
+promises.readFile=async(file,options)=>readSynthetic(file,options)?.value??nativeAsyncRead(file,options);
 const manifest=JSON.parse(fs.readFileSync(process.env.PY312_ASSET_MANIFEST,'utf8'));
 const rows=[],pages=new WeakSet();
 async function attach(page){

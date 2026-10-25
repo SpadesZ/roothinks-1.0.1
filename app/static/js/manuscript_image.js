@@ -18,20 +18,30 @@ class ManuImage {
         this.app = app;
         console.log("[ManuImage] Engine v1.8 initializing (ForeignObject Nuclear Removal Mode)...");
         
-        // 初始化 Mermaid，盡可能要求它輸出純淨格式
-        if (typeof mermaid !== 'undefined') {
-            mermaid.initialize({ 
-                startOnLoad: false, 
-                theme: 'default', 
-                securityLevel: 'strict',
-                flowchart: { htmlLabels: false },
-                sequence: { htmlLabels: false },
-                gantt: { htmlLabels: false }
-            });
-            console.log("[ManuImage] Verified: Global Mermaid 10 Bridge is ACTIVE.");
-        }
+        this._mermaidPromise = null;
 
         this.setupSocketEvents();
+    }
+
+    _loadMermaid() {
+        if (!this._mermaidPromise) {
+            const ready = window.mermaid ? Promise.resolve(window.mermaid) : new Promise((resolve, reject) => {
+                const script = document.createElement('script');
+                script.src = 'https://cdn.jsdelivr.net/npm/mermaid@10.9.6/dist/mermaid.min.js';
+                script.integrity = 'sha384-qX9VvWkP79m/O121ZE6sOYp0nf/pldQgtvWDbkpzi+3mUo4Wn4Ix4cFzNPay3VaB';
+                script.crossOrigin = 'anonymous';
+                const timer = setTimeout(() => { script.remove(); reject(new Error('圖表元件載入逾時；原圖碼仍保留。')); }, 15000);
+                script.onload = () => { clearTimeout(timer); window.mermaid ? resolve(window.mermaid) : reject(new Error('圖表元件不可用')); };
+                script.onerror = () => { clearTimeout(timer); script.remove(); reject(new Error('圖表元件下載或完整性驗證失敗')); };
+                document.head.appendChild(script);
+            });
+            this._mermaidPromise = ready.then(engine => {
+                engine.initialize({startOnLoad:false,theme:'default',securityLevel:'strict',
+                    flowchart:{htmlLabels:false},sequence:{htmlLabels:false},gantt:{htmlLabels:false}});
+                return engine;
+            }).catch(error => { this._mermaidPromise = null; throw error; });
+        }
+        return this._mermaidPromise;
     }
 
     _getApiToken() {
@@ -125,12 +135,16 @@ class ManuImage {
             }
             cleanCode = codeLines.join('\n');
             
-            const { svg } = await mermaid.render(uniqueId, cleanCode);
+            const engine = await this._loadMermaid();
+            const { svg } = await engine.render(uniqueId, cleanCode);
             svgContainer.innerHTML = svg;
             this.app.soed.scrollToBottom();
         } catch (err) {
             console.error("[ManuImage] Render error:", err);
-            svgContainer.innerHTML = `<div class="alert alert-danger small">繪圖解析失敗：${err.message}</div>`;
+            const notice = document.createElement('div');
+            notice.className = 'alert alert-danger small';
+            notice.textContent = '繪圖解析失敗：' + String(err?.message || '未知錯誤');
+            svgContainer.replaceChildren(notice);
         }
     }
 
