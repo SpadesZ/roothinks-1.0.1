@@ -4,6 +4,23 @@
 
 此表為優化實作的驗收依據。Batch A/B 及段落主張 → 證據條件 → 版本師生審閱工程切片已實作；各列標明實際範圍。未執行的案例保留未驗證，不以完整回歸數量推定全需求通過。更新證據時記錄實作 SHA、環境、命令／操作、結果與限制。
 
+## 工程線：Python 3.12 遷移（獨立於 I14 語意研究，停在 Owner Gate）
+
+分支 `codex/py312-migration`，起點 `b7a7bdd`。見 [交付與 Owner Gate](engineering/PY312_MIGRATION_DELIVERY_2026-10-25.md)、
+[機器證據](engineering/PY312_MIGRATION_EVIDENCE_2026-10-25.json)、[接手](engineering/PY312_MIGRATION_HANDOFF.md)。
+**生產 `Dockerfile`、`requirements.txt`、產品程式、科學引擎都沒改**；遷移只新增檔案，回滾 = 繼續用 `Dockerfile`。
+
+| 項目 | 已實作／實際驗證 | 未完成／限制 |
+|---|---|---|
+| 釘版本 | `Dockerfile.py312` 基底以 digest 釘住（Debian 13、Python 3.12.15）；`requirements-py312.lock` 119 套件全部 hash、版本與 3.10 解析相同 | torch／torchvision `+cpu` 只釘版本（PyTorch index 403） |
+| 完整回歸 | 主機 3.13：1,478／50／0；V1 Debian 3.12.15：1,459／51／0／8 錯誤；V2 Ubuntu 3.12.3＋系統函式庫＋git：**1,477／51／0／0**；V3（＋torch）：**1,477／51／0／0**；3.10 回滾演練同 commit：1,459／51／0／8 | V2／V3 是 Ubuntu 的 3.12.3，不是正式基底 |
+| 生產指令（gunicorn） | eventlet 與 gthread 在 V1、V3 各跑一次：登入、首頁、Socket.IO、PDF 上傳（sha256 相符）、恢復兩次冪等，全部通過 | 只測 gcp compose 的 session 模式 |
+| 真瀏覽器 | 伺服器 Python 3.12.15；自主性 4、科學 8、資產 4×2 全部 passed，與 I12 相同；只有未授權的 `cdn.plot.ly` 失敗 | 資產仍由本機 npm 真品導流 |
+| 模型載入 | torch 2.6.0／torchvision 0.21.0、OpenCV、eventlet、tesseract／poppler 通過；easyocr 真模型（en＋ch_tra）載入與推論、英文正確；NLLB：原封不動的 `bake_nllb.py` ＋ `NLLBTranslator` 以合成小權重跑通 | **真 NLLB 權重未載入**（HuggingFace 不可達）；torch 用 PyPI CUDA 變體 |
+| 8 個環境錯誤 | 根因證實：2 個缺 `libgl1`（libxcb），6 個缺 `git`；V2 補上後歸零 | git 那 6 個在官方 `Dockerfile.test` 也會發生，建議補 git（未自行改） |
+| 科學引擎 | SciFact dev 300 筆預測在 3.10／3.12／3.13 逐位元相同 | dev 已曝光，只作一致性檢查 |
+| 完整 Docker build | V1／V2／V3 驗證映像建置成功 | 生產式 build 卡在 apt（代理 405）；映像大小、建置時間未知 |
+
 ## 本輪 I13：Gate A 負結果、Gate C 相依補宣告、Python 3.10 上傳缺陷修正
 
 起點 `29aefb0`；實作凍結 `5b02f3c`；分支 `codex/sai-i13-gate-a-and-deps`。

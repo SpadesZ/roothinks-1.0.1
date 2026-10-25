@@ -1,0 +1,8 @@
+# syntax=docker/dockerfile:1
+# P312 驗證映像 V3（暫存區，不入庫、不推送）：V2（Ubuntu 24.04 + 生產系統套件 + git + 同一份鎖定）再加 torch。
+# torch/torchvision 用 PyPI 同版號 2.6.0 / 0.21.0（CUDA 變體，hash 釘住）；生產用 PyTorch CPU index 的 +cpu。
+FROM p312-v2:test
+USER root
+COPY torch-pypi.lock /tmp/torch-pypi.lock
+RUN --mount=type=secret,id=ca,target=/run/secrets/ca PIP_CERT=/run/secrets/ca pip install --no-cache-dir --require-hashes --no-deps -r /tmp/torch-pypi.lock && pip check
+USER appuser

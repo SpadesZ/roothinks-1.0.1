@@ -1,0 +1,23 @@
+# syntax=docker/dockerfile:1
+# P312 驗證映像 V2（暫存區，不入庫、不推送）：只用來調查 8 個環境錯誤。
+# Ubuntu 24.04 的 Python 3.12 ＋ 生產 Dockerfile 的系統套件（libgl1、libglib2.0-0、tesseract-ocr、poppler-utils、curl）＋ git。
+# 套件與 Dockerfile.py312 相同（requirements-py312.lock，--require-hashes --no-deps），但**不裝 torch**以節省磁碟；
+# torch 相關驗證在 V1 做。apt 走 archive.ubuntu.com 的 HTTPS（Debian 鏡像在此環境不可達）。
+FROM ubuntu:24.04@sha256:68ee22004a9109b44973313b02ff7b1de250f1de0f5ecb628d73f579aaff33ac
+ARG HTTPS_PROXY
+RUN sed -i 's#http://#https://#g' /etc/apt/sources.list.d/ubuntu.sources
+RUN --mount=type=secret,id=ca,target=/run/secrets/ca,mode=0444 \
+    apt-get -o Acquire::https::CAInfo=/run/secrets/ca -o Acquire::https::Proxy=$HTTPS_PROXY update && \
+    DEBIAN_FRONTEND=noninteractive apt-get -o Acquire::https::CAInfo=/run/secrets/ca -o Acquire::https::Proxy=$HTTPS_PROXY \
+      install -y --no-install-recommends python3.12 python3.12-venv libgl1 libglib2.0-0 tesseract-ocr poppler-utils curl git ca-certificates && \
+    rm -rf /var/lib/apt/lists/*
+RUN python3.12 -m venv /opt/venv
+ENV PATH=/opt/venv/bin:$PATH PIP_DISABLE_PIP_VERSION_CHECK=1
+WORKDIR /app
+COPY requirements.txt requirements-py312.lock requirements-dev.txt ./
+RUN --mount=type=secret,id=ca,target=/run/secrets/ca PIP_CERT=/run/secrets/ca pip install --no-cache-dir --require-hashes --no-deps -r requirements-py312.lock
+RUN --mount=type=secret,id=ca,target=/run/secrets/ca PIP_CERT=/run/secrets/ca pip install --no-cache-dir -r requirements-dev.txt
+COPY . .
+RUN useradd -m appuser && mkdir -p /tmp/roothinks-locks && chown -R appuser:appuser /app /tmp/roothinks-locks
+ENV PYTHONUNBUFFERED=1 LOCK_ROOT=/tmp/roothinks-locks HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1
+USER appuser

@@ -8,6 +8,13 @@
 - I13 最終**實作**凍結 `5b02f3c`；之後只有文件與證據。產品引擎 `advisory-rules-4` hash `4c2034bf…` 未變。
 - 另建 `codex/` 隔離分支。LAVA-Cowork 不可碰；不 force push、不 merge main、不部署、不改正式資料。
 
+## 與 Python 3.12 遷移的關係（2026-10-25 Owner 決策）
+
+- Python 3.12 遷移是**另一條獨立工作線**，在 `codex/py312-migration`（見 `PY312_MIGRATION_HANDOFF.md`）。
+- I14 語意研究照原計畫從 I13 分支另開 `codex/` 分支，**不要以遷移分支為起點，也不要合併兩條線**。
+- 遷移分支只新增 `Dockerfile.py312`、`requirements-py312.*` 與檢查腳本，沒改產品程式與科學引擎，
+  所以語意實驗在 Python 3.10 與 3.12 上應得到相同結果；若不同，先回報，不要自行調整。
+
 ## 必先讀
 
 1. `AGENTS.md`、`docs/SAI.md`、`docs/ACCEPTANCE_MATRIX.md`（I13 段落）。

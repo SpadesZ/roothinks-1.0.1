@@ -1,0 +1,85 @@
+# syntax=docker/dockerfile:1
+# P312 驗證映像 V1（暫存區，不入庫、不推送）：由 Dockerfile.py312 機械轉換。
+# 差異：(a) 拿掉 apt 步驟（Debian 不可達）；(b) pip 以 secret 掛載代理 CA，不寫入任何層；
+# (c) torch/torchvision 改用 PyPI 同版號（CUDA 變體，hash 釘住）；(d) 拿掉 NLLB 下載（HuggingFace 不可達）；
+# (e) 末端加測試 stage（pytest）。
+# Roothinks source maintenance contract
+# 檔案路徑: Dockerfile.py312
+# 模組定位: 容器建置與編排層；固定 app/test/Redis 的映像、掛載、健康檢查與啟動順序。
+# 主要責任: 宣告服務、映像、環境鍵、volume 與啟動/驗證命令，保持各環境可重現。
+# 上下游: 開發/測試/GCP 操作者 -> Docker build/Compose -> app 與 Redis；正式 data/.env 由 host volume 提供。
+# 維護邊界: 不得把 .env/data/secrets 打進 image；正式 cutover 只重建 app、保留 Redis 身分、健康檢查與 rollback image。
+# 驗證: docker build --check -f Dockerfile.py312 .
+#路徑(./Dockerfile.py312) #版本 v0.1 #更版時間 20261025
+# Python 3.12 遷移候選（隔離分支，未經 Owner 核准不得取代 Dockerfile）。與 Dockerfile 的差異只有：
+#   1. 基底改為 python:3.12-slim，並以 digest 釘住（Debian 13 trixie、Python 3.12.15）；
+#   2. Python 套件改由 requirements-py312.lock 以 --require-hashes --no-deps 安裝；
+#   3. torch/torchvision 改在鎖定檔之後以 --no-deps 安裝，最後跑 pip check。
+# 回滾：繼續用未改動的 Dockerfile（python:3.10-slim）。
+FROM python:3.12-slim@sha256:a0f57064cbdcd6285fa45f51237ab0b35ea8ebaed06a1f5973e89e19dfb86704 AS runtime-base
+
+# (a) apt 已移除
+
+WORKDIR /app
+
+# 安裝 Python 依賴：完整鎖定（含 hash），版本與 Python 3.10 的現行解析相同。
+COPY requirements.txt requirements-py312.lock ./
+RUN --mount=type=secret,id=ca,target=/run/secrets/ca PIP_CERT=/run/secrets/ca pip install --no-cache-dir --require-hashes --no-deps -r requirements-py312.lock
+
+# NLLB / easyocr 共用的 PyTorch：強制 CPU-only wheel，避免 PyPI 的 CUDA 版（數 GB）。
+# 版本維持與 Dockerfile 相同的 2.6.0+cpu / 0.21.0+cpu，遷移不同時升級 torch。PyTorch 2.6 支援 Python 3.9–3.13；
+# 驗證環境連不到 PyTorch index，cp312 的 +cpu wheel 未在此直接核對（PyPI 上同版號的 cp312 wheel 已實測可裝）。
+# --no-deps：torch 的相依（sympy、networkx、jinja2、fsspec、filelock、setuptools 等）已由鎖定檔以 hash 安裝。
+# 注意：PyTorch index 的 wheel 在驗證環境不可達，這兩個只釘版本、未釘 hash；第一次在可連網機器建置時
+# 請以 pip download + pip hash 取得 sha256 補上。
+COPY torch-pypi.lock ./
+RUN --mount=type=secret,id=ca,target=/run/secrets/ca PIP_CERT=/run/secrets/ca pip install --no-cache-dir --require-hashes --no-deps -r torch-pypi.lock
+
+RUN pip check
+
+# Bake NLLB-200-distilled-600M 進映像,產出為本地 safetensors 模型目錄 /opt/models/nllb。
+# 路徑刻意放在 prod compose 的 ./data:/app/data bind-mount 之外,執行時不會被 host 覆蓋。
+# bake_nllb.py 把 HF 的 pytorch_model.bin 轉成 safetensors,繞過 transformers 的
+# torch.load CVE 守衛(見腳本註解)。此步驟需要網路下載 (~1.2GB),必須在設 HF_HUB_OFFLINE 之前。
+ENV NLLB_MODEL_DIR=/opt/models/nllb
+# (d) NLLB bake 已移除
+
+# 執行期強制離線,NLLB 不再嘗試連網 (必須在 bake 之後才設)。
+ENV HF_HUB_OFFLINE=1
+ENV TRANSFORMERS_OFFLINE=1
+
+# 複製專案
+COPY . .
+
+# 降權執行
+RUN useradd -m appuser \
+    && mkdir -p /tmp/roothinks-locks \
+    && chown -R appuser:appuser /app /tmp/roothinks-locks
+USER appuser
+
+# 環境變數與 Port
+ENV FLASK_APP=main.py
+ENV PYTHONUNBUFFERED=1
+ENV LOCK_ROOT=/tmp/roothinks-locks
+ENV GUNICORN_WORKERS=1
+ENV GUNICORN_WORKER_CLASS=eventlet
+ENV GUNICORN_THREADS=4
+ENV GUNICORN_TIMEOUT=300
+ENV GUNICORN_GRACEFUL_TIMEOUT=60
+ENV GUNICORN_MAX_REQUESTS=1000
+ENV GUNICORN_MAX_REQUESTS_JITTER=100
+ENV GUNICORN_KEEPALIVE=5
+EXPOSE 10000
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
+  CMD curl --fail http://127.0.0.1:${PORT:-10000}/ || exit 1
+
+# 啟動命令 (生產環境使用 gunicorn，支援 app factory 語法)
+CMD ["sh", "-c", "gunicorn -w ${GUNICORN_WORKERS:-1} -k ${GUNICORN_WORKER_CLASS:-eventlet} --threads ${GUNICORN_THREADS:-4} -b 0.0.0.0:${PORT:-10000} --timeout ${GUNICORN_TIMEOUT:-300} --graceful-timeout ${GUNICORN_GRACEFUL_TIMEOUT:-60} --max-requests ${GUNICORN_MAX_REQUESTS:-1000} --max-requests-jitter ${GUNICORN_MAX_REQUESTS_JITTER:-100} --keep-alive ${GUNICORN_KEEPALIVE:-5} --access-logfile - --error-logfile - 'main:create_app()'"]
+
+# (e) 測試 stage：與 Dockerfile.test 相同，裝 requirements-dev.txt；測試目錄於執行時唯讀掛載。
+FROM runtime-base AS test
+USER root
+COPY requirements-dev.txt /tmp/requirements-dev.txt
+RUN --mount=type=secret,id=ca,target=/run/secrets/ca PIP_CERT=/run/secrets/ca pip install --no-cache-dir -r /tmp/requirements-dev.txt
+USER appuser
