@@ -1,0 +1,27 @@
+{
+  "repository": "JaidedAI/EasyOCR",
+  "sdk": "1.7.2",
+  "files": [
+    {
+      "url": "https://github.com/JaidedAI/EasyOCR/releases/download/pre-v1.1.6/craft_mlt_25k.zip",
+      "filename": "craft_mlt_25k.pth",
+      "sdk_md5": "2f8227d2def4037cdb3b34389dcf9ec1",
+      "sha256": "4a5efbfb48b4081100544e75e1e2b57f8de3d84f213004b14b85fd4b3748db17",
+      "archive_sha256": "8dc6a1c703a89ed56308ef742d26ebd45c656248cbbbda6e7fe60e569f873e65"
+    },
+    {
+      "url": "https://github.com/JaidedAI/EasyOCR/releases/download/pre-v1.1.6/chinese.zip",
+      "filename": "chinese.pth",
+      "sdk_md5": "dfba8e364cd98ed4fed7ad54d71e3965",
+      "sha256": "19ecc60f4e079eb2cd7f25f3513fc996cf80819fc1f1d0aee24c58402cc4776d",
+      "archive_sha256": "71cb95f601ce0c062860224ff3e1d2e807d784f2be92bf53ba500bb1736dabd5"
+    },
+    {
+      "url": "https://github.com/JaidedAI/EasyOCR/releases/download/v1.3/english_g2.zip",
+      "filename": "english_g2.pth",
+      "sdk_md5": "5864788e1821be9e454ec108d61b887d",
+      "sha256": "e2272681d9d67a04e2dff396b6e95077bc19001f8f6d3593c307b9852e1c29e8",
+      "archive_sha256": "1b5eaebf1c062de6205560c97ffcfa8dc0e6f413c340e8adc5cfc57e159f61ff"
+    }
+  ]
+}

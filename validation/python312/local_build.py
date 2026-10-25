@@ -30,19 +30,20 @@ def stage(output):
         if not src.is_file() or src.is_symlink():continue
         dest=context/rel;dest.parent.mkdir(parents=True,exist_ok=True);shutil.copyfile(src,dest)
         records.append(dict(path=name,sha256=hashlib.sha256(dest.read_bytes()).hexdigest()))
-    # 替代 context 的 ignore，讓 verification stage 能取得測試；原 .dockerignore 不改。
-    (context/'.dockerignore').write_text('.git\n.env\n.env.*\ndata\nlogs\npapers\nmodels\n.codegraph\noutput\n.venv\n__pycache__\n*.pyc\n',encoding='utf-8')
+    # 正式 Dockerfile 用明示 COPY；保留原 .dockerignore，manifest 與實際 context 必須一致。
     save(output/'source-manifest.json',dict(sha=sha,files=records,
         original_worktree_unchanged=True,private_artifacts_copied=False))
     print(json.dumps(dict(sha=sha,files=len(records),context=str(context))))
 
 
-def build(output,target,label):
+def build(output,target,label,dockerfile='validation/python312/Dockerfile',base_image=None):
     manifest=json.loads((output/'source-manifest.json').read_text(encoding='utf-8'))
     name=f'roothinks-py312-local:{target}-{manifest["sha"][:8]}'
     iid=output/f'{target}-{label}.iid';log=output/f'{target}-{label}.txt'
     command=['docker','build','--platform','linux/amd64','--target',target,'--progress','plain',
-        '--iidfile',str(iid),'-f','validation/python312/Dockerfile','-t',name,str(output/'context')]
+        '--iidfile',str(iid),'-f',dockerfile,'-t',name]
+    if base_image:command.extend(['--build-arg','BASE_IMAGE='+base_image])
+    command.append(str(output/'context'))
     receipt=dict(source_sha=manifest['sha'],command=command,tag=name,
         started_utc=datetime.datetime.now(datetime.timezone.utc).isoformat())
     with log.open('x',encoding='utf-8') as f:result=subprocess.run(command,cwd=ROOT,stdout=f,stderr=subprocess.STDOUT)
@@ -54,7 +55,8 @@ def build(output,target,label):
 if __name__=='__main__':
     parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('mode',choices=['stage','build'])
     parser.add_argument('output',type=Path);parser.add_argument('--target',choices=['runtime','verification'],default='runtime')
-    parser.add_argument('--label',default='v1');args=parser.parse_args()
+    parser.add_argument('--label',default='v1');parser.add_argument('--dockerfile',default='validation/python312/Dockerfile')
+    parser.add_argument('--base-image');args=parser.parse_args()
     if not args.label.isalnum():raise ValueError('Use an alphanumeric unique label')
     if args.mode=='stage':stage(args.output)
-    else:raise SystemExit(build(args.output,args.target,args.label))
+    else:raise SystemExit(build(args.output,args.target,args.label,args.dockerfile,args.base_image))

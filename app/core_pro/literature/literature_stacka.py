@@ -38,6 +38,8 @@ class StackAEngine:
         self.latex_ocr = LatexOCREngine()
 
         self.ocr_model_dir = os.environ.get("EASYOCR_MODULE_PATH", "/app/data/aimodels/easyocr")
+        # 正式映像已 bake/hash 核對權重；離線模式不得在首次請求隱式下載。
+        download_enabled = os.environ.get('EASYOCR_DOWNLOAD_ENABLED', '0' if os.environ.get('HF_HUB_OFFLINE') == '1' else '1') == '1'
         lang_profile = resolve_ocr_language_profile(
             legacy_env="STACKA_LANGS",
             default_canonical=["en", "zh-hant"],
@@ -61,7 +63,7 @@ class StackAEngine:
                 self.ocr_languages,
                 gpu=False,
                 model_storage_directory=self.ocr_model_dir,
-                download_enabled=True,
+                download_enabled=download_enabled,
             )
             self.ready = self.ocr_reader is not None
             logger.info(">>> [Stack A] Ready.")
@@ -74,7 +76,7 @@ class StackAEngine:
                     self.ocr_languages,
                     gpu=False,
                     model_storage_directory=self.ocr_model_dir,
-                    download_enabled=True,
+                    download_enabled=download_enabled,
                 )
                 self.ready = self.ocr_reader is not None
                 logger.warning(">>> [Stack A] Fallback to English-only OCR.")

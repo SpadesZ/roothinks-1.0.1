@@ -39,7 +39,8 @@ elif mode == 'check':
     import easyocr
     import numpy as np
     from PIL import Image, ImageDraw, ImageFont
-    for item in json.loads((directory / 'manifest.json').read_text()):
+    manifest = json.loads((directory / ('source-manifest.json' if (directory / 'source-manifest.json').exists() else 'manifest.json')).read_text())
+    for item in manifest['files'] if isinstance(manifest, dict) else manifest:
         assert hashlib.sha256((directory / item['filename']).read_bytes()).hexdigest() == item['sha256']
     image = Image.new('RGB', (800, 130), 'white')
     font = ImageFont.truetype('/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf', 48)

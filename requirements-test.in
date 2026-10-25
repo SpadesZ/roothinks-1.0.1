@@ -1,0 +1,4 @@
+# 測試只加工具，不改 runtime 的完整固定相依。
+-c requirements-py312.lock
+pytest==8.4.2
+pytest-cov==6.3.0
