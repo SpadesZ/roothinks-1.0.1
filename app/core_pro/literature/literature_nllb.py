@@ -55,7 +55,8 @@ class NLLBTranslator:
         )
 
         try:
-            from transformers import pipeline, AutoModelForSeq2SeqLM, AutoTokenizer
+            import torch
+            from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
 
             model_name = self.model_name
 
@@ -71,19 +72,32 @@ class NLLBTranslator:
                 load_kwargs = {"cache_dir": self.model_dir}
                 logger.info(f"    -> Loading model: {model_name} (cache_dir={self.model_dir})")
 
+            # 執行期只讀本地模型，不下載或執行模型 repo 的 Python。
+            load_kwargs.update(local_files_only=True, trust_remote_code=False, token=False)
             tokenizer = AutoTokenizer.from_pretrained(load_target, **load_kwargs)
-            model = AutoModelForSeq2SeqLM.from_pretrained(load_target, **load_kwargs)
-            
-            # 建立 translation pipeline
-            self.pipeline = pipeline(
-                "translation",
-                model=model,
-                tokenizer=tokenizer,
-                src_lang="eng_Latn",
-                tgt_lang="zho_Hant",
-                max_length=512,
-                device=-1  # CPU
-            )
+            model = AutoModelForSeq2SeqLM.from_pretrained(load_target, use_safetensors=True, **load_kwargs)
+            model.eval()
+            inference_lock = threading.Lock()
+
+            # Transformers 5 移除 translation pipeline；保留既有呼叫介面與 512 輸出上限。
+            # 同一模型串行執行，避免可變的 tokenizer.src_lang 在並行請求間互相干擾。
+            def translate(texts, src_lang='eng_Latn', tgt_lang='zho_Hant', max_length=512, batch_size=1):
+                items = [texts] if isinstance(texts, str) else list(texts)
+                result = []
+                with inference_lock, torch.inference_mode():
+                    tokenizer.src_lang = src_lang
+                    target_id = tokenizer.convert_tokens_to_ids(tgt_lang)
+                    if target_id is None or target_id == tokenizer.unk_token_id:
+                        raise ValueError('Unsupported NLLB target language')
+                    for start in range(0, len(items), max(1, int(batch_size))):
+                        batch = items[start:start + max(1, int(batch_size))]
+                        # 不無聲截斷來源；超出模型容量由既有明示失敗路徑處理。
+                        inputs = tokenizer(batch, return_tensors='pt', padding=True)
+                        generated = model.generate(**inputs, forced_bos_token_id=target_id, max_length=max_length)
+                        result.extend({'translation_text': value} for value in tokenizer.batch_decode(generated, skip_special_tokens=True))
+                return result
+
+            self.pipeline = translate
             
             self.ready = True
             logger.info(f">>> [NLLB] Engine Ready (Offline Mode) | model={model_name} | cache={self.model_dir}")
