@@ -32,7 +32,7 @@ def capabilities():
     assert child.returncode==0,child.stderr
     assert shutil.which('pdftoppm') and shutil.which('tesseract')
     checked=['torch','torchvision','eventlet','opencv-python-headless','numpy','easyocr','transformers','sentencepiece','huggingface-hub','flask','python-socketio','gunicorn']
-    return dict(python=sys.version,platform=platform.platform(),versions={k:installed[k] for k in checked},
+    return dict(python=sys.version,platform=platform.platform(),versions={k:metadata.version(k) for k in checked},
         cpu_only=True,torchvision_native_nms=True,cv2_png_roundtrip=True,single_cv2_provider=True,
         eventlet_subprocess=child.stdout.strip(),easyocr_import=True,easyocr_weights_loaded=False,
         system_pdf_ocr_tools=True,scientific_quality_measured=False)
