@@ -2851,6 +2851,43 @@
         "classification": "diagnostic string false positive; no credential value"
       }
     ],
+    "gitleaks_complete_branch": [
+      {
+        "file": "docs/engineering/PY312_LOCAL_FIRST_EVIDENCE.json",
+        "line": 1588,
+        "rule": "generic-api-key",
+        "commit": "e5a31a6411ce8944013edf9c634a55e80f1d1819",
+        "classification": "public model artifact SHA256; matched verified source/output manifest, not an API credential"
+      },
+      {
+        "file": "docs/engineering/PY312_LOCAL_FIRST_EVIDENCE.json",
+        "line": 1589,
+        "rule": "generic-api-key",
+        "commit": "e5a31a6411ce8944013edf9c634a55e80f1d1819",
+        "classification": "public model artifact SHA256; matched verified source/output manifest, not an API credential"
+      },
+      {
+        "file": "docs/engineering/PY312_LOCAL_FIRST_EVIDENCE.json",
+        "line": 1598,
+        "rule": "generic-api-key",
+        "commit": "e5a31a6411ce8944013edf9c634a55e80f1d1819",
+        "classification": "public model artifact SHA256; matched verified source/output manifest, not an API credential"
+      },
+      {
+        "file": "docs/engineering/PY312_LOCAL_FIRST_EVIDENCE.json",
+        "line": 1599,
+        "rule": "generic-api-key",
+        "commit": "e5a31a6411ce8944013edf9c634a55e80f1d1819",
+        "classification": "public model artifact SHA256; matched verified source/output manifest, not an API credential"
+      },
+      {
+        "file": "docs/engineering/PY312_LOCAL_FIRST_EVIDENCE.json",
+        "line": 1600,
+        "rule": "generic-api-key",
+        "commit": "e5a31a6411ce8944013edf9c634a55e80f1d1819",
+        "classification": "public model artifact SHA256; matched verified source/output manifest, not an API credential"
+      }
+    ],
     "independent_tools": true,
     "independent_external_audit": false,
     "os_cve_audit": false

@@ -46,7 +46,7 @@
 ## 安全、秘密與獨立審查
 
 - pip-audit：原 95 筆／10 套件降為 **1 筆／1 套件**。保留 **PYSEC-2022-252／deep-translator 1.11.4**；官方資料明列此版本且沒有修復版。固定 hash 與 code inspection 不能消除此通報；正式啟用前需移除／替換或由 Owner 完成風險決策。
-- Gitleaks：本輪 Git history 0；完整乾淨 context 有 1 個誤報，定位 `deploy_preflight.py` 的「SECRET_KEY missing/weak/placeholder」診斷字串，沒有 credential value。保留原 scanner 非零輸出，不加寬鬆 allowlist。
+- Gitleaks：工程程式提交 history 為 0；加入證據後，完整 b7a7bdd..tip 掃描有 5 個誤報，都是公開 NLLB tokenizer／special-token 檔的 SHA-256，與實際 build manifest 一致。乾淨 context 另有 1 個診斷字串誤報，定位 `deploy_preflight.py` 的「SECRET_KEY missing/weak/placeholder」。沒有確認的 credential 洩漏；保留原 scanner 非零輸出，不加寬鬆 allowlist 或移除 hash 證據。
 - Bandit findings 不抹掉：既有識別／CAS 的 SHA1 與可配置 UniMERNet `shell=True` 仍列風險。未重寫歷史 ID；候選沒有設定該外部命令。沒有重現跨 HTTP 的命令注入；啟用外部 shell 模板前仍需安全審查。NLLB manifest 七檔實際全走 SHA-256，舊 Git-blob SHA1 fallback 不是本輪模型驗證路徑。
 - Python／秘密 scanner 是獨立工具，**不是獨立人類稽核**。本輪完成自我稽核與可重現機器掃描，外部 auditor 尚未審查；不把自己審自己寫成獨立通過。也未做全面滲透、OS CVE 或負載驗收。
 
