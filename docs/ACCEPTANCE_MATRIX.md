@@ -1,10 +1,32 @@
 # Roothinks SAI v1.1.x 驗收矩陣
 
-日期：2026-10-24。規格：[SAI v1.1.0](spec/roothinks_SAI_v1.1.0_2026-10-23.md)、[v1.1.1 修訂條款](spec/roothinks_SAI_v1.1.1_2026-10-24.md)及 [v1.1.2 科學完整性建議](spec/roothinks_SAI_v1.1.2_2026-10-24.md)。
+日期：2026-10-25。規格：[SAI v1.1.0](spec/roothinks_SAI_v1.1.0_2026-10-23.md)、[v1.1.1 修訂條款](spec/roothinks_SAI_v1.1.1_2026-10-24.md)及 [v1.1.2 科學完整性建議](spec/roothinks_SAI_v1.1.2_2026-10-24.md)。
 
 此表為優化實作的驗收依據。Batch A/B 及段落主張 → 證據條件 → 版本師生審閱工程切片已實作；各列標明實際範圍。未執行的案例保留未驗證，不以完整回歸數量推定全需求通過。更新證據時記錄實作 SHA、環境、命令／操作、結果與限制。
 
-## 本輪 I12：瀏覽器範圍擴大、語意資源可行性評估、I11 記錄更正
+## 本輪 I13：Gate A 負結果、Gate C 相依補宣告、Python 3.10 上傳缺陷修正
+
+起點 `29aefb0`；實作凍結 `5b02f3c`；分支 `codex/sai-i13-gate-a-and-deps`。
+見 [交付與自我稽核](engineering/SAI_I13_DELIVERY_2026-10-25.md)、
+[機器證據](engineering/SAI_I13_EVIDENCE_2026-10-25.json)、
+[Gate A 結果](engineering/SAI_I13_GATE_A_RESULT_2026-10-25.json)。
+**產品引擎未改動**（`advisory-rules-4`，hash `4c2034bf…` 不變）。
+
+| 項目 | 已實作／實際驗證 | 未完成／限制 |
+|---|---|---|
+| 最終工程基線 | `5b02f3c` 主機（Python 3.13）完整回歸 **1,473 通過／50 略過／0 失敗**（1,523 項）；Python 3.10.22 完整回歸 **1,454 通過／51 略過／0 失敗／8 錯誤**（修正前 9 失敗） | 3.10 的收集錯誤與 setup 錯誤全是環境限制（缺 libxcb、無 git）；非全面安全認證 |
+| **Gate A（預先登記）** | 協議 `87f7b39` 先於量測提交。C1（VerbNet）與 C2（+PropBank）結果相同：決定性 **2／300**（基線 1／300）、精確度 2/2、退步 0、跨極性 0、SUPPORT 召回 2/124、CONTRADICT 召回 0/64、棄權 298/300 | **未通過 G6（TP 2 < 6）與 G7（決定性 frame 2/2 錯誤）**，不進 Gate B。新增的 id 589 來自假 frame（*aged* 被當動詞）。保留為負結果。稽核者是實作者；dev 已曝光 |
+| G7 盲稽核 | 抽樣 40：C1 正確 15／跨子句 3／角色錯 22；C2 15／2／23。否定範圍錯誤 C1 3/40、C2 2/40 | 操作化規則在稽核中寫下（已揭露）；同詞根 *block* 案例的 strict xfail 是事後標的 |
+| **Gate C** | `6b10247` 補宣告 httpx／sqlalchemy／werkzeug／python-socketio。3.10 解析 143 → 143、**版本零差異**；`python:3.10-slim` 全新安裝與 `pip check` 通過 | 生產 Dockerfile 卡在 apt（代理對 deb.debian.org 明文 HTTP 回 405）；驗證映像跳過 apt，torch 用 PyPI 同版號 |
+| **重大缺陷（確認並修正）** | `5b02f3c`：`hashlib.file_digest`（3.11 才有）讓 Python 3.10 下**每次上傳 PDF 都回 503**、恢復也失敗。改為分塊 sha256，新增先失敗後通過的測試，3.13 與 3.10 都通過。3.10 編譯 155 檔語法錯誤 0，3.11+ API 掃描只有這兩處 | 由 `dd456aa` 引入，I08～I12 等舊 SAI 分支都含有它，**不在 main**。舊分支未改（保留邊界） |
+| Gate B（延後） | 只做授權核對：本機 zip 與 NLTK 索引 md5 全部相符。tagger JSON 版 MIT；WordNet 3.0 須附聲明；treebank 只限非商業 | 未整合、未打包 PropBank、未擴網路。VerbNet 上游條款不可達、無法核實；tagger 訓練資料來源無法核實；pickle 版 tagger 不可用 |
+| 既有風險（未修） | 已記錄 | opencv-python 4.14 與 opencv-python-headless 5.0 寫入同一個 `cv2/`；`python:3.10-slim` 浮動標籤；torch 生產 pin 在 Dockerfile |
+
+**科學能力四輪未變**：產品 SUPPORT TP 1、CONTRADICT TP 0、UNKNOWN 299。
+真人專家評估仍待定，真 holdout 未開封，真專家 0 人。
+未擴大網路權限、未整合語意引擎、未放寬門檻、未虛構專家、未部署、未 merge main、未碰 LAVA-Cowork。
+
+## I12 歷史：瀏覽器範圍擴大、語意資源可行性評估、I11 記錄更正
 
 起點 `16f1be3`；實作凍結 `567e630`；分支 `codex/sai-i12-browser-and-semantic-probe`。
 見 [交付與自我稽核](engineering/SAI_I12_DELIVERY_2026-10-25.md)、

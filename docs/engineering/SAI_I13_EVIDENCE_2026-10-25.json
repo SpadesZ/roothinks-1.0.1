@@ -1,0 +1,301 @@
+{
+  "round": "I13",
+  "base_sha": "29aefb00e8be9b2ca02da7b9ddd44b332c850628",
+  "branch": "codex/sai-i13-gate-a-and-deps",
+  "head_sha": "5b02f3c4d1823b54f347711b6cd1b443ec7c44ff",
+  "commits": [
+    {
+      "sha": "87f7b39",
+      "subject": "docs(sai): preregister the I13 Gate A clause-scoped evaluation"
+    },
+    {
+      "sha": "6b10247",
+      "subject": "fix(deps): declare directly imported packages in requirements.txt"
+    },
+    {
+      "sha": "9a87725",
+      "subject": "test(sai): I13 Gate A clause-scoped frame evaluation (negative result)"
+    },
+    {
+      "sha": "5b02f3c",
+      "subject": "fix(upload): keep original publication working on Python 3.10"
+    }
+  ],
+  "changed_paths": [
+    "app/core_pro/literature/literature_batch_routes.py",
+    "docs/engineering/I13_GATE_A_PROTOCOL.md",
+    "docs/engineering/SAI_I13_GATE_A_RESULT_2026-10-25.json",
+    "requirements.txt",
+    "scripts/clause_frame_evaluate.py",
+    "scripts/clause_frame_experiment.py",
+    "test/unit/test_clause_frame_experiment.py",
+    "test/unit/test_upload_preservation.py"
+  ],
+  "owner_decisions_honoured": {
+    "gate_a_preregistered_before_measurement": true,
+    "gate_a_protocol_commit": "87f7b39",
+    "gate_a_post_hoc_tuning": false,
+    "negative_result_preserved": true,
+    "scifact_dev_treated_as_developmental_only": true,
+    "gate_b_semantic_candidate_integrated": false,
+    "gate_b_propbank_packaged": false,
+    "network_access_expanded": false,
+    "gate_c_isolated_commit": "6b10247",
+    "researcher_autonomy_preserved": true,
+    "holdout_accessed": false,
+    "evaluator_key_read": false,
+    "fabricated_experts": false,
+    "main_merged": false,
+    "deployed": false,
+    "production_data_changed": false,
+    "lava_upstream_modified": false,
+    "product_engine_sha256": "4c2034bf8fdbf2ad49276d136a0d37c6201240bd2570bffca5b1fbc0f5f7bd82"
+  },
+  "gate_a": {
+    "result_file": "docs/engineering/SAI_I13_GATE_A_RESULT_2026-10-25.json",
+    "result_sha256": "04f308a29f716a1121044ede3809b9062f219fdec676181d13303c9baa1261fb",
+    "advance_to_gate_b": false,
+    "failed_gates": [
+      "G6",
+      "G7"
+    ],
+    "summary": "C1 與 C2 相同：決定性 2/300（基線 1/300）、精確度 2/2、退步 0、跨極性 0；新增的 id 589 來自假 frame（aged 被當動詞）。"
+  },
+  "gate_c": {
+    "commit": "6b10247",
+    "declared": [
+      "httpx>=0.23.0,<1.0",
+      "sqlalchemy>=2.0.16,<3.0",
+      "werkzeug>=3.0.0,<4.0",
+      "python-socketio>=5.12.0,<6.0"
+    ],
+    "resolution_diff": {
+      "tool": "uv pip compile --python-version 3.10 --python-platform x86_64-manylinux_2_28",
+      "packages_before": 143,
+      "packages_after": 143,
+      "pinned_version_changes": 0
+    },
+    "fresh_install": {
+      "image": "python:3.10-slim",
+      "python": "3.10.22",
+      "os": "Debian 13 (trixie)",
+      "image_manifest_list": "sha256:7eb501467cddbe22540b47077d8a15287d99c3ec022ff84c4e2595d5283c2727",
+      "pip_check": "No broken requirements found.",
+      "versions": {
+        "httpx": "0.28.1",
+        "SQLAlchemy": "2.0.55",
+        "Werkzeug": "3.1.9",
+        "python-socketio": "5.17.0",
+        "openai": "1.109.1",
+        "Flask": "3.0.3",
+        "torch": "2.6.0",
+        "torchvision": "0.21.0"
+      },
+      "differences_from_production": [
+        "跳過 apt 層",
+        "torch 從 PyPI 安裝（CUDA 變體），生產是 PyTorch CPU index 的 2.6.0+cpu",
+        "跳過 NLLB 模型預載"
+      ]
+    },
+    "production_dockerfile_build": {
+      "passed": false,
+      "failed_step": "[2/10] apt-get update",
+      "cause": "deb.debian.org 走明文 HTTP，代理回 405 Method Not Allowed；PyTorch CPU index 與 HuggingFace 也不可達（000）",
+      "caused_by_change": false
+    }
+  },
+  "gate_b_licensing": {
+    "nltk_version": "3.10.4",
+    "index_sha256": "97dce5e72320cd9850b7c20130196006710c18f9c03134c822a37da330198bf6",
+    "packages": [
+      {
+        "id": "averaged_perceptron_tagger",
+        "index_license": "MIT License",
+        "index_md5": "05c91d607ee1043181233365b3f76978",
+        "local_md5": "05c91d607ee1043181233365b3f76978",
+        "md5_matches": true,
+        "unzipped_bytes": 6138625
+      },
+      {
+        "id": "averaged_perceptron_tagger_eng",
+        "index_license": "MIT License",
+        "index_md5": "729e2255f83045670374180de9bdb613",
+        "local_md5": "729e2255f83045670374180de9bdb613",
+        "md5_matches": true,
+        "unzipped_bytes": 5703817
+      },
+      {
+        "id": "framenet_v17",
+        "index_license": "Creative Commons Attribution 3.0 Unported License",
+        "index_md5": "aaef1cfdcf37000cf2a5c562407fbddb",
+        "local_md5": "aaef1cfdcf37000cf2a5c562407fbddb",
+        "md5_matches": true,
+        "unzipped_bytes": 855026962
+      },
+      {
+        "id": "propbank",
+        "index_license": "Distributed with permission",
+        "index_md5": "2397782c6e6f46c9657f85db8a5421f6",
+        "local_md5": "2397782c6e6f46c9657f85db8a5421f6",
+        "md5_matches": true,
+        "unzipped_bytes": 18831005
+      },
+      {
+        "id": "punkt",
+        "index_license": null,
+        "index_md5": "8dd1d8760a0976f96e5c262decd75165",
+        "local_md5": "8dd1d8760a0976f96e5c262decd75165",
+        "md5_matches": true,
+        "unzipped_bytes": 37245719
+      },
+      {
+        "id": "treebank",
+        "index_license": "This is a 10% fragment of Penn Treebank, (C) LDC 1995.  It is made available under fair use for the purposes of illustrating NLTK tools for tokenizing, tagging, chunking and parsing.  This data is for non-commercial use only.",
+        "index_md5": "78c24a97940c2504d0ad35dd3f8a560b",
+        "local_md5": "78c24a97940c2504d0ad35dd3f8a560b",
+        "md5_matches": true,
+        "unzipped_bytes": 5963497
+      },
+      {
+        "id": "verbnet",
+        "index_license": "Distributed with permission of the author.",
+        "index_md5": "427dac60e4a94ae910248ccd9986a22a",
+        "local_md5": "427dac60e4a94ae910248ccd9986a22a",
+        "md5_matches": true,
+        "unzipped_bytes": 2474526
+      },
+      {
+        "id": "wordnet",
+        "index_license": "Permission to use, copy, modify and distribute this software and database and its documentation for any purpose and without fee or royalty is hereby granted, provided that you agree to comply with the following copyright notice and statements, including the disclaimer, and that the same appear on ALL copies of the software, database and documentation, including modifications that you make for internal use or for distribution.... [see webpage for full license]",
+        "index_md5": "b3f38606f626e54c6f060548546f71f0",
+        "local_md5": "b3f38606f626e54c6f060548546f71f0",
+        "md5_matches": true,
+        "unzipped_bytes": 36353991
+      }
+    ],
+    "notes": [
+      "tagger JSON 版為 MIT（textblob-aptagger，Copyright 2013 Matthew Honnibal）；訓練資料來源無法核實（github 403）",
+      "pickle 版 tagger 有任意程式碼執行風險，不要用",
+      "VerbNet 2.1 README 沒有授權條文；上游 verbs.colorado.edu／uvi.colorado.edu 不可達（000）、github 403；Owner 提供「上游有商用授權，受其條款約束」，本容器無法核實",
+      "81 MB 與 68 句/秒為 I12 初步量測，本輪未重測，不是生產核准"
+    ]
+  },
+  "critical_defects": {
+    "confirmed": [
+      {
+        "id": "py310-upload-file-digest",
+        "fixed_in": "5b02f3c",
+        "introduced_in": "dd456aa",
+        "on_main": false,
+        "remote_branches_containing": [
+          "codex/sai-i08-reliability",
+          "codex/sai-i09-scientific-foundation",
+          "codex/sai-i10-scientific-review",
+          "codex/sai-i11-semantic-and-browser",
+          "codex/sai-i12-browser-and-semantic-probe",
+          "codex/sai-scientific-advisory",
+          "codex/sai-autonomy-integrity",
+          "codex/sai-verification-review"
+        ],
+        "old_branches_modified": false,
+        "file": "app/core_pro/literature/literature_batch_routes.py",
+        "cause": "hashlib.file_digest 需要 Python 3.11；生產 Dockerfile 是 python:3.10-slim",
+        "impact": "Python 3.10 下每次上傳 PDF 都回 503，上傳恢復也失敗",
+        "test": "test/unit/test_upload_preservation.py::test_upload_and_recovery_work_on_python310_without_file_digest",
+        "reproduced_before_fix": true
+      }
+    ],
+    "scan": {
+      "python310_compile_files": 155,
+      "syntax_errors": 0,
+      "api_scan": "datetime.UTC、tomllib、typing.Self/Never/NotRequired、StrEnum、ExceptionGroup、except*、TaskGroup、asyncio.timeout、contextlib.chdir、itertools.batched 等；只找到 file_digest 兩處"
+    },
+    "pre_existing_risks": [
+      "opencv-python 4.14.0.94 與 easyocr 帶入的 opencv-python-headless 5.0.0.93 寫入同一個 cv2/",
+      "python:3.10-slim 是浮動標籤（現為 Debian 13、Python 3.10.22）",
+      "PyPI 解析 torch 為 2.14.1；生產 pin 2.6.0+cpu 在 Dockerfile 而非 requirements.txt"
+    ]
+  },
+  "full_regression": {
+    "targets": [
+      "test/unit",
+      "tests",
+      "test/integration_e2e"
+    ],
+    "sha": "5b02f3c4d1823b54f347711b6cd1b443ec7c44ff",
+    "host": {
+      "environment": "Python 3.13，產品環境：無 NLTK 資料、未設 provider／DB 憑證",
+      "tests": 1523,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 50,
+      "passed": 1473,
+      "seconds": 206.51,
+      "problems": []
+    },
+    "python310": {
+      "environment": "Python 3.10.22 驗證映像層 overlay 掛載，unshare -n（無網路），git archive 匯出的乾淨樹，--continue-on-collection-errors",
+      "environment_only_problems": "cv2 缺 libxcb（apt 層被擋）與映像沒有 git；皆為環境限制",
+      "tests": 1513,
+      "failures": 0,
+      "errors": 8,
+      "skipped": 51,
+      "passed": 1454,
+      "seconds": 224.33,
+      "problems": [
+        {
+          "kind": "error",
+          "test": "::test.unit.test_arbiter_equation_chain",
+          "message": "collection failure"
+        },
+        {
+          "kind": "error",
+          "test": "::test.unit.test_segmentizer_types",
+          "message": "collection failure"
+        },
+        {
+          "kind": "error",
+          "test": "test.unit.test_source_contract_scope::test_untracked_source_is_in_scope",
+          "message": "failed on setup with \"FileNotFoundError: [Errno 2] No such file or directory: 'git'\""
+        },
+        {
+          "kind": "error",
+          "test": "test.unit.test_source_contract_scope::test_untracked_bad_header_is_reported",
+          "message": "failed on setup with \"FileNotFoundError: [Errno 2] No such file or directory: 'git'\""
+        },
+        {
+          "kind": "error",
+          "test": "test.unit.test_source_contract_scope::test_detailed_style_header_passes",
+          "message": "failed on setup with \"FileNotFoundError: [Errno 2] No such file or directory: 'git'\""
+        },
+        {
+          "kind": "error",
+          "test": "test.unit.test_source_contract_scope::test_gitignored_file_stays_out_of_scope",
+          "message": "failed on setup with \"FileNotFoundError: [Errno 2] No such file or directory: 'git'\""
+        },
+        {
+          "kind": "error",
+          "test": "test.unit.test_source_contract_scope::test_cached_mode_ignores_untracked",
+          "message": "failed on setup with \"FileNotFoundError: [Errno 2] No such file or directory: 'git'\""
+        },
+        {
+          "kind": "error",
+          "test": "test.unit.test_source_contract_scope::test_note_reference_in_untracked_file_counts",
+          "message": "failed on setup with \"FileNotFoundError: [Errno 2] No such file or directory: 'git'\""
+        }
+      ]
+    }
+  },
+  "not_measured": [
+    "生產 Dockerfile 端到端 build（apt 層被代理擋）",
+    "VerbNet 上游商用條款",
+    "tagger 訓練資料來源",
+    "81 MB／68 句/秒（未重測）",
+    "真人專家 gold 與 holdout 成績",
+    "條件／模態／因果品質",
+    "機率校準"
+  ],
+  "scientific_quality_pass": false,
+  "expert_evaluation_complete": false,
+  "builder_sha256": "52fb9bd264bea619061f5396de094cf32c375bf3a498412d2fca6a3ac39a4be8"
+}
