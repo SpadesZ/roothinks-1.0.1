@@ -34,6 +34,12 @@ import pytest
 EXPECTED_FORMAT_ERROR = "請使用mail格式註冊"
 
 
+def test_login_does_not_block_on_unused_chart_library(app_session):
+    response = app_session.test_client().get('/auth/login')
+    assert response.status_code == 200
+    assert b'cdn.plot.ly/' not in response.data
+
+
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------
