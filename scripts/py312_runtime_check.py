@@ -11,6 +11,7 @@
 #1. 每項檢查回報 passed/failed/skipped 與細節；任一 failed 則 exit 1。
 #2. NLLB：造一個 HuggingFace 離線快取（合成小模型），讓 scripts/bake_nllb.py 原封不動跑完，再由 NLLBTranslator 載入。
 #3. easyocr：照 literature_stacka 的參數載入 en+ch_tra；--allow-download 時允許從 GitHub 下載（easyocr 自行驗 md5）。
+#4. --nllb-real：不造合成快取，直接載入映像內 bake 好的 NLLB_MODEL_DIR，翻譯一句英文並要求輸出含中文字。
 import argparse
 import importlib
 import json
@@ -144,6 +145,25 @@ print(json.dumps(dict(ready=translator.ready, single_type=type(single).__name__,
 '''
 
 
+REAL_PROBE = r'''
+import json, sys
+sys.path.insert(0, sys.argv[1])
+from app.core_pro.literature.literature_nllb import NLLBTranslator
+translator = NLLBTranslator()
+text = translator.translate_text('The measured improvement applies only to sample A at 300 K.')
+print(json.dumps(dict(ready=translator.ready, text=text, cjk=any('\u4e00' <= ch <= '\u9fff' for ch in text))))
+'''
+
+
+def check_nllb_real():
+    done = subprocess.run([sys.executable, '-c', REAL_PROBE, str(ROOT)], capture_output=True, text=True, timeout=1800)
+    if done.returncode:
+        return 'failed', done.stderr[-3000:]
+    report = json.loads(done.stdout.strip().splitlines()[-1])
+    report['model_dir'] = os.environ.get('NLLB_MODEL_DIR', '/opt/models/nllb')
+    return ('passed' if report['ready'] and report['cjk'] else 'failed'), report
+
+
 def check_nllb(work):
     cache, out = work / 'hf', work / 'nllb'
     fake_hub(cache)
@@ -212,12 +232,13 @@ def main():
     parser.add_argument('--easyocr-dir')
     parser.add_argument('--allow-download', action='store_true')
     parser.add_argument('--skip', action='append', default=[])
+    parser.add_argument('--nllb-real', action='store_true')
     args = parser.parse_args()
     work = Path(args.work)
     work.mkdir(parents=True, exist_ok=False)
     checks = [('interpreter', check_interpreter), ('imports', check_imports), ('torch', check_torch),
               ('opencv', lambda: check_opencv(work)), ('eventlet', check_eventlet),
-              ('nllb_load_path', lambda: check_nllb(work)),
+              ('nllb_real' if args.nllb_real else 'nllb_load_path', check_nllb_real if args.nllb_real else (lambda: check_nllb(work))),
               ('easyocr', lambda: check_easyocr(work, args.easyocr_dir, args.allow_download)),
               ('tesseract_poppler', lambda: check_tesseract_poppler(work))]
     results = []
