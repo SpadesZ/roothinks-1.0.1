@@ -22,16 +22,20 @@
 
 class GoogleDriveAdapter {
     constructor() {
-        // [CONFIG] 請填入您的 Google Cloud 憑證資訊
-        this.API_KEY = 'YOUR_API_KEY_HERE';
-        this.CLIENT_ID = 'YOUR_CLIENT_ID_HERE';
-        this.APP_ID = 'YOUR_PROJECT_NUMBER_HERE'; // Project Number (not ID)
+        // 由伺服器注入公開 browser 設定；OAuth token 只存本頁記憶體。
+        let config = {};
+        try { config = JSON.parse(document.getElementById('googleDriveConfig')?.textContent || '{}'); }
+        catch (_) { /* 無效設定視同未配置，不能阻擋本機研究流程。 */ }
+        this.API_KEY = String(config.apiKey || '');
+        this.CLIENT_ID = String(config.clientId || '');
+        this.APP_ID = String(config.appId || '');
 
         // Scopes: drive.file (只存取此 App 建立或使用者選取的檔案，較安全)
-        this.SCOPES = 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/drive.readonly';
+        this.SCOPES = 'https://www.googleapis.com/auth/drive.file';
         
         this.tokenClient = null;
         this.accessToken = null;
+        this.tokenExpiresAt = 0;
         this.pickerInited = false;
         this.gisInited = false;
         
@@ -68,19 +72,28 @@ class GoogleDriveAdapter {
     loadGapi() {
         if(window.gapi) {
             gapi.load('client:picker', async () => {
-                await gapi.client.load('https://www.googleapis.com/discovery/v1/apis/drive/v3/rest');
-                this.pickerInited = true;
-                console.log("[DriveAdapter] GAPI Loaded.");
+                try {
+                    await gapi.client.load('https://www.googleapis.com/discovery/v1/apis/drive/v3/rest');
+                    this.pickerInited = true;
+                } catch (_) { this.sdkUnavailable(); }
             });
         }
     }
 
+    sdkUnavailable() {
+        this.pickerInited = false;
+        this.gisInited = false;
+        this.accessToken = null;
+        this.tokenExpiresAt = 0;
+    }
+
     loadGis() {
-        if(window.google) {
+        if(window.google?.accounts?.oauth2) {
             this.tokenClient = google.accounts.oauth2.initTokenClient({
                 client_id: this.CLIENT_ID,
                 scope: this.SCOPES,
-                callback: '', // defined at request time
+                callback: () => {}, // defined at request time
+                error_callback: () => { this.accessToken = null; this.tokenExpiresAt = 0; alert('Google 授權未完成；可稍後重試或使用本機匯入。'); },
             });
             this.gisInited = true;
             console.log("[DriveAdapter] GIS Loaded.");
@@ -92,23 +105,32 @@ class GoogleDriveAdapter {
      * @param {Function} callback - (fileObj) => void
      */
     openPicker(callback) {
-        if (!this.API_KEY || this.API_KEY === 'YOUR_API_KEY_HERE') {
-            alert("請先在 google_driveapi.js 設定 API Key 與 Client ID！");
-            return;
+        if (![this.API_KEY, this.CLIENT_ID, this.APP_ID].every(value => value && !value.startsWith('YOUR_'))) {
+            alert('Google Drive 尚未由管理者配置；可使用本機匯入。');
+            return false;
+        }
+        if (!this.pickerInited || !this.gisInited || !this.tokenClient) {
+            alert('Google SDK 尚未就緒或無法連線；可稍後重試或使用本機匯入。');
+            return false;
         }
 
         this.onFileSelected = callback;
 
         // Check Auth
-        if (this.accessToken) {
+        if (this.accessToken && Date.now() < this.tokenExpiresAt) {
             this.createPicker();
         } else {
+            this.accessToken = null;
             // Request Auth
             this.tokenClient.callback = async (response) => {
-                if (response.error !== undefined) {
-                    throw (response);
+                if (!response || response.error !== undefined || !response.access_token || !(Number(response.expires_in) > 0)) {
+                    this.accessToken = null;
+                    this.tokenExpiresAt = 0;
+                    alert('Google 授權未完成；未匯入任何內容。');
+                    return;
                 }
                 this.accessToken = response.access_token;
+                this.tokenExpiresAt = Date.now() + Number(response.expires_in) * 1000 - 5000;
                 this.createPicker();
             };
 
@@ -128,6 +150,7 @@ class GoogleDriveAdapter {
             return;
         }
 
+        const callback = this.onFileSelected;
         const view = new google.picker.View(google.picker.ViewId.DOCS);
         view.setMimeTypes(
             "text/plain,application/pdf,image/png,image/jpeg," +
@@ -143,13 +166,13 @@ class GoogleDriveAdapter {
             .setOAuthToken(this.accessToken)
             .addView(view)
             .addView(new google.picker.DocsUploadView())
-            .setCallback(this.pickerCallback.bind(this))
+            .setCallback(data => this.pickerCallback(data, callback))
             .build();
         
         picker.setVisible(true);
     }
 
-    async pickerCallback(data) {
+    async pickerCallback(data, callback = this.onFileSelected) {
         if (data.action === google.picker.Action.PICKED) {
             const doc = data.docs[0];
             const fileId = doc.id;
@@ -163,8 +186,8 @@ class GoogleDriveAdapter {
             try {
                 const content = await this.downloadFile(fileId, mimeType, oauthToken, fileName);
                 
-                if (this.onFileSelected) {
-                    this.onFileSelected({
+                if (callback) {
+                    callback({
                         name: fileName,
                         mime: mimeType,
                         content: content // Base64 or Text
@@ -183,20 +206,28 @@ class GoogleDriveAdapter {
      * 若是 一般檔案，使用 alt=media 下載
      */
     async downloadFile(fileId, mimeType, token, fileName = '') {
-        let url = `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`;
+        if (!fileId || !token) throw new Error('Google 檔案或授權缺失');
+        const encodedId = encodeURIComponent(String(fileId));
+        let url = `https://www.googleapis.com/drive/v3/files/${encodedId}?alt=media`;
         
         // Handle Google Native Formats (Export)
         if (mimeType === 'application/vnd.google-apps.document') {
-            url = `https://www.googleapis.com/drive/v3/files/${fileId}/export?mimeType=text/plain`;
+            url = `https://www.googleapis.com/drive/v3/files/${encodedId}/export?mimeType=text/plain`;
         } else if (mimeType === 'application/vnd.google-apps.spreadsheet') {
-            url = `https://www.googleapis.com/drive/v3/files/${fileId}/export?mimeType=text/csv`;
+            url = `https://www.googleapis.com/drive/v3/files/${encodedId}/export?mimeType=text/csv`;
         }
 
         const response = await fetch(url, {
             headers: { 'Authorization': 'Bearer ' + token }
         });
 
-        if (!response.ok) throw new Error(`Fetch failed: ${response.statusText}`);
+        if (!response.ok) {
+            if ([401, 403].includes(response.status) && this.accessToken === token) {
+                this.accessToken = null;
+                this.tokenExpiresAt = 0;
+            }
+            throw new Error(`Google 下載未完成 (${response.status})`);
+        }
 
         const blob = await response.blob();
         const effectiveMime = String(blob.type || mimeType || '').toLowerCase();

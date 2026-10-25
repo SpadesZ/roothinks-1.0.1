@@ -763,10 +763,18 @@ class ManuUI {
     }
 
     triggerGoogleDrive() {
+        const pid = this.app.pid;
+        const section = this.app.drafterTargetSection?.value || Array.from(this.app.selectedSections || [])[0] || '';
+        const requestId = this._driveRequestId = (this._driveRequestId || 0) + 1;
         const typeSelect = document.getElementById('importType');
         this.app.currentImportType = typeSelect ? typeSelect.value : 'other'; 
         if(window.driveAdapter) {
             window.driveAdapter.openPicker((fileObj) => {
+                const activeSection = this.app.drafterTargetSection?.value || Array.from(this.app.selectedSections || [])[0] || '';
+                if (this._driveRequestId !== requestId || this.app.pid !== pid || activeSection !== section) {
+                    this.showNotice('研究專案或章節已變更；Google Drive 回應未套用，請在目前位置重新匯入。', 'warning');
+                    return;
+                }
                 const selectedName = String(fileObj?.name || '').trim();
                 const selectedMime = String(fileObj?.mime || '').toLowerCase().trim();
                 if (this._isLegacyDocExt(selectedName) || this._isLegacyDocMime(selectedMime)) {

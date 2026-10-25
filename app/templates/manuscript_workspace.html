@@ -635,9 +635,12 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.min.js" integrity="sha384-mZLF4UVrpi/QTWPA7BjNPEnkIfRFn4ZEO3Qt/HFklTJBj/gBOV8G3HcKn4NfQblz" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz" crossorigin="anonymous"></script>
-    <script src="{{ url_for('static', filename='js/google_driveapi.js') }}?v=0.2"></script>
-    <script async defer src="https://apis.google.com/js/api.js" onload="window.driveAdapter.loadGapi()"></script>
-    <script async defer src="https://accounts.google.com/gsi/client" onload="window.driveAdapter.loadGis()"></script>
+    <script type="application/json" id="googleDriveConfig">{{ {'apiKey': config.get('GOOGLE_DRIVE_BROWSER_API_KEY', ''), 'clientId': config.get('GOOGLE_DRIVE_CLIENT_ID', ''), 'appId': config.get('GOOGLE_DRIVE_APP_ID', '')}|tojson }}</script>
+    <script src="{{ url_for('static', filename='js/google_driveapi.js') }}?v=0.3"></script>
+    {% if config.get('GOOGLE_DRIVE_BROWSER_API_KEY') and config.get('GOOGLE_DRIVE_CLIENT_ID') and config.get('GOOGLE_DRIVE_APP_ID') %}
+    <script async defer src="https://apis.google.com/js/api.js" onload="window.driveAdapter.loadGapi()" onerror="window.driveAdapter.sdkUnavailable()"></script>
+    <script async defer src="https://accounts.google.com/gsi/client" onload="window.driveAdapter.loadGis()" onerror="window.driveAdapter.sdkUnavailable()"></script>
+    {% endif %}
 
     <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
     <script>

@@ -406,6 +406,10 @@ def create_app(test_config=None):
         WTF_CSRF_ENABLED=True,
         WTF_CSRF_CHECK_DEFAULT=False,
         AUTH_MODE=auth_mode,
+        # 僅限可公開的 browser key／OAuth client ID；不得放 client secret 或 access token。
+        GOOGLE_DRIVE_BROWSER_API_KEY=os.environ.get('GOOGLE_DRIVE_BROWSER_API_KEY', '').strip(),
+        GOOGLE_DRIVE_CLIENT_ID=os.environ.get('GOOGLE_DRIVE_CLIENT_ID', '').strip(),
+        GOOGLE_DRIVE_APP_ID=os.environ.get('GOOGLE_DRIVE_APP_ID', '').strip(),
     )
 
     if test_config:
