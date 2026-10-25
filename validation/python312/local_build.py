@@ -42,9 +42,20 @@ def build(output,target,label,dockerfile='validation/python312/Dockerfile',base_
     iid=output/f'{target}-{label}.iid';log=output/f'{target}-{label}.txt'
     command=['docker','build','--platform','linux/amd64','--target',target,'--progress','plain',
         '--iidfile',str(iid),'-f',dockerfile,'-t',name]
-    if base_image:command.extend(['--build-arg','BASE_IMAGE='+base_image])
+    base_config_id=None
+    if base_image:
+        requested=base_image
+        if base_image.startswith('sha256:'):
+            # BuildKit 的 FROM 不能使用裸 image ID；先解析同一已存在映像的本機 tag。
+            tags=json.loads(subprocess.check_output(['docker','image','inspect',base_image,'--format','{{json .RepoTags}}'],text=True))
+            base_image=next(tag for tag in sorted(tags or []) if tag.startswith('roothinks-py312-'))
+        base_config_id=subprocess.check_output(['docker','image','inspect',requested,'--format','{{.Id}}'],text=True).strip()
+        actual=subprocess.check_output(['docker','image','inspect',base_image,'--format','{{.Id}}'],text=True).strip()
+        if actual!=base_config_id:raise ValueError('Runtime tag changed before verification build')
+        command.extend(['--build-arg','BASE_IMAGE='+base_image])
     command.append(str(output/'context'))
     receipt=dict(source_sha=manifest['sha'],command=command,tag=name,
+        base_config_id=base_config_id,
         started_utc=datetime.datetime.now(datetime.timezone.utc).isoformat())
     with log.open('x',encoding='utf-8') as f:result=subprocess.run(command,cwd=ROOT,stdout=f,stderr=subprocess.STDOUT)
     receipt.update(exit_code=result.returncode,status='passed' if result.returncode==0 else 'failed',

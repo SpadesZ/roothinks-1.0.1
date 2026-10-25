@@ -3,7 +3,7 @@
 # 主要責任: 由已建好的精確 runtime image 衍生隔離 regression runner。
 # 上下游: BASE_IMAGE -> git/測試相依與合成 fixture -> JUnit；不掛正式 volumes。
 # 維護邊界: BASE_IMAGE 必須明示；不混入浮動舊 image 或在正式 runtime 裝測試工具。
-# 驗證: docker build -f Dockerfile.test --build-arg BASE_IMAGE=sha256:<runtime> .
+# 驗證: 用 local_build.py --base-image sha256:<runtime>；工具會核對本機 tag 的 config ID 再建置。
 ARG BASE_IMAGE
 FROM ${BASE_IMAGE} AS verification
 USER root
@@ -11,10 +11,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends git fonts-noto-
     && rm -rf /var/lib/apt/lists/*
 COPY requirements-test.lock /tmp/requirements-test.lock
 RUN pip install --no-cache-dir --require-hashes --only-binary=:all: -r /tmp/requirements-test.lock && pip check
-COPY --chown=appuser:appuser test /app/test
-COPY --chown=appuser:appuser tests /app/tests
-COPY --chown=appuser:appuser validation /app/validation
-COPY --chown=appuser:appuser requirements.txt requirements-py312.lock requirements-py312.constraints.txt Dockerfile Dockerfile.test /app/
+# 僅對 tracked-only、已掃描 context 使用；測試依賴 docs/fixtures 及原始維護契約。
+COPY --chown=appuser:appuser . /app
 USER appuser
 ENTRYPOINT ["python", "/app/scripts/prepare_test_runtime.py"]
 CMD ["python", "-m", "pytest", "test/unit", "tests", "test/integration_e2e", "test/integration_smoke", "-q", "-p", "no:cacheprovider"]

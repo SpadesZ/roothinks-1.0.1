@@ -1,0 +1,22 @@
+{
+  "purpose": "synthetic diagnostic controls; not expert labels or independent scientific validation",
+  "translation": [
+    "The sample was measured at 300 K.",
+    "Only sample A improved by 5% at 300 K.",
+    "The simulation predicts 2 dB loss; this was not measured.",
+    "No statistically significant improvement was observed.",
+    "The 95% confidence interval spans -1.0 to 1.5.",
+    "For 10 nm oxide, the measured loss was 0.7 dB/cm.",
+    "This hypothesis has not been tested experimentally.",
+    "Only 12 samples were measured; no claim is made about other samples.",
+    "A larger correlation does not establish causation.",
+    "The bandwidth is 40 GHz at a wavelength of 1550 nm.",
+    "Sample B did not outperform sample A under the same calibration.",
+    "The result applies only to a temperature range of 290 K to 310 K."
+  ],
+  "ocr": [
+    {"id": "english", "text": "ROOTHINKS 2026"},
+    {"id": "conditions", "text": "研究樣本 A 於 300 K 量測"},
+    {"id": "modality", "text": "模擬結果不代表實測"}
+  ]
+}

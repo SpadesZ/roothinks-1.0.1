@@ -1,0 +1,231 @@
+{
+  "baselines": {
+    "local": "433eec4",
+    "cloud": "e64c4e7"
+  },
+  "dependency_differences": [
+    {
+      "package": "bidict",
+      "cloud": "0.23.1",
+      "local": "0.24.1",
+      "selected": "0.24.1",
+      "reason": "python-socketio 對應的雙向映射；保留已驗本機版本，Socket/撤權回歸重驗。"
+    },
+    {
+      "package": "deprecated",
+      "cloud": "1.3.1",
+      "local": "3.0.0",
+      "selected": "3.0.0",
+      "reason": "Flask-Limiter/limits 間接相依；保留本機版本，登入/rate-limit/error 路徑重驗。"
+    },
+    {
+      "package": "dnspython",
+      "cloud": "2.8.0",
+      "local": "2.9.0",
+      "selected": "2.9.0",
+      "reason": "Eventlet green DNS 相依；保留本機版本，兩種 worker 握手與網路無效路徑重驗。"
+    },
+    {
+      "package": "imageio",
+      "cloud": "2.38.0",
+      "local": "2.38.1",
+      "selected": "2.38.1",
+      "reason": "scikit-image/EasyOCR 影像相依；保留本機 patch 版本並實測影像解碼。"
+    },
+    {
+      "package": "iopath",
+      "cloud": "0.1.10",
+      "local": null,
+      "selected": null,
+      "reason": "僅由未使用的 layoutparser 引入；移除該根相依後不保留孤立套件。"
+    },
+    {
+      "package": "layoutparser",
+      "cloud": "0.3.4",
+      "local": null,
+      "selected": null,
+      "reason": "app/scripts/test/tests 沒有直接或字串呼叫；實際 PDF 路徑為 Poppler+CV。移除可避免強制 GUI cv2。"
+    },
+    {
+      "package": "networkx",
+      "cloud": "3.4.2",
+      "local": "3.7",
+      "selected": "3.7",
+      "reason": "CPU Torch 相依；保留已驗本機版本，實際新 Torch native ops 與模型重驗。"
+    },
+    {
+      "package": "numpy",
+      "cloud": "2.2.6",
+      "local": "1.26.4",
+      "selected": "1.26.4",
+      "reason": "保留已驗本機 1.26.4 及其 OpenCV ABI；未宣稱比雲端 2.2.6 正確或數值相同。影像/科學 parity 分開測。"
+    },
+    {
+      "package": "opencv-python",
+      "cloud": "4.14.0.94",
+      "local": null,
+      "selected": null,
+      "reason": "與 headless 同寫 cv2 namespace；移除 GUI provider，只有 headless 被鎖定。"
+    },
+    {
+      "package": "opencv-python-headless",
+      "cloud": "5.0.0.93",
+      "local": "4.11.0.86",
+      "selected": "4.11.0.86",
+      "reason": "保留本機 4.11.0.86 的已驗 ABI；單一 provider，CV/實際 PDF 與 OCR 重驗。"
+    },
+    {
+      "package": "pandas",
+      "cloud": "2.3.3",
+      "local": null,
+      "selected": null,
+      "reason": "只在移除的 layoutparser 鏈中；產品沒有 import，無需引入第二套數值/時間相依。"
+    },
+    {
+      "package": "pdfminer-six",
+      "cloud": "20251230",
+      "local": null,
+      "selected": null,
+      "reason": "pdfplumber/layoutparser 間接相依；實際產品用 Poppler，不另保留解析器。"
+    },
+    {
+      "package": "pdfplumber",
+      "cloud": "0.11.9",
+      "local": null,
+      "selected": null,
+      "reason": "移除 layoutparser 的相依；產品未呼叫，真 PDF 由 Poppler 文字/轉圖及 OCR 驗。"
+    },
+    {
+      "package": "portalocker",
+      "cloud": "4.4.1",
+      "local": null,
+      "selected": null,
+      "reason": "iopath 的相依；產品 CAS/檔鎖採 filelock，不替換既有鎖策略。"
+    },
+    {
+      "package": "pycparser",
+      "cloud": "3.11",
+      "local": "3.12",
+      "selected": "3.12",
+      "reason": "cffi 的 parser 相依；保留本機版本，Fernet/密碼及完整回歸重驗。"
+    },
+    {
+      "package": "pypdfium2",
+      "cloud": "5.14.0",
+      "local": null,
+      "selected": null,
+      "reason": "移除 pdfplumber 後不需要；產品的 PDF renderer 是 Poppler。"
+    },
+    {
+      "package": "python-dateutil",
+      "cloud": "3.0.0",
+      "local": null,
+      "selected": null,
+      "reason": "pandas 移除後不需要；產品未 import；研究時間/歷史不改寫。"
+    },
+    {
+      "package": "pytz",
+      "cloud": "2026.5",
+      "local": null,
+      "selected": null,
+      "reason": "pandas 鏈移除後不需要；時區行為由現有 datetime/zone 使用維持。"
+    },
+    {
+      "package": "scikit-image",
+      "cloud": "0.25.2",
+      "local": "0.26.0",
+      "selected": "0.26.0",
+      "reason": "EasyOCR 幾何/影像處理相依；保留本機 0.26.0，真 OCR 比較揭露輸出差異。"
+    },
+    {
+      "package": "scipy",
+      "cloud": "1.15.3",
+      "local": "1.17.1",
+      "selected": "1.17.1",
+      "reason": "EasyOCR/scikit-image 相依；保留本機 1.17.1 與 NumPy 下界相容；數值品質不由 pip check 推定。"
+    },
+    {
+      "package": "shapely",
+      "cloud": "2.1.2",
+      "local": "2.2.0",
+      "selected": "2.2.0",
+      "reason": "EasyOCR polygon grouping 相依；保留本機 2.2.0；實際 OCR bbox/文字診斷。"
+    },
+    {
+      "package": "six",
+      "cloud": "1.17.0",
+      "local": null,
+      "selected": null,
+      "reason": "僅原 dateutil/iopath 鏈需要；最終 resolver 無需求，不加孤立套件。"
+    },
+    {
+      "package": "soupsieve",
+      "cloud": "2.10",
+      "local": "3.0.4",
+      "selected": "3.0.4",
+      "reason": "BeautifulSoup/deep-translator 的 HTML selector；保留本機版，Google 服務 live 可用性另列未驗。"
+    },
+    {
+      "package": "sqlalchemy",
+      "cloud": "2.0.55",
+      "local": "2.1.6",
+      "selected": "2.1.6",
+      "reason": "保留本機 2.1.6，符合 Flask-SQLAlchemy 下界；研究 DB/CAS/backup/ACL 全回歸是採用條件。"
+    },
+    {
+      "package": "tifffile",
+      "cloud": "2025.5.10",
+      "local": "2026.3.3",
+      "selected": "2026.3.3",
+      "reason": "scikit-image 的影像 I/O 相依；保留本機版本，影像控制與完整回歸重驗。"
+    },
+    {
+      "package": "torch",
+      "cloud": null,
+      "local": "https://download.pytorch.org/whl/cpu/torch-2.6.0%2Bcpu-cp312-cp312-linux_x86_64.whl",
+      "selected": "2.13.0+cpu",
+      "reason": "兩邊原來同為 2.6 CPU（雲端在 lock 外），不是功能缺包；改 2.13.0+cpu 處理已知權重載入漏洞，官方 URL+SHA-256。"
+    },
+    {
+      "package": "torchvision",
+      "cloud": null,
+      "local": "https://download.pytorch.org/whl/cpu/torchvision-0.21.0%2Bcpu-cp312-cp312-linux_x86_64.whl",
+      "selected": "0.28.0+cpu",
+      "reason": "配對 Torch 2.13.0 的 0.28.0+cpu；官方 wheel URL+hash，必驗 native NMS 及 EasyOCR。"
+    },
+    {
+      "package": "tzdata",
+      "cloud": "2026.5",
+      "local": null,
+      "selected": null,
+      "reason": "pandas 鏈移除後不需要；Linux 系統 tzdata 仍來自固定 Debian snapshot。"
+    },
+    {
+      "package": "wtforms",
+      "cloud": "3.2.2",
+      "local": "3.3.1",
+      "selected": "3.3.1",
+      "reason": "Flask-WTF 表單相依；保留本機 3.3.1，session/CSRF/表單回歸重驗。"
+    }
+  ],
+  "final_package_count": 113,
+  "policy": "local-first; security updates separately justified; no CUDA or implicit model download",
+  "security_changes": {
+    "flask": "3.1.3",
+    "eventlet": "0.40.3",
+    "cryptography": "50.0.0",
+    "filelock": "4.2.1",
+    "pillow": "13.0.0",
+    "google-generativeai": "0.8.6",
+    "google-ai-generativelanguage": "0.6.15",
+    "protobuf": "5.29.6",
+    "torch": "2.13.0+cpu",
+    "torchvision": "0.28.0+cpu",
+    "transformers": "5.10.0",
+    "huggingface-hub": "1.33.0",
+    "pip": "26.2"
+  },
+  "residual": [
+    "deep-translator PYSEC-2022-252 takeover advisory has no fixed release in registry; retain finding until separately assessed"
+  ]
+}
