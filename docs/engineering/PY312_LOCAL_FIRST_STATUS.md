@@ -13,7 +13,7 @@ Owner 於 2026-10-25 核准本機主導、單一隔離整合分支完成後 push
 3. [x] 固定控制與 tokenizer／Google 工程邊界已驗；真 OAuth 仍未授權，品質限制見交付。
 4. [x] 1,506 passed／50 skipped／0 failed；三流程、有效 PDF、真圖表、300 dev parity 與 3.10 合成回退通過。
 5. [x] 本機安全／秘密掃描、自我稽核、驗收與接手指令已備；獨立外部 auditor 尚未完成，正式 NO-GO。
-6. [ ] 僅 push personal 的本輪整合分支，核對遠端 SHA，停 Owner Gate。
+6. [x] 已僅 push personal 的本輪整合分支；首個遠端驗證點 `88efdd7e58019d002120525257cd4b537d43a9ff`，main／雲端原分支不變。後續狀態文件提交的最終 tip 以交付回覆／ls-remote 核對，停 Owner Gate。
 
 ## 首批調查
 
