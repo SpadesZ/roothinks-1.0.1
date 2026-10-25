@@ -202,12 +202,18 @@ def check_easyocr(work, model_dir, allow_download):
     import easyocr
     if not model_dir:
         return 'skipped', '未提供 --easyocr-dir'
-    reader = easyocr.Reader(['en', 'ch_tra'], gpu=False, model_storage_directory=model_dir,
-                            download_enabled=allow_download, verbose=False)
-    found = ' '.join(text for _, text, _ in reader.readtext(str(text_image(work / 'ocr.png', 'ROOTHINKS 2026'))))
-    ok = 'ROOTHINKS' in found.upper().replace(' ', '') and '2026' in found
-    return ('passed' if ok else 'failed'), dict(version=easyocr.__version__, read=found,
-                                                 models=sorted(os.listdir(model_dir)))
+    image = str(text_image(work / 'ocr.png', 'ROOTHINKS 2026'))
+    # 1. 與 literature_stacka 相同的 en+ch_tra：驗模型下載、載入與推論可跑（繁中模型讀合成英文字本來就不準）。
+    bilingual = easyocr.Reader(['en', 'ch_tra'], gpu=False, model_storage_directory=model_dir,
+                               download_enabled=allow_download, verbose=False)
+    bilingual_read = ' '.join(text for _, text, _ in bilingual.readtext(image))
+    # 2. 英文單語（literature_stacka 的 fallback）：驗辨識結果正確。
+    english = easyocr.Reader(['en'], gpu=False, model_storage_directory=model_dir,
+                             download_enabled=allow_download, verbose=False)
+    english_read = ' '.join(text for _, text, _ in english.readtext(image))
+    ok = bool(bilingual_read.strip()) and 'ROOTHINKS' in english_read.upper().replace(' ', '') and '2026' in english_read
+    return ('passed' if ok else 'failed'), dict(version=easyocr.__version__, bilingual_read=bilingual_read,
+                                                 english_read=english_read, models=sorted(os.listdir(model_dir)))
 
 
 def check_tesseract_poppler(work):
