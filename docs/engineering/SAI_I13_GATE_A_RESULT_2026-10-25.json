@@ -1,0 +1,963 @@
+{
+  "title": "I13 Gate A 結果：子句範圍關係框架（預先登記，負結果）",
+  "protocol_commit": "87f7b39",
+  "protocol": "docs/engineering/I13_GATE_A_PROTOCOL.md",
+  "conclusion": {
+    "advance_to_gate_b": false,
+    "summary": "C1 與 C2 結果完全相同：決定性判定 2／300（基線 1／300），新增的唯一真陽性（id 589）來自假 frame。G6、G7 兩個變體都未過。PropBank（C2）沒有帶來任何決定性效益。",
+    "not_validation": "SciFact dev 已曝光，只是開發證據，不是獨立驗證；holdout 未開封；稽核者是實作者本人，不是專家。"
+  },
+  "evaluation": {
+    "protocol": "docs/engineering/I13_GATE_A_PROTOCOL.md",
+    "diagnostic_only": true,
+    "fresh_blind": false,
+    "holdout_accessed": false,
+    "gold_totals": {
+      "NEI": 112,
+      "SUPPORT": 124,
+      "CONTRADICT": 64
+    },
+    "engines": {
+      "baseline": "4c2034bf8fdbf2ad49276d136a0d37c6201240bd2570bffca5b1fbc0f5f7bd82",
+      "C1": "12e2ca5984007c3de995378aed1ee10c5ccaaf83f135f15165077302c69f7ba1",
+      "C2": "97df998f1d000603f1f38ad7046a4d7f4a2c1781affca31fec837aa3bf0f94bf"
+    },
+    "inputs_sha256": "ded7f378b97aca168037271d0725437b035c32f2ac033563d94122178ced1ce5",
+    "gold_sha256": "4374b195bd49dd3e2202d013e593955e00e078b7bd6f564307d992d041f4681f",
+    "variants": {
+      "C1": {
+        "confusion": {
+          "SUPPORT": {
+            "SUPPORT": 2,
+            "CONTRADICT": 0,
+            "UNKNOWN": 122,
+            "ERROR": 0
+          },
+          "CONTRADICT": {
+            "SUPPORT": 0,
+            "CONTRADICT": 0,
+            "UNKNOWN": 64,
+            "ERROR": 0
+          },
+          "NEI": {
+            "SUPPORT": 0,
+            "CONTRADICT": 0,
+            "UNKNOWN": 112,
+            "ERROR": 0
+          },
+          "AMBIGUOUS": {
+            "SUPPORT": 0,
+            "CONTRADICT": 0,
+            "UNKNOWN": 0,
+            "ERROR": 0
+          }
+        },
+        "one_vs_rest": {
+          "SUPPORT": {
+            "tp": 2,
+            "fp": 0,
+            "fn": 122,
+            "tn": 176,
+            "precision": 1.0,
+            "recall": 0.016129032258064516,
+            "fpr": 0.0,
+            "fnr": 0.9838709677419355
+          },
+          "CONTRADICT": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 64,
+            "tn": 236,
+            "precision": null,
+            "recall": 0.0,
+            "fpr": 0.0,
+            "fnr": 1.0
+          }
+        },
+        "unknown": 298,
+        "errors": 0,
+        "decisive": 2,
+        "decisive_correct": 2,
+        "decisive_precision": 1.0,
+        "decisive_false_positives": [],
+        "localization": {
+          "primary": {
+            "tp": 101,
+            "fp": 88,
+            "fn": 265,
+            "claims": 188,
+            "precision": 0.5343915343915344,
+            "recall": 0.27595628415300544
+          },
+          "localized": {
+            "tp": 207,
+            "fp": 358,
+            "fn": 159,
+            "claims": 188,
+            "precision": 0.3663716814159292,
+            "recall": 0.5655737704918032
+          }
+        },
+        "changed_predictions": [
+          {
+            "id": 589,
+            "baseline": "UNKNOWN",
+            "candidate": "SUPPORT",
+            "gold": "SUPPORT",
+            "claim": "In young and middle-aged adults, current or remote uses of ADHD medications do not increase the risk of serious cardiovascular events."
+          }
+        ],
+        "regressions_vs_baseline": [],
+        "negation_decisions": [],
+        "condition_warning_decisions": [],
+        "gates": {
+          "G1": {
+            "result": {
+              "tests": 48,
+              "failures": 0,
+              "errors": 0,
+              "skipped": 0
+            },
+            "note": "產品既有 47 個科學對抗控制＋1 個替換生效探針，全部在候選引擎下執行",
+            "passed": true
+          },
+          "G2_autonomy": true,
+          "G3_localization_identical": true,
+          "G4_no_cross_polarity_errors": {
+            "contradict_on_gold_support": 0,
+            "support_on_gold_contradict": 0,
+            "passed": true
+          },
+          "G5_precision": {
+            "value": 1.0,
+            "denominator": 2,
+            "threshold": 0.8,
+            "passed": true
+          },
+          "G6_true_positives": {
+            "value": 2,
+            "threshold": 6,
+            "baseline": 1,
+            "passed": false
+          },
+          "G8": {
+            "result": {
+              "tests": 36,
+              "failures": 0,
+              "errors": 0,
+              "skipped": 2
+            },
+            "note": "36 個案例（C1、C2 各 18）；2 個 strict xfail 是同詞根 block 子句案例，不屬否定／條件控制；否定與條件控制全部通過",
+            "passed": true
+          },
+          "G7": {
+            "auditor": "實作者（非獨立專家），稽核時不看 gold 標籤",
+            "decisive": {
+              "counts": {
+                "WRONG_ROLE": 2
+              },
+              "bad": 2,
+              "denominator": 2,
+              "rate": 1.0
+            },
+            "random_sample": {
+              "counts": {
+                "WRONG_ROLE": 22,
+                "CORRECT": 15,
+                "CROSS_CLAUSE": 3
+              },
+              "cross_clause": 3,
+              "denominator": 40,
+              "rate": 0.075
+            },
+            "passed": false
+          },
+          "verdict": "未通過：G6（真陽性 2 < 6）與 G7（決定性 frame 錯誤率 2/2）"
+        }
+      },
+      "C2": {
+        "confusion": {
+          "SUPPORT": {
+            "SUPPORT": 2,
+            "CONTRADICT": 0,
+            "UNKNOWN": 122,
+            "ERROR": 0
+          },
+          "CONTRADICT": {
+            "SUPPORT": 0,
+            "CONTRADICT": 0,
+            "UNKNOWN": 64,
+            "ERROR": 0
+          },
+          "NEI": {
+            "SUPPORT": 0,
+            "CONTRADICT": 0,
+            "UNKNOWN": 112,
+            "ERROR": 0
+          },
+          "AMBIGUOUS": {
+            "SUPPORT": 0,
+            "CONTRADICT": 0,
+            "UNKNOWN": 0,
+            "ERROR": 0
+          }
+        },
+        "one_vs_rest": {
+          "SUPPORT": {
+            "tp": 2,
+            "fp": 0,
+            "fn": 122,
+            "tn": 176,
+            "precision": 1.0,
+            "recall": 0.016129032258064516,
+            "fpr": 0.0,
+            "fnr": 0.9838709677419355
+          },
+          "CONTRADICT": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 64,
+            "tn": 236,
+            "precision": null,
+            "recall": 0.0,
+            "fpr": 0.0,
+            "fnr": 1.0
+          }
+        },
+        "unknown": 298,
+        "errors": 0,
+        "decisive": 2,
+        "decisive_correct": 2,
+        "decisive_precision": 1.0,
+        "decisive_false_positives": [],
+        "localization": {
+          "primary": {
+            "tp": 101,
+            "fp": 88,
+            "fn": 265,
+            "claims": 188,
+            "precision": 0.5343915343915344,
+            "recall": 0.27595628415300544
+          },
+          "localized": {
+            "tp": 207,
+            "fp": 358,
+            "fn": 159,
+            "claims": 188,
+            "precision": 0.3663716814159292,
+            "recall": 0.5655737704918032
+          }
+        },
+        "changed_predictions": [
+          {
+            "id": 589,
+            "baseline": "UNKNOWN",
+            "candidate": "SUPPORT",
+            "gold": "SUPPORT",
+            "claim": "In young and middle-aged adults, current or remote uses of ADHD medications do not increase the risk of serious cardiovascular events."
+          }
+        ],
+        "regressions_vs_baseline": [],
+        "negation_decisions": [],
+        "condition_warning_decisions": [],
+        "gates": {
+          "G1": {
+            "result": {
+              "tests": 48,
+              "failures": 0,
+              "errors": 0,
+              "skipped": 0
+            },
+            "note": "產品既有 47 個科學對抗控制＋1 個替換生效探針，全部在候選引擎下執行",
+            "passed": true
+          },
+          "G2_autonomy": true,
+          "G3_localization_identical": true,
+          "G4_no_cross_polarity_errors": {
+            "contradict_on_gold_support": 0,
+            "support_on_gold_contradict": 0,
+            "passed": true
+          },
+          "G5_precision": {
+            "value": 1.0,
+            "denominator": 2,
+            "threshold": 0.8,
+            "passed": true
+          },
+          "G6_true_positives": {
+            "value": 2,
+            "threshold": 6,
+            "baseline": 1,
+            "passed": false
+          },
+          "G8": {
+            "result": {
+              "tests": 36,
+              "failures": 0,
+              "errors": 0,
+              "skipped": 2
+            },
+            "note": "36 個案例（C1、C2 各 18）；2 個 strict xfail 是同詞根 block 子句案例，不屬否定／條件控制；否定與條件控制全部通過",
+            "passed": true
+          },
+          "G7": {
+            "auditor": "實作者（非獨立專家），稽核時不看 gold 標籤",
+            "decisive": {
+              "counts": {
+                "WRONG_ROLE": 2
+              },
+              "bad": 2,
+              "denominator": 2,
+              "rate": 1.0
+            },
+            "random_sample": {
+              "counts": {
+                "WRONG_ROLE": 23,
+                "CROSS_CLAUSE": 2,
+                "CORRECT": 15
+              },
+              "cross_clause": 2,
+              "denominator": 40,
+              "rate": 0.05
+            },
+            "passed": false
+          },
+          "verdict": "未通過：G6（真陽性 2 < 6）與 G7（決定性 frame 錯誤率 2/2）"
+        }
+      }
+    },
+    "baseline": {
+      "confusion": {
+        "SUPPORT": {
+          "SUPPORT": 1,
+          "CONTRADICT": 0,
+          "UNKNOWN": 123,
+          "ERROR": 0
+        },
+        "CONTRADICT": {
+          "SUPPORT": 0,
+          "CONTRADICT": 0,
+          "UNKNOWN": 64,
+          "ERROR": 0
+        },
+        "NEI": {
+          "SUPPORT": 0,
+          "CONTRADICT": 0,
+          "UNKNOWN": 112,
+          "ERROR": 0
+        },
+        "AMBIGUOUS": {
+          "SUPPORT": 0,
+          "CONTRADICT": 0,
+          "UNKNOWN": 0,
+          "ERROR": 0
+        }
+      },
+      "one_vs_rest": {
+        "SUPPORT": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 123,
+          "tn": 176,
+          "precision": 1.0,
+          "recall": 0.008064516129032258,
+          "fpr": 0.0,
+          "fnr": 0.9919354838709677
+        },
+        "CONTRADICT": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 64,
+          "tn": 236,
+          "precision": null,
+          "recall": 0.0,
+          "fpr": 0.0,
+          "fnr": 1.0
+        }
+      },
+      "unknown": 299,
+      "localization": {
+        "primary": {
+          "tp": 101,
+          "fp": 88,
+          "fn": 265,
+          "claims": 188,
+          "precision": 0.5343915343915344,
+          "recall": 0.27595628415300544
+        },
+        "localized": {
+          "tp": 207,
+          "fp": 358,
+          "fn": 159,
+          "claims": 188,
+          "precision": 0.3663716814159292,
+          "recall": 0.5655737704918032
+        }
+      }
+    }
+  },
+  "audit": {
+    "packets_sha256": "b0c347717bdfea7dd415686e8d67f961458c7764d23bd6372d7ba474ec534831",
+    "packets_committed": false,
+    "packets_reason": "封包含 SciFact 來源句全文，依 AGENTS.md 不入 Git；可用下方指令重建並核對 hash。",
+    "_rules": {
+      "preregistered_categories": [
+        "CORRECT",
+        "CROSS_CLAUSE",
+        "WRONG_ROLE",
+        "UNSCORABLE"
+      ],
+      "precedence": "CROSS_CLAUSE（任一論元含其他子句或句子的內容）> WRONG_ROLE > CORRECT",
+      "wrong_role_includes": [
+        "假謂詞：形容詞、名詞或複合詞被標成動詞",
+        "角色顛倒",
+        "真主詞被切到其他段，主詞槽只剩非論元",
+        "無中心詞的殘片",
+        "不及物動詞的受詞槽只有附加語"
+      ],
+      "correct_tolerates": [
+        "並列論元中完整的一項",
+        "真受詞之後附帶的附加語",
+        "主詞槽中的功能詞雜訊（中心詞正確時）"
+      ],
+      "disclosure": "四個類別在協議中預先固定；優先序與 WRONG_ROLE 的細項是稽核過程中寫下的操作化規則，兩個變體一致套用。",
+      "auditor": "實作者本人，非獨立專家；稽核封包不含 gold 標籤；先只看子句，再以完整來源句複核，C1 有 R14、R17 兩項因此由 CORRECT 改判。",
+      "polarity_note": "否定錯誤另外標註，不屬於四個角色類別，也不影響 G7 計算。"
+    },
+    "C1": {
+      "decisive": [
+        "WRONG_ROLE",
+        "WRONG_ROLE"
+      ],
+      "decisive_notes": [
+        "假 frame：主張與來源的 middle-aged adults 中，形容詞 aged 被標成動詞 age；主張真正的謂詞 do not increase the risk 因同子句還有 uses 而被單一謂詞紀律否決",
+        "假 frame：主張與來源的 middle-aged adults 中，形容詞 aged 被標成動詞 age；主張真正的謂詞 do not increase the risk 因同子句還有 uses 而被單一謂詞紀律否決"
+      ],
+      "random_sample": [
+        "WRONG_ROLE",
+        "CORRECT",
+        "CORRECT",
+        "WRONG_ROLE",
+        "WRONG_ROLE",
+        "WRONG_ROLE",
+        "WRONG_ROLE",
+        "WRONG_ROLE",
+        "WRONG_ROLE",
+        "WRONG_ROLE",
+        "CORRECT",
+        "CROSS_CLAUSE",
+        "CORRECT",
+        "CROSS_CLAUSE",
+        "WRONG_ROLE",
+        "WRONG_ROLE",
+        "CORRECT",
+        "WRONG_ROLE",
+        "CORRECT",
+        "WRONG_ROLE",
+        "CORRECT",
+        "CORRECT",
+        "CORRECT",
+        "WRONG_ROLE",
+        "WRONG_ROLE",
+        "CROSS_CLAUSE",
+        "WRONG_ROLE",
+        "WRONG_ROLE",
+        "WRONG_ROLE",
+        "WRONG_ROLE",
+        "WRONG_ROLE",
+        "CORRECT",
+        "WRONG_ROLE",
+        "CORRECT",
+        "WRONG_ROLE",
+        "CORRECT",
+        "CORRECT",
+        "WRONG_ROLE",
+        "CORRECT",
+        "CORRECT"
+      ],
+      "random_sample_detail": [
+        {
+          "index": 0,
+          "verdict": "WRONG_ROLE",
+          "note": "intransitive decline；受詞槽只有附加語 more in Finland"
+        },
+        {
+          "index": 1,
+          "verdict": "CORRECT",
+          "note": ""
+        },
+        {
+          "index": 2,
+          "verdict": "CORRECT",
+          "note": ""
+        },
+        {
+          "index": 3,
+          "verdict": "WRONG_ROLE",
+          "note": "mean 是名詞（mean difference），假謂詞"
+        },
+        {
+          "index": 4,
+          "verdict": "WRONG_ROLE",
+          "note": "known as：Rsad2 是被知者不是知者，角色顛倒"
+        },
+        {
+          "index": 5,
+          "verdict": "WRONG_ROLE",
+          "note": "真主詞被切到前一子句，主詞槽只剩副詞 specifically"
+        },
+        {
+          "index": 6,
+          "verdict": "WRONG_ROLE",
+          "note": "主詞槽中心詞 study 不是 entered 的論元（被 entered 的是 patients）"
+        },
+        {
+          "index": 7,
+          "verdict": "WRONG_ROLE",
+          "note": "mean 是名詞，假謂詞"
+        },
+        {
+          "index": 8,
+          "verdict": "WRONG_ROLE",
+          "note": "aged 是形容詞，假謂詞"
+        },
+        {
+          "index": 9,
+          "verdict": "WRONG_ROLE",
+          "note": "follow up 是名詞，假謂詞"
+        },
+        {
+          "index": 10,
+          "verdict": "CORRECT",
+          "note": "角色正確；**否定錯誤**：unable to 未被視為否定，frame 成為正向 suppress"
+        },
+        {
+          "index": 11,
+          "verdict": "CROSS_CLAUSE",
+          "note": "關係子句 who present 未切開；主詞與 not 都來自主子句 may not be appropriate；**否定錯誤**"
+        },
+        {
+          "index": 12,
+          "verdict": "CORRECT",
+          "note": ""
+        },
+        {
+          "index": 13,
+          "verdict": "CROSS_CLAUSE",
+          "note": "ApoE4-expressing 是形容詞性分詞；受詞含主子句 had higher levels 的內容"
+        },
+        {
+          "index": 14,
+          "verdict": "WRONG_ROLE",
+          "note": "and 切在名詞並列中間，主詞剩無中心詞的 lymphatic endothelial（完整句複核後改判）"
+        },
+        {
+          "index": 15,
+          "verdict": "WRONG_ROLE",
+          "note": "intransitive disseminate；受詞槽只有附加語"
+        },
+        {
+          "index": 16,
+          "verdict": "CORRECT",
+          "note": ""
+        },
+        {
+          "index": 17,
+          "verdict": "WRONG_ROLE",
+          "note": "括號內 (R1441C, Y1699C) 的逗號被切開，主詞變成 Y1699C，真主詞 LRRK2 在另一段（完整句複核後改判）"
+        },
+        {
+          "index": 18,
+          "verdict": "CORRECT",
+          "note": ""
+        },
+        {
+          "index": 19,
+          "verdict": "WRONG_ROLE",
+          "note": "estimated 是形容詞（estimated renal function），假謂詞"
+        },
+        {
+          "index": 20,
+          "verdict": "CORRECT",
+          "note": ""
+        },
+        {
+          "index": 21,
+          "verdict": "CORRECT",
+          "note": ""
+        },
+        {
+          "index": 22,
+          "verdict": "CORRECT",
+          "note": ""
+        },
+        {
+          "index": 23,
+          "verdict": "WRONG_ROLE",
+          "note": "transcribed 是形容詞性複合詞；真謂詞 bind 被吞進主詞槽"
+        },
+        {
+          "index": 24,
+          "verdict": "WRONG_ROLE",
+          "note": "so-called，假謂詞"
+        },
+        {
+          "index": 25,
+          "verdict": "CROSS_CLAUSE",
+          "note": "promotes 被標成名詞；主詞槽是主子句的動詞片語，activating 的真主詞在前一段"
+        },
+        {
+          "index": 26,
+          "verdict": "WRONG_ROLE",
+          "note": "RIG-I-like 的 like，假謂詞"
+        },
+        {
+          "index": 27,
+          "verdict": "WRONG_ROLE",
+          "note": "evaluate 的施事是研究者，不是 collateral development"
+        },
+        {
+          "index": 28,
+          "verdict": "WRONG_ROLE",
+          "note": "not 修飾 sufficient 而非 classify；主詞槽不是 classify 的論元；**否定錯誤**"
+        },
+        {
+          "index": 29,
+          "verdict": "WRONG_ROLE",
+          "note": "estimated 是形容詞，假謂詞（與 R19 同句重複抽中）"
+        },
+        {
+          "index": 30,
+          "verdict": "WRONG_ROLE",
+          "note": "aged 是形容詞，假謂詞（與決定性 frame 同一假 frame）"
+        },
+        {
+          "index": 31,
+          "verdict": "CORRECT",
+          "note": ""
+        },
+        {
+          "index": 32,
+          "verdict": "WRONG_ROLE",
+          "note": "intransitive revert；受詞槽只有附加語 upon ligand dissociation"
+        },
+        {
+          "index": 33,
+          "verdict": "CORRECT",
+          "note": ""
+        },
+        {
+          "index": 34,
+          "verdict": "WRONG_ROLE",
+          "note": "lesions analyzed here：lesions 是受事不是施事，角色顛倒"
+        },
+        {
+          "index": 35,
+          "verdict": "CORRECT",
+          "note": ""
+        },
+        {
+          "index": 36,
+          "verdict": "CORRECT",
+          "note": ""
+        },
+        {
+          "index": 37,
+          "verdict": "WRONG_ROLE",
+          "note": "intransitive function；受詞槽只有附加語 through encoded proteins"
+        },
+        {
+          "index": 38,
+          "verdict": "CORRECT",
+          "note": ""
+        },
+        {
+          "index": 39,
+          "verdict": "CORRECT",
+          "note": ""
+        }
+      ],
+      "polarity_errors": [
+        10,
+        11,
+        28
+      ]
+    },
+    "C2": {
+      "decisive": [
+        "WRONG_ROLE",
+        "WRONG_ROLE"
+      ],
+      "decisive_notes": [
+        "假 frame：主張與來源的 middle-aged adults 中，形容詞 aged 被標成動詞 age；主張真正的謂詞 do not increase the risk 因同子句還有 uses 而被單一謂詞紀律否決",
+        "假 frame：主張與來源的 middle-aged adults 中，形容詞 aged 被標成動詞 age；主張真正的謂詞 do not increase the risk 因同子句還有 uses 而被單一謂詞紀律否決"
+      ],
+      "random_sample": [
+        "WRONG_ROLE",
+        "CROSS_CLAUSE",
+        "CORRECT",
+        "WRONG_ROLE",
+        "WRONG_ROLE",
+        "CORRECT",
+        "WRONG_ROLE",
+        "WRONG_ROLE",
+        "WRONG_ROLE",
+        "CORRECT",
+        "CORRECT",
+        "WRONG_ROLE",
+        "WRONG_ROLE",
+        "WRONG_ROLE",
+        "WRONG_ROLE",
+        "CORRECT",
+        "WRONG_ROLE",
+        "CORRECT",
+        "CORRECT",
+        "WRONG_ROLE",
+        "WRONG_ROLE",
+        "CORRECT",
+        "CORRECT",
+        "WRONG_ROLE",
+        "CORRECT",
+        "CORRECT",
+        "WRONG_ROLE",
+        "WRONG_ROLE",
+        "CROSS_CLAUSE",
+        "WRONG_ROLE",
+        "WRONG_ROLE",
+        "WRONG_ROLE",
+        "WRONG_ROLE",
+        "CORRECT",
+        "CORRECT",
+        "WRONG_ROLE",
+        "CORRECT",
+        "WRONG_ROLE",
+        "WRONG_ROLE",
+        "CORRECT"
+      ],
+      "random_sample_detail": [
+        {
+          "index": 0,
+          "verdict": "WRONG_ROLE",
+          "note": "真主詞 the response of memory CD4+ T cells 被逗號切開，主詞槽只剩 CD4 T cells"
+        },
+        {
+          "index": 1,
+          "verdict": "CROSS_CLAUSE",
+          "note": "關係子句 who present 未切開；主詞與 not 都來自主子句 may not be appropriate；**否定錯誤**；與 C1 R11 同一 frame，沿用其判定"
+        },
+        {
+          "index": 2,
+          "verdict": "CORRECT",
+          "note": ""
+        },
+        {
+          "index": 3,
+          "verdict": "WRONG_ROLE",
+          "note": "mean 是名詞（mean difference），假謂詞；與 C1 R03 同一 frame，沿用其判定"
+        },
+        {
+          "index": 4,
+          "verdict": "WRONG_ROLE",
+          "note": "aged 是形容詞，假謂詞；與 C1 R08 同一 frame，沿用其判定"
+        },
+        {
+          "index": 5,
+          "verdict": "CORRECT",
+          "note": ""
+        },
+        {
+          "index": 6,
+          "verdict": "WRONG_ROLE",
+          "note": "evaluate 的施事是研究者，不是 collateral development；與 C1 R27 同一 frame，沿用其判定"
+        },
+        {
+          "index": 7,
+          "verdict": "WRONG_ROLE",
+          "note": "teaching 是形容詞（teaching healthcare structures），假謂詞；真謂詞 did not do 被排除"
+        },
+        {
+          "index": 8,
+          "verdict": "WRONG_ROLE",
+          "note": "estimated 是形容詞（estimated renal function），假謂詞；與 C1 R19 同一 frame，沿用其判定"
+        },
+        {
+          "index": 9,
+          "verdict": "CORRECT",
+          "note": "與 C1 R39 同一 frame，沿用其判定"
+        },
+        {
+          "index": 10,
+          "verdict": "CORRECT",
+          "note": "主詞槽含 spite 雜訊，中心詞 distance 正確"
+        },
+        {
+          "index": 11,
+          "verdict": "WRONG_ROLE",
+          "note": "K63-linked，假謂詞"
+        },
+        {
+          "index": 12,
+          "verdict": "WRONG_ROLE",
+          "note": "follow up 是名詞，假謂詞；與 C1 R09 同一 frame，沿用其判定"
+        },
+        {
+          "index": 13,
+          "verdict": "WRONG_ROLE",
+          "note": "angiotensin-converting，假謂詞"
+        },
+        {
+          "index": 14,
+          "verdict": "WRONG_ROLE",
+          "note": "not 修飾 sufficient 而非 classify；主詞槽不是 classify 的論元；**否定錯誤**；與 C1 R28 同一 frame，沿用其判定"
+        },
+        {
+          "index": 15,
+          "verdict": "CORRECT",
+          "note": "與 C1 R39 同一 frame，沿用其判定"
+        },
+        {
+          "index": 16,
+          "verdict": "WRONG_ROLE",
+          "note": "mean 是名詞，假謂詞；與 C1 R07 同一 frame，沿用其判定"
+        },
+        {
+          "index": 17,
+          "verdict": "CORRECT",
+          "note": ""
+        },
+        {
+          "index": 18,
+          "verdict": "CORRECT",
+          "note": "來源原文文法有誤（involves in），角色符合原意"
+        },
+        {
+          "index": 19,
+          "verdict": "WRONG_ROLE",
+          "note": "we 在停用詞表中被移除，主詞槽只剩 here"
+        },
+        {
+          "index": 20,
+          "verdict": "WRONG_ROLE",
+          "note": "accompanied by 為無 be 的被動，未被偵測，角色顛倒"
+        },
+        {
+          "index": 21,
+          "verdict": "CORRECT",
+          "note": "與 C1 R16 同一 frame，沿用其判定"
+        },
+        {
+          "index": 22,
+          "verdict": "CORRECT",
+          "note": ""
+        },
+        {
+          "index": 23,
+          "verdict": "WRONG_ROLE",
+          "note": "adjusted 是形容詞（adjusted hazard ratio），假謂詞"
+        },
+        {
+          "index": 24,
+          "verdict": "CORRECT",
+          "note": "受詞為並列中完整的一項 letters"
+        },
+        {
+          "index": 25,
+          "verdict": "CORRECT",
+          "note": "與 C1 R20 同一 frame，沿用其判定"
+        },
+        {
+          "index": 26,
+          "verdict": "WRONG_ROLE",
+          "note": "連字號被 \\w+ 拆開，主詞槽只剩 under；真主詞在前面的子句"
+        },
+        {
+          "index": 27,
+          "verdict": "WRONG_ROLE",
+          "note": "intransitive revert；受詞槽只有附加語 upon ligand dissociation；與 C1 R32 同一 frame，沿用其判定"
+        },
+        {
+          "index": 28,
+          "verdict": "CROSS_CLAUSE",
+          "note": "主詞槽含前一句括號 P=.02 的內容"
+        },
+        {
+          "index": 29,
+          "verdict": "WRONG_ROLE",
+          "note": "主詞槽中心詞 study 不是 undergoing 的論元（是 children）"
+        },
+        {
+          "index": 30,
+          "verdict": "WRONG_ROLE",
+          "note": "intransitive decline；受詞槽只有附加語 more in Finland；與 C1 R00 同一 frame，沿用其判定"
+        },
+        {
+          "index": 31,
+          "verdict": "WRONG_ROLE",
+          "note": "membrane-attached，假謂詞"
+        },
+        {
+          "index": 32,
+          "verdict": "WRONG_ROLE",
+          "note": "we 在停用詞表中被移除，主詞槽只剩 here"
+        },
+        {
+          "index": 33,
+          "verdict": "CORRECT",
+          "note": "與 C1 R35 同一 frame，沿用其判定"
+        },
+        {
+          "index": 34,
+          "verdict": "CORRECT",
+          "note": ""
+        },
+        {
+          "index": 35,
+          "verdict": "WRONG_ROLE",
+          "note": "protein-coding，假謂詞"
+        },
+        {
+          "index": 36,
+          "verdict": "CORRECT",
+          "note": ""
+        },
+        {
+          "index": 37,
+          "verdict": "WRONG_ROLE",
+          "note": "estimated 是形容詞（estimated renal function），假謂詞；與 C1 R19 同一 frame，沿用其判定"
+        },
+        {
+          "index": 38,
+          "verdict": "WRONG_ROLE",
+          "note": "intransitive decline；受詞槽只有附加語 more in Finland；與 C1 R00 同一 frame，沿用其判定"
+        },
+        {
+          "index": 39,
+          "verdict": "CORRECT",
+          "note": "與 C1 R36 同一 frame，沿用其判定"
+        }
+      ],
+      "polarity_errors": [
+        1,
+        14
+      ]
+    }
+  },
+  "failure_modes": [
+    "形容詞性分詞與連字號複合詞被標成動詞：aged、estimated、so-called、K63-linked、angiotensin-converting、adjusted、membrane-attached、protein-coding、teaching、mitochondria-transcribed",
+    "名詞被標成動詞：mean、follow up、like；反之 blocks、promotes 被標成名詞（同詞根案例 strict xfail）",
+    "停用詞表含 we，主詞槽只剩 here 這類副詞",
+    "\\w+ 斷詞拆開連字號（under-represented → under）",
+    "無 be 的被動與縮減關係子句（accompanied by、lesions analyzed here）未偵測，角色顛倒",
+    "who、if 不是切分詞；逗號切分會截斷括號內的並列，真主詞落到其他段",
+    "否定範圍：unable to 未視為否定；not 修飾形容詞或其他子句時仍套到謂詞"
+  ],
+  "sensitivity_post_hoc": {
+    "note": "事後敏感度分析，不影響閘門：若把 C1 R00、R15、R32、R37（不及物動詞＋附加語受詞）改判 CORRECT，C1 抽樣變成 CORRECT 19／WRONG_ROLE 18／CROSS_CLAUSE 3；G7 仍因決定性 frame 2/2 錯誤而不過。"
+  },
+  "reproduce": [
+    "NLTK_DATA=<nltk_data> python -I scripts/clause_frame_evaluate.py run <inputs.jsonl> <evaluator-only-gold.jsonl> <new-out-dir>",
+    "python -I scripts/clause_frame_evaluate.py finalize <out-dir> <audit.json>",
+    "NLTK_DATA=<nltk_data> python -m pytest test/unit/test_clause_frame_experiment.py -q"
+  ],
+  "holdout_accessed": false
+}
