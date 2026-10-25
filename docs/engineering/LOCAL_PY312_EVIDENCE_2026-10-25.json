@@ -1,0 +1,1093 @@
+{
+  "schema": "roothinks-local-py312-evidence-v1",
+  "created_utc": "2026-10-25T12:02:02.615638+00:00",
+  "verdict": "LOCAL_ENVIRONMENT_VERIFIED__INTEGRATION_OWNER_GATE__NO_DEPLOYMENT",
+  "scope": {
+    "local_only": true,
+    "push": false,
+    "merge": false,
+    "deployment": false,
+    "production_data_access": false,
+    "scientific_engine_changed": false
+  },
+  "implementation_sha": "1df5d8deacfd6ab51a341a60f6e5ca55751dc037",
+  "final_commit_note": "Delivery commit adds documentation and an independently executed EasyOCR probe only; use git log or bundle for its SHA.",
+  "qa_root": "D:\\Documents\\RootThinksValidation\\py312-20261025",
+  "comparison": {
+    "base": "b7a7bdd8f3abaab566029e899b5e26e6d34cc6d5",
+    "cloud_sha": "e64c4e74a7a5bae6537297f31bbd0dfccdc4f6d9",
+    "local_sha": "1df5d8deacfd6ab51a341a60f6e5ca55751dc037",
+    "package_counts": {
+      "local": 109,
+      "cloud": 119
+    },
+    "dependency_differences": [
+      {
+        "package": "bidict",
+        "local": "0.24.1",
+        "cloud": "0.23.1"
+      },
+      {
+        "package": "deprecated",
+        "local": "3.0.0",
+        "cloud": "1.3.1"
+      },
+      {
+        "package": "dnspython",
+        "local": "2.9.0",
+        "cloud": "2.8.0"
+      },
+      {
+        "package": "imageio",
+        "local": "2.38.1",
+        "cloud": "2.38.0"
+      },
+      {
+        "package": "iopath",
+        "local": null,
+        "cloud": "0.1.10"
+      },
+      {
+        "package": "layoutparser",
+        "local": null,
+        "cloud": "0.3.4"
+      },
+      {
+        "package": "networkx",
+        "local": "3.7",
+        "cloud": "3.4.2"
+      },
+      {
+        "package": "numpy",
+        "local": "1.26.4",
+        "cloud": "2.2.6"
+      },
+      {
+        "package": "opencv-python",
+        "local": null,
+        "cloud": "4.14.0.94"
+      },
+      {
+        "package": "opencv-python-headless",
+        "local": "4.11.0.86",
+        "cloud": "5.0.0.93"
+      },
+      {
+        "package": "pandas",
+        "local": null,
+        "cloud": "2.3.3"
+      },
+      {
+        "package": "pdfminer-six",
+        "local": null,
+        "cloud": "20251230"
+      },
+      {
+        "package": "pdfplumber",
+        "local": null,
+        "cloud": "0.11.9"
+      },
+      {
+        "package": "portalocker",
+        "local": null,
+        "cloud": "4.4.1"
+      },
+      {
+        "package": "pycparser",
+        "local": "3.12",
+        "cloud": "3.11"
+      },
+      {
+        "package": "pypdfium2",
+        "local": null,
+        "cloud": "5.14.0"
+      },
+      {
+        "package": "python-dateutil",
+        "local": null,
+        "cloud": "3.0.0"
+      },
+      {
+        "package": "pytz",
+        "local": null,
+        "cloud": "2026.5"
+      },
+      {
+        "package": "scikit-image",
+        "local": "0.26.0",
+        "cloud": "0.25.2"
+      },
+      {
+        "package": "scipy",
+        "local": "1.17.1",
+        "cloud": "1.15.3"
+      },
+      {
+        "package": "shapely",
+        "local": "2.2.0",
+        "cloud": "2.1.2"
+      },
+      {
+        "package": "six",
+        "local": null,
+        "cloud": "1.17.0"
+      },
+      {
+        "package": "soupsieve",
+        "local": "3.0.4",
+        "cloud": "2.10"
+      },
+      {
+        "package": "sqlalchemy",
+        "local": "2.1.6",
+        "cloud": "2.0.55"
+      },
+      {
+        "package": "tifffile",
+        "local": "2026.3.3",
+        "cloud": "2025.5.10"
+      },
+      {
+        "package": "torch",
+        "local": "https://download.pytorch.org/whl/cpu/torch-2.6.0%2Bcpu-cp312-cp312-linux_x86_64.whl",
+        "cloud": null
+      },
+      {
+        "package": "torchvision",
+        "local": "https://download.pytorch.org/whl/cpu/torchvision-0.21.0%2Bcpu-cp312-cp312-linux_x86_64.whl",
+        "cloud": null
+      },
+      {
+        "package": "tzdata",
+        "local": null,
+        "cloud": "2026.5"
+      },
+      {
+        "package": "wtforms",
+        "local": "3.3.1",
+        "cloud": "3.2.2"
+      }
+    ],
+    "overlapping_changed_paths": [
+      "docs/ACCEPTANCE_MATRIX.md"
+    ],
+    "app_trees": {
+      "base": "be98782f6ad4bbf819baf62f5449c0ecf984bb88",
+      "local": "be98782f6ad4bbf819baf62f5449c0ecf984bb88",
+      "cloud": "be98782f6ad4bbf819baf62f5449c0ecf984bb88"
+    },
+    "previous_full": {
+      "total": 1523,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 50,
+      "passed": 1473,
+      "former_error_modules": {
+        "test_arbiter_equation_chain": [
+          {
+            "name": "test_iou_gap_block_with_distinct_content_is_rescued",
+            "passed": true
+          },
+          {
+            "name": "test_iou_gap_block_with_duplicate_content_not_duplicated",
+            "passed": true
+          },
+          {
+            "name": "test_latex_retry_upscale_invoked_on_failure",
+            "passed": true
+          },
+          {
+            "name": "test_latex_retry_disabled_single_attempt",
+            "passed": true
+          },
+          {
+            "name": "test_equation_excluded_from_textual_fix",
+            "passed": true
+          },
+          {
+            "name": "test_low_confidence_equation_flagged",
+            "passed": true
+          }
+        ],
+        "test_segmentizer_types": [
+          {
+            "name": "test_llm_title_labels_no_longer_unknown",
+            "passed": true
+          },
+          {
+            "name": "test_llm_heading_hint_promotes_type",
+            "passed": true
+          },
+          {
+            "name": "test_llm_heading_hint_low_confidence_ignored",
+            "passed": true
+          },
+          {
+            "name": "test_running_header_flagged_on_non_first_page",
+            "passed": true
+          },
+          {
+            "name": "test_first_page_title_zone_never_header",
+            "passed": true
+          },
+          {
+            "name": "test_eq_wratio_default_and_env_override",
+            "passed": true
+          }
+        ],
+        "test_source_contract_scope": [
+          {
+            "name": "test_untracked_source_is_in_scope",
+            "passed": true
+          },
+          {
+            "name": "test_untracked_bad_header_is_reported",
+            "passed": true
+          },
+          {
+            "name": "test_detailed_style_header_passes",
+            "passed": true
+          },
+          {
+            "name": "test_gitignored_file_stays_out_of_scope",
+            "passed": true
+          },
+          {
+            "name": "test_cached_mode_ignores_untracked",
+            "passed": true
+          },
+          {
+            "name": "test_note_reference_in_untracked_file_counts",
+            "passed": true
+          }
+        ]
+      },
+      "upload_preservation_cases": [
+        {
+          "name": "test_explicit_overwrite_cannot_destroy_original",
+          "passed": true
+        },
+        {
+          "name": "test_concurrent_names_keep_distinct_originals",
+          "passed": true
+        },
+        {
+          "name": "test_database_failure_is_not_upload_success",
+          "passed": true
+        },
+        {
+          "name": "test_pdf_first_creates_candidate_and_hash",
+          "passed": true
+        },
+        {
+          "name": "test_partial_stream_failure_never_publishes_source",
+          "passed": true
+        },
+        {
+          "name": "test_registration_failure_can_recover_same_identity_without_rewriting[db]",
+          "passed": true
+        },
+        {
+          "name": "test_registration_failure_can_recover_same_identity_without_rewriting[library]",
+          "passed": true
+        },
+        {
+          "name": "test_recovery_rejects_changed_original_and_missing_manifest",
+          "passed": true
+        },
+        {
+          "name": "test_link_failure_preserves_candidate_and_recovery_never_reactivates_old_pdf",
+          "passed": true
+        },
+        {
+          "name": "test_upload_and_recovery_work_on_python310_without_file_digest",
+          "passed": true
+        }
+      ],
+      "skip_reasons": {
+        "NLTK 詞性或 VerbNet 資料不可用": 34,
+        "取不到 32e1949 的檔案（淺複製？）": 1,
+        "Windows 路徑別名語意": 2,
+        "WordNet 資料不可用": 13
+      }
+    },
+    "frozen_full": {
+      "total": 1549,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 50,
+      "passed": 1499,
+      "former_error_modules": {
+        "test_arbiter_equation_chain": [
+          {
+            "name": "test_iou_gap_block_with_distinct_content_is_rescued",
+            "passed": true
+          },
+          {
+            "name": "test_iou_gap_block_with_duplicate_content_not_duplicated",
+            "passed": true
+          },
+          {
+            "name": "test_latex_retry_upscale_invoked_on_failure",
+            "passed": true
+          },
+          {
+            "name": "test_latex_retry_disabled_single_attempt",
+            "passed": true
+          },
+          {
+            "name": "test_equation_excluded_from_textual_fix",
+            "passed": true
+          },
+          {
+            "name": "test_low_confidence_equation_flagged",
+            "passed": true
+          }
+        ],
+        "test_segmentizer_types": [
+          {
+            "name": "test_llm_title_labels_no_longer_unknown",
+            "passed": true
+          },
+          {
+            "name": "test_llm_heading_hint_promotes_type",
+            "passed": true
+          },
+          {
+            "name": "test_llm_heading_hint_low_confidence_ignored",
+            "passed": true
+          },
+          {
+            "name": "test_running_header_flagged_on_non_first_page",
+            "passed": true
+          },
+          {
+            "name": "test_first_page_title_zone_never_header",
+            "passed": true
+          },
+          {
+            "name": "test_eq_wratio_default_and_env_override",
+            "passed": true
+          }
+        ],
+        "test_source_contract_scope": [
+          {
+            "name": "test_untracked_source_is_in_scope",
+            "passed": true
+          },
+          {
+            "name": "test_untracked_bad_header_is_reported",
+            "passed": true
+          },
+          {
+            "name": "test_detailed_style_header_passes",
+            "passed": true
+          },
+          {
+            "name": "test_gitignored_file_stays_out_of_scope",
+            "passed": true
+          },
+          {
+            "name": "test_cached_mode_ignores_untracked",
+            "passed": true
+          },
+          {
+            "name": "test_note_reference_in_untracked_file_counts",
+            "passed": true
+          }
+        ]
+      },
+      "upload_preservation_cases": [
+        {
+          "name": "test_explicit_overwrite_cannot_destroy_original",
+          "passed": true
+        },
+        {
+          "name": "test_concurrent_names_keep_distinct_originals",
+          "passed": true
+        },
+        {
+          "name": "test_database_failure_is_not_upload_success",
+          "passed": true
+        },
+        {
+          "name": "test_pdf_first_creates_candidate_and_hash",
+          "passed": true
+        },
+        {
+          "name": "test_partial_stream_failure_never_publishes_source",
+          "passed": true
+        },
+        {
+          "name": "test_registration_failure_can_recover_same_identity_without_rewriting[db]",
+          "passed": true
+        },
+        {
+          "name": "test_registration_failure_can_recover_same_identity_without_rewriting[library]",
+          "passed": true
+        },
+        {
+          "name": "test_recovery_rejects_changed_original_and_missing_manifest",
+          "passed": true
+        },
+        {
+          "name": "test_link_failure_preserves_candidate_and_recovery_never_reactivates_old_pdf",
+          "passed": true
+        },
+        {
+          "name": "test_upload_and_recovery_work_on_python310_without_file_digest",
+          "passed": true
+        }
+      ],
+      "skip_reasons": {
+        "NLTK 詞性或 VerbNet 資料不可用": 34,
+        "取不到 32e1949 的檔案（淺複製？）": 1,
+        "Windows 路徑別名語意": 2,
+        "WordNet 資料不可用": 13
+      }
+    }
+  },
+  "full_regression": {
+    "source_sha": "1df5d8deacfd6ab51a341a60f6e5ca55751dc037",
+    "image_id": "sha256:abf80355d80247bc3a802f26361155211d8d9d9d5a9be9d81ae95f3c72976ba8",
+    "command": [
+      "docker",
+      "run",
+      "--rm",
+      "--network",
+      "none",
+      "--cpus",
+      "2",
+      "--memory",
+      "4g",
+      "--security-opt",
+      "no-new-privileges",
+      "-e",
+      "SOCKETIO_ASYNC_MODE=threading",
+      "--mount",
+      "type=bind,source=D:\\Documents\\RootThinksValidation\\py312-20261025\\regression-frozen,target=/evidence",
+      "sha256:abf80355d80247bc3a802f26361155211d8d9d9d5a9be9d81ae95f3c72976ba8",
+      "python",
+      "scripts/prepare_test_runtime.py",
+      "python",
+      "-m",
+      "pytest",
+      "test/unit",
+      "tests",
+      "test/integration_e2e",
+      "test/integration_smoke",
+      "-q",
+      "-p",
+      "no:cacheprovider",
+      "--tb=short",
+      "--junitxml=/evidence/full.xml"
+    ],
+    "started_utc": "2026-10-25T11:50:07.247062+00:00",
+    "exit_code": 0,
+    "ended_utc": "2026-10-25T12:00:58.155518+00:00"
+  },
+  "pytest_summary": "1499 passed, 50 skipped, 1291 warnings in 643.27s (0:10:43)",
+  "runtime_build": {
+    "source_sha": "18c9325d2f3dad59c60070fb4605f0d27a15f417",
+    "command": [
+      "docker",
+      "build",
+      "--platform",
+      "linux/amd64",
+      "--target",
+      "runtime",
+      "--progress",
+      "plain",
+      "--iidfile",
+      "D:\\Documents\\RootThinksValidation\\py312-20261025\\build-v1\\runtime-v1.iid",
+      "-f",
+      "validation/python312/Dockerfile",
+      "-t",
+      "roothinks-py312-local:runtime-18c9325d",
+      "D:\\Documents\\RootThinksValidation\\py312-20261025\\build-v1\\context"
+    ],
+    "tag": "roothinks-py312-local:runtime-18c9325d",
+    "started_utc": "2026-10-25T09:49:44.784578+00:00",
+    "exit_code": 0,
+    "status": "passed",
+    "ended_utc": "2026-10-25T10:05:38.239834+00:00",
+    "image_id": "sha256:b0b93fb77ea99b306723d8795431cb0ee7c0e54b980b79fb224d71211f317017"
+  },
+  "verification_build": {
+    "source_sha": "1df5d8deacfd6ab51a341a60f6e5ca55751dc037",
+    "command": [
+      "docker",
+      "build",
+      "--platform",
+      "linux/amd64",
+      "--target",
+      "verification",
+      "--progress",
+      "plain",
+      "--iidfile",
+      "D:\\Documents\\RootThinksValidation\\py312-20261025\\frozen-v2\\verification-v1.iid",
+      "-f",
+      "validation/python312/Dockerfile",
+      "-t",
+      "roothinks-py312-local:verification-1df5d8de",
+      "D:\\Documents\\RootThinksValidation\\py312-20261025\\frozen-v2\\context"
+    ],
+    "tag": "roothinks-py312-local:verification-1df5d8de",
+    "started_utc": "2026-10-25T11:48:47.847734+00:00",
+    "exit_code": 0,
+    "status": "passed",
+    "ended_utc": "2026-10-25T11:48:53.771561+00:00",
+    "image_id": "sha256:abf80355d80247bc3a802f26361155211d8d9d9d5a9be9d81ae95f3c72976ba8"
+  },
+  "capabilities": {
+    "python": "3.12.15 (main, Oct 21 2026, 01:08:07) [GCC 12.2.0]",
+    "platform": "Linux-6.6.87.2-microsoft-standard-WSL2-x86_64-with-glibc2.36",
+    "versions": {
+      "torch": "2.6.0+cpu",
+      "torchvision": "0.21.0+cpu",
+      "eventlet": "0.36.1",
+      "opencv-python-headless": "4.11.0.86",
+      "numpy": "1.26.4",
+      "easyocr": "1.7.2",
+      "transformers": "4.57.6",
+      "sentencepiece": "0.2.2",
+      "huggingface-hub": "0.36.2",
+      "flask": "3.0.3",
+      "python-socketio": "5.17.0",
+      "gunicorn": "22.0.0"
+    },
+    "cpu_only": true,
+    "torchvision_native_nms": true,
+    "cv2_png_roundtrip": true,
+    "single_cv2_provider": true,
+    "eventlet_subprocess": "eventlet worker import and green task passed",
+    "easyocr_import": true,
+    "easyocr_weights_loaded": false,
+    "system_pdf_ocr_tools": true,
+    "scientific_quality_measured": false
+  },
+  "nllb": {
+    "ready": true,
+    "adapter": "NLLBTranslator",
+    "source": "The sample was measured at 300 K.",
+    "translated": "這樣的樣品在300K時測量.",
+    "batch": [
+      "這樣的樣品在300K時測量.",
+      "這是一場當地測試."
+    ],
+    "offline": true,
+    "scientific_quality_measured": false,
+    "translation_quality_measured": false
+  },
+  "nllb_source": {
+    "repository": "facebook/nllb-200-distilled-600M",
+    "revision": "f8d333a098d19b4fd9a8b18f94170487ad3f821d",
+    "license": "cc-by-nc-4.0",
+    "files": {
+      "README.md": {
+        "git_blob": "489890f6973db2448e698120b132fc8e2fcfb304"
+      },
+      "config.json": {
+        "git_blob": "91ba54326eccfdb17a06a7d110df3d71f39b84b8"
+      },
+      "pytorch_model.bin": {
+        "sha256": "c266c2cfd19758b6d09c1fc31ecdf1e485509035f6b51dfe84f1ada83eefcc42",
+        "bytes": 2460457927
+      },
+      "sentencepiece.bpe.model": {
+        "sha256": "14bb8dfb35c0ffdea7bc01e56cea38b9e3d5efcdcb9c251d6b40538e1aab555a",
+        "bytes": 4852054
+      },
+      "special_tokens_map.json": {
+        "git_blob": "02fba84e401dd2017999a39cac2c1278591c3a03"
+      },
+      "tokenizer.json": {
+        "sha256": "e316b82de11d0f951f370943b3c438311629547285129b0b81dadabd01bca665",
+        "bytes": 17331176
+      },
+      "tokenizer_config.json": {
+        "git_blob": "742aa330eae62f661fe28ff3fdd1d216d1481294"
+      }
+    }
+  },
+  "tokenizer_parity": {
+    "tokenizer_class": "NllbTokenizerFast",
+    "pretokenizer_before": {
+      "type": "Metaspace",
+      "replacement": "▁",
+      "prepend_scheme": "always",
+      "split": true
+    },
+    "pretokenizer_after": {
+      "type": "Metaspace",
+      "replacement": "▁",
+      "prepend_scheme": "always",
+      "split": true
+    },
+    "pretokenizer_identical": true,
+    "token_id_parity": true,
+    "controls": [
+      {
+        "text": "The sample was measured at 300 K.",
+        "raw": [
+          1617,
+          183824,
+          1398,
+          22196,
+          61627,
+          230,
+          10806,
+          98,
+          248075
+        ],
+        "baked": [
+          1617,
+          183824,
+          1398,
+          22196,
+          61627,
+          230,
+          10806,
+          98,
+          248075
+        ]
+      },
+      {
+        "text": "This is a local test.",
+        "raw": [
+          9680,
+          248,
+          9,
+          28145,
+          7356,
+          248075
+        ],
+        "baked": [
+          9680,
+          248,
+          9,
+          28145,
+          7356,
+          248075
+        ]
+      },
+      {
+        "text": "No increase was measured.",
+        "raw": [
+          1135,
+          82564,
+          1398,
+          22196,
+          61627,
+          248075
+        ],
+        "baked": [
+          1135,
+          82564,
+          1398,
+          22196,
+          61627,
+          248075
+        ]
+      },
+      {
+        "text": "Simulation only; not an experiment.",
+        "raw": [
+          9309,
+          21911,
+          12468,
+          248280,
+          2294,
+          111,
+          56850,
+          248075
+        ],
+        "baked": [
+          9309,
+          21911,
+          12468,
+          248280,
+          2294,
+          111,
+          56850,
+          248075
+        ]
+      },
+      {
+        "text": "1.25 dB at 1550 nm",
+        "raw": [
+          3346,
+          10494,
+          198526,
+          230,
+          1085,
+          4462,
+          116269
+        ],
+        "baked": [
+          3346,
+          10494,
+          198526,
+          230,
+          1085,
+          4462,
+          116269
+        ]
+      },
+      {
+        "text": "3% vs 30%",
+        "raw": [
+          65435,
+          27147,
+          34452
+        ],
+        "baked": [
+          65435,
+          27147,
+          34452
+        ]
+      },
+      {
+        "text": "temperature: 77 K / 300 K",
+        "raw": [
+          142589,
+          248144,
+          37877,
+          98,
+          1865,
+          10806,
+          98
+        ],
+        "baked": [
+          142589,
+          248144,
+          37877,
+          98,
+          1865,
+          10806,
+          98
+        ]
+      },
+      {
+        "text": "α β μm ± 2",
+        "raw": [
+          853,
+          5366,
+          927,
+          248070,
+          84704,
+          140
+        ],
+        "baked": [
+          853,
+          5366,
+          927,
+          248070,
+          84704,
+          140
+        ]
+      },
+      {
+        "text": "研究者自主性與條件限制。",
+        "raw": [
+          84073,
+          249021,
+          249051,
+          249211,
+          249325,
+          251085,
+          252517,
+          250093,
+          142198,
+          253935
+        ],
+        "baked": [
+          84073,
+          249021,
+          249051,
+          249211,
+          249325,
+          251085,
+          252517,
+          250093,
+          142198,
+          253935
+        ]
+      },
+      {
+        "text": "A-B; A/B; A_B",
+        "raw": [
+          70,
+          248105,
+          248158,
+          248280,
+          70,
+          248504,
+          248158,
+          248280,
+          70,
+          248120,
+          248158
+        ],
+        "baked": [
+          70,
+          248105,
+          248158,
+          248280,
+          70,
+          248504,
+          248158,
+          248280,
+          70,
+          248120,
+          248158
+        ]
+      },
+      {
+        "text": "  two   spaces\nnext line",
+        "raw": [
+          9872,
+          14548,
+          1647,
+          29517,
+          20956
+        ],
+        "baked": [
+          9872,
+          14548,
+          1647,
+          29517,
+          20956
+        ]
+      },
+      {
+        "text": "",
+        "raw": [],
+        "baked": []
+      }
+    ],
+    "scientific_quality_measured": false,
+    "warning_suppressed": false
+  },
+  "easyocr_models": [
+    {
+      "url": "https://github.com/JaidedAI/EasyOCR/releases/download/pre-v1.1.6/craft_mlt_25k.zip",
+      "filename": "craft_mlt_25k.pth",
+      "sdk_md5": "2f8227d2def4037cdb3b34389dcf9ec1",
+      "sha256": "4a5efbfb48b4081100544e75e1e2b57f8de3d84f213004b14b85fd4b3748db17",
+      "archive_sha256": "8dc6a1c703a89ed56308ef742d26ebd45c656248cbbbda6e7fe60e569f873e65"
+    },
+    {
+      "url": "https://github.com/JaidedAI/EasyOCR/releases/download/pre-v1.1.6/chinese.zip",
+      "filename": "chinese.pth",
+      "sdk_md5": "dfba8e364cd98ed4fed7ad54d71e3965",
+      "sha256": "19ecc60f4e079eb2cd7f25f3513fc996cf80819fc1f1d0aee24c58402cc4776d",
+      "archive_sha256": "71cb95f601ce0c062860224ff3e1d2e807d784f2be92bf53ba500bb1736dabd5"
+    },
+    {
+      "url": "https://github.com/JaidedAI/EasyOCR/releases/download/v1.3/english_g2.zip",
+      "filename": "english_g2.pth",
+      "sdk_md5": "5864788e1821be9e454ec108d61b887d",
+      "sha256": "e2272681d9d67a04e2dff396b6e95077bc19001f8f6d3593c307b9852e1c29e8",
+      "archive_sha256": "1b5eaebf1c062de6205560c97ffcfa8dc0e6f413c340e8adc5cfc57e159f61ff"
+    }
+  ],
+  "easyocr_result": {
+    "bilingual_load_infer": [
+      "Ro0TH||lK$ 2026"
+    ],
+    "english_control": [
+      "ROOTHINKS 2026"
+    ],
+    "offline": true,
+    "chinese_accuracy_measured": false,
+    "cross_version_parity_measured": false
+  },
+  "worker_checks": {
+    "eventlet": {
+      "command": [
+        "docker",
+        "run",
+        "--rm",
+        "--network",
+        "none",
+        "--cpus",
+        "2",
+        "--memory",
+        "3g",
+        "--security-opt",
+        "no-new-privileges",
+        "--mount",
+        "type=bind,source=D:\\Documents\\RootThinksValidation\\py312-20261025,target=/qa,readonly",
+        "-e",
+        "GUNICORN_WORKER_CLASS=eventlet",
+        "sha256:b0b93fb77ea99b306723d8795431cb0ee7c0e54b980b79fb224d71211f317017",
+        "sh",
+        "/qa/cloud_gunicorn_smoke.sh"
+      ],
+      "image": "sha256:b0b93fb77ea99b306723d8795431cb0ee7c0e54b980b79fb224d71211f317017",
+      "started_utc": "2026-10-25T11:52:03.470646+00:00",
+      "exit_code": 0,
+      "ended_utc": "2026-10-25T11:52:10.573082+00:00"
+    },
+    "gthread": {
+      "command": [
+        "docker",
+        "run",
+        "--rm",
+        "--network",
+        "none",
+        "--cpus",
+        "2",
+        "--memory",
+        "3g",
+        "--security-opt",
+        "no-new-privileges",
+        "--mount",
+        "type=bind,source=D:\\Documents\\RootThinksValidation\\py312-20261025,target=/qa,readonly",
+        "-e",
+        "GUNICORN_WORKER_CLASS=gthread",
+        "sha256:b0b93fb77ea99b306723d8795431cb0ee7c0e54b980b79fb224d71211f317017",
+        "sh",
+        "/qa/cloud_gunicorn_smoke.sh"
+      ],
+      "image": "sha256:b0b93fb77ea99b306723d8795431cb0ee7c0e54b980b79fb224d71211f317017",
+      "started_utc": "2026-10-25T11:52:10.574799+00:00",
+      "exit_code": 0,
+      "ended_utc": "2026-10-25T11:52:18.077214+00:00"
+    }
+  },
+  "pdf": {
+    "sha": "d4b2963425dfba31bd0a2a9ef9004104f5d4f1ce",
+    "checks": [
+      "browser_xhr_csrf_and_original_bytes",
+      "idempotent_recovery_preserves_identity_and_original",
+      "poppler_text_pdf2image_tesseract_real_one_page"
+    ],
+    "errors": [],
+    "upload": {
+      "linked_entry_id": "upload-3c931e2c41ce5094",
+      "paper_id": "local-valid-control_2",
+      "status": "success"
+    },
+    "sha256": "bcf5d817cb03b6a5a1a18dbf204753ff2fe68d16df1e5140044c544c303edbdc",
+    "recovery": [
+      {
+        "linked_entry_id": "upload-3c931e2c41ce5094",
+        "paper_id": "local-valid-control_2",
+        "status": "success"
+      },
+      {
+        "linked_entry_id": "upload-3c931e2c41ce5094",
+        "paper_id": "local-valid-control_2",
+        "status": "success"
+      }
+    ],
+    "parsing": {
+      "sha256": "bcf5d817cb03b6a5a1a18dbf204753ff2fe68d16df1e5140044c544c303edbdc",
+      "text": "Local PDF 300 K",
+      "pages": 1,
+      "tesseract": "Local PDF 300 K",
+      "registration": "complete"
+    },
+    "status": "passed"
+  },
+  "browser_receipts": {
+    "autonomy": {
+      "command": [
+        "C:\\Users\\Franky Kuo\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\node\\bin\\node.exe",
+        "--require",
+        "C:\\Users\\Franky Kuo\\.codex\\worktrees\\sai-py312-local\\roothinks-1.0.1\\validation\\python312\\browser_hook.cjs",
+        "test/integration_e2e/sai_autonomy_browser.cjs"
+      ],
+      "source_sha": "d4b2963425dfba31bd0a2a9ef9004104f5d4f1ce",
+      "started_utc": "2026-10-25T11:34:28.337781+00:00",
+      "exit_code": 0,
+      "status": "passed",
+      "ended_utc": "2026-10-25T11:35:52.565995+00:00"
+    },
+    "scientific": {
+      "command": [
+        "C:\\Users\\Franky Kuo\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\node\\bin\\node.exe",
+        "--require",
+        "C:\\Users\\Franky Kuo\\.codex\\worktrees\\sai-py312-local\\roothinks-1.0.1\\validation\\python312\\browser_hook.cjs",
+        "test/integration_e2e/sai_scientific_browser.cjs"
+      ],
+      "source_sha": "d4b2963425dfba31bd0a2a9ef9004104f5d4f1ce",
+      "started_utc": "2026-10-25T11:26:15.646441+00:00",
+      "exit_code": 0,
+      "status": "passed",
+      "ended_utc": "2026-10-25T11:26:38.181858+00:00"
+    },
+    "assets": {
+      "command": [
+        "C:\\Users\\Franky Kuo\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\node\\bin\\node.exe",
+        "--require",
+        "C:\\Users\\Franky Kuo\\.codex\\worktrees\\sai-py312-local\\roothinks-1.0.1\\validation\\python312\\browser_hook.cjs",
+        "test/integration_e2e/sai_assets_browser.cjs"
+      ],
+      "source_sha": "d4b2963425dfba31bd0a2a9ef9004104f5d4f1ce",
+      "started_utc": "2026-10-25T10:55:02.567343+00:00",
+      "exit_code": 0,
+      "status": "passed",
+      "ended_utc": "2026-10-25T10:55:07.443468+00:00"
+    }
+  },
+  "boundaries": [
+    "Google OAuth/Drive not verified; explicit unavailable-SDK profile",
+    "Scientific, translation and Traditional Chinese OCR quality NOT MEASURED",
+    "No scientific-engine cross-dependency numerical parity measurement",
+    "NLLB tokenizer warning unresolved; 12 control token sequences matched",
+    "No production restore/cutover, capacity or full security acceptance",
+    "Browser product tree d4b2963 equals frozen implementation app tree; host hook committed at 1df5d8d",
+    "Runtime capabilities easyocr_weights_loaded=false was an earlier import probe; separate final EasyOCR result records true weight loading",
+    "Prior receipt argv was complete; apparent loss was display compaction, not file corruption"
+  ],
+  "source_hashes": {
+    "validation/python312/bake_model.py": "4b31755fc5beb03f6e513b33982d5e638009f51f8592ad5c2b487c15880b13d6",
+    "validation/python312/browser_assets.py": "b68fb8846a801435c4299e9b3a1dfda69b1221818377556fa2ca97611512394a",
+    "validation/python312/browser_fixture.py": "31af7c1ea2e93276e11d5a08ab5bcca76659e56bb38fcea530903c472778b411",
+    "validation/python312/browser_hook.cjs": "fea808036ba629434f6f9cc80ed672e4827961e8d48e54e756cd908ca2e6310f",
+    "validation/python312/Dockerfile": "9629928ccfb9302b35302d0568d0be45bfd5f0217128a8d7e632dd832dd06368",
+    "validation/python312/easyocr_probe.py": "8385e49cd4828596003115375707625f46d97482f02b2f43818e90a2d00c83a5",
+    "validation/python312/local_build.py": "d2efd948723a5989cdb981a56671f40c7a0745d12f0f14019e9550eb54c17f38",
+    "validation/python312/nllb-source.json": "abe347b40236ecaf7c1b91bc5f6534f61be45fa63f5cf0b73e9c212e421e9fc2",
+    "validation/python312/pdf_browser.cjs": "8248a7b76702b7e8d65ffbe661d8d77152de778ae4131a943f1f46da0584fde8",
+    "validation/python312/pdf_check.py": "b9be1afef475b10db1f710a1b5aba95def0103e67162cc68f518091bcfe81c1c",
+    "validation/python312/regression.py": "c8ff25ed8d74c70a606bc97c2f2b38cca58921c015025f9c48b8636c88c9c6b4",
+    "validation/python312/requirements-test.in": "e30457bd58f86396d058f111bcdb087a8650325a43c84da11b95df5db20bee40",
+    "validation/python312/requirements-test.lock": "80ef3554725f92fe8ef5073ab8fe9e19b9ec1a02e95e4eea9be7847dc1787aa4",
+    "validation/python312/requirements.in": "088d22458b6daf37fefb50f02f34660d5a87d0618e7ad47e037aa0a92b236cf4",
+    "validation/python312/requirements.lock": "a510e0339816779463681449800eb3631e0c7bca1ebd3a1579b4ca6ae08eeb05",
+    "validation/python312/runtime_checks.py": "593f324bad9d5a49548ef33b791cb0c28daf89a7857f86f97cc621b58dc7f070"
+  },
+  "preservation": {
+    "before": {
+      "container_id": "5a7d0832977066954bea86266c53e33513b0b285d9664d3b3493f9995cf05537",
+      "image_id": "sha256:47d74fc67670303dfa0c3916ed00bbfe935c20890eddf3a0446679b253f4baf9",
+      "status": "running",
+      "health": "healthy"
+    },
+    "after": {
+      "container_id": "5a7d0832977066954bea86266c53e33513b0b285d9664d3b3493f9995cf05537",
+      "image_id": "sha256:47d74fc67670303dfa0c3916ed00bbfe935c20890eddf3a0446679b253f4baf9",
+      "status": "running",
+      "health": "healthy"
+    },
+    "qa_containers": {
+      "roothinks-py312-local-gunicorn": "absent (--rm)",
+      "roothinks-py312-local-browser": "absent (--rm)",
+      "roothinks-py312-local-baseline": "absent (--rm)"
+    },
+    "production_data_access": false,
+    "production_exec": false
+  },
+  "remote_snapshot": {
+    "checked_utc": "2026-10-25T12:00:21.001578+00:00",
+    "refs": [
+      "e64c4e74a7a5bae6537297f31bbd0dfccdc4f6d9\trefs/heads/codex/py312-migration",
+      "9655546eac2f2e43a0cabceee0bd75843b47dae2\trefs/heads/main"
+    ],
+    "writes": false
+  }
+}

@@ -278,3 +278,17 @@ I05 歷史完整回歸：**1,254 通過、0 失敗、0 略過**，pytest 摘要 
 上輪 Batch A/B 歷史交付回歸 SHA `2b502532347d6fb032ca330b9835726d0aa3acad`：**1,219 通過、0 失敗、0 略過**，416.04 秒。Node 19 個行為情境通過，另有合成 Chromium 的衝突／恢復與人工決策流程。這是上輪歷史結果，不取代本輪 I05，也不代表上表所有需求通過。
 
 上輪提交、環境、瀏覽器證據、自我稽核及未驗證項目見 [Batch A/B 歷史交付報告](engineering/SAI_DELIVERY_2026-10-23.md) 及 [歷史雜湊清單](engineering/SAI_EVIDENCE_2026-10-23.json)。失敗輪次保留原始結果。本輪結果另見 I05 與 [延伸交付報告](engineering/SAI_REVIEW_DELIVERY_2026-10-23.md)。
+
+## 本機 Python 3.12 候選（2026-10-25；不取代科學驗收）
+
+本機 `codex/local-python312-validation`；完整回歸凍結 source `1df5d8deacfd6ab51a341a60f6e5ca55751dc037`。環境、失敗及逐項結果見[交付](engineering/LOCAL_PY312_DELIVERY_2026-10-25.md)與[機器證據](engineering/LOCAL_PY312_EVIDENCE_2026-10-25.json)。未 push／merge／部署；原產品、科學引擎及正式資料不改。
+
+| 驗收 | 證據狀態 | 仍開放 |
+|---|---|---|
+| 完整本機 Docker、CPU Torch、TorchVision NMS、單一 cv2、兩 worker | 已實測 | 與雲端依賴／Debian base 不同；整合映像須重驗 |
+| 真 NLLB、EasyOCR 離線載入 | 已實測 | tokenizer 警告、雙語 OCR 錯字；翻譯／繁中品質未量測 |
+| Python 3.12 完整 regression、原八個環境錯誤 | 最終結果與逐案例見 JSON；未削弱 assertions | 50 個略過保留原理由 |
+| 三種研究流程、有效 PDF／原件／恢復、科學建議不阻保存匯出 | 真瀏覽器與負向回歸 | Google OAuth／Drive、完整真論文管線、正式資料 restore 未驗 |
+| 研究科學品質與正式切換 | 未驗收 | 真專家／holdout、數值跨依賴一致性、Owner 授權 |
+
+判定：本機環境驗證完成，**停在整合 Owner Gate**。採[整合方案](engineering/LOCAL_PY312_INTEGRATION_PLAN_2026-10-25.md)，不得把兩邊不同映像的結果加總成最終映像通過。
