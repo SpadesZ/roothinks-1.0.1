@@ -1,6 +1,6 @@
 # Cloud primary 接手文件
 
-溝通及實作報告用繁體中文。**每完成一步就更新本文件。** 目前狀態：R1 已交付；R2 只完成資料防護（R2-1、R2-2），其餘 R2 項目與翻譯研究被 Owner 中斷，改做 Study 共研升級：**R1 與 R2 都已交付，停在 Owner Gate**。規格與整體狀態以 [`docs/SAI.md`](../SAI.md) 為唯一入口。
+溝通及實作報告用繁體中文。**每完成一步就更新本文件。** 目前狀態：Study R1、R2、**R3** 都在隔離分支完成；R3 是 Owner 要求的「連續自主開發階段」（安全、共研 UX、翻譯、評估 v2），交付後停在 Owner 決定點。規格與整體狀態以 [`docs/SAI.md`](../SAI.md) 為唯一入口。
 
 最後完整驗證點：見下方 Study R2 段（最新）；更早的 `aa8ff3e`（R2 資料防護）為 1,553 通過／50 略過／0 失敗。
 已推送個人倉庫（`7c905b5` 起）；推送前後核對，main、整合分支與其他所有分支的遠端 SHA 都沒變。
@@ -85,13 +85,28 @@ Flow B debug 輸出在 `DATA_ROOT` 不可用時不再寫到 repo `data/`（`Flow
 - 最終狀態：程式凍結 `4fb65e9`（完整回歸 1,620／50／0）；瀏覽器 40／40 於 `c100ac3`；驗證結果文件 `b70599f` 已推送並核對遠端，
   其後只有本接手文件的更新 commit。main、R1、py312 分支遠端 SHA 未變。
 
+## Study R3（2026-10-26，最新）
+
+- 分支 `codex/study-coresearch-r3-20261026`（從 R2 `ae8faa6` 開出）。交付：`STUDY_R3_DELIVERY_2026-10-26.md`；證據：`study_r3_evidence/`。
+- 權限矩陣：`python test/integration_e2e/acl_route_matrix.py <out.json>`（90 GET 路由 × 6 角色，埋哨兵）。新路由上線前先跑；
+  `test_acl_cross_module.py` 鎖定「唯一剩下的發現是教授＋文獻庫閱讀筆記」，新增洩漏會讓測試失敗。
+- 舊導師：`REVIEW_SCOPE_LEGACY_MENTORS=keep|review_scope`（預設 keep）；改之前跑 `scripts/review_scope_legacy_report.py`（唯讀）。
+- 翻譯保護層：`app/core_pro/literature/translation_guard.py`；`TRANSLATION_GUARD_EXTENDED=1` 才開擴充保護（未在真 NLLB 量測前不要預設開）。
+  量測：`python scripts/translation_guard_benchmark.py`（模擬）。
+- 評估 v2：`scripts/study_r2_eval.py --negative-controls|--rescore|--kappa`；`--live` 未執行。
+- 環境重建：容器重啟後 venv 與 vendor 會消失。venv 照上面「雲端 3.12 開發環境」；vendor 用
+  `npm pack bootstrap@5.3.0 bootstrap-icons@1.11.1 katex@0.16.9 mermaid@10.9.8 socket.io-client@4.7.2 split.js@1.6.0 plotly.js-dist-min@2.27.0`，
+  解到 `<vendor>/ex/<name>-<version>/`（plotly 目錄名是 `plotly_js-dist-min-2.27.0`）。fixture 可用 `STUDY_FIXTURE_PORT` 換埠，避免和回歸測試撞埠。
+- 待 Owner：PA-01 擴充（文獻庫閱讀筆記）、舊導師政策、NLLB 非商業授權、AGPL／外部傳輸、模型憑證與預算。
+
 ## 下一步（依 Owner 決定）
 
 1. 若 Gate D 核准：照 `GATE_D_PROTOCOL_DRAFT_2026-10-26.md` 執行；先記錄 wheel／模型 sha256 與 `meta.json` 授權。
 2. 若 Gate D 不核准：考慮檢索（28 個沒檢索到）或維持保守引擎；兩者都要先寫協議。
 3. 工程待辦：`google.generativeai` → `google-genai`（新相依，需核准）；`datetime.utcnow()` 清理；可連網的 staging 重建。
 4. Study：PA-01／02／03 核准後才可列入合併候選；真模型評估等憑證；之後 `localStorage` 標記遷移、Reflow／圖表錨點、證據筆記接手稿出處。
-5. 暫停中：翻譯比較研究（REA／BabelDOC／Immersive Translate）、Google 失敗行為證據矩陣。
+5. 翻譯比較研究已完成（R3）。暫停中：Google 失敗行為證據矩陣。
+6. 工程建議（不需新授權）：證據筆記接到 Manuscript 段落出處；`localStorage` 標記遷移；權限矩陣擴充到 POST 路由。
 
 ## 執行環境注意
 

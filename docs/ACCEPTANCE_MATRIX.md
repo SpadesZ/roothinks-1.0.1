@@ -336,3 +336,15 @@ Owner 已改採本機主導；新隔離分支 `codex/py312-local-first-integrati
 | 安全與正式 migration | **NO-GO** | deep-translator 1.11.4 通報無修復版、既有 shell／SHA1 風險、獨立外部 auditor 待完成 |
 
 見[本輪交付](engineering/PY312_LOCAL_FIRST_DELIVERY_2026-10-26.md)、[機器證據](engineering/PY312_LOCAL_FIRST_EVIDENCE.json)與[Owner 啟動的接手指令](engineering/PY312_LOCAL_FIRST_CLOUD_HANDOFF.md)。獨立 scanner 與自我稽核不等於獨立外部審查；不得直接 merge／部署。
+
+## Study R3（2026-10-26；隔離分支 `codex/study-coresearch-r3-20261026`，未合併）
+
+| 需求／面向 | 判定 | 證據 | 仍開放 |
+|---|---|---|---|
+| P0-AUT 跨專案隔離（runtime log、Flow B 探針） | 紅測試後修補，TESTED | `ff71c07`；`study_r3_evidence/acl-matrix-before.json` 16 筆跨專案 → `after` 0 筆；`test_acl_cross_module.py` | 只列舉 GET；POST 路由依既有測試 |
+| PA-01 審閱範圍延伸到 Literature／PAQ AI 對話（**提議**） | IMPLEMENTED、TESTED | 同上；教授 403 `review_scope`，團隊 viewer／舊導師不變 | PA-01 待核准；文獻庫閱讀筆記待決定 |
+| 舊 MentorLink 相容 | 預設 `keep`，不撤銷 | `REVIEW_SCOPE_LEGACY_MENTORS`；唯讀報告 `scripts/review_scope_legacy_report.py` | Owner 選擇是否收窄 |
+| COL-03 建議與作者所有權（R2 缺陷） | 修補，TESTED | 審閱副本不含修訂前內容與建議；過期建議 409 | — |
+| UX：繁中、機器翻譯標示、證據寫入研究筆記、不確定性、修訂內容 | TESTED（真瀏覽器 48／48） | `fba0c46`；`study_r3_evidence/browser/` | 尚未接到 Manuscript 段落出處 |
+| 翻譯保護層 | IMPLEMENTED、TESTED（模擬） | `994ee33`；`translation-guard-benchmark.json` | 真引擎 NOT MEASURED；NLLB CC-BY-NC-4.0 |
+| Study Tutor 品質 | **NOT MEASURED** | 協議 v2 `34ab1df`；負向控制 6／6（工具自我檢查） | 憑證、預算、評分者 |

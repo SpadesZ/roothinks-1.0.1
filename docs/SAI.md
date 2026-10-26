@@ -65,7 +65,10 @@ RootThinks 的目標是一個**整合的人機協作科學研究工作區**：AI
 | R2-1／R2-2 資料防護：寫入 repo `data/` 前阻擋、執行前拒跑、Flow B debug fail closed | TESTED（`aa8ff3e`，1,553／50／0） | [接手文件](engineering/CLOUD_PRIMARY_HANDOFF.md)、`test/unit/test_data_safety_guard.py` |
 | Study 共研 R1：伺服器錨點、解釋／批判、拒絕假引文、研究者接受的證據筆記、留言與審閱請求、頁碼順序修正 | TESTED（`1e06c9f`，1,588／50／0；瀏覽器 29／29） | [Study R1 交付](engineering/STUDY_CORESEARCH_DELIVERY_2026-10-26.md) |
 | Study R2：教授審閱範圍、字面相符與主張支持分開、同段重複引文、筆記所有權與建議、真模型評估預先登記 | IMPLEMENTED、TESTED（程式 `4fb65e9`，1,620／50／0；瀏覽器 40／40 於 `c100ac3`）；PA-01／02／03 **待核准** | [Study R2 交付](engineering/STUDY_R2_DELIVERY_2026-10-26.md)、[設計](engineering/STUDY_R2_DESIGN_2026-10-26.md)、[證據](engineering/study_r2_evidence/) |
-| Study 真模型回答品質 | **NOT MEASURED／BLOCKED**：協議、資料集（`e4ef1759…`）、工具與成本估計已登記；環境沒有產品模型憑證 | [評估協議](engineering/STUDY_R2_EVAL_PROTOCOL_2026-10-26.md) |
+| Study R3 安全：跨模組權限矩陣（90 路由 × 6 角色）；修補 2 個 P1 跨專案洩漏（runtime log、Flow B 探針）；Literature／PAQ AI 對話納入審閱範圍；R2 審閱副本洩漏與過期建議覆寫 | IMPLEMENTED、TESTED（`ff71c07`；矩陣 19 → 1 筆，剩下的是待決定項目） | [R3 交付](engineering/STUDY_R3_DELIVERY_2026-10-26.md)、[矩陣證據](engineering/study_r3_evidence/) |
+| Study R3 共研 UX：繁中用語、譯文標示機器翻譯、證據筆記帶出處寫入研究筆記、筆記卡顯示 AI 不確定性、修訂前內容、矩陣不再重複請求 | IMPLEMENTED、TESTED（`fba0c46`；瀏覽器 48／48） | 同上 |
+| 翻譯保護層原型（公式／URL／DOI 佔位符容錯還原、遺失補回並標示、數字變動回報） | IMPLEMENTED、TESTED（`994ee33`）；真引擎品質 **NOT MEASURED**（只有模擬） | [比較研究](engineering/TRANSLATION_RESEARCH_2026-10-26.md) |
+| Study 真模型回答品質 | **NOT MEASURED／BLOCKED**：協議 v2（`34ab1df`）、資料集（`e4ef1759…`）、工具與成本估計已登記；負向控制 6／6 只是**工具自我檢查**，不是模型驗證；環境沒有產品模型憑證 | [協議 v2](engineering/STUDY_EVAL_PROTOCOL_V2_2026-10-26.md)、[v1](engineering/STUDY_R2_EVAL_PROTOCOL_2026-10-26.md) |
 
 科學引擎 `advisory-rules-4`（`4c2034bf…`）自 I09 起未改；產品 SUPPORT TP 1、CONTRADICT TP 0、UNKNOWN 299／300（I13 記錄）。
 
@@ -74,19 +77,22 @@ RootThinks 的目標是一個**整合的人機協作科學研究工作區**：AI
 - **科學推論品質未通過**必要門檻；真人專家 0 人、sealed holdout 未開封。單元測試數量或低誤報不得當作科學通過。
 - **Study 真模型回答品質未量測**；R1／R2 只證明功能正確與假引文會被擋（用模型替身）。
 - **Gate D（spaCy／依存剖析）未授權、未執行**；只有協議草案。不得下載新模型或整合剖析器。
-- **REA／BabelDOC／Immersive Translate 比較研究未完成**（被 Owner 中斷）；BabelDOC 為 AGPL，整合前須授權審查。
+- **翻譯比較研究已完成（只用公開來源）**，但：BabelDOC 是 AGPL-3.0，整合前要做授權審查；Immersive Translate 會把整份 PDF 上傳（Mathpix）；
+  REA 不安裝。**NLLB 權重是 CC-BY-NC-4.0（非商業）**，商業使用前要法務確認。翻譯品質在真引擎上未量測。
 - **線上 Google 翻譯與 Google OAuth 未驗證**（雲端請求 403）。
 - **Python 3.12 正式環境遷移 NO-GO**：需要可重現的正式映像建置、真 Google OAuth、獨立稽核、相依檢查與回滾驗證。開發可用 ≠ 正式可遷移。
 - **隔離分支不等於已合併或已部署**；本文件第 3 節沒有任何 RELEASED。
-- 其他：Study 的 `localStorage` 標記尚未遷移到伺服器錨點；Reflow 與圖／表／公式錨點不完整；證據筆記尚未接到手稿出處；沒有矩陣時 `/matrix/latest` 重複請求。
+- **審閱範圍仍有一個待決定項目**：教授可讀 Literature 文獻庫的閱讀筆記（§8 PA-01 擴充）。舊 MentorLink 導師預設維持現有存取（`REVIEW_SCOPE_LEGACY_MENTORS=keep`）。
+- 其他：Study 的 `localStorage` 標記尚未遷移到伺服器錨點；Reflow 與圖／表／公式錨點不完整；
+  證據筆記已能帶出處寫入**研究筆記**，但還沒有接到 Manuscript 的段落出處（寫作時仍要手動引用）。
 
 ## 5. 路線圖與發佈邊界（依相依順序）
 
 | 階段 | 內容 | 前置條件 | 現況 |
 |---|---|---|---|
-| 0 獨立審查 | 對隔離堆疊（I09 → Study R2）做獨立稽核；Owner 核准 §8 提議修訂 | — | 等待 Owner／稽核 |
-| 1 合併候選 | 選定要進 `main` 的範圍（例如資料防護、3.12 開發環境、Study R1＋R2），在乾淨環境重跑完整回歸與瀏覽器 | 階段 0 | 未開始；**不得自行 merge** |
-| 2 品質量測 | Study 真模型評估（協議已登記）＋人類評分；翻譯比較研究 | 產品憑證與預算；評分者 | BLOCKED（憑證） |
+| 0 獨立審查 | 對隔離堆疊（I09 → Study R3）做獨立稽核；Owner 核准 §8 提議修訂 | — | 等待 Owner／稽核 |
+| 1 合併候選 | 選定要進 `main` 的範圍（例如資料防護、3.12 開發環境、Study R1–R3）；**R3 的兩個 P1 跨專案修補不依賴 PA 核准，建議優先**；在乾淨環境重跑完整回歸與瀏覽器 | 階段 0 | 未開始；**不得自行 merge** |
+| 2 品質量測 | Study 真模型評估（協議 v2 已登記）＋人類評分；翻譯保護層在真 NLLB 上量測佔位符損壞率 | 產品憑證與預算；評分者；可執行 NLLB 的環境 | BLOCKED（憑證、環境） |
 | 3 正式遷移 | 3.12 正式映像、真 OAuth、回滾演練、相依稽核 | 階段 1；可連網環境 | NO-GO |
 | 4 科學能力 | Gate D 或其他方法，先預先登記；真專家 gold 與 holdout | Owner 授權新模型／相依；專家 | DEFERRED／BLOCKED |
 | 5 RELEASED | 合併＋部署＋部署後檢查 | 階段 1–3 | 無 |
@@ -108,6 +114,6 @@ Study R2 實作時發現下列契約需要明確化或修改。程式已在隔�
 
 | 編號 | 影響條款 | 提議內容 | 理由 |
 |---|---|---|---|
-| PA-01 | v1.1.1 P0-AUT「教授邀請只給全專案 viewer／審閱權」 | 教授邀請的審閱權包含：稿件審閱（不變）、論文本身、研究者**明確請求審閱**的 Study 證據筆記。**不包含**研究者的 Study 自由筆記、AI 對話、研究矩陣與未分享的證據筆記。一般團隊 viewer、舊 MentorLink、被 owner 改成 editor 的教授不受影響 | 改版前探針：教授可讀私人筆記、對話與所有筆記；導師 API 也回傳筆記與整段對話（P1） |
+| PA-01 | v1.1.1 P0-AUT「教授邀請只給全專案 viewer／審閱權」 | 教授邀請的審閱權包含：稿件審閱（不變）、論文本身、研究者**明確請求審閱**的 Study 證據筆記。**不包含**研究者的 Study 自由筆記、AI 對話、研究矩陣與未分享的證據筆記。一般團隊 viewer、被 owner 改成 editor 的教授不受影響。**R3 擴充（同樣待核准）**：AI 對話的排除也適用於 Literature 與 PAQ；待決定：是否也排除 Literature 文獻庫閱讀筆記；舊 MentorLink 導師預設不變，由 `REVIEW_SCOPE_LEGACY_MENTORS` 選擇是否收窄 | 改版前探針：教授可讀私人筆記、對話與所有筆記；導師 API 也回傳筆記與整段對話（P1）；R3 權限矩陣另發現 Literature／PAQ 對話可讀 |
 | PA-02 | v1.1.2 SCI-ADV §2（文字對齊不是科學證明） | 把「引文在原文中找到」（`quote_match`／`text_match`）與「引文支持陳述」（`claim_support`）定為兩個欄位；後者只能由研究者設定並記錄設定者；禁止用「verified／已驗證」描述引文比對；比對不得改變科學記號（不用 NFKC）；同段多處無法唯一定位時不得給精確位置 | 落實既有原則的資料契約 |
 | PA-03 | v1.1.0 COL-03（可分辨誰的意見、誰可確認） | Study 證據筆記只有作者能直接改寫與請求審閱；其他成員提出只追加的建議，由作者接受或不採用；被取代的內容保留在修訂紀錄 | 改版前 editor 可覆寫 owner 已接受的解讀 |
