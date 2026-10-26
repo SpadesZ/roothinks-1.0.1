@@ -2,7 +2,7 @@
 
 溝通及實作報告用繁體中文。**每完成一步就更新本文件。** 目前狀態：Study R1、R2、**R3** 都在隔離分支完成；R3 是 Owner 要求的「連續自主開發階段」（安全、共研 UX、翻譯、評估 v2），交付後停在 Owner 決定點。規格與整體狀態以 [`docs/SAI.md`](../SAI.md) 為唯一入口。
 
-最後完整驗證點：見下方 Study R2 段（最新）；更早的 `aa8ff3e`（R2 資料防護）為 1,553 通過／50 略過／0 失敗。
+最後完整驗證點：Study R3 `8808665`，1,683 通過／50 略過／0 失敗（見下方 Study R3 段）；更早的 `aa8ff3e`（R2 資料防護）為 1,553 通過／50 略過／0 失敗。
 已推送個人倉庫（`7c905b5` 起）；推送前後核對，main、整合分支與其他所有分支的遠端 SHA 都沒變。
 
 ## 角色與邊界
@@ -97,6 +97,8 @@ Flow B debug 輸出在 `DATA_ROOT` 不可用時不再寫到 repo `data/`（`Flow
 - 環境重建：容器重啟後 venv 與 vendor 會消失。venv 照上面「雲端 3.12 開發環境」；vendor 用
   `npm pack bootstrap@5.3.0 bootstrap-icons@1.11.1 katex@0.16.9 mermaid@10.9.8 socket.io-client@4.7.2 split.js@1.6.0 plotly.js-dist-min@2.27.0`，
   解到 `<vendor>/ex/<name>-<version>/`（plotly 目錄名是 `plotly_js-dist-min-2.27.0`）。fixture 可用 `STUDY_FIXTURE_PORT` 換埠，避免和回歸測試撞埠。
+- 最終狀態：完整回歸 `8808665` **1,683／50／0**；瀏覽器 48／48。已推送並核對遠端；main `9655546` 未變。
+- 注意：權限矩陣會建立延遲初始化的服務單例；在 pytest 裡跑要像 `test_route_matrix_conclusions_are_locked` 一樣還原，否則污染後面的測試。
 - 待 Owner：PA-01 擴充（文獻庫閱讀筆記）、舊導師政策、NLLB 非商業授權、AGPL／外部傳輸、模型憑證與預算。
 
 ## 下一步（依 Owner 決定）
