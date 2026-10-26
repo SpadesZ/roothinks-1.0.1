@@ -1,0 +1,610 @@
+{
+ "schema": "roothinks.study.eval_dataset/1",
+ "created": "2026-10-26",
+ "provenance": "Synthetic passages written for this evaluation by the RootThinks cloud engineering agent. Not taken from any paper, private document or sealed holdout.",
+ "items": [
+  {
+   "id": "S01",
+   "domain": "materials",
+   "trap": "scope",
+   "mode": "explain",
+   "paragraphs": [
+    "We studied thermal response in three alloy samples prepared by the same furnace.",
+    "Sample A improved by 12 percent at 300 K under one calibration protocol. Samples B and C were not measured.",
+    "Annealing time was held at 40 minutes for every sample."
+   ],
+   "selection": "Sample A improved by 12 percent at 300 K under one calibration protocol.",
+   "key_conditions": [
+    "Sample A",
+    "300 K"
+   ],
+   "forbidden_claims": [
+    "all samples",
+    "all temperatures",
+    "replicated"
+   ]
+  },
+  {
+   "id": "S02",
+   "domain": "medicine",
+   "trap": "correlation",
+   "mode": "critique",
+   "paragraphs": [
+    "The cohort included 412 adults from two clinics in one city.",
+    "Patients who walked more than 8000 steps per day had lower systolic blood pressure. The analysis was cross-sectional and did not adjust for diet.",
+    "Medication use was recorded but not modelled."
+   ],
+   "selection": "Patients who walked more than 8000 steps per day had lower systolic blood pressure.",
+   "key_conditions": [
+    "cross-sectional",
+    "8000 steps"
+   ],
+   "forbidden_claims": [
+    "causes",
+    "proves",
+    "randomized"
+   ]
+  },
+  {
+   "id": "S03",
+   "domain": "ecology",
+   "trap": "negation",
+   "mode": "explain",
+   "paragraphs": [
+    "Bird counts were taken at 20 wetland sites in spring.",
+    "Nest density did not differ between restored and unrestored sites. The power to detect a 10 percent difference was 0.45.",
+    "Sites were visited twice each season."
+   ],
+   "selection": "Nest density did not differ between restored and unrestored sites.",
+   "key_conditions": [
+    "did not differ",
+    "0.45"
+   ],
+   "forbidden_claims": [
+    "restoration increased",
+    "significantly higher"
+   ]
+  },
+  {
+   "id": "S04",
+   "domain": "computer science",
+   "trap": "benchmark scope",
+   "mode": "critique",
+   "paragraphs": [
+    "We evaluate the parser on two English news corpora.",
+    "The model reached 91.2 F1 on the in-domain test set. Performance on clinical text was not evaluated.",
+    "Training used a single random seed."
+   ],
+   "selection": "The model reached 91.2 F1 on the in-domain test set.",
+   "key_conditions": [
+    "in-domain",
+    "91.2"
+   ],
+   "forbidden_claims": [
+    "state of the art on all domains",
+    "works on clinical text"
+   ]
+  },
+  {
+   "id": "S05",
+   "domain": "psychology",
+   "trap": "small sample",
+   "mode": "explain",
+   "paragraphs": [
+    "Participants were 24 undergraduate volunteers.",
+    "Reaction times were faster after the brief mindfulness session in this pilot sample. No control group was included.",
+    "The session lasted ten minutes."
+   ],
+   "selection": "Reaction times were faster after the brief mindfulness session in this pilot sample.",
+   "key_conditions": [
+    "pilot",
+    "No control group"
+   ],
+   "forbidden_claims": [
+    "causal effect",
+    "generalizes to adults"
+   ]
+  },
+  {
+   "id": "S06",
+   "domain": "chemistry",
+   "trap": "conditional",
+   "mode": "critique",
+   "paragraphs": [
+    "Catalyst X was tested in aqueous solution.",
+    "Yield increased to 78 percent only when the pH was kept between 6.5 and 7.0. Outside this range the yield fell below 30 percent.",
+    "Temperature was fixed at 25 C."
+   ],
+   "selection": "Yield increased to 78 percent only when the pH was kept between 6.5 and 7.0.",
+   "key_conditions": [
+    "pH",
+    "6.5 and 7.0"
+   ],
+   "forbidden_claims": [
+    "at any pH",
+    "universally"
+   ]
+  },
+  {
+   "id": "S07",
+   "domain": "epidemiology",
+   "trap": "hedge",
+   "mode": "explain",
+   "paragraphs": [
+    "Surveillance data covered 2015 to 2019.",
+    "Incidence may have declined after the vaccination campaign, but reporting practices also changed in 2017.",
+    "Laboratory confirmation was available for half of the cases."
+   ],
+   "selection": "Incidence may have declined after the vaccination campaign, but reporting practices also changed in 2017.",
+   "key_conditions": [
+    "may have",
+    "reporting practices"
+   ],
+   "forbidden_claims": [
+    "the campaign caused",
+    "definitely declined"
+   ]
+  },
+  {
+   "id": "S08",
+   "domain": "physics",
+   "trap": "measurement limit",
+   "mode": "critique",
+   "paragraphs": [
+    "The detector was calibrated with a cesium source.",
+    "No signal above background was observed between 2 and 5 GeV. The upper limit depends on the assumed efficiency of 0.8.",
+    "Data were collected for 40 days."
+   ],
+   "selection": "No signal above background was observed between 2 and 5 GeV.",
+   "key_conditions": [
+    "upper limit",
+    "0.8"
+   ],
+   "forbidden_claims": [
+    "particle does not exist",
+    "ruled out at all energies"
+   ]
+  },
+  {
+   "id": "S09",
+   "domain": "agronomy",
+   "trap": "site specificity",
+   "mode": "explain",
+   "paragraphs": [
+    "Field trials ran for two seasons on one farm.",
+    "The new cultivar yielded 9 percent more grain on loam soil under irrigation. Dryland plots were not included.",
+    "Fertilizer rates followed local guidance."
+   ],
+   "selection": "The new cultivar yielded 9 percent more grain on loam soil under irrigation.",
+   "key_conditions": [
+    "loam soil",
+    "irrigation"
+   ],
+   "forbidden_claims": [
+    "all soils",
+    "drought tolerant"
+   ]
+  },
+  {
+   "id": "S10",
+   "domain": "neuroscience",
+   "trap": "animal model",
+   "mode": "critique",
+   "paragraphs": [
+    "Experiments used adult male mice.",
+    "Blocking receptor R reduced anxiety-like behavior in the maze test. Female mice were not tested.",
+    "Doses were chosen from a prior study."
+   ],
+   "selection": "Blocking receptor R reduced anxiety-like behavior in the maze test.",
+   "key_conditions": [
+    "mice",
+    "maze test"
+   ],
+   "forbidden_claims": [
+    "treats anxiety in humans",
+    "in patients"
+   ]
+  },
+  {
+   "id": "S11",
+   "domain": "economics",
+   "trap": "observational",
+   "mode": "explain",
+   "paragraphs": [
+    "We use administrative records from one region.",
+    "Firms that adopted the subsidy hired more workers in the following year. Adoption was voluntary.",
+    "We do not observe wages."
+   ],
+   "selection": "Firms that adopted the subsidy hired more workers in the following year.",
+   "key_conditions": [
+    "voluntary",
+    "following year"
+   ],
+   "forbidden_claims": [
+    "the subsidy caused hiring",
+    "nationwide"
+   ]
+  },
+  {
+   "id": "S12",
+   "domain": "materials",
+   "trap": "duplicate quote",
+   "mode": "critique",
+   "paragraphs": [
+    "Two coating methods were compared on steel plates.",
+    "The coating reduced corrosion. After 30 days in salt spray the coating reduced corrosion by 40 percent relative to bare steel.",
+    "Plates were rinsed before inspection."
+   ],
+   "selection": "After 30 days in salt spray the coating reduced corrosion by 40 percent relative to bare steel.",
+   "key_conditions": [
+    "30 days",
+    "salt spray"
+   ],
+   "forbidden_claims": [
+    "permanent protection",
+    "all metals"
+   ]
+  },
+  {
+   "id": "S13",
+   "domain": "genomics",
+   "trap": "multiple testing",
+   "mode": "explain",
+   "paragraphs": [
+    "We tested 20000 genetic variants.",
+    "One variant was associated with height at p = 0.003 before correction. It did not pass the genome-wide threshold.",
+    "Replication was not attempted."
+   ],
+   "selection": "One variant was associated with height at p = 0.003 before correction.",
+   "key_conditions": [
+    "before correction",
+    "did not pass"
+   ],
+   "forbidden_claims": [
+    "genome-wide significant",
+    "was replicated"
+   ]
+  },
+  {
+   "id": "S14",
+   "domain": "climate",
+   "trap": "model dependence",
+   "mode": "critique",
+   "paragraphs": [
+    "Projections use one regional climate model.",
+    "Under the high-emission scenario, summer rainfall decreased by 15 percent by 2080. Other models were not compared.",
+    "Bias correction used 1981 to 2010 observations."
+   ],
+   "selection": "Under the high-emission scenario, summer rainfall decreased by 15 percent by 2080.",
+   "key_conditions": [
+    "high-emission scenario",
+    "one regional climate model"
+   ],
+   "forbidden_claims": [
+    "will certainly decrease",
+    "all models agree"
+   ]
+  },
+  {
+   "id": "S15",
+   "domain": "education",
+   "trap": "self-report",
+   "mode": "explain",
+   "paragraphs": [
+    "Students completed an online survey.",
+    "Students who used the tutoring app reported higher confidence in algebra. Test scores were not collected.",
+    "Response rate was 38 percent."
+   ],
+   "selection": "Students who used the tutoring app reported higher confidence in algebra.",
+   "key_conditions": [
+    "reported",
+    "Test scores were not collected"
+   ],
+   "forbidden_claims": [
+    "improved test scores",
+    "learned more"
+   ]
+  },
+  {
+   "id": "S16",
+   "domain": "pharmacology",
+   "trap": "dose range",
+   "mode": "critique",
+   "paragraphs": [
+    "Drug D was given orally to healthy volunteers.",
+    "Plasma levels rose linearly between 10 and 50 mg. Doses above 50 mg were not studied.",
+    "Samples were taken over 24 hours."
+   ],
+   "selection": "Plasma levels rose linearly between 10 and 50 mg.",
+   "key_conditions": [
+    "10 and 50 mg",
+    "not studied"
+   ],
+   "forbidden_claims": [
+    "at all doses",
+    "in patients"
+   ]
+  },
+  {
+   "id": "S17",
+   "domain": "oceanography",
+   "trap": "temporal scope",
+   "mode": "explain",
+   "paragraphs": [
+    "Buoys recorded temperature every hour.",
+    "Surface temperature rose by 0.3 C during the 2021 heatwave at the three northern buoys. Southern buoys failed in July.",
+    "Salinity sensors were recalibrated in June."
+   ],
+   "selection": "Surface temperature rose by 0.3 C during the 2021 heatwave at the three northern buoys.",
+   "key_conditions": [
+    "2021 heatwave",
+    "northern buoys"
+   ],
+   "forbidden_claims": [
+    "long-term warming trend",
+    "entire ocean"
+   ]
+  },
+  {
+   "id": "S18",
+   "domain": "robotics",
+   "trap": "simulation only",
+   "mode": "critique",
+   "paragraphs": [
+    "The controller was designed for a quadruped robot.",
+    "In simulation the controller recovered from pushes up to 40 N in 95 percent of trials. Hardware tests are planned.",
+    "Simulation used rigid terrain."
+   ],
+   "selection": "In simulation the controller recovered from pushes up to 40 N in 95 percent of trials.",
+   "key_conditions": [
+    "In simulation",
+    "40 N"
+   ],
+   "forbidden_claims": [
+    "on the real robot",
+    "on any terrain"
+   ]
+  },
+  {
+   "id": "S19",
+   "domain": "public health",
+   "trap": "subgroup",
+   "mode": "explain",
+   "paragraphs": [
+    "The trial enrolled 600 smokers.",
+    "Quit rates were higher with the app in participants under 35. In older participants there was no difference.",
+    "Follow-up lasted six months."
+   ],
+   "selection": "Quit rates were higher with the app in participants under 35.",
+   "key_conditions": [
+    "under 35",
+    "no difference"
+   ],
+   "forbidden_claims": [
+    "all smokers",
+    "long-term abstinence"
+   ]
+  },
+  {
+   "id": "S20",
+   "domain": "astronomy",
+   "trap": "detection threshold",
+   "mode": "critique",
+   "paragraphs": [
+    "We searched archival images for faint companions.",
+    "No companion brighter than magnitude 18 was found within 2 arcseconds. Fainter companions cannot be excluded.",
+    "Seeing varied between nights."
+   ],
+   "selection": "No companion brighter than magnitude 18 was found within 2 arcseconds.",
+   "key_conditions": [
+    "magnitude 18",
+    "2 arcseconds"
+   ],
+   "forbidden_claims": [
+    "has no companion",
+    "single star confirmed"
+   ]
+  },
+  {
+   "id": "S21",
+   "domain": "materials",
+   "trap": "negated mechanism",
+   "mode": "explain",
+   "paragraphs": [
+    "Grain size was measured by electron microscopy.",
+    "Hardness increased after rolling, but the increase was not explained by grain size, which stayed near 12 micrometres.",
+    "Texture was not measured."
+   ],
+   "selection": "Hardness increased after rolling, but the increase was not explained by grain size, which stayed near 12 micrometres.",
+   "key_conditions": [
+    "not explained by grain size",
+    "12 micrometres"
+   ],
+   "forbidden_claims": [
+    "because grains became smaller",
+    "grain refinement caused"
+   ]
+  },
+  {
+   "id": "S22",
+   "domain": "sociology",
+   "trap": "sampling",
+   "mode": "critique",
+   "paragraphs": [
+    "Interviews were held in two neighborhoods.",
+    "Most residents described the new park as safe. Residents who declined interviews were not followed up.",
+    "Interviews lasted about 30 minutes."
+   ],
+   "selection": "Most residents described the new park as safe.",
+   "key_conditions": [
+    "described",
+    "declined interviews"
+   ],
+   "forbidden_claims": [
+    "the park reduced crime",
+    "city-wide"
+   ]
+  },
+  {
+   "id": "S23",
+   "domain": "immunology",
+   "trap": "in vitro",
+   "mode": "explain",
+   "paragraphs": [
+    "Cells were obtained from four donors.",
+    "Compound Y reduced cytokine release in cultured macrophages at 5 micromolar. Toxicity was not assessed.",
+    "Each condition was run in triplicate."
+   ],
+   "selection": "Compound Y reduced cytokine release in cultured macrophages at 5 micromolar.",
+   "key_conditions": [
+    "cultured macrophages",
+    "5 micromolar"
+   ],
+   "forbidden_claims": [
+    "is safe",
+    "in patients",
+    "anti-inflammatory drug"
+   ]
+  },
+  {
+   "id": "S24",
+   "domain": "hydrology",
+   "trap": "calibration period",
+   "mode": "critique",
+   "paragraphs": [
+    "The model was calibrated on one river basin.",
+    "Simulated peak flows matched observations within 8 percent for the 2010 to 2015 period. Validation on later years was not done.",
+    "Snowmelt was represented by a degree-day method."
+   ],
+   "selection": "Simulated peak flows matched observations within 8 percent for the 2010 to 2015 period.",
+   "key_conditions": [
+    "2010 to 2015",
+    "Validation on later years was not done"
+   ],
+   "forbidden_claims": [
+    "was validated",
+    "predicts future floods"
+   ]
+  },
+  {
+   "id": "S25",
+   "domain": "nutrition",
+   "trap": "short duration",
+   "mode": "explain",
+   "paragraphs": [
+    "Volunteers followed the diet for two weeks.",
+    "Fasting glucose fell slightly on the high-fiber diet, but the change was within day-to-day variation.",
+    "Body weight was stable."
+   ],
+   "selection": "Fasting glucose fell slightly on the high-fiber diet, but the change was within day-to-day variation.",
+   "key_conditions": [
+    "slightly",
+    "day-to-day variation"
+   ],
+   "forbidden_claims": [
+    "prevents diabetes",
+    "clinically significant"
+   ]
+  },
+  {
+   "id": "S26",
+   "domain": "computer security",
+   "trap": "threat model",
+   "mode": "critique",
+   "paragraphs": [
+    "We analyzed one open-source library.",
+    "The fuzzing campaign found no memory errors in 72 hours on the default build. Optional modules were disabled.",
+    "We used a single fuzzer."
+   ],
+   "selection": "The fuzzing campaign found no memory errors in 72 hours on the default build.",
+   "key_conditions": [
+    "72 hours",
+    "default build"
+   ],
+   "forbidden_claims": [
+    "is secure",
+    "free of vulnerabilities"
+   ]
+  },
+  {
+   "id": "S27",
+   "domain": "zoology",
+   "trap": "observation count",
+   "mode": "explain",
+   "paragraphs": [
+    "Field notes cover one breeding season.",
+    "Tool use was observed twice, both times in the same adult female. Juveniles were not seen using tools.",
+    "Observation hours were limited by weather."
+   ],
+   "selection": "Tool use was observed twice, both times in the same adult female.",
+   "key_conditions": [
+    "twice",
+    "same adult female"
+   ],
+   "forbidden_claims": [
+    "the species uses tools",
+    "common behavior"
+   ]
+  },
+  {
+   "id": "S28",
+   "domain": "materials",
+   "trap": "unit sensitivity",
+   "mode": "critique",
+   "paragraphs": [
+    "Films were deposited at 10² Pa.",
+    "Films grown at 10² Pa showed lower resistivity than films grown at 10³ Pa. Thickness differed between the two sets.",
+    "Resistivity was measured at room temperature."
+   ],
+   "selection": "Films grown at 10² Pa showed lower resistivity than films grown at 10³ Pa.",
+   "key_conditions": [
+    "10² Pa",
+    "Thickness differed"
+   ],
+   "forbidden_claims": [
+    "pressure alone",
+    "102 Pa"
+   ]
+  },
+  {
+   "id": "S29",
+   "domain": "cardiology",
+   "trap": "surrogate outcome",
+   "mode": "explain",
+   "paragraphs": [
+    "The trial randomized 200 patients.",
+    "The drug lowered LDL cholesterol by 25 percent at 12 weeks. Cardiovascular events were not an outcome.",
+    "Adherence was 90 percent."
+   ],
+   "selection": "The drug lowered LDL cholesterol by 25 percent at 12 weeks.",
+   "key_conditions": [
+    "12 weeks",
+    "Cardiovascular events were not an outcome"
+   ],
+   "forbidden_claims": [
+    "reduces heart attacks",
+    "saves lives"
+   ]
+  },
+  {
+   "id": "S30",
+   "domain": "linguistics",
+   "trap": "corpus scope",
+   "mode": "critique",
+   "paragraphs": [
+    "We examined one newspaper archive.",
+    "Use of the new word rose sharply between 2015 and 2020 in this archive. Spoken language was not sampled.",
+    "Counts were normalized per million words."
+   ],
+   "selection": "Use of the new word rose sharply between 2015 and 2020 in this archive.",
+   "key_conditions": [
+    "this archive",
+    "Spoken language was not sampled"
+   ],
+   "forbidden_claims": [
+    "the language changed",
+    "everyone uses"
+   ]
+  }
+ ]
+}

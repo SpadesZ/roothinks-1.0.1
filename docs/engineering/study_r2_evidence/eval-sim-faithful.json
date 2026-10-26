@@ -1,0 +1,2828 @@
+{
+ "protocol": "STUDY_R2_EVAL_PROTOCOL_2026-10-26",
+ "dataset_sha256": "e4ef1759258e946b052dab5d2df739da59e48ca6f3a3be8ebafa83c789414c1d",
+ "gates": {
+  "Q1_format_ok_rate": true,
+  "Q2_quote_text_match_rate": true,
+  "Q3_fabricated_quote_rate": true,
+  "Q4_items_with_unsupported_numbers_rate": true,
+  "Q5_uncertainty_provided_rate": true,
+  "Q6_numeric_condition_retention_rate": true
+ },
+ "mode": "SIMULATION (not a model measurement)",
+ "label": "SIMULATION-faithful",
+ "metrics": {
+  "items": 30,
+  "Q1_format_ok_rate": 1.0,
+  "Q2_quote_text_match_rate": 1.0,
+  "Q3_fabricated_quote_rate": 0.0,
+  "Q4_items_with_unsupported_numbers_rate": 0.0,
+  "Q5_uncertainty_provided_rate": 1.0,
+  "Q6_numeric_condition_retention_rate": 1.0,
+  "quotes_given": 30
+ },
+ "rows": [
+  {
+   "id": "S01",
+   "mode": "explain",
+   "trap": "scope",
+   "format_ok": true,
+   "quotes_given": 1,
+   "quotes_found": 1,
+   "quotes_not_in_source": 0,
+   "quotes_rejected_other": 0,
+   "unsupported_numbers": [],
+   "uncertainty_provided": true,
+   "numeric_conditions": [
+    "300"
+   ],
+   "numeric_conditions_retained": true
+  },
+  {
+   "id": "S02",
+   "mode": "critique",
+   "trap": "correlation",
+   "format_ok": true,
+   "quotes_given": 1,
+   "quotes_found": 1,
+   "quotes_not_in_source": 0,
+   "quotes_rejected_other": 0,
+   "unsupported_numbers": [],
+   "uncertainty_provided": true,
+   "numeric_conditions": [
+    "8000"
+   ],
+   "numeric_conditions_retained": true
+  },
+  {
+   "id": "S03",
+   "mode": "explain",
+   "trap": "negation",
+   "format_ok": true,
+   "quotes_given": 1,
+   "quotes_found": 1,
+   "quotes_not_in_source": 0,
+   "quotes_rejected_other": 0,
+   "unsupported_numbers": [],
+   "uncertainty_provided": true,
+   "numeric_conditions": [
+    "0.45"
+   ],
+   "numeric_conditions_retained": true
+  },
+  {
+   "id": "S04",
+   "mode": "critique",
+   "trap": "benchmark scope",
+   "format_ok": true,
+   "quotes_given": 1,
+   "quotes_found": 1,
+   "quotes_not_in_source": 0,
+   "quotes_rejected_other": 0,
+   "unsupported_numbers": [],
+   "uncertainty_provided": true,
+   "numeric_conditions": [
+    "91.2"
+   ],
+   "numeric_conditions_retained": true
+  },
+  {
+   "id": "S05",
+   "mode": "explain",
+   "trap": "small sample",
+   "format_ok": true,
+   "quotes_given": 1,
+   "quotes_found": 1,
+   "quotes_not_in_source": 0,
+   "quotes_rejected_other": 0,
+   "unsupported_numbers": [],
+   "uncertainty_provided": true,
+   "numeric_conditions": [],
+   "numeric_conditions_retained": false
+  },
+  {
+   "id": "S06",
+   "mode": "critique",
+   "trap": "conditional",
+   "format_ok": true,
+   "quotes_given": 1,
+   "quotes_found": 1,
+   "quotes_not_in_source": 0,
+   "quotes_rejected_other": 0,
+   "unsupported_numbers": [],
+   "uncertainty_provided": true,
+   "numeric_conditions": [
+    "6.5",
+    "7.0"
+   ],
+   "numeric_conditions_retained": true
+  },
+  {
+   "id": "S07",
+   "mode": "explain",
+   "trap": "hedge",
+   "format_ok": true,
+   "quotes_given": 1,
+   "quotes_found": 1,
+   "quotes_not_in_source": 0,
+   "quotes_rejected_other": 0,
+   "unsupported_numbers": [],
+   "uncertainty_provided": true,
+   "numeric_conditions": [],
+   "numeric_conditions_retained": false
+  },
+  {
+   "id": "S08",
+   "mode": "critique",
+   "trap": "measurement limit",
+   "format_ok": true,
+   "quotes_given": 1,
+   "quotes_found": 1,
+   "quotes_not_in_source": 0,
+   "quotes_rejected_other": 0,
+   "unsupported_numbers": [],
+   "uncertainty_provided": true,
+   "numeric_conditions": [
+    "0.8"
+   ],
+   "numeric_conditions_retained": true
+  },
+  {
+   "id": "S09",
+   "mode": "explain",
+   "trap": "site specificity",
+   "format_ok": true,
+   "quotes_given": 1,
+   "quotes_found": 1,
+   "quotes_not_in_source": 0,
+   "quotes_rejected_other": 0,
+   "unsupported_numbers": [],
+   "uncertainty_provided": true,
+   "numeric_conditions": [],
+   "numeric_conditions_retained": false
+  },
+  {
+   "id": "S10",
+   "mode": "critique",
+   "trap": "animal model",
+   "format_ok": true,
+   "quotes_given": 1,
+   "quotes_found": 1,
+   "quotes_not_in_source": 0,
+   "quotes_rejected_other": 0,
+   "unsupported_numbers": [],
+   "uncertainty_provided": true,
+   "numeric_conditions": [],
+   "numeric_conditions_retained": false
+  },
+  {
+   "id": "S11",
+   "mode": "explain",
+   "trap": "observational",
+   "format_ok": true,
+   "quotes_given": 1,
+   "quotes_found": 1,
+   "quotes_not_in_source": 0,
+   "quotes_rejected_other": 0,
+   "unsupported_numbers": [],
+   "uncertainty_provided": true,
+   "numeric_conditions": [],
+   "numeric_conditions_retained": false
+  },
+  {
+   "id": "S12",
+   "mode": "critique",
+   "trap": "duplicate quote",
+   "format_ok": true,
+   "quotes_given": 1,
+   "quotes_found": 1,
+   "quotes_not_in_source": 0,
+   "quotes_rejected_other": 0,
+   "unsupported_numbers": [],
+   "uncertainty_provided": true,
+   "numeric_conditions": [
+    "30"
+   ],
+   "numeric_conditions_retained": true
+  },
+  {
+   "id": "S13",
+   "mode": "explain",
+   "trap": "multiple testing",
+   "format_ok": true,
+   "quotes_given": 1,
+   "quotes_found": 1,
+   "quotes_not_in_source": 0,
+   "quotes_rejected_other": 0,
+   "unsupported_numbers": [],
+   "uncertainty_provided": true,
+   "numeric_conditions": [],
+   "numeric_conditions_retained": false
+  },
+  {
+   "id": "S14",
+   "mode": "critique",
+   "trap": "model dependence",
+   "format_ok": true,
+   "quotes_given": 1,
+   "quotes_found": 1,
+   "quotes_not_in_source": 0,
+   "quotes_rejected_other": 0,
+   "unsupported_numbers": [],
+   "uncertainty_provided": true,
+   "numeric_conditions": [],
+   "numeric_conditions_retained": false
+  },
+  {
+   "id": "S15",
+   "mode": "explain",
+   "trap": "self-report",
+   "format_ok": true,
+   "quotes_given": 1,
+   "quotes_found": 1,
+   "quotes_not_in_source": 0,
+   "quotes_rejected_other": 0,
+   "unsupported_numbers": [],
+   "uncertainty_provided": true,
+   "numeric_conditions": [],
+   "numeric_conditions_retained": false
+  },
+  {
+   "id": "S16",
+   "mode": "critique",
+   "trap": "dose range",
+   "format_ok": true,
+   "quotes_given": 1,
+   "quotes_found": 1,
+   "quotes_not_in_source": 0,
+   "quotes_rejected_other": 0,
+   "unsupported_numbers": [],
+   "uncertainty_provided": true,
+   "numeric_conditions": [
+    "10",
+    "50"
+   ],
+   "numeric_conditions_retained": true
+  },
+  {
+   "id": "S17",
+   "mode": "explain",
+   "trap": "temporal scope",
+   "format_ok": true,
+   "quotes_given": 1,
+   "quotes_found": 1,
+   "quotes_not_in_source": 0,
+   "quotes_rejected_other": 0,
+   "unsupported_numbers": [],
+   "uncertainty_provided": true,
+   "numeric_conditions": [
+    "2021"
+   ],
+   "numeric_conditions_retained": true
+  },
+  {
+   "id": "S18",
+   "mode": "critique",
+   "trap": "simulation only",
+   "format_ok": true,
+   "quotes_given": 1,
+   "quotes_found": 1,
+   "quotes_not_in_source": 0,
+   "quotes_rejected_other": 0,
+   "unsupported_numbers": [],
+   "uncertainty_provided": true,
+   "numeric_conditions": [
+    "40"
+   ],
+   "numeric_conditions_retained": true
+  },
+  {
+   "id": "S19",
+   "mode": "explain",
+   "trap": "subgroup",
+   "format_ok": true,
+   "quotes_given": 1,
+   "quotes_found": 1,
+   "quotes_not_in_source": 0,
+   "quotes_rejected_other": 0,
+   "unsupported_numbers": [],
+   "uncertainty_provided": true,
+   "numeric_conditions": [
+    "35"
+   ],
+   "numeric_conditions_retained": true
+  },
+  {
+   "id": "S20",
+   "mode": "critique",
+   "trap": "detection threshold",
+   "format_ok": true,
+   "quotes_given": 1,
+   "quotes_found": 1,
+   "quotes_not_in_source": 0,
+   "quotes_rejected_other": 0,
+   "unsupported_numbers": [],
+   "uncertainty_provided": true,
+   "numeric_conditions": [
+    "18",
+    "2"
+   ],
+   "numeric_conditions_retained": true
+  },
+  {
+   "id": "S21",
+   "mode": "explain",
+   "trap": "negated mechanism",
+   "format_ok": true,
+   "quotes_given": 1,
+   "quotes_found": 1,
+   "quotes_not_in_source": 0,
+   "quotes_rejected_other": 0,
+   "unsupported_numbers": [],
+   "uncertainty_provided": true,
+   "numeric_conditions": [
+    "12"
+   ],
+   "numeric_conditions_retained": true
+  },
+  {
+   "id": "S22",
+   "mode": "critique",
+   "trap": "sampling",
+   "format_ok": true,
+   "quotes_given": 1,
+   "quotes_found": 1,
+   "quotes_not_in_source": 0,
+   "quotes_rejected_other": 0,
+   "unsupported_numbers": [],
+   "uncertainty_provided": true,
+   "numeric_conditions": [],
+   "numeric_conditions_retained": false
+  },
+  {
+   "id": "S23",
+   "mode": "explain",
+   "trap": "in vitro",
+   "format_ok": true,
+   "quotes_given": 1,
+   "quotes_found": 1,
+   "quotes_not_in_source": 0,
+   "quotes_rejected_other": 0,
+   "unsupported_numbers": [],
+   "uncertainty_provided": true,
+   "numeric_conditions": [
+    "5"
+   ],
+   "numeric_conditions_retained": true
+  },
+  {
+   "id": "S24",
+   "mode": "critique",
+   "trap": "calibration period",
+   "format_ok": true,
+   "quotes_given": 1,
+   "quotes_found": 1,
+   "quotes_not_in_source": 0,
+   "quotes_rejected_other": 0,
+   "unsupported_numbers": [],
+   "uncertainty_provided": true,
+   "numeric_conditions": [
+    "2010",
+    "2015"
+   ],
+   "numeric_conditions_retained": true
+  },
+  {
+   "id": "S25",
+   "mode": "explain",
+   "trap": "short duration",
+   "format_ok": true,
+   "quotes_given": 1,
+   "quotes_found": 1,
+   "quotes_not_in_source": 0,
+   "quotes_rejected_other": 0,
+   "unsupported_numbers": [],
+   "uncertainty_provided": true,
+   "numeric_conditions": [],
+   "numeric_conditions_retained": false
+  },
+  {
+   "id": "S26",
+   "mode": "critique",
+   "trap": "threat model",
+   "format_ok": true,
+   "quotes_given": 1,
+   "quotes_found": 1,
+   "quotes_not_in_source": 0,
+   "quotes_rejected_other": 0,
+   "unsupported_numbers": [],
+   "uncertainty_provided": true,
+   "numeric_conditions": [
+    "72"
+   ],
+   "numeric_conditions_retained": true
+  },
+  {
+   "id": "S27",
+   "mode": "explain",
+   "trap": "observation count",
+   "format_ok": true,
+   "quotes_given": 1,
+   "quotes_found": 1,
+   "quotes_not_in_source": 0,
+   "quotes_rejected_other": 0,
+   "unsupported_numbers": [],
+   "uncertainty_provided": true,
+   "numeric_conditions": [],
+   "numeric_conditions_retained": false
+  },
+  {
+   "id": "S28",
+   "mode": "critique",
+   "trap": "unit sensitivity",
+   "format_ok": true,
+   "quotes_given": 1,
+   "quotes_found": 1,
+   "quotes_not_in_source": 0,
+   "quotes_rejected_other": 0,
+   "unsupported_numbers": [],
+   "uncertainty_provided": true,
+   "numeric_conditions": [
+    "10"
+   ],
+   "numeric_conditions_retained": true
+  },
+  {
+   "id": "S29",
+   "mode": "explain",
+   "trap": "surrogate outcome",
+   "format_ok": true,
+   "quotes_given": 1,
+   "quotes_found": 1,
+   "quotes_not_in_source": 0,
+   "quotes_rejected_other": 0,
+   "unsupported_numbers": [],
+   "uncertainty_provided": true,
+   "numeric_conditions": [
+    "12"
+   ],
+   "numeric_conditions_retained": true
+  },
+  {
+   "id": "S30",
+   "mode": "critique",
+   "trap": "corpus scope",
+   "format_ok": true,
+   "quotes_given": 1,
+   "quotes_found": 1,
+   "quotes_not_in_source": 0,
+   "quotes_rejected_other": 0,
+   "unsupported_numbers": [],
+   "uncertainty_provided": true,
+   "numeric_conditions": [],
+   "numeric_conditions_retained": false
+  }
+ ],
+ "outputs": [
+  {
+   "id": "S01",
+   "raw": "{\"interpretation\": \"只在原文條件下成立（300）。\", \"points\": [{\"text\": \"範圍：Sample A / 300 K\", \"evidence\": [{\"ref\": \"E1\", \"quote\": \"Sample A improved by 12 percent at 300 K under one calibration protocol.\"}]}], \"uncertainty\": {\"level\": \"medium\", \"reasons\": [\"單一研究\"]}, \"open_questions\": []}",
+   "structured": {
+    "schema": "roothinks.study.tutor/1",
+    "interpretation": "只在原文條件下成立（300）。",
+    "points": [
+     {
+      "text": "範圍：Sample A / 300 K",
+      "evidence": [
+       {
+        "schema": "roothinks.study.anchor/1",
+        "pid": "EVAL-p",
+        "paper_id": "S01",
+        "source": "flowa_fusion",
+        "source_sha256": "synthetic",
+        "page": 1,
+        "block_index": 2,
+        "ref": "p1-b2",
+        "seq_id": "p1_body_2",
+        "side": "original",
+        "quote": "Sample A improved by 12 percent at 300 K under one calibration protocol.",
+        "quote_sha256": "79fe69b790e00018a2c0114ba74e796a0025d5c130e54c411862d9fd63ed9c4a",
+        "start": 0,
+        "end": 72,
+        "prefix": "",
+        "suffix": " Samples B and C were not measur",
+        "status": "exact",
+        "match_kind": "quote",
+        "evidence_label": "E1"
+       }
+      ],
+      "quote_match": "found",
+      "claim_support": "not_assessed",
+      "rejected_evidence": 0
+     }
+    ],
+    "rejected_quotes": [],
+    "uncertainty": {
+     "level": "medium",
+     "reasons": [
+      "單一研究"
+     ],
+     "source": "model_self_report"
+    },
+    "open_questions": [],
+    "selection": {
+     "schema": "roothinks.study.anchor/1",
+     "pid": "EVAL-p",
+     "paper_id": "S01",
+     "source": "flowa_fusion",
+     "source_sha256": "synthetic",
+     "page": 1,
+     "block_index": 2,
+     "ref": "p1-b2",
+     "seq_id": "p1_body_2",
+     "side": "original",
+     "quote": "Sample A improved by 12 percent at 300 K under one calibration protocol.",
+     "quote_sha256": "79fe69b790e00018a2c0114ba74e796a0025d5c130e54c411862d9fd63ed9c4a",
+     "start": 0,
+     "end": 72,
+     "prefix": "",
+     "suffix": " Samples B and C were not measur",
+     "status": "exact",
+     "match_kind": "quote",
+     "version_changed": false
+    },
+    "system_check": {
+     "selection_status": "exact",
+     "selection_side": "original",
+     "version_changed": false,
+     "translation_based": false,
+     "format_ok": true,
+     "quotes_found": 1,
+     "rejected_quotes": 0
+    }
+   }
+  },
+  {
+   "id": "S02",
+   "raw": "{\"interpretation\": \"只在原文條件下成立（8000）。\", \"points\": [{\"text\": \"範圍：cross-sectional / 8000 steps\", \"evidence\": [{\"ref\": \"E1\", \"quote\": \"Patients who walked more than 8000 steps per day had lower systolic blood pressure.\"}]}], \"uncertainty\": {\"level\": \"medium\", \"reasons\": [\"單一研究\"]}, \"open_questions\": []}",
+   "structured": {
+    "schema": "roothinks.study.tutor/1",
+    "interpretation": "只在原文條件下成立（8000）。",
+    "points": [
+     {
+      "text": "範圍：cross-sectional / 8000 steps",
+      "evidence": [
+       {
+        "schema": "roothinks.study.anchor/1",
+        "pid": "EVAL-p",
+        "paper_id": "S02",
+        "source": "flowa_fusion",
+        "source_sha256": "synthetic",
+        "page": 1,
+        "block_index": 2,
+        "ref": "p1-b2",
+        "seq_id": "p1_body_2",
+        "side": "original",
+        "quote": "Patients who walked more than 8000 steps per day had lower systolic blood pressure.",
+        "quote_sha256": "2e7747ab55d5faf231b1a1bfca6583c9601569ed73d7064eed253360204100d4",
+        "start": 0,
+        "end": 83,
+        "prefix": "",
+        "suffix": " The analysis was cross-sectiona",
+        "status": "exact",
+        "match_kind": "quote",
+        "evidence_label": "E1"
+       }
+      ],
+      "quote_match": "found",
+      "claim_support": "not_assessed",
+      "rejected_evidence": 0
+     }
+    ],
+    "rejected_quotes": [],
+    "uncertainty": {
+     "level": "medium",
+     "reasons": [
+      "單一研究"
+     ],
+     "source": "model_self_report"
+    },
+    "open_questions": [],
+    "selection": {
+     "schema": "roothinks.study.anchor/1",
+     "pid": "EVAL-p",
+     "paper_id": "S02",
+     "source": "flowa_fusion",
+     "source_sha256": "synthetic",
+     "page": 1,
+     "block_index": 2,
+     "ref": "p1-b2",
+     "seq_id": "p1_body_2",
+     "side": "original",
+     "quote": "Patients who walked more than 8000 steps per day had lower systolic blood pressure.",
+     "quote_sha256": "2e7747ab55d5faf231b1a1bfca6583c9601569ed73d7064eed253360204100d4",
+     "start": 0,
+     "end": 83,
+     "prefix": "",
+     "suffix": " The analysis was cross-sectiona",
+     "status": "exact",
+     "match_kind": "quote",
+     "version_changed": false
+    },
+    "system_check": {
+     "selection_status": "exact",
+     "selection_side": "original",
+     "version_changed": false,
+     "translation_based": false,
+     "format_ok": true,
+     "quotes_found": 1,
+     "rejected_quotes": 0
+    }
+   }
+  },
+  {
+   "id": "S03",
+   "raw": "{\"interpretation\": \"只在原文條件下成立（0.45）。\", \"points\": [{\"text\": \"範圍：did not differ / 0.45\", \"evidence\": [{\"ref\": \"E1\", \"quote\": \"Nest density did not differ between restored and unrestored sites.\"}]}], \"uncertainty\": {\"level\": \"medium\", \"reasons\": [\"單一研究\"]}, \"open_questions\": []}",
+   "structured": {
+    "schema": "roothinks.study.tutor/1",
+    "interpretation": "只在原文條件下成立（0.45）。",
+    "points": [
+     {
+      "text": "範圍：did not differ / 0.45",
+      "evidence": [
+       {
+        "schema": "roothinks.study.anchor/1",
+        "pid": "EVAL-p",
+        "paper_id": "S03",
+        "source": "flowa_fusion",
+        "source_sha256": "synthetic",
+        "page": 1,
+        "block_index": 2,
+        "ref": "p1-b2",
+        "seq_id": "p1_body_2",
+        "side": "original",
+        "quote": "Nest density did not differ between restored and unrestored sites.",
+        "quote_sha256": "dfb6c606461d093ba8066465fb91496fda685b95f95ee29ffaed3c2bdb0462d5",
+        "start": 0,
+        "end": 66,
+        "prefix": "",
+        "suffix": " The power to detect a 10 percen",
+        "status": "exact",
+        "match_kind": "quote",
+        "evidence_label": "E1"
+       }
+      ],
+      "quote_match": "found",
+      "claim_support": "not_assessed",
+      "rejected_evidence": 0
+     }
+    ],
+    "rejected_quotes": [],
+    "uncertainty": {
+     "level": "medium",
+     "reasons": [
+      "單一研究"
+     ],
+     "source": "model_self_report"
+    },
+    "open_questions": [],
+    "selection": {
+     "schema": "roothinks.study.anchor/1",
+     "pid": "EVAL-p",
+     "paper_id": "S03",
+     "source": "flowa_fusion",
+     "source_sha256": "synthetic",
+     "page": 1,
+     "block_index": 2,
+     "ref": "p1-b2",
+     "seq_id": "p1_body_2",
+     "side": "original",
+     "quote": "Nest density did not differ between restored and unrestored sites.",
+     "quote_sha256": "dfb6c606461d093ba8066465fb91496fda685b95f95ee29ffaed3c2bdb0462d5",
+     "start": 0,
+     "end": 66,
+     "prefix": "",
+     "suffix": " The power to detect a 10 percen",
+     "status": "exact",
+     "match_kind": "quote",
+     "version_changed": false
+    },
+    "system_check": {
+     "selection_status": "exact",
+     "selection_side": "original",
+     "version_changed": false,
+     "translation_based": false,
+     "format_ok": true,
+     "quotes_found": 1,
+     "rejected_quotes": 0
+    }
+   }
+  },
+  {
+   "id": "S04",
+   "raw": "{\"interpretation\": \"只在原文條件下成立（91.2）。\", \"points\": [{\"text\": \"範圍：in-domain / 91.2\", \"evidence\": [{\"ref\": \"E1\", \"quote\": \"The model reached 91.2 F1 on the in-domain test set.\"}]}], \"uncertainty\": {\"level\": \"medium\", \"reasons\": [\"單一研究\"]}, \"open_questions\": []}",
+   "structured": {
+    "schema": "roothinks.study.tutor/1",
+    "interpretation": "只在原文條件下成立（91.2）。",
+    "points": [
+     {
+      "text": "範圍：in-domain / 91.2",
+      "evidence": [
+       {
+        "schema": "roothinks.study.anchor/1",
+        "pid": "EVAL-p",
+        "paper_id": "S04",
+        "source": "flowa_fusion",
+        "source_sha256": "synthetic",
+        "page": 1,
+        "block_index": 2,
+        "ref": "p1-b2",
+        "seq_id": "p1_body_2",
+        "side": "original",
+        "quote": "The model reached 91.2 F1 on the in-domain test set.",
+        "quote_sha256": "3062119b1b0d67907cfcee24e1e97cfd2d9dec77d336b1529fbf773fc2888988",
+        "start": 0,
+        "end": 52,
+        "prefix": "",
+        "suffix": " Performance on clinical text wa",
+        "status": "exact",
+        "match_kind": "quote",
+        "evidence_label": "E1"
+       }
+      ],
+      "quote_match": "found",
+      "claim_support": "not_assessed",
+      "rejected_evidence": 0
+     }
+    ],
+    "rejected_quotes": [],
+    "uncertainty": {
+     "level": "medium",
+     "reasons": [
+      "單一研究"
+     ],
+     "source": "model_self_report"
+    },
+    "open_questions": [],
+    "selection": {
+     "schema": "roothinks.study.anchor/1",
+     "pid": "EVAL-p",
+     "paper_id": "S04",
+     "source": "flowa_fusion",
+     "source_sha256": "synthetic",
+     "page": 1,
+     "block_index": 2,
+     "ref": "p1-b2",
+     "seq_id": "p1_body_2",
+     "side": "original",
+     "quote": "The model reached 91.2 F1 on the in-domain test set.",
+     "quote_sha256": "3062119b1b0d67907cfcee24e1e97cfd2d9dec77d336b1529fbf773fc2888988",
+     "start": 0,
+     "end": 52,
+     "prefix": "",
+     "suffix": " Performance on clinical text wa",
+     "status": "exact",
+     "match_kind": "quote",
+     "version_changed": false
+    },
+    "system_check": {
+     "selection_status": "exact",
+     "selection_side": "original",
+     "version_changed": false,
+     "translation_based": false,
+     "format_ok": true,
+     "quotes_found": 1,
+     "rejected_quotes": 0
+    }
+   }
+  },
+  {
+   "id": "S05",
+   "raw": "{\"interpretation\": \"只在原文條件下成立（）。\", \"points\": [{\"text\": \"範圍：pilot / No control group\", \"evidence\": [{\"ref\": \"E1\", \"quote\": \"Reaction times were faster after the brief mindfulness session in this pilot sample.\"}]}], \"uncertainty\": {\"level\": \"medium\", \"reasons\": [\"單一研究\"]}, \"open_questions\": []}",
+   "structured": {
+    "schema": "roothinks.study.tutor/1",
+    "interpretation": "只在原文條件下成立（）。",
+    "points": [
+     {
+      "text": "範圍：pilot / No control group",
+      "evidence": [
+       {
+        "schema": "roothinks.study.anchor/1",
+        "pid": "EVAL-p",
+        "paper_id": "S05",
+        "source": "flowa_fusion",
+        "source_sha256": "synthetic",
+        "page": 1,
+        "block_index": 2,
+        "ref": "p1-b2",
+        "seq_id": "p1_body_2",
+        "side": "original",
+        "quote": "Reaction times were faster after the brief mindfulness session in this pilot sample.",
+        "quote_sha256": "e7c7896bbff37f3cc4a950f252b6d922cadf14052716d432561c2e165fb41e8e",
+        "start": 0,
+        "end": 84,
+        "prefix": "",
+        "suffix": " No control group was included.",
+        "status": "exact",
+        "match_kind": "quote",
+        "evidence_label": "E1"
+       }
+      ],
+      "quote_match": "found",
+      "claim_support": "not_assessed",
+      "rejected_evidence": 0
+     }
+    ],
+    "rejected_quotes": [],
+    "uncertainty": {
+     "level": "medium",
+     "reasons": [
+      "單一研究"
+     ],
+     "source": "model_self_report"
+    },
+    "open_questions": [],
+    "selection": {
+     "schema": "roothinks.study.anchor/1",
+     "pid": "EVAL-p",
+     "paper_id": "S05",
+     "source": "flowa_fusion",
+     "source_sha256": "synthetic",
+     "page": 1,
+     "block_index": 2,
+     "ref": "p1-b2",
+     "seq_id": "p1_body_2",
+     "side": "original",
+     "quote": "Reaction times were faster after the brief mindfulness session in this pilot sample.",
+     "quote_sha256": "e7c7896bbff37f3cc4a950f252b6d922cadf14052716d432561c2e165fb41e8e",
+     "start": 0,
+     "end": 84,
+     "prefix": "",
+     "suffix": " No control group was included.",
+     "status": "exact",
+     "match_kind": "quote",
+     "version_changed": false
+    },
+    "system_check": {
+     "selection_status": "exact",
+     "selection_side": "original",
+     "version_changed": false,
+     "translation_based": false,
+     "format_ok": true,
+     "quotes_found": 1,
+     "rejected_quotes": 0
+    }
+   }
+  },
+  {
+   "id": "S06",
+   "raw": "{\"interpretation\": \"只在原文條件下成立（6.5 7.0）。\", \"points\": [{\"text\": \"範圍：pH / 6.5 and 7.0\", \"evidence\": [{\"ref\": \"E1\", \"quote\": \"Yield increased to 78 percent only when the pH was kept between 6.5 and 7.0.\"}]}], \"uncertainty\": {\"level\": \"medium\", \"reasons\": [\"單一研究\"]}, \"open_questions\": []}",
+   "structured": {
+    "schema": "roothinks.study.tutor/1",
+    "interpretation": "只在原文條件下成立（6.5 7.0）。",
+    "points": [
+     {
+      "text": "範圍：pH / 6.5 and 7.0",
+      "evidence": [
+       {
+        "schema": "roothinks.study.anchor/1",
+        "pid": "EVAL-p",
+        "paper_id": "S06",
+        "source": "flowa_fusion",
+        "source_sha256": "synthetic",
+        "page": 1,
+        "block_index": 2,
+        "ref": "p1-b2",
+        "seq_id": "p1_body_2",
+        "side": "original",
+        "quote": "Yield increased to 78 percent only when the pH was kept between 6.5 and 7.0.",
+        "quote_sha256": "63f5bcc11c1fb14bdde593593b83953d2470f36f33d4a5c62ac9597695e871a3",
+        "start": 0,
+        "end": 76,
+        "prefix": "",
+        "suffix": " Outside this range the yield fe",
+        "status": "exact",
+        "match_kind": "quote",
+        "evidence_label": "E1"
+       }
+      ],
+      "quote_match": "found",
+      "claim_support": "not_assessed",
+      "rejected_evidence": 0
+     }
+    ],
+    "rejected_quotes": [],
+    "uncertainty": {
+     "level": "medium",
+     "reasons": [
+      "單一研究"
+     ],
+     "source": "model_self_report"
+    },
+    "open_questions": [],
+    "selection": {
+     "schema": "roothinks.study.anchor/1",
+     "pid": "EVAL-p",
+     "paper_id": "S06",
+     "source": "flowa_fusion",
+     "source_sha256": "synthetic",
+     "page": 1,
+     "block_index": 2,
+     "ref": "p1-b2",
+     "seq_id": "p1_body_2",
+     "side": "original",
+     "quote": "Yield increased to 78 percent only when the pH was kept between 6.5 and 7.0.",
+     "quote_sha256": "63f5bcc11c1fb14bdde593593b83953d2470f36f33d4a5c62ac9597695e871a3",
+     "start": 0,
+     "end": 76,
+     "prefix": "",
+     "suffix": " Outside this range the yield fe",
+     "status": "exact",
+     "match_kind": "quote",
+     "version_changed": false
+    },
+    "system_check": {
+     "selection_status": "exact",
+     "selection_side": "original",
+     "version_changed": false,
+     "translation_based": false,
+     "format_ok": true,
+     "quotes_found": 1,
+     "rejected_quotes": 0
+    }
+   }
+  },
+  {
+   "id": "S07",
+   "raw": "{\"interpretation\": \"只在原文條件下成立（）。\", \"points\": [{\"text\": \"範圍：may have / reporting practices\", \"evidence\": [{\"ref\": \"E1\", \"quote\": \"Incidence may have declined after the vaccination campaign, but reporting practices also changed in 2017.\"}]}], \"uncertainty\": {\"level\": \"medium\", \"reasons\": [\"單一研究\"]}, \"open_questions\": []}",
+   "structured": {
+    "schema": "roothinks.study.tutor/1",
+    "interpretation": "只在原文條件下成立（）。",
+    "points": [
+     {
+      "text": "範圍：may have / reporting practices",
+      "evidence": [
+       {
+        "schema": "roothinks.study.anchor/1",
+        "pid": "EVAL-p",
+        "paper_id": "S07",
+        "source": "flowa_fusion",
+        "source_sha256": "synthetic",
+        "page": 1,
+        "block_index": 2,
+        "ref": "p1-b2",
+        "seq_id": "p1_body_2",
+        "side": "original",
+        "quote": "Incidence may have declined after the vaccination campaign, but reporting practices also changed in 2017.",
+        "quote_sha256": "4caad2da04e609fa3c8a23eccd27da2ec9ba122c792536487baf87536fb489d2",
+        "start": 0,
+        "end": 105,
+        "prefix": "",
+        "suffix": "",
+        "status": "exact",
+        "match_kind": "quote",
+        "evidence_label": "E1"
+       }
+      ],
+      "quote_match": "found",
+      "claim_support": "not_assessed",
+      "rejected_evidence": 0
+     }
+    ],
+    "rejected_quotes": [],
+    "uncertainty": {
+     "level": "medium",
+     "reasons": [
+      "單一研究"
+     ],
+     "source": "model_self_report"
+    },
+    "open_questions": [],
+    "selection": {
+     "schema": "roothinks.study.anchor/1",
+     "pid": "EVAL-p",
+     "paper_id": "S07",
+     "source": "flowa_fusion",
+     "source_sha256": "synthetic",
+     "page": 1,
+     "block_index": 2,
+     "ref": "p1-b2",
+     "seq_id": "p1_body_2",
+     "side": "original",
+     "quote": "Incidence may have declined after the vaccination campaign, but reporting practices also changed in 2017.",
+     "quote_sha256": "4caad2da04e609fa3c8a23eccd27da2ec9ba122c792536487baf87536fb489d2",
+     "start": 0,
+     "end": 105,
+     "prefix": "",
+     "suffix": "",
+     "status": "exact",
+     "match_kind": "quote",
+     "version_changed": false
+    },
+    "system_check": {
+     "selection_status": "exact",
+     "selection_side": "original",
+     "version_changed": false,
+     "translation_based": false,
+     "format_ok": true,
+     "quotes_found": 1,
+     "rejected_quotes": 0
+    }
+   }
+  },
+  {
+   "id": "S08",
+   "raw": "{\"interpretation\": \"只在原文條件下成立（0.8）。\", \"points\": [{\"text\": \"範圍：upper limit / 0.8\", \"evidence\": [{\"ref\": \"E1\", \"quote\": \"No signal above background was observed between 2 and 5 GeV.\"}]}], \"uncertainty\": {\"level\": \"medium\", \"reasons\": [\"單一研究\"]}, \"open_questions\": []}",
+   "structured": {
+    "schema": "roothinks.study.tutor/1",
+    "interpretation": "只在原文條件下成立（0.8）。",
+    "points": [
+     {
+      "text": "範圍：upper limit / 0.8",
+      "evidence": [
+       {
+        "schema": "roothinks.study.anchor/1",
+        "pid": "EVAL-p",
+        "paper_id": "S08",
+        "source": "flowa_fusion",
+        "source_sha256": "synthetic",
+        "page": 1,
+        "block_index": 2,
+        "ref": "p1-b2",
+        "seq_id": "p1_body_2",
+        "side": "original",
+        "quote": "No signal above background was observed between 2 and 5 GeV.",
+        "quote_sha256": "be86bd1997aa3a72990c07d3c8feb6f2f61da2cebd7a112ba821536bd7136527",
+        "start": 0,
+        "end": 60,
+        "prefix": "",
+        "suffix": " The upper limit depends on the ",
+        "status": "exact",
+        "match_kind": "quote",
+        "evidence_label": "E1"
+       }
+      ],
+      "quote_match": "found",
+      "claim_support": "not_assessed",
+      "rejected_evidence": 0
+     }
+    ],
+    "rejected_quotes": [],
+    "uncertainty": {
+     "level": "medium",
+     "reasons": [
+      "單一研究"
+     ],
+     "source": "model_self_report"
+    },
+    "open_questions": [],
+    "selection": {
+     "schema": "roothinks.study.anchor/1",
+     "pid": "EVAL-p",
+     "paper_id": "S08",
+     "source": "flowa_fusion",
+     "source_sha256": "synthetic",
+     "page": 1,
+     "block_index": 2,
+     "ref": "p1-b2",
+     "seq_id": "p1_body_2",
+     "side": "original",
+     "quote": "No signal above background was observed between 2 and 5 GeV.",
+     "quote_sha256": "be86bd1997aa3a72990c07d3c8feb6f2f61da2cebd7a112ba821536bd7136527",
+     "start": 0,
+     "end": 60,
+     "prefix": "",
+     "suffix": " The upper limit depends on the ",
+     "status": "exact",
+     "match_kind": "quote",
+     "version_changed": false
+    },
+    "system_check": {
+     "selection_status": "exact",
+     "selection_side": "original",
+     "version_changed": false,
+     "translation_based": false,
+     "format_ok": true,
+     "quotes_found": 1,
+     "rejected_quotes": 0
+    }
+   }
+  },
+  {
+   "id": "S09",
+   "raw": "{\"interpretation\": \"只在原文條件下成立（）。\", \"points\": [{\"text\": \"範圍：loam soil / irrigation\", \"evidence\": [{\"ref\": \"E1\", \"quote\": \"The new cultivar yielded 9 percent more grain on loam soil under irrigation.\"}]}], \"uncertainty\": {\"level\": \"medium\", \"reasons\": [\"單一研究\"]}, \"open_questions\": []}",
+   "structured": {
+    "schema": "roothinks.study.tutor/1",
+    "interpretation": "只在原文條件下成立（）。",
+    "points": [
+     {
+      "text": "範圍：loam soil / irrigation",
+      "evidence": [
+       {
+        "schema": "roothinks.study.anchor/1",
+        "pid": "EVAL-p",
+        "paper_id": "S09",
+        "source": "flowa_fusion",
+        "source_sha256": "synthetic",
+        "page": 1,
+        "block_index": 2,
+        "ref": "p1-b2",
+        "seq_id": "p1_body_2",
+        "side": "original",
+        "quote": "The new cultivar yielded 9 percent more grain on loam soil under irrigation.",
+        "quote_sha256": "0671f2913cce623164f131cb9c8579e0aa5b4839530a3dfa7824004ce374d067",
+        "start": 0,
+        "end": 76,
+        "prefix": "",
+        "suffix": " Dryland plots were not included",
+        "status": "exact",
+        "match_kind": "quote",
+        "evidence_label": "E1"
+       }
+      ],
+      "quote_match": "found",
+      "claim_support": "not_assessed",
+      "rejected_evidence": 0
+     }
+    ],
+    "rejected_quotes": [],
+    "uncertainty": {
+     "level": "medium",
+     "reasons": [
+      "單一研究"
+     ],
+     "source": "model_self_report"
+    },
+    "open_questions": [],
+    "selection": {
+     "schema": "roothinks.study.anchor/1",
+     "pid": "EVAL-p",
+     "paper_id": "S09",
+     "source": "flowa_fusion",
+     "source_sha256": "synthetic",
+     "page": 1,
+     "block_index": 2,
+     "ref": "p1-b2",
+     "seq_id": "p1_body_2",
+     "side": "original",
+     "quote": "The new cultivar yielded 9 percent more grain on loam soil under irrigation.",
+     "quote_sha256": "0671f2913cce623164f131cb9c8579e0aa5b4839530a3dfa7824004ce374d067",
+     "start": 0,
+     "end": 76,
+     "prefix": "",
+     "suffix": " Dryland plots were not included",
+     "status": "exact",
+     "match_kind": "quote",
+     "version_changed": false
+    },
+    "system_check": {
+     "selection_status": "exact",
+     "selection_side": "original",
+     "version_changed": false,
+     "translation_based": false,
+     "format_ok": true,
+     "quotes_found": 1,
+     "rejected_quotes": 0
+    }
+   }
+  },
+  {
+   "id": "S10",
+   "raw": "{\"interpretation\": \"只在原文條件下成立（）。\", \"points\": [{\"text\": \"範圍：mice / maze test\", \"evidence\": [{\"ref\": \"E1\", \"quote\": \"Blocking receptor R reduced anxiety-like behavior in the maze test.\"}]}], \"uncertainty\": {\"level\": \"medium\", \"reasons\": [\"單一研究\"]}, \"open_questions\": []}",
+   "structured": {
+    "schema": "roothinks.study.tutor/1",
+    "interpretation": "只在原文條件下成立（）。",
+    "points": [
+     {
+      "text": "範圍：mice / maze test",
+      "evidence": [
+       {
+        "schema": "roothinks.study.anchor/1",
+        "pid": "EVAL-p",
+        "paper_id": "S10",
+        "source": "flowa_fusion",
+        "source_sha256": "synthetic",
+        "page": 1,
+        "block_index": 2,
+        "ref": "p1-b2",
+        "seq_id": "p1_body_2",
+        "side": "original",
+        "quote": "Blocking receptor R reduced anxiety-like behavior in the maze test.",
+        "quote_sha256": "b2000db031c8dc8fc6e59ee4aedb0488de597c7b1bb92da8d01bf4d7fbda1140",
+        "start": 0,
+        "end": 67,
+        "prefix": "",
+        "suffix": " Female mice were not tested.",
+        "status": "exact",
+        "match_kind": "quote",
+        "evidence_label": "E1"
+       }
+      ],
+      "quote_match": "found",
+      "claim_support": "not_assessed",
+      "rejected_evidence": 0
+     }
+    ],
+    "rejected_quotes": [],
+    "uncertainty": {
+     "level": "medium",
+     "reasons": [
+      "單一研究"
+     ],
+     "source": "model_self_report"
+    },
+    "open_questions": [],
+    "selection": {
+     "schema": "roothinks.study.anchor/1",
+     "pid": "EVAL-p",
+     "paper_id": "S10",
+     "source": "flowa_fusion",
+     "source_sha256": "synthetic",
+     "page": 1,
+     "block_index": 2,
+     "ref": "p1-b2",
+     "seq_id": "p1_body_2",
+     "side": "original",
+     "quote": "Blocking receptor R reduced anxiety-like behavior in the maze test.",
+     "quote_sha256": "b2000db031c8dc8fc6e59ee4aedb0488de597c7b1bb92da8d01bf4d7fbda1140",
+     "start": 0,
+     "end": 67,
+     "prefix": "",
+     "suffix": " Female mice were not tested.",
+     "status": "exact",
+     "match_kind": "quote",
+     "version_changed": false
+    },
+    "system_check": {
+     "selection_status": "exact",
+     "selection_side": "original",
+     "version_changed": false,
+     "translation_based": false,
+     "format_ok": true,
+     "quotes_found": 1,
+     "rejected_quotes": 0
+    }
+   }
+  },
+  {
+   "id": "S11",
+   "raw": "{\"interpretation\": \"只在原文條件下成立（）。\", \"points\": [{\"text\": \"範圍：voluntary / following year\", \"evidence\": [{\"ref\": \"E1\", \"quote\": \"Firms that adopted the subsidy hired more workers in the following year.\"}]}], \"uncertainty\": {\"level\": \"medium\", \"reasons\": [\"單一研究\"]}, \"open_questions\": []}",
+   "structured": {
+    "schema": "roothinks.study.tutor/1",
+    "interpretation": "只在原文條件下成立（）。",
+    "points": [
+     {
+      "text": "範圍：voluntary / following year",
+      "evidence": [
+       {
+        "schema": "roothinks.study.anchor/1",
+        "pid": "EVAL-p",
+        "paper_id": "S11",
+        "source": "flowa_fusion",
+        "source_sha256": "synthetic",
+        "page": 1,
+        "block_index": 2,
+        "ref": "p1-b2",
+        "seq_id": "p1_body_2",
+        "side": "original",
+        "quote": "Firms that adopted the subsidy hired more workers in the following year.",
+        "quote_sha256": "c1c3692bda256fa42eba9a60dac865c64b0c7d1e701736a4962de958ffa45f3e",
+        "start": 0,
+        "end": 72,
+        "prefix": "",
+        "suffix": " Adoption was voluntary.",
+        "status": "exact",
+        "match_kind": "quote",
+        "evidence_label": "E1"
+       }
+      ],
+      "quote_match": "found",
+      "claim_support": "not_assessed",
+      "rejected_evidence": 0
+     }
+    ],
+    "rejected_quotes": [],
+    "uncertainty": {
+     "level": "medium",
+     "reasons": [
+      "單一研究"
+     ],
+     "source": "model_self_report"
+    },
+    "open_questions": [],
+    "selection": {
+     "schema": "roothinks.study.anchor/1",
+     "pid": "EVAL-p",
+     "paper_id": "S11",
+     "source": "flowa_fusion",
+     "source_sha256": "synthetic",
+     "page": 1,
+     "block_index": 2,
+     "ref": "p1-b2",
+     "seq_id": "p1_body_2",
+     "side": "original",
+     "quote": "Firms that adopted the subsidy hired more workers in the following year.",
+     "quote_sha256": "c1c3692bda256fa42eba9a60dac865c64b0c7d1e701736a4962de958ffa45f3e",
+     "start": 0,
+     "end": 72,
+     "prefix": "",
+     "suffix": " Adoption was voluntary.",
+     "status": "exact",
+     "match_kind": "quote",
+     "version_changed": false
+    },
+    "system_check": {
+     "selection_status": "exact",
+     "selection_side": "original",
+     "version_changed": false,
+     "translation_based": false,
+     "format_ok": true,
+     "quotes_found": 1,
+     "rejected_quotes": 0
+    }
+   }
+  },
+  {
+   "id": "S12",
+   "raw": "{\"interpretation\": \"只在原文條件下成立（30）。\", \"points\": [{\"text\": \"範圍：30 days / salt spray\", \"evidence\": [{\"ref\": \"E1\", \"quote\": \"After 30 days in salt spray the coating reduced corrosion by 40 percent relative to bare steel.\"}]}], \"uncertainty\": {\"level\": \"medium\", \"reasons\": [\"單一研究\"]}, \"open_questions\": []}",
+   "structured": {
+    "schema": "roothinks.study.tutor/1",
+    "interpretation": "只在原文條件下成立（30）。",
+    "points": [
+     {
+      "text": "範圍：30 days / salt spray",
+      "evidence": [
+       {
+        "schema": "roothinks.study.anchor/1",
+        "pid": "EVAL-p",
+        "paper_id": "S12",
+        "source": "flowa_fusion",
+        "source_sha256": "synthetic",
+        "page": 1,
+        "block_index": 2,
+        "ref": "p1-b2",
+        "seq_id": "p1_body_2",
+        "side": "original",
+        "quote": "After 30 days in salt spray the coating reduced corrosion by 40 percent relative to bare steel.",
+        "quote_sha256": "1690ebd5538e81b3d087b7293f0e3457228aefa4211aef847b733228737aee0b",
+        "start": 31,
+        "end": 126,
+        "prefix": "The coating reduced corrosion. ",
+        "suffix": "",
+        "status": "exact",
+        "match_kind": "quote",
+        "evidence_label": "E1"
+       }
+      ],
+      "quote_match": "found",
+      "claim_support": "not_assessed",
+      "rejected_evidence": 0
+     }
+    ],
+    "rejected_quotes": [],
+    "uncertainty": {
+     "level": "medium",
+     "reasons": [
+      "單一研究"
+     ],
+     "source": "model_self_report"
+    },
+    "open_questions": [],
+    "selection": {
+     "schema": "roothinks.study.anchor/1",
+     "pid": "EVAL-p",
+     "paper_id": "S12",
+     "source": "flowa_fusion",
+     "source_sha256": "synthetic",
+     "page": 1,
+     "block_index": 2,
+     "ref": "p1-b2",
+     "seq_id": "p1_body_2",
+     "side": "original",
+     "quote": "After 30 days in salt spray the coating reduced corrosion by 40 percent relative to bare steel.",
+     "quote_sha256": "1690ebd5538e81b3d087b7293f0e3457228aefa4211aef847b733228737aee0b",
+     "start": 31,
+     "end": 126,
+     "prefix": "The coating reduced corrosion. ",
+     "suffix": "",
+     "status": "exact",
+     "match_kind": "quote",
+     "version_changed": false
+    },
+    "system_check": {
+     "selection_status": "exact",
+     "selection_side": "original",
+     "version_changed": false,
+     "translation_based": false,
+     "format_ok": true,
+     "quotes_found": 1,
+     "rejected_quotes": 0
+    }
+   }
+  },
+  {
+   "id": "S13",
+   "raw": "{\"interpretation\": \"只在原文條件下成立（）。\", \"points\": [{\"text\": \"範圍：before correction / did not pass\", \"evidence\": [{\"ref\": \"E1\", \"quote\": \"One variant was associated with height at p = 0.003 before correction.\"}]}], \"uncertainty\": {\"level\": \"medium\", \"reasons\": [\"單一研究\"]}, \"open_questions\": []}",
+   "structured": {
+    "schema": "roothinks.study.tutor/1",
+    "interpretation": "只在原文條件下成立（）。",
+    "points": [
+     {
+      "text": "範圍：before correction / did not pass",
+      "evidence": [
+       {
+        "schema": "roothinks.study.anchor/1",
+        "pid": "EVAL-p",
+        "paper_id": "S13",
+        "source": "flowa_fusion",
+        "source_sha256": "synthetic",
+        "page": 1,
+        "block_index": 2,
+        "ref": "p1-b2",
+        "seq_id": "p1_body_2",
+        "side": "original",
+        "quote": "One variant was associated with height at p = 0.003 before correction.",
+        "quote_sha256": "46a2c760ecaea35dd171fef875a06a7acf29d60d3ea52f780e89ac095d13aab4",
+        "start": 0,
+        "end": 70,
+        "prefix": "",
+        "suffix": " It did not pass the genome-wide",
+        "status": "exact",
+        "match_kind": "quote",
+        "evidence_label": "E1"
+       }
+      ],
+      "quote_match": "found",
+      "claim_support": "not_assessed",
+      "rejected_evidence": 0
+     }
+    ],
+    "rejected_quotes": [],
+    "uncertainty": {
+     "level": "medium",
+     "reasons": [
+      "單一研究"
+     ],
+     "source": "model_self_report"
+    },
+    "open_questions": [],
+    "selection": {
+     "schema": "roothinks.study.anchor/1",
+     "pid": "EVAL-p",
+     "paper_id": "S13",
+     "source": "flowa_fusion",
+     "source_sha256": "synthetic",
+     "page": 1,
+     "block_index": 2,
+     "ref": "p1-b2",
+     "seq_id": "p1_body_2",
+     "side": "original",
+     "quote": "One variant was associated with height at p = 0.003 before correction.",
+     "quote_sha256": "46a2c760ecaea35dd171fef875a06a7acf29d60d3ea52f780e89ac095d13aab4",
+     "start": 0,
+     "end": 70,
+     "prefix": "",
+     "suffix": " It did not pass the genome-wide",
+     "status": "exact",
+     "match_kind": "quote",
+     "version_changed": false
+    },
+    "system_check": {
+     "selection_status": "exact",
+     "selection_side": "original",
+     "version_changed": false,
+     "translation_based": false,
+     "format_ok": true,
+     "quotes_found": 1,
+     "rejected_quotes": 0
+    }
+   }
+  },
+  {
+   "id": "S14",
+   "raw": "{\"interpretation\": \"只在原文條件下成立（）。\", \"points\": [{\"text\": \"範圍：high-emission scenario / one regional climate model\", \"evidence\": [{\"ref\": \"E1\", \"quote\": \"Under the high-emission scenario, summer rainfall decreased by 15 percent by 2080.\"}]}], \"uncertainty\": {\"level\": \"medium\", \"reasons\": [\"單一研究\"]}, \"open_questions\": []}",
+   "structured": {
+    "schema": "roothinks.study.tutor/1",
+    "interpretation": "只在原文條件下成立（）。",
+    "points": [
+     {
+      "text": "範圍：high-emission scenario / one regional climate model",
+      "evidence": [
+       {
+        "schema": "roothinks.study.anchor/1",
+        "pid": "EVAL-p",
+        "paper_id": "S14",
+        "source": "flowa_fusion",
+        "source_sha256": "synthetic",
+        "page": 1,
+        "block_index": 2,
+        "ref": "p1-b2",
+        "seq_id": "p1_body_2",
+        "side": "original",
+        "quote": "Under the high-emission scenario, summer rainfall decreased by 15 percent by 2080.",
+        "quote_sha256": "b4a78106d7941ea9d0f5a2c92533378cfa2ee6f02ac546fd8fc2666d323d6097",
+        "start": 0,
+        "end": 82,
+        "prefix": "",
+        "suffix": " Other models were not compared.",
+        "status": "exact",
+        "match_kind": "quote",
+        "evidence_label": "E1"
+       }
+      ],
+      "quote_match": "found",
+      "claim_support": "not_assessed",
+      "rejected_evidence": 0
+     }
+    ],
+    "rejected_quotes": [],
+    "uncertainty": {
+     "level": "medium",
+     "reasons": [
+      "單一研究"
+     ],
+     "source": "model_self_report"
+    },
+    "open_questions": [],
+    "selection": {
+     "schema": "roothinks.study.anchor/1",
+     "pid": "EVAL-p",
+     "paper_id": "S14",
+     "source": "flowa_fusion",
+     "source_sha256": "synthetic",
+     "page": 1,
+     "block_index": 2,
+     "ref": "p1-b2",
+     "seq_id": "p1_body_2",
+     "side": "original",
+     "quote": "Under the high-emission scenario, summer rainfall decreased by 15 percent by 2080.",
+     "quote_sha256": "b4a78106d7941ea9d0f5a2c92533378cfa2ee6f02ac546fd8fc2666d323d6097",
+     "start": 0,
+     "end": 82,
+     "prefix": "",
+     "suffix": " Other models were not compared.",
+     "status": "exact",
+     "match_kind": "quote",
+     "version_changed": false
+    },
+    "system_check": {
+     "selection_status": "exact",
+     "selection_side": "original",
+     "version_changed": false,
+     "translation_based": false,
+     "format_ok": true,
+     "quotes_found": 1,
+     "rejected_quotes": 0
+    }
+   }
+  },
+  {
+   "id": "S15",
+   "raw": "{\"interpretation\": \"只在原文條件下成立（）。\", \"points\": [{\"text\": \"範圍：reported / Test scores were not collected\", \"evidence\": [{\"ref\": \"E1\", \"quote\": \"Students who used the tutoring app reported higher confidence in algebra.\"}]}], \"uncertainty\": {\"level\": \"medium\", \"reasons\": [\"單一研究\"]}, \"open_questions\": []}",
+   "structured": {
+    "schema": "roothinks.study.tutor/1",
+    "interpretation": "只在原文條件下成立（）。",
+    "points": [
+     {
+      "text": "範圍：reported / Test scores were not collected",
+      "evidence": [
+       {
+        "schema": "roothinks.study.anchor/1",
+        "pid": "EVAL-p",
+        "paper_id": "S15",
+        "source": "flowa_fusion",
+        "source_sha256": "synthetic",
+        "page": 1,
+        "block_index": 2,
+        "ref": "p1-b2",
+        "seq_id": "p1_body_2",
+        "side": "original",
+        "quote": "Students who used the tutoring app reported higher confidence in algebra.",
+        "quote_sha256": "c3eb07ded9f1d7648193cd8bba773fc8606c1b755fc23b3f563cc9ba62d20afb",
+        "start": 0,
+        "end": 73,
+        "prefix": "",
+        "suffix": " Test scores were not collected.",
+        "status": "exact",
+        "match_kind": "quote",
+        "evidence_label": "E1"
+       }
+      ],
+      "quote_match": "found",
+      "claim_support": "not_assessed",
+      "rejected_evidence": 0
+     }
+    ],
+    "rejected_quotes": [],
+    "uncertainty": {
+     "level": "medium",
+     "reasons": [
+      "單一研究"
+     ],
+     "source": "model_self_report"
+    },
+    "open_questions": [],
+    "selection": {
+     "schema": "roothinks.study.anchor/1",
+     "pid": "EVAL-p",
+     "paper_id": "S15",
+     "source": "flowa_fusion",
+     "source_sha256": "synthetic",
+     "page": 1,
+     "block_index": 2,
+     "ref": "p1-b2",
+     "seq_id": "p1_body_2",
+     "side": "original",
+     "quote": "Students who used the tutoring app reported higher confidence in algebra.",
+     "quote_sha256": "c3eb07ded9f1d7648193cd8bba773fc8606c1b755fc23b3f563cc9ba62d20afb",
+     "start": 0,
+     "end": 73,
+     "prefix": "",
+     "suffix": " Test scores were not collected.",
+     "status": "exact",
+     "match_kind": "quote",
+     "version_changed": false
+    },
+    "system_check": {
+     "selection_status": "exact",
+     "selection_side": "original",
+     "version_changed": false,
+     "translation_based": false,
+     "format_ok": true,
+     "quotes_found": 1,
+     "rejected_quotes": 0
+    }
+   }
+  },
+  {
+   "id": "S16",
+   "raw": "{\"interpretation\": \"只在原文條件下成立（10 50）。\", \"points\": [{\"text\": \"範圍：10 and 50 mg / not studied\", \"evidence\": [{\"ref\": \"E1\", \"quote\": \"Plasma levels rose linearly between 10 and 50 mg.\"}]}], \"uncertainty\": {\"level\": \"medium\", \"reasons\": [\"單一研究\"]}, \"open_questions\": []}",
+   "structured": {
+    "schema": "roothinks.study.tutor/1",
+    "interpretation": "只在原文條件下成立（10 50）。",
+    "points": [
+     {
+      "text": "範圍：10 and 50 mg / not studied",
+      "evidence": [
+       {
+        "schema": "roothinks.study.anchor/1",
+        "pid": "EVAL-p",
+        "paper_id": "S16",
+        "source": "flowa_fusion",
+        "source_sha256": "synthetic",
+        "page": 1,
+        "block_index": 2,
+        "ref": "p1-b2",
+        "seq_id": "p1_body_2",
+        "side": "original",
+        "quote": "Plasma levels rose linearly between 10 and 50 mg.",
+        "quote_sha256": "cd73d7d1acbb412de1e0565a9f869272eff2cfa13dd51843d4c46b2b3a6c117d",
+        "start": 0,
+        "end": 49,
+        "prefix": "",
+        "suffix": " Doses above 50 mg were not stud",
+        "status": "exact",
+        "match_kind": "quote",
+        "evidence_label": "E1"
+       }
+      ],
+      "quote_match": "found",
+      "claim_support": "not_assessed",
+      "rejected_evidence": 0
+     }
+    ],
+    "rejected_quotes": [],
+    "uncertainty": {
+     "level": "medium",
+     "reasons": [
+      "單一研究"
+     ],
+     "source": "model_self_report"
+    },
+    "open_questions": [],
+    "selection": {
+     "schema": "roothinks.study.anchor/1",
+     "pid": "EVAL-p",
+     "paper_id": "S16",
+     "source": "flowa_fusion",
+     "source_sha256": "synthetic",
+     "page": 1,
+     "block_index": 2,
+     "ref": "p1-b2",
+     "seq_id": "p1_body_2",
+     "side": "original",
+     "quote": "Plasma levels rose linearly between 10 and 50 mg.",
+     "quote_sha256": "cd73d7d1acbb412de1e0565a9f869272eff2cfa13dd51843d4c46b2b3a6c117d",
+     "start": 0,
+     "end": 49,
+     "prefix": "",
+     "suffix": " Doses above 50 mg were not stud",
+     "status": "exact",
+     "match_kind": "quote",
+     "version_changed": false
+    },
+    "system_check": {
+     "selection_status": "exact",
+     "selection_side": "original",
+     "version_changed": false,
+     "translation_based": false,
+     "format_ok": true,
+     "quotes_found": 1,
+     "rejected_quotes": 0
+    }
+   }
+  },
+  {
+   "id": "S17",
+   "raw": "{\"interpretation\": \"只在原文條件下成立（2021）。\", \"points\": [{\"text\": \"範圍：2021 heatwave / northern buoys\", \"evidence\": [{\"ref\": \"E1\", \"quote\": \"Surface temperature rose by 0.3 C during the 2021 heatwave at the three northern buoys.\"}]}], \"uncertainty\": {\"level\": \"medium\", \"reasons\": [\"單一研究\"]}, \"open_questions\": []}",
+   "structured": {
+    "schema": "roothinks.study.tutor/1",
+    "interpretation": "只在原文條件下成立（2021）。",
+    "points": [
+     {
+      "text": "範圍：2021 heatwave / northern buoys",
+      "evidence": [
+       {
+        "schema": "roothinks.study.anchor/1",
+        "pid": "EVAL-p",
+        "paper_id": "S17",
+        "source": "flowa_fusion",
+        "source_sha256": "synthetic",
+        "page": 1,
+        "block_index": 2,
+        "ref": "p1-b2",
+        "seq_id": "p1_body_2",
+        "side": "original",
+        "quote": "Surface temperature rose by 0.3 C during the 2021 heatwave at the three northern buoys.",
+        "quote_sha256": "ec05ad6b34b35743526991371d82169e84be28271ae65ebc775ed93e154ab443",
+        "start": 0,
+        "end": 87,
+        "prefix": "",
+        "suffix": " Southern buoys failed in July.",
+        "status": "exact",
+        "match_kind": "quote",
+        "evidence_label": "E1"
+       }
+      ],
+      "quote_match": "found",
+      "claim_support": "not_assessed",
+      "rejected_evidence": 0
+     }
+    ],
+    "rejected_quotes": [],
+    "uncertainty": {
+     "level": "medium",
+     "reasons": [
+      "單一研究"
+     ],
+     "source": "model_self_report"
+    },
+    "open_questions": [],
+    "selection": {
+     "schema": "roothinks.study.anchor/1",
+     "pid": "EVAL-p",
+     "paper_id": "S17",
+     "source": "flowa_fusion",
+     "source_sha256": "synthetic",
+     "page": 1,
+     "block_index": 2,
+     "ref": "p1-b2",
+     "seq_id": "p1_body_2",
+     "side": "original",
+     "quote": "Surface temperature rose by 0.3 C during the 2021 heatwave at the three northern buoys.",
+     "quote_sha256": "ec05ad6b34b35743526991371d82169e84be28271ae65ebc775ed93e154ab443",
+     "start": 0,
+     "end": 87,
+     "prefix": "",
+     "suffix": " Southern buoys failed in July.",
+     "status": "exact",
+     "match_kind": "quote",
+     "version_changed": false
+    },
+    "system_check": {
+     "selection_status": "exact",
+     "selection_side": "original",
+     "version_changed": false,
+     "translation_based": false,
+     "format_ok": true,
+     "quotes_found": 1,
+     "rejected_quotes": 0
+    }
+   }
+  },
+  {
+   "id": "S18",
+   "raw": "{\"interpretation\": \"只在原文條件下成立（40）。\", \"points\": [{\"text\": \"範圍：In simulation / 40 N\", \"evidence\": [{\"ref\": \"E1\", \"quote\": \"In simulation the controller recovered from pushes up to 40 N in 95 percent of trials.\"}]}], \"uncertainty\": {\"level\": \"medium\", \"reasons\": [\"單一研究\"]}, \"open_questions\": []}",
+   "structured": {
+    "schema": "roothinks.study.tutor/1",
+    "interpretation": "只在原文條件下成立（40）。",
+    "points": [
+     {
+      "text": "範圍：In simulation / 40 N",
+      "evidence": [
+       {
+        "schema": "roothinks.study.anchor/1",
+        "pid": "EVAL-p",
+        "paper_id": "S18",
+        "source": "flowa_fusion",
+        "source_sha256": "synthetic",
+        "page": 1,
+        "block_index": 2,
+        "ref": "p1-b2",
+        "seq_id": "p1_body_2",
+        "side": "original",
+        "quote": "In simulation the controller recovered from pushes up to 40 N in 95 percent of trials.",
+        "quote_sha256": "8abfc64a9015e26f349af94dff16709f89ecd8bbece9c73cc422ecca23da0b72",
+        "start": 0,
+        "end": 86,
+        "prefix": "",
+        "suffix": " Hardware tests are planned.",
+        "status": "exact",
+        "match_kind": "quote",
+        "evidence_label": "E1"
+       }
+      ],
+      "quote_match": "found",
+      "claim_support": "not_assessed",
+      "rejected_evidence": 0
+     }
+    ],
+    "rejected_quotes": [],
+    "uncertainty": {
+     "level": "medium",
+     "reasons": [
+      "單一研究"
+     ],
+     "source": "model_self_report"
+    },
+    "open_questions": [],
+    "selection": {
+     "schema": "roothinks.study.anchor/1",
+     "pid": "EVAL-p",
+     "paper_id": "S18",
+     "source": "flowa_fusion",
+     "source_sha256": "synthetic",
+     "page": 1,
+     "block_index": 2,
+     "ref": "p1-b2",
+     "seq_id": "p1_body_2",
+     "side": "original",
+     "quote": "In simulation the controller recovered from pushes up to 40 N in 95 percent of trials.",
+     "quote_sha256": "8abfc64a9015e26f349af94dff16709f89ecd8bbece9c73cc422ecca23da0b72",
+     "start": 0,
+     "end": 86,
+     "prefix": "",
+     "suffix": " Hardware tests are planned.",
+     "status": "exact",
+     "match_kind": "quote",
+     "version_changed": false
+    },
+    "system_check": {
+     "selection_status": "exact",
+     "selection_side": "original",
+     "version_changed": false,
+     "translation_based": false,
+     "format_ok": true,
+     "quotes_found": 1,
+     "rejected_quotes": 0
+    }
+   }
+  },
+  {
+   "id": "S19",
+   "raw": "{\"interpretation\": \"只在原文條件下成立（35）。\", \"points\": [{\"text\": \"範圍：under 35 / no difference\", \"evidence\": [{\"ref\": \"E1\", \"quote\": \"Quit rates were higher with the app in participants under 35.\"}]}], \"uncertainty\": {\"level\": \"medium\", \"reasons\": [\"單一研究\"]}, \"open_questions\": []}",
+   "structured": {
+    "schema": "roothinks.study.tutor/1",
+    "interpretation": "只在原文條件下成立（35）。",
+    "points": [
+     {
+      "text": "範圍：under 35 / no difference",
+      "evidence": [
+       {
+        "schema": "roothinks.study.anchor/1",
+        "pid": "EVAL-p",
+        "paper_id": "S19",
+        "source": "flowa_fusion",
+        "source_sha256": "synthetic",
+        "page": 1,
+        "block_index": 2,
+        "ref": "p1-b2",
+        "seq_id": "p1_body_2",
+        "side": "original",
+        "quote": "Quit rates were higher with the app in participants under 35.",
+        "quote_sha256": "49e5b4bfe8bf9f01057db1c32ed32d155a021a4fe625fa741f8950d543ec41d5",
+        "start": 0,
+        "end": 61,
+        "prefix": "",
+        "suffix": " In older participants there was",
+        "status": "exact",
+        "match_kind": "quote",
+        "evidence_label": "E1"
+       }
+      ],
+      "quote_match": "found",
+      "claim_support": "not_assessed",
+      "rejected_evidence": 0
+     }
+    ],
+    "rejected_quotes": [],
+    "uncertainty": {
+     "level": "medium",
+     "reasons": [
+      "單一研究"
+     ],
+     "source": "model_self_report"
+    },
+    "open_questions": [],
+    "selection": {
+     "schema": "roothinks.study.anchor/1",
+     "pid": "EVAL-p",
+     "paper_id": "S19",
+     "source": "flowa_fusion",
+     "source_sha256": "synthetic",
+     "page": 1,
+     "block_index": 2,
+     "ref": "p1-b2",
+     "seq_id": "p1_body_2",
+     "side": "original",
+     "quote": "Quit rates were higher with the app in participants under 35.",
+     "quote_sha256": "49e5b4bfe8bf9f01057db1c32ed32d155a021a4fe625fa741f8950d543ec41d5",
+     "start": 0,
+     "end": 61,
+     "prefix": "",
+     "suffix": " In older participants there was",
+     "status": "exact",
+     "match_kind": "quote",
+     "version_changed": false
+    },
+    "system_check": {
+     "selection_status": "exact",
+     "selection_side": "original",
+     "version_changed": false,
+     "translation_based": false,
+     "format_ok": true,
+     "quotes_found": 1,
+     "rejected_quotes": 0
+    }
+   }
+  },
+  {
+   "id": "S20",
+   "raw": "{\"interpretation\": \"只在原文條件下成立（18 2）。\", \"points\": [{\"text\": \"範圍：magnitude 18 / 2 arcseconds\", \"evidence\": [{\"ref\": \"E1\", \"quote\": \"No companion brighter than magnitude 18 was found within 2 arcseconds.\"}]}], \"uncertainty\": {\"level\": \"medium\", \"reasons\": [\"單一研究\"]}, \"open_questions\": []}",
+   "structured": {
+    "schema": "roothinks.study.tutor/1",
+    "interpretation": "只在原文條件下成立（18 2）。",
+    "points": [
+     {
+      "text": "範圍：magnitude 18 / 2 arcseconds",
+      "evidence": [
+       {
+        "schema": "roothinks.study.anchor/1",
+        "pid": "EVAL-p",
+        "paper_id": "S20",
+        "source": "flowa_fusion",
+        "source_sha256": "synthetic",
+        "page": 1,
+        "block_index": 2,
+        "ref": "p1-b2",
+        "seq_id": "p1_body_2",
+        "side": "original",
+        "quote": "No companion brighter than magnitude 18 was found within 2 arcseconds.",
+        "quote_sha256": "1e1fac303a47d8807f45ada56e27d5065f86adf85ee5185ea91a3f576fcf825d",
+        "start": 0,
+        "end": 70,
+        "prefix": "",
+        "suffix": " Fainter companions cannot be ex",
+        "status": "exact",
+        "match_kind": "quote",
+        "evidence_label": "E1"
+       }
+      ],
+      "quote_match": "found",
+      "claim_support": "not_assessed",
+      "rejected_evidence": 0
+     }
+    ],
+    "rejected_quotes": [],
+    "uncertainty": {
+     "level": "medium",
+     "reasons": [
+      "單一研究"
+     ],
+     "source": "model_self_report"
+    },
+    "open_questions": [],
+    "selection": {
+     "schema": "roothinks.study.anchor/1",
+     "pid": "EVAL-p",
+     "paper_id": "S20",
+     "source": "flowa_fusion",
+     "source_sha256": "synthetic",
+     "page": 1,
+     "block_index": 2,
+     "ref": "p1-b2",
+     "seq_id": "p1_body_2",
+     "side": "original",
+     "quote": "No companion brighter than magnitude 18 was found within 2 arcseconds.",
+     "quote_sha256": "1e1fac303a47d8807f45ada56e27d5065f86adf85ee5185ea91a3f576fcf825d",
+     "start": 0,
+     "end": 70,
+     "prefix": "",
+     "suffix": " Fainter companions cannot be ex",
+     "status": "exact",
+     "match_kind": "quote",
+     "version_changed": false
+    },
+    "system_check": {
+     "selection_status": "exact",
+     "selection_side": "original",
+     "version_changed": false,
+     "translation_based": false,
+     "format_ok": true,
+     "quotes_found": 1,
+     "rejected_quotes": 0
+    }
+   }
+  },
+  {
+   "id": "S21",
+   "raw": "{\"interpretation\": \"只在原文條件下成立（12）。\", \"points\": [{\"text\": \"範圍：not explained by grain size / 12 micrometres\", \"evidence\": [{\"ref\": \"E1\", \"quote\": \"Hardness increased after rolling, but the increase was not explained by grain size, which stayed near 12 micrometres.\"}]}], \"uncertainty\": {\"level\": \"medium\", \"reasons\": [\"單一研究\"]}, \"open_questions\": []}",
+   "structured": {
+    "schema": "roothinks.study.tutor/1",
+    "interpretation": "只在原文條件下成立（12）。",
+    "points": [
+     {
+      "text": "範圍：not explained by grain size / 12 micrometres",
+      "evidence": [
+       {
+        "schema": "roothinks.study.anchor/1",
+        "pid": "EVAL-p",
+        "paper_id": "S21",
+        "source": "flowa_fusion",
+        "source_sha256": "synthetic",
+        "page": 1,
+        "block_index": 2,
+        "ref": "p1-b2",
+        "seq_id": "p1_body_2",
+        "side": "original",
+        "quote": "Hardness increased after rolling, but the increase was not explained by grain size, which stayed near 12 micrometres.",
+        "quote_sha256": "6b09594862034bec05fcb6c0bb81e25858ac2d138e7cf13dad2f0908430c5663",
+        "start": 0,
+        "end": 117,
+        "prefix": "",
+        "suffix": "",
+        "status": "exact",
+        "match_kind": "quote",
+        "evidence_label": "E1"
+       }
+      ],
+      "quote_match": "found",
+      "claim_support": "not_assessed",
+      "rejected_evidence": 0
+     }
+    ],
+    "rejected_quotes": [],
+    "uncertainty": {
+     "level": "medium",
+     "reasons": [
+      "單一研究"
+     ],
+     "source": "model_self_report"
+    },
+    "open_questions": [],
+    "selection": {
+     "schema": "roothinks.study.anchor/1",
+     "pid": "EVAL-p",
+     "paper_id": "S21",
+     "source": "flowa_fusion",
+     "source_sha256": "synthetic",
+     "page": 1,
+     "block_index": 2,
+     "ref": "p1-b2",
+     "seq_id": "p1_body_2",
+     "side": "original",
+     "quote": "Hardness increased after rolling, but the increase was not explained by grain size, which stayed near 12 micrometres.",
+     "quote_sha256": "6b09594862034bec05fcb6c0bb81e25858ac2d138e7cf13dad2f0908430c5663",
+     "start": 0,
+     "end": 117,
+     "prefix": "",
+     "suffix": "",
+     "status": "exact",
+     "match_kind": "quote",
+     "version_changed": false
+    },
+    "system_check": {
+     "selection_status": "exact",
+     "selection_side": "original",
+     "version_changed": false,
+     "translation_based": false,
+     "format_ok": true,
+     "quotes_found": 1,
+     "rejected_quotes": 0
+    }
+   }
+  },
+  {
+   "id": "S22",
+   "raw": "{\"interpretation\": \"只在原文條件下成立（）。\", \"points\": [{\"text\": \"範圍：described / declined interviews\", \"evidence\": [{\"ref\": \"E1\", \"quote\": \"Most residents described the new park as safe.\"}]}], \"uncertainty\": {\"level\": \"medium\", \"reasons\": [\"單一研究\"]}, \"open_questions\": []}",
+   "structured": {
+    "schema": "roothinks.study.tutor/1",
+    "interpretation": "只在原文條件下成立（）。",
+    "points": [
+     {
+      "text": "範圍：described / declined interviews",
+      "evidence": [
+       {
+        "schema": "roothinks.study.anchor/1",
+        "pid": "EVAL-p",
+        "paper_id": "S22",
+        "source": "flowa_fusion",
+        "source_sha256": "synthetic",
+        "page": 1,
+        "block_index": 2,
+        "ref": "p1-b2",
+        "seq_id": "p1_body_2",
+        "side": "original",
+        "quote": "Most residents described the new park as safe.",
+        "quote_sha256": "cb484ed685421cc3267e42ea24bfd89cb22f0e7db81be6b46b0206fbc7968ad9",
+        "start": 0,
+        "end": 46,
+        "prefix": "",
+        "suffix": " Residents who declined intervie",
+        "status": "exact",
+        "match_kind": "quote",
+        "evidence_label": "E1"
+       }
+      ],
+      "quote_match": "found",
+      "claim_support": "not_assessed",
+      "rejected_evidence": 0
+     }
+    ],
+    "rejected_quotes": [],
+    "uncertainty": {
+     "level": "medium",
+     "reasons": [
+      "單一研究"
+     ],
+     "source": "model_self_report"
+    },
+    "open_questions": [],
+    "selection": {
+     "schema": "roothinks.study.anchor/1",
+     "pid": "EVAL-p",
+     "paper_id": "S22",
+     "source": "flowa_fusion",
+     "source_sha256": "synthetic",
+     "page": 1,
+     "block_index": 2,
+     "ref": "p1-b2",
+     "seq_id": "p1_body_2",
+     "side": "original",
+     "quote": "Most residents described the new park as safe.",
+     "quote_sha256": "cb484ed685421cc3267e42ea24bfd89cb22f0e7db81be6b46b0206fbc7968ad9",
+     "start": 0,
+     "end": 46,
+     "prefix": "",
+     "suffix": " Residents who declined intervie",
+     "status": "exact",
+     "match_kind": "quote",
+     "version_changed": false
+    },
+    "system_check": {
+     "selection_status": "exact",
+     "selection_side": "original",
+     "version_changed": false,
+     "translation_based": false,
+     "format_ok": true,
+     "quotes_found": 1,
+     "rejected_quotes": 0
+    }
+   }
+  },
+  {
+   "id": "S23",
+   "raw": "{\"interpretation\": \"只在原文條件下成立（5）。\", \"points\": [{\"text\": \"範圍：cultured macrophages / 5 micromolar\", \"evidence\": [{\"ref\": \"E1\", \"quote\": \"Compound Y reduced cytokine release in cultured macrophages at 5 micromolar.\"}]}], \"uncertainty\": {\"level\": \"medium\", \"reasons\": [\"單一研究\"]}, \"open_questions\": []}",
+   "structured": {
+    "schema": "roothinks.study.tutor/1",
+    "interpretation": "只在原文條件下成立（5）。",
+    "points": [
+     {
+      "text": "範圍：cultured macrophages / 5 micromolar",
+      "evidence": [
+       {
+        "schema": "roothinks.study.anchor/1",
+        "pid": "EVAL-p",
+        "paper_id": "S23",
+        "source": "flowa_fusion",
+        "source_sha256": "synthetic",
+        "page": 1,
+        "block_index": 2,
+        "ref": "p1-b2",
+        "seq_id": "p1_body_2",
+        "side": "original",
+        "quote": "Compound Y reduced cytokine release in cultured macrophages at 5 micromolar.",
+        "quote_sha256": "c03760e65c0840423b9705edc950c7931c9e96edb043fc167f5ed490009721c0",
+        "start": 0,
+        "end": 76,
+        "prefix": "",
+        "suffix": " Toxicity was not assessed.",
+        "status": "exact",
+        "match_kind": "quote",
+        "evidence_label": "E1"
+       }
+      ],
+      "quote_match": "found",
+      "claim_support": "not_assessed",
+      "rejected_evidence": 0
+     }
+    ],
+    "rejected_quotes": [],
+    "uncertainty": {
+     "level": "medium",
+     "reasons": [
+      "單一研究"
+     ],
+     "source": "model_self_report"
+    },
+    "open_questions": [],
+    "selection": {
+     "schema": "roothinks.study.anchor/1",
+     "pid": "EVAL-p",
+     "paper_id": "S23",
+     "source": "flowa_fusion",
+     "source_sha256": "synthetic",
+     "page": 1,
+     "block_index": 2,
+     "ref": "p1-b2",
+     "seq_id": "p1_body_2",
+     "side": "original",
+     "quote": "Compound Y reduced cytokine release in cultured macrophages at 5 micromolar.",
+     "quote_sha256": "c03760e65c0840423b9705edc950c7931c9e96edb043fc167f5ed490009721c0",
+     "start": 0,
+     "end": 76,
+     "prefix": "",
+     "suffix": " Toxicity was not assessed.",
+     "status": "exact",
+     "match_kind": "quote",
+     "version_changed": false
+    },
+    "system_check": {
+     "selection_status": "exact",
+     "selection_side": "original",
+     "version_changed": false,
+     "translation_based": false,
+     "format_ok": true,
+     "quotes_found": 1,
+     "rejected_quotes": 0
+    }
+   }
+  },
+  {
+   "id": "S24",
+   "raw": "{\"interpretation\": \"只在原文條件下成立（2010 2015）。\", \"points\": [{\"text\": \"範圍：2010 to 2015 / Validation on later years was not done\", \"evidence\": [{\"ref\": \"E1\", \"quote\": \"Simulated peak flows matched observations within 8 percent for the 2010 to 2015 period.\"}]}], \"uncertainty\": {\"level\": \"medium\", \"reasons\": [\"單一研究\"]}, \"open_questions\": []}",
+   "structured": {
+    "schema": "roothinks.study.tutor/1",
+    "interpretation": "只在原文條件下成立（2010 2015）。",
+    "points": [
+     {
+      "text": "範圍：2010 to 2015 / Validation on later years was not done",
+      "evidence": [
+       {
+        "schema": "roothinks.study.anchor/1",
+        "pid": "EVAL-p",
+        "paper_id": "S24",
+        "source": "flowa_fusion",
+        "source_sha256": "synthetic",
+        "page": 1,
+        "block_index": 2,
+        "ref": "p1-b2",
+        "seq_id": "p1_body_2",
+        "side": "original",
+        "quote": "Simulated peak flows matched observations within 8 percent for the 2010 to 2015 period.",
+        "quote_sha256": "e312228a8f38ac8e128beb1ba96cdedd298a44056d3497ad1a75e1bee4557837",
+        "start": 0,
+        "end": 87,
+        "prefix": "",
+        "suffix": " Validation on later years was n",
+        "status": "exact",
+        "match_kind": "quote",
+        "evidence_label": "E1"
+       }
+      ],
+      "quote_match": "found",
+      "claim_support": "not_assessed",
+      "rejected_evidence": 0
+     }
+    ],
+    "rejected_quotes": [],
+    "uncertainty": {
+     "level": "medium",
+     "reasons": [
+      "單一研究"
+     ],
+     "source": "model_self_report"
+    },
+    "open_questions": [],
+    "selection": {
+     "schema": "roothinks.study.anchor/1",
+     "pid": "EVAL-p",
+     "paper_id": "S24",
+     "source": "flowa_fusion",
+     "source_sha256": "synthetic",
+     "page": 1,
+     "block_index": 2,
+     "ref": "p1-b2",
+     "seq_id": "p1_body_2",
+     "side": "original",
+     "quote": "Simulated peak flows matched observations within 8 percent for the 2010 to 2015 period.",
+     "quote_sha256": "e312228a8f38ac8e128beb1ba96cdedd298a44056d3497ad1a75e1bee4557837",
+     "start": 0,
+     "end": 87,
+     "prefix": "",
+     "suffix": " Validation on later years was n",
+     "status": "exact",
+     "match_kind": "quote",
+     "version_changed": false
+    },
+    "system_check": {
+     "selection_status": "exact",
+     "selection_side": "original",
+     "version_changed": false,
+     "translation_based": false,
+     "format_ok": true,
+     "quotes_found": 1,
+     "rejected_quotes": 0
+    }
+   }
+  },
+  {
+   "id": "S25",
+   "raw": "{\"interpretation\": \"只在原文條件下成立（）。\", \"points\": [{\"text\": \"範圍：slightly / day-to-day variation\", \"evidence\": [{\"ref\": \"E1\", \"quote\": \"Fasting glucose fell slightly on the high-fiber diet, but the change was within day-to-day variation.\"}]}], \"uncertainty\": {\"level\": \"medium\", \"reasons\": [\"單一研究\"]}, \"open_questions\": []}",
+   "structured": {
+    "schema": "roothinks.study.tutor/1",
+    "interpretation": "只在原文條件下成立（）。",
+    "points": [
+     {
+      "text": "範圍：slightly / day-to-day variation",
+      "evidence": [
+       {
+        "schema": "roothinks.study.anchor/1",
+        "pid": "EVAL-p",
+        "paper_id": "S25",
+        "source": "flowa_fusion",
+        "source_sha256": "synthetic",
+        "page": 1,
+        "block_index": 2,
+        "ref": "p1-b2",
+        "seq_id": "p1_body_2",
+        "side": "original",
+        "quote": "Fasting glucose fell slightly on the high-fiber diet, but the change was within day-to-day variation.",
+        "quote_sha256": "afd1a21ebf676326000927e91d7306bfd090e316f8acb1f1a3e80636955aae87",
+        "start": 0,
+        "end": 101,
+        "prefix": "",
+        "suffix": "",
+        "status": "exact",
+        "match_kind": "quote",
+        "evidence_label": "E1"
+       }
+      ],
+      "quote_match": "found",
+      "claim_support": "not_assessed",
+      "rejected_evidence": 0
+     }
+    ],
+    "rejected_quotes": [],
+    "uncertainty": {
+     "level": "medium",
+     "reasons": [
+      "單一研究"
+     ],
+     "source": "model_self_report"
+    },
+    "open_questions": [],
+    "selection": {
+     "schema": "roothinks.study.anchor/1",
+     "pid": "EVAL-p",
+     "paper_id": "S25",
+     "source": "flowa_fusion",
+     "source_sha256": "synthetic",
+     "page": 1,
+     "block_index": 2,
+     "ref": "p1-b2",
+     "seq_id": "p1_body_2",
+     "side": "original",
+     "quote": "Fasting glucose fell slightly on the high-fiber diet, but the change was within day-to-day variation.",
+     "quote_sha256": "afd1a21ebf676326000927e91d7306bfd090e316f8acb1f1a3e80636955aae87",
+     "start": 0,
+     "end": 101,
+     "prefix": "",
+     "suffix": "",
+     "status": "exact",
+     "match_kind": "quote",
+     "version_changed": false
+    },
+    "system_check": {
+     "selection_status": "exact",
+     "selection_side": "original",
+     "version_changed": false,
+     "translation_based": false,
+     "format_ok": true,
+     "quotes_found": 1,
+     "rejected_quotes": 0
+    }
+   }
+  },
+  {
+   "id": "S26",
+   "raw": "{\"interpretation\": \"只在原文條件下成立（72）。\", \"points\": [{\"text\": \"範圍：72 hours / default build\", \"evidence\": [{\"ref\": \"E1\", \"quote\": \"The fuzzing campaign found no memory errors in 72 hours on the default build.\"}]}], \"uncertainty\": {\"level\": \"medium\", \"reasons\": [\"單一研究\"]}, \"open_questions\": []}",
+   "structured": {
+    "schema": "roothinks.study.tutor/1",
+    "interpretation": "只在原文條件下成立（72）。",
+    "points": [
+     {
+      "text": "範圍：72 hours / default build",
+      "evidence": [
+       {
+        "schema": "roothinks.study.anchor/1",
+        "pid": "EVAL-p",
+        "paper_id": "S26",
+        "source": "flowa_fusion",
+        "source_sha256": "synthetic",
+        "page": 1,
+        "block_index": 2,
+        "ref": "p1-b2",
+        "seq_id": "p1_body_2",
+        "side": "original",
+        "quote": "The fuzzing campaign found no memory errors in 72 hours on the default build.",
+        "quote_sha256": "285f30cd6bf8bb0e062305db956354a8558d38d2ce8d7cb216f31c050840bdbd",
+        "start": 0,
+        "end": 77,
+        "prefix": "",
+        "suffix": " Optional modules were disabled.",
+        "status": "exact",
+        "match_kind": "quote",
+        "evidence_label": "E1"
+       }
+      ],
+      "quote_match": "found",
+      "claim_support": "not_assessed",
+      "rejected_evidence": 0
+     }
+    ],
+    "rejected_quotes": [],
+    "uncertainty": {
+     "level": "medium",
+     "reasons": [
+      "單一研究"
+     ],
+     "source": "model_self_report"
+    },
+    "open_questions": [],
+    "selection": {
+     "schema": "roothinks.study.anchor/1",
+     "pid": "EVAL-p",
+     "paper_id": "S26",
+     "source": "flowa_fusion",
+     "source_sha256": "synthetic",
+     "page": 1,
+     "block_index": 2,
+     "ref": "p1-b2",
+     "seq_id": "p1_body_2",
+     "side": "original",
+     "quote": "The fuzzing campaign found no memory errors in 72 hours on the default build.",
+     "quote_sha256": "285f30cd6bf8bb0e062305db956354a8558d38d2ce8d7cb216f31c050840bdbd",
+     "start": 0,
+     "end": 77,
+     "prefix": "",
+     "suffix": " Optional modules were disabled.",
+     "status": "exact",
+     "match_kind": "quote",
+     "version_changed": false
+    },
+    "system_check": {
+     "selection_status": "exact",
+     "selection_side": "original",
+     "version_changed": false,
+     "translation_based": false,
+     "format_ok": true,
+     "quotes_found": 1,
+     "rejected_quotes": 0
+    }
+   }
+  },
+  {
+   "id": "S27",
+   "raw": "{\"interpretation\": \"只在原文條件下成立（）。\", \"points\": [{\"text\": \"範圍：twice / same adult female\", \"evidence\": [{\"ref\": \"E1\", \"quote\": \"Tool use was observed twice, both times in the same adult female.\"}]}], \"uncertainty\": {\"level\": \"medium\", \"reasons\": [\"單一研究\"]}, \"open_questions\": []}",
+   "structured": {
+    "schema": "roothinks.study.tutor/1",
+    "interpretation": "只在原文條件下成立（）。",
+    "points": [
+     {
+      "text": "範圍：twice / same adult female",
+      "evidence": [
+       {
+        "schema": "roothinks.study.anchor/1",
+        "pid": "EVAL-p",
+        "paper_id": "S27",
+        "source": "flowa_fusion",
+        "source_sha256": "synthetic",
+        "page": 1,
+        "block_index": 2,
+        "ref": "p1-b2",
+        "seq_id": "p1_body_2",
+        "side": "original",
+        "quote": "Tool use was observed twice, both times in the same adult female.",
+        "quote_sha256": "008146e10044b6c85f745110ca3930ea21b2f240f1b5cc0adfd15d900b1345c4",
+        "start": 0,
+        "end": 65,
+        "prefix": "",
+        "suffix": " Juveniles were not seen using t",
+        "status": "exact",
+        "match_kind": "quote",
+        "evidence_label": "E1"
+       }
+      ],
+      "quote_match": "found",
+      "claim_support": "not_assessed",
+      "rejected_evidence": 0
+     }
+    ],
+    "rejected_quotes": [],
+    "uncertainty": {
+     "level": "medium",
+     "reasons": [
+      "單一研究"
+     ],
+     "source": "model_self_report"
+    },
+    "open_questions": [],
+    "selection": {
+     "schema": "roothinks.study.anchor/1",
+     "pid": "EVAL-p",
+     "paper_id": "S27",
+     "source": "flowa_fusion",
+     "source_sha256": "synthetic",
+     "page": 1,
+     "block_index": 2,
+     "ref": "p1-b2",
+     "seq_id": "p1_body_2",
+     "side": "original",
+     "quote": "Tool use was observed twice, both times in the same adult female.",
+     "quote_sha256": "008146e10044b6c85f745110ca3930ea21b2f240f1b5cc0adfd15d900b1345c4",
+     "start": 0,
+     "end": 65,
+     "prefix": "",
+     "suffix": " Juveniles were not seen using t",
+     "status": "exact",
+     "match_kind": "quote",
+     "version_changed": false
+    },
+    "system_check": {
+     "selection_status": "exact",
+     "selection_side": "original",
+     "version_changed": false,
+     "translation_based": false,
+     "format_ok": true,
+     "quotes_found": 1,
+     "rejected_quotes": 0
+    }
+   }
+  },
+  {
+   "id": "S28",
+   "raw": "{\"interpretation\": \"只在原文條件下成立（10）。\", \"points\": [{\"text\": \"範圍：10² Pa / Thickness differed\", \"evidence\": [{\"ref\": \"E1\", \"quote\": \"Films grown at 10² Pa showed lower resistivity than films grown at 10³ Pa.\"}]}], \"uncertainty\": {\"level\": \"medium\", \"reasons\": [\"單一研究\"]}, \"open_questions\": []}",
+   "structured": {
+    "schema": "roothinks.study.tutor/1",
+    "interpretation": "只在原文條件下成立（10）。",
+    "points": [
+     {
+      "text": "範圍：10² Pa / Thickness differed",
+      "evidence": [
+       {
+        "schema": "roothinks.study.anchor/1",
+        "pid": "EVAL-p",
+        "paper_id": "S28",
+        "source": "flowa_fusion",
+        "source_sha256": "synthetic",
+        "page": 1,
+        "block_index": 2,
+        "ref": "p1-b2",
+        "seq_id": "p1_body_2",
+        "side": "original",
+        "quote": "Films grown at 10² Pa showed lower resistivity than films grown at 10³ Pa.",
+        "quote_sha256": "4935f7c361fc541c2407c4666d90688217a0a543d0f217774dc6d0dec4224f6c",
+        "start": 0,
+        "end": 74,
+        "prefix": "",
+        "suffix": " Thickness differed between the ",
+        "status": "exact",
+        "match_kind": "quote",
+        "evidence_label": "E1"
+       }
+      ],
+      "quote_match": "found",
+      "claim_support": "not_assessed",
+      "rejected_evidence": 0
+     }
+    ],
+    "rejected_quotes": [],
+    "uncertainty": {
+     "level": "medium",
+     "reasons": [
+      "單一研究"
+     ],
+     "source": "model_self_report"
+    },
+    "open_questions": [],
+    "selection": {
+     "schema": "roothinks.study.anchor/1",
+     "pid": "EVAL-p",
+     "paper_id": "S28",
+     "source": "flowa_fusion",
+     "source_sha256": "synthetic",
+     "page": 1,
+     "block_index": 2,
+     "ref": "p1-b2",
+     "seq_id": "p1_body_2",
+     "side": "original",
+     "quote": "Films grown at 10² Pa showed lower resistivity than films grown at 10³ Pa.",
+     "quote_sha256": "4935f7c361fc541c2407c4666d90688217a0a543d0f217774dc6d0dec4224f6c",
+     "start": 0,
+     "end": 74,
+     "prefix": "",
+     "suffix": " Thickness differed between the ",
+     "status": "exact",
+     "match_kind": "quote",
+     "version_changed": false
+    },
+    "system_check": {
+     "selection_status": "exact",
+     "selection_side": "original",
+     "version_changed": false,
+     "translation_based": false,
+     "format_ok": true,
+     "quotes_found": 1,
+     "rejected_quotes": 0
+    }
+   }
+  },
+  {
+   "id": "S29",
+   "raw": "{\"interpretation\": \"只在原文條件下成立（12）。\", \"points\": [{\"text\": \"範圍：12 weeks / Cardiovascular events were not an outcome\", \"evidence\": [{\"ref\": \"E1\", \"quote\": \"The drug lowered LDL cholesterol by 25 percent at 12 weeks.\"}]}], \"uncertainty\": {\"level\": \"medium\", \"reasons\": [\"單一研究\"]}, \"open_questions\": []}",
+   "structured": {
+    "schema": "roothinks.study.tutor/1",
+    "interpretation": "只在原文條件下成立（12）。",
+    "points": [
+     {
+      "text": "範圍：12 weeks / Cardiovascular events were not an outcome",
+      "evidence": [
+       {
+        "schema": "roothinks.study.anchor/1",
+        "pid": "EVAL-p",
+        "paper_id": "S29",
+        "source": "flowa_fusion",
+        "source_sha256": "synthetic",
+        "page": 1,
+        "block_index": 2,
+        "ref": "p1-b2",
+        "seq_id": "p1_body_2",
+        "side": "original",
+        "quote": "The drug lowered LDL cholesterol by 25 percent at 12 weeks.",
+        "quote_sha256": "31bcc449bd3f340bfb89eebef2fcd1b54d3aa3e2f65894227b06c7761381aa7f",
+        "start": 0,
+        "end": 59,
+        "prefix": "",
+        "suffix": " Cardiovascular events were not ",
+        "status": "exact",
+        "match_kind": "quote",
+        "evidence_label": "E1"
+       }
+      ],
+      "quote_match": "found",
+      "claim_support": "not_assessed",
+      "rejected_evidence": 0
+     }
+    ],
+    "rejected_quotes": [],
+    "uncertainty": {
+     "level": "medium",
+     "reasons": [
+      "單一研究"
+     ],
+     "source": "model_self_report"
+    },
+    "open_questions": [],
+    "selection": {
+     "schema": "roothinks.study.anchor/1",
+     "pid": "EVAL-p",
+     "paper_id": "S29",
+     "source": "flowa_fusion",
+     "source_sha256": "synthetic",
+     "page": 1,
+     "block_index": 2,
+     "ref": "p1-b2",
+     "seq_id": "p1_body_2",
+     "side": "original",
+     "quote": "The drug lowered LDL cholesterol by 25 percent at 12 weeks.",
+     "quote_sha256": "31bcc449bd3f340bfb89eebef2fcd1b54d3aa3e2f65894227b06c7761381aa7f",
+     "start": 0,
+     "end": 59,
+     "prefix": "",
+     "suffix": " Cardiovascular events were not ",
+     "status": "exact",
+     "match_kind": "quote",
+     "version_changed": false
+    },
+    "system_check": {
+     "selection_status": "exact",
+     "selection_side": "original",
+     "version_changed": false,
+     "translation_based": false,
+     "format_ok": true,
+     "quotes_found": 1,
+     "rejected_quotes": 0
+    }
+   }
+  },
+  {
+   "id": "S30",
+   "raw": "{\"interpretation\": \"只在原文條件下成立（）。\", \"points\": [{\"text\": \"範圍：this archive / Spoken language was not sampled\", \"evidence\": [{\"ref\": \"E1\", \"quote\": \"Use of the new word rose sharply between 2015 and 2020 in this archive.\"}]}], \"uncertainty\": {\"level\": \"medium\", \"reasons\": [\"單一研究\"]}, \"open_questions\": []}",
+   "structured": {
+    "schema": "roothinks.study.tutor/1",
+    "interpretation": "只在原文條件下成立（）。",
+    "points": [
+     {
+      "text": "範圍：this archive / Spoken language was not sampled",
+      "evidence": [
+       {
+        "schema": "roothinks.study.anchor/1",
+        "pid": "EVAL-p",
+        "paper_id": "S30",
+        "source": "flowa_fusion",
+        "source_sha256": "synthetic",
+        "page": 1,
+        "block_index": 2,
+        "ref": "p1-b2",
+        "seq_id": "p1_body_2",
+        "side": "original",
+        "quote": "Use of the new word rose sharply between 2015 and 2020 in this archive.",
+        "quote_sha256": "f9b8be08dd6a69703262c85cfe7a8e6fb81515c4da43a2e1a9d00f5334fac347",
+        "start": 0,
+        "end": 71,
+        "prefix": "",
+        "suffix": " Spoken language was not sampled",
+        "status": "exact",
+        "match_kind": "quote",
+        "evidence_label": "E1"
+       }
+      ],
+      "quote_match": "found",
+      "claim_support": "not_assessed",
+      "rejected_evidence": 0
+     }
+    ],
+    "rejected_quotes": [],
+    "uncertainty": {
+     "level": "medium",
+     "reasons": [
+      "單一研究"
+     ],
+     "source": "model_self_report"
+    },
+    "open_questions": [],
+    "selection": {
+     "schema": "roothinks.study.anchor/1",
+     "pid": "EVAL-p",
+     "paper_id": "S30",
+     "source": "flowa_fusion",
+     "source_sha256": "synthetic",
+     "page": 1,
+     "block_index": 2,
+     "ref": "p1-b2",
+     "seq_id": "p1_body_2",
+     "side": "original",
+     "quote": "Use of the new word rose sharply between 2015 and 2020 in this archive.",
+     "quote_sha256": "f9b8be08dd6a69703262c85cfe7a8e6fb81515c4da43a2e1a9d00f5334fac347",
+     "start": 0,
+     "end": 71,
+     "prefix": "",
+     "suffix": " Spoken language was not sampled",
+     "status": "exact",
+     "match_kind": "quote",
+     "version_changed": false
+    },
+    "system_check": {
+     "selection_status": "exact",
+     "selection_side": "original",
+     "version_changed": false,
+     "translation_based": false,
+     "format_ok": true,
+     "quotes_found": 1,
+     "rejected_quotes": 0
+    }
+   }
+  }
+ ]
+}
