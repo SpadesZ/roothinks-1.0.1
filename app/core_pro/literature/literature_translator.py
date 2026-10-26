@@ -116,7 +116,7 @@ class _QuickGoogleTranslator:
                     params={"client": "gtx", "sl": "en", "tl": target, "dt": "t", "q": text},
                     timeout=(3, 10), allow_redirects=False, stream=True) as response:
                 if response.status_code != 200:
-                    raise ValueError("Google translation provider rejected request")
+                    raise ValueError(f"Google translation provider rejected request (HTTP {response.status_code})")
                 body = bytearray()
                 for chunk in response.iter_content(chunk_size=8192):
                     body.extend(chunk)
@@ -555,7 +555,7 @@ class HybridTranslator:
                         protected_batch.append(ptxt)
                         maps.append(pmap)
                     outs = self._quick_translator.translate_batch(protected_batch, target_lang=target_lang)
-                    if isinstance(outs, list) and len(outs) == len(batch):
+                    if isinstance(outs, list) and len(outs) == len(batch) and all(isinstance(out, str) and out.strip() for out in outs):
                         for out, pmap in zip(outs, maps):
                             restored = self._restore_nonlinguistic_segments(str(out), pmap)
                             translated.append(restored)
@@ -636,7 +636,7 @@ class HybridTranslator:
                         protected.append(ptxt)
                         maps.append(pmap)
                     outs = self._quick_translator.translate_batch(protected, target_lang=target_lang)
-                    if isinstance(outs, list) and len(outs) == len(batch):
+                    if isinstance(outs, list) and len(outs) == len(batch) and all(isinstance(out, str) and out.strip() for out in outs):
                         for out, pmap in zip(outs, maps):
                             translated.append(
                                 self._restore_nonlinguistic_segments(str(out), pmap))

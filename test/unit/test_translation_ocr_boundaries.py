@@ -139,3 +139,20 @@ def test_google_invalid_target_does_not_send_a_request(monkeypatch):
     monkeypatch.setattr("requests.get", lambda *a, **k: pytest.fail("Unexpected request"))
     with pytest.raises(ValueError, match="target language"):
         _QuickGoogleTranslator().translate("Synthetic.", target_lang="https://example.invalid")
+
+
+@pytest.mark.parametrize("bad", [None, "", " "])
+def test_partial_batch_is_never_reported_as_translated(bad):
+    class Google:
+        def translate_batch(self, texts, **kwargs):
+            return [bad for _ in texts]
+
+        def translate(self, text, **kwargs):
+            raise ValueError("Synthetic provider failure")
+    tr = HybridTranslator.__new__(HybridTranslator)
+    tr._quick_translator = Google()
+    tr._nllb = None
+    tr._gemini_available = False
+    ok, out = tr._translate_segments_forced(["Synthetic."], "zho_Hant", "google")
+    assert HybridTranslator.UNTRANSLATED_MARK in out
+    assert "Synthetic." in out
