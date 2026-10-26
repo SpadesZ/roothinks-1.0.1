@@ -65,9 +65,12 @@ def env(monkeypatch, tmp_path):
         chat.mkdir(parents=True)
         (chat / f"{prefix}260101-000000.json").write_text(json.dumps([{"role": "user", "content": f"PRIVATE_{sub.upper()}_CHAT"}]),
                                                           encoding="utf-8")
-    log.write_text(f"INFO [Flow B] run_translation pid={PID} OWN_LINE\n"
-                   f"INFO [Flow B] run_translation pid={OTHER} OTHER_PROJECT_LINE\n"
-                   f"INFO [Flow B] run_translation pid=ELSEWHERE-p ELSEWHERE_LINE\n", encoding="utf-8")
+    stamp = "2026-10-27 10:00:00,000 [INFO] 1/MainThread x"
+    log.write_text(f"{stamp} [pid=xmod]: [Flow B] run_translation pid={PID} OWN_LINE\n"
+                   f"{stamp} [pid=xmod]: [Flow B] run_translation OWN_LINE_WITHOUT_PID_TEXT\n"
+                   f"{stamp} [pid=xmod12]: [Flow B] run_translation pid={OTHER} OTHER_PROJECT_LINE\n"
+                   f"{stamp} [pid=elsewhere]: [Flow B] run_translation pid={PID} SPOOFED_MENTION_LINE\n"
+                   f"INFO [Flow B] run_translation pid={PID} LEGACY_UNTAGGED_LINE\n", encoding="utf-8")
     yield app, tmp_path, ids, owner
     with app.app_context():
         db.session.remove()
@@ -97,9 +100,11 @@ def test_flowb_probe_returns_only_this_projects_log_lines(env):
     assert resp.status_code == 200
     debug = resp.json["debug"]
     hits = " ".join(debug["runtime_log"]["tail_hits"])
-    assert "OWN_LINE" in hits
+    assert "OWN_LINE" in hits and "OWN_LINE_WITHOUT_PID_TEXT" in hits, "依出處欄位，不靠訊息裡有沒有 pid"
     assert "OTHER_PROJECT_LINE" not in hits, "XMOD12-p 不得因前綴相同而命中 XMOD-p"
-    assert "ELSEWHERE_LINE" not in hits and "path" not in debug["runtime_log"]
+    assert "SPOOFED_MENTION_LINE" not in hits, "別的專案的行即使文字提到本 pid 也不給"
+    assert "LEGACY_UNTAGGED_LINE" not in hits and debug["runtime_log"]["untagged_lines_excluded"] == 1
+    assert "path" not in debug["runtime_log"]
     assert login(app, "outsider").get(f"/api/literature/debug/flowb_probe?pid={PID}&paper_id={PAPER}").status_code == 403
 
 

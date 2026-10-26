@@ -745,6 +745,12 @@ def request_pid() -> Optional[str]:
         return None
 
 
+def bind_request_pid(pid):
+    """授權成功才把本請求的日誌標成這個專案（app/log_provenance.py）；被拒絕的請求維持 [pid=-]。"""
+    from app.log_provenance import bind_request_pid as _bind
+    _bind(pid)
+
+
 def enforce_project_ownership(pid: str) -> None:
     """
     三模式分派的專案存取守衛（見模組標頭決策表）。
@@ -775,6 +781,7 @@ def enforce_project_ownership(pid: str) -> None:
         if result is not None:
             # require_workspace_role 回傳 (Response, status)，轉成 Forbidden 讓 route 捕捉
             raise Forbidden("Forbidden")
+        bind_request_pid(pid)
         return
 
     # ── 模式 B：Bearer token（機器對機器） ────────────────────────────────
@@ -784,9 +791,11 @@ def enforce_project_ownership(pid: str) -> None:
             raise Unauthorized("Unauthorized")
         if not check_ownership(token, pid):
             raise Forbidden("Forbidden")
+        bind_request_pid(pid)
         return
 
     # ── 模式 C：dev / TESTING — 放行 ─────────────────────────────────────
+    bind_request_pid(pid)
     return
 
 

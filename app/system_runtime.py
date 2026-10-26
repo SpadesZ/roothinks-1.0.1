@@ -276,11 +276,10 @@ def setup_system_logging(root_dir: str) -> Dict[str, object]:
             )
             handler.setLevel(logging.INFO)
             handler.set_name("system_runtime_file_handler")
-            handler.setFormatter(
-                logging.Formatter(
-                    "%(asctime)s [%(levelname)s] %(process)d/%(threadName)s %(name)s: %(message)s"
-                )
-            )
+            # 每行帶結構化專案出處 [pid=…]；專案層的日誌檢視只依這個欄位過濾（app/log_provenance.py）。
+            from app.log_provenance import TAG_FORMAT, ProjectContextFilter
+            handler.addFilter(ProjectContextFilter())
+            handler.setFormatter(logging.Formatter(TAG_FORMAT))
 
             root_logger = logging.getLogger()
             root_logger.setLevel(logging.INFO)

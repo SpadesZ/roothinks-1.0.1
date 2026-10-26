@@ -15,7 +15,6 @@
 
 import json
 import os
-import re
 import shutil
 import subprocess
 import sys
@@ -897,6 +896,7 @@ def run_flowb_subprocess(
         proc = subprocess.run(
             cmd,
             cwd=deps.BASE_DIR,
+            env={**os.environ, "ROOTHINKS_LOG_PID": str(pid)},
             timeout=deps.FLOWB_TIMEOUT_SEC,
             capture_output=True,
             text=True,
@@ -985,17 +985,12 @@ def flowb_debug_snapshot(deps: FlowBRuntimeDeps, pid: str, paper_id: str, log_li
 
     runtime_log = deps._runtime_log_file_path()
     runtime_rows = deps._tail_text_file(runtime_log, lines=max(100, int(log_lines * 2)), max_bytes=512000)
-    # 全站日誌混有其他專案的 Flow B 紀錄；只留下明確提到本專案 pid 的行，避免跨專案外洩。
-    # 舊作法用 "flow b"／"run_translation" 等通用字過濾，會把其他專案的行一併給本專案 viewer。
-    # 以字界比對 pid：ABC1 不能命中 ABC12-p 的行。
-    pid_patterns = [re.compile(r"(?<![a-z0-9])" + re.escape(k) + r"(?![a-z0-9])")
-                    for k in {str(pid).lower(), str(pid).lower().removesuffix("-p")} if k]
+    # 全站日誌混有所有專案的紀錄。只依每行的結構化出處欄位 [pid=…]（app/log_provenance.py）挑出本專案的行，
+    # 不在訊息文字裡找 pid 子字串；沒有出處欄位的舊行一律不給（fail closed）。
+    from app.log_provenance import lines_for_project
+    own_rows, untagged_rows = lines_for_project(runtime_rows, pid)
     filters = [paper_id.lower(), "flow b", "run_translation", "processing_b", "translating_local", "judging_llm"]
-    runtime_hits = []
-    for row in runtime_rows:
-        low = row.lower()
-        if any(p.search(low) for p in pid_patterns) and any(k in low for k in filters):
-            runtime_hits.append(row)
+    runtime_hits = [row for row in own_rows if any(k in row.lower() for k in filters)]
     runtime_hits = runtime_hits[-max(20, min(int(log_lines), 400)) :]
 
     return {
@@ -1024,5 +1019,6 @@ def flowb_debug_snapshot(deps: FlowBRuntimeDeps, pid: str, paper_id: str, log_li
         "runtime_log": {
             # 伺服器檔案路徑不給一般成員。
             "tail_hits": runtime_hits,
+            "untagged_lines_excluded": untagged_rows,
         },
     }

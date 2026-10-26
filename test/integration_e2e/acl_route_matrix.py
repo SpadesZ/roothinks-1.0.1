@@ -110,9 +110,13 @@ def seed(app):
         chat.mkdir(parents=True, exist_ok=True)
         (chat / f'{prefix}260101-000000.json').write_text(json.dumps([{'role': 'user', 'content': SENTINELS[key], 'ts': '2026-01-01'}]), encoding='utf-8')
     with open(LOG, 'a', encoding='utf-8') as fh:
-        fh.write(f"[2026-10-26] INFO pid={PID} {SENTINELS['runtime_log']}\n")
-        # 另一個專案的 Flow B 日誌行：任何 ACLP1 成員都不該看到
-        fh.write(f"[2026-10-26] INFO [Flow B] run_translation pid={OTHER} paper=secret {SENTINELS['other_project_log']}\n")
+        # 結構化出處格式（app/log_provenance.TAG_FORMAT）。
+        fh.write(f"2026-10-26 10:00:00,000 [INFO] 1/MainThread x [pid=-]: pid={PID} {SENTINELS['runtime_log']}\n")
+        # 另一個專案的 Flow B 日誌行：任何 ACLP1 成員都不該看到——包括訊息文字裡提到 ACLP1 的行（出處是別的專案）。
+        fh.write(f"2026-10-26 10:00:00,000 [INFO] 1/MainThread x [pid=aclp2]: [Flow B] run_translation pid={OTHER} paper=secret {SENTINELS['other_project_log']}\n")
+        fh.write(f"2026-10-26 10:00:00,000 [INFO] 1/MainThread x [pid=aclp2]: [Flow B] run_translation mentions {PID} {SENTINELS['other_project_log']}\n")
+        # 未標記的舊格式行：不論內容都不給專案成員。
+        fh.write(f"[2026-10-26] INFO [Flow B] run_translation pid={PID} legacy {SENTINELS['other_project_log']}\n")
     return ids, conv
 
 
