@@ -227,5 +227,19 @@
   },
   "residual": [
     "deep-translator PYSEC-2022-252 takeover advisory has no fixed release in registry; retain finding until separately assessed"
-  ]
+  ],
+  "update_2026_10_26_cloud_primary": {
+    "commit": "2ccb573",
+    "removed": [
+      "deep-translator==1.11.4",
+      "beautifulsoup4==4.15.0",
+      "soupsieve==3.0.4"
+    ],
+    "reason": "PYSEC-2022-252 官方資料只列已下架的 1.8.5，但範圍沒有結束版本；另有請求無逾時與批次空譯文缺陷",
+    "replacement": "app/core_pro/literature/literature_quick_google.py",
+    "lock_entries_before": 113,
+    "lock_entries_after": 110,
+    "pip_audit_findings_before": 1,
+    "pip_audit_findings_after": 0
+  }
 }

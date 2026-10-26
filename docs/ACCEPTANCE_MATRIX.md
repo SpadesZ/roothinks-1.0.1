@@ -4,7 +4,22 @@
 
 此表為優化實作的驗收依據。Batch A/B 及段落主張 → 證據條件 → 版本師生審閱工程切片已實作；各列標明實際範圍。未執行的案例保留未驗證，不以完整回歸數量推定全需求通過。更新證據時記錄實作 SHA、環境、命令／操作、結果與限制。
 
-## 本輪 I13：Gate A 負結果、Gate C 相依補宣告、Python 3.10 上傳缺陷修正
+## Cloud primary R1（2026-10-26）：3.12 開發基線、deep-translator 關閉、測試隔離、科學天花板
+
+分支 `codex/py312-cloud-primary-20261026`，起點整合分支 `29e87c6`。見 [交付](engineering/CLOUD_PRIMARY_R1_DELIVERY_2026-10-26.md)、
+[機器證據](engineering/CLOUD_PRIMARY_R1_EVIDENCE_2026-10-26.json)、[接手](engineering/CLOUD_PRIMARY_HANDOFF.md)。科學引擎未改（`4c2034bf…`）。
+
+| 項目 | 已實作／實際驗證 | 未完成／限制 |
+|---|---|---|
+| 3.12 開發基線 | 雲端主機以整合鎖定檔重建 venv：1,506／50／0／0，與本機完整映像相同 | 雲端無 torch（PyTorch index 403）；未重建 Docker |
+| PYSEC-2022-252 | 官方資料只列已下架 1.8.5；仍以自有客戶端取代並修兩個缺陷；差異測試 2,000＋23 案呼叫端 0 差異；pip-audit 1 → 0；鎖定檔 113 → 110 | 線上 Google 未實測（403） |
+| P1 批次空譯文 | 舊行為重現 `['好句子。', '', 'None']`；現在落到逐段補救並標 `[未翻譯]` | — |
+| P1 測試寫入 repo data/ | 23 項外漏找出來源並修正；根目錄 conftest 守門（有變動即整次失敗）；Flow B 除錯路徑改跟 `DATA_ROOT` | 守門刻意不提供略過 |
+| 整合分支審查 | 產品變更無缺陷；Mermaid SRI 獨立核對；Node 12／12；真瀏覽器 4／4，不服務 plotly 時外部失敗 3 → 0 | Google 真 OAuth 未驗 |
+| 科學天花板（預先登記） | 188 個 gold 有結論主張：結構可救 149、沒檢索到 28、閘門擋下 10、已正確 1；依規則 Gate D 值得做 | 已曝光 dev；H1 為樂觀上限（事後嚴格 134） |
+| Gate D | 協議草案；spaCy 模型 GitHub release 現可取得（不需擴大網路） | **待 Owner 核准新模型與相依** |
+
+## I13 歷史：Gate A 負結果、Gate C 相依補宣告、Python 3.10 上傳缺陷修正
 
 起點 `29aefb0`；實作凍結 `5b02f3c`；分支 `codex/sai-i13-gate-a-and-deps`。
 見 [交付與自我稽核](engineering/SAI_I13_DELIVERY_2026-10-25.md)、

@@ -36,4 +36,6 @@
 
 Torch 兩邊原版本相同；雲端獨立安裝，原 29 差異的 null 不代表其映像沒裝 Torch。
 
-額外安全更新保留原始掃描、官方來源與完整測試；不把更高版本當作無漏洞或科學品質改善。deep-translator 的歷史供應鏈通報仍列為未關閉風險。
+額外安全更新保留原始掃描、官方來源與完整測試；不把更高版本當作無漏洞或科學品質改善。
+
+**2026-10-26 更新（cloud primary）**：deep-translator 1.11.4、beautifulsoup4 4.15.0、soupsieve 3.0.4 已移除（`2ccb573`）。PYSEC-2022-252 的官方資料只列已下架的 1.8.5，但範圍沒有結束版本，所以 1.11.4 被標記；另外它的請求沒有逾時，且批次路徑會把空譯文當成功。改用 `app/core_pro/literature/literature_quick_google.py`（同一協定、有逾時、找不到譯文就報錯）。鎖定檔 113 → 110 項（不含 torch／torchvision 為 111 → 108）；pip-audit 1 筆 → 0 筆。證據見 [CLOUD_PRIMARY_R1_DELIVERY_2026-10-26.md](CLOUD_PRIMARY_R1_DELIVERY_2026-10-26.md)。
