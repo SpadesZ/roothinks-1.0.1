@@ -24,6 +24,7 @@
 # ------------------------------------------------------------------------------
 
 import json
+import logging
 import os
 import re
 from datetime import datetime, timezone
@@ -76,24 +77,28 @@ def _flowb_normalize_heading(text: str) -> str:
 
 # 編號章節模式:如 "3.1 Constructing the Classifier"、"2 Methods"
 _FLOWB_NUMBERED_HEADING_RE = re.compile(r"^\d+(?:\.\d+)*[.\s]+\S")
-_FLOWB_BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-_FLOWB_DATA_ROOT = os.path.join(_FLOWB_BASE_DIR, "data")
+class FlowBDataRootUnavailable(RuntimeError):
+    """設定的資料根目錄不可用；呼叫端必須拒寫，不能改寫到其他位置。"""
 
 
 def _flowb_data_root() -> str:
     """與 Flow B 其他產物同一個資料根目錄（literature_routes.DATA_ROOT）。
 
-    正式環境兩者是同一路徑；不跟著設定走的話，DATA_ROOT 指到別處時（例如測試的 tmp），
-    含論文內容的 LLM 原始回覆會被寫到 repo 的 data/。
+    不回退到 repo 的 data/（fail closed）：取不到設定、設定是空的或目錄不存在，一律丟出
+    FlowBDataRootUnavailable。含論文內容的 LLM 原始回覆只能寫在使用者設定的資料根目錄。
     """
     try:
         from app.core_pro.literature import literature_routes
-        return literature_routes.DATA_ROOT
-    except Exception:
-        return _FLOWB_DATA_ROOT
+    except Exception as exc:
+        raise FlowBDataRootUnavailable("無法取得 literature_routes.DATA_ROOT") from exc
+    root = str(getattr(literature_routes, "DATA_ROOT", "") or "").strip()
+    if not root or not os.path.isdir(root):
+        raise FlowBDataRootUnavailable(f"設定的 DATA_ROOT 不可用：{root or '(空)'}")
+    return root
 
 
 def _flowb_write_debug_reply(pid: str, paper_id: str, tag: str, content: str):
+    """盡力寫入除錯回覆；失敗只記 warning，不影響翻譯流程，也不改寫到其他位置。"""
     try:
         p = str(pid or "").strip()
         paper = str(paper_id or "").strip()
@@ -113,8 +118,9 @@ def _flowb_write_debug_reply(pid: str, paper_id: str, tag: str, content: str):
         out_path = safe_join_under(debug_dir, f"{ts}_{fname}.txt")
         with open(out_path, "w", encoding="utf-8") as f:
             f.write(str(content or ""))
-    except Exception:
-        return
+    except Exception as exc:
+        logging.getLogger("LiteratureRoutes").warning(
+            "[FlowB] debug reply not written (%s): %s", type(exc).__name__, exc)
 
 
 def _flowb_is_heading_like(text: str, block_type: str = "") -> bool:
