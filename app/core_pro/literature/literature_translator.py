@@ -51,6 +51,8 @@
 
 import logging
 import re
+
+from app.core_pro.literature import translation_guard
 from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeout
 from enum import Enum
 from typing import Optional, Tuple
@@ -858,40 +860,14 @@ class HybridTranslator:
         return None
 
     def _protect_nonlinguistic_segments(self, text: str):
-        """Protect formulas/URLs/DOI/LaTeX spans before translation to reduce garbling risk."""
-        if not text:
-            return text, {}
-
-        patterns = [
-            r"\$\$[\s\S]*?\$\$",       # $$ ... $$
-            r"\\\([\s\S]*?\\\)",     # \( ... \)
-            r"\\\[[\s\S]*?\\\]",     # \[ ... \]
-            r"\$[^$\n]{1,200}\$",         # $ ... $
-            r"https?://\S+",                # URL
-            r"doi:\s*\S+",                 # DOI
-            r"10\.\d{4,9}/\S+",           # DOI-like token
-        ]
-
-        combined = "|".join(f"({p})" for p in patterns)
-        mapping = {}
-        idx = 0
-
-        def repl(m):
-            nonlocal idx
-            token = f"__RTK_KEEP_{idx}__"
-            mapping[token] = m.group(0)
-            idx += 1
-            return token
-
-        protected = re.sub(combined, repl, text)
-        return protected, mapping
+        """Protect formulas/URLs/DOI/LaTeX spans before translation（實作在 translation_guard；擴充類型預設關閉）。"""
+        return translation_guard.protect(text)
 
     def _restore_nonlinguistic_segments(self, text: str, mapping: dict):
-        if not text or not mapping:
+        """容錯還原；翻譯引擎改壞的佔位符會被認回，真的遺失的原文片段補在尾端並標示，不默默消失。"""
+        if not mapping:
             return text
-        restored = text
-        for token, original in mapping.items():
-            restored = restored.replace(token, original)
+        restored, _report = translation_guard.restore(text, mapping)
         return restored
     
     @property

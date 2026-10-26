@@ -1,0 +1,118 @@
+{
+ "nature": "SIMULATION of placeholder damage; not a measurement of any real translation engine",
+ "corpus_sentences": 40,
+ "base_patterns": {
+  "faithful": {
+   "sentences": 40,
+   "spans": 24,
+   "old_spans_preserved": 24,
+   "new_spans_preserved": 24,
+   "old_silent_loss_sentences": 0,
+   "new_silent_loss_sentences": 0,
+   "new_loss_flagged_sentences": 0,
+   "number_change_detected": 0,
+   "number_changed_sentences": 0
+  },
+  "spacing": {
+   "sentences": 40,
+   "spans": 24,
+   "old_spans_preserved": 0,
+   "new_spans_preserved": 24,
+   "old_silent_loss_sentences": 20,
+   "new_silent_loss_sentences": 0,
+   "new_loss_flagged_sentences": 0,
+   "number_change_detected": 0,
+   "number_changed_sentences": 0
+  },
+  "case_fullwidth": {
+   "sentences": 40,
+   "spans": 24,
+   "old_spans_preserved": 0,
+   "new_spans_preserved": 24,
+   "old_silent_loss_sentences": 20,
+   "new_silent_loss_sentences": 0,
+   "new_loss_flagged_sentences": 0,
+   "number_change_detected": 0,
+   "number_changed_sentences": 0
+  },
+  "drop_last_token": {
+   "sentences": 40,
+   "spans": 24,
+   "old_spans_preserved": 4,
+   "new_spans_preserved": 4,
+   "old_silent_loss_sentences": 20,
+   "new_silent_loss_sentences": 0,
+   "new_loss_flagged_sentences": 20,
+   "number_change_detected": 0,
+   "number_changed_sentences": 0
+  },
+  "digit_change": {
+   "sentences": 40,
+   "spans": 24,
+   "old_spans_preserved": 24,
+   "new_spans_preserved": 24,
+   "old_silent_loss_sentences": 0,
+   "new_silent_loss_sentences": 0,
+   "new_loss_flagged_sentences": 0,
+   "number_change_detected": 32,
+   "number_changed_sentences": 32
+  }
+ },
+ "extended_patterns": {
+  "faithful": {
+   "sentences": 40,
+   "spans": 57,
+   "old_spans_preserved": 57,
+   "new_spans_preserved": 57,
+   "old_silent_loss_sentences": 0,
+   "new_silent_loss_sentences": 0,
+   "new_loss_flagged_sentences": 0,
+   "number_change_detected": 0,
+   "number_changed_sentences": 0
+  },
+  "spacing": {
+   "sentences": 40,
+   "spans": 57,
+   "old_spans_preserved": 0,
+   "new_spans_preserved": 57,
+   "old_silent_loss_sentences": 39,
+   "new_silent_loss_sentences": 0,
+   "new_loss_flagged_sentences": 0,
+   "number_change_detected": 0,
+   "number_changed_sentences": 0
+  },
+  "case_fullwidth": {
+   "sentences": 40,
+   "spans": 57,
+   "old_spans_preserved": 0,
+   "new_spans_preserved": 57,
+   "old_silent_loss_sentences": 39,
+   "new_silent_loss_sentences": 0,
+   "new_loss_flagged_sentences": 0,
+   "number_change_detected": 0,
+   "number_changed_sentences": 0
+  },
+  "drop_last_token": {
+   "sentences": 40,
+   "spans": 57,
+   "old_spans_preserved": 18,
+   "new_spans_preserved": 18,
+   "old_silent_loss_sentences": 39,
+   "new_silent_loss_sentences": 0,
+   "new_loss_flagged_sentences": 39,
+   "number_change_detected": 0,
+   "number_changed_sentences": 0
+  },
+  "digit_change": {
+   "sentences": 40,
+   "spans": 57,
+   "old_spans_preserved": 57,
+   "new_spans_preserved": 57,
+   "old_silent_loss_sentences": 0,
+   "new_silent_loss_sentences": 0,
+   "new_loss_flagged_sentences": 0,
+   "number_change_detected": 27,
+   "number_changed_sentences": 27
+  }
+ }
+}
