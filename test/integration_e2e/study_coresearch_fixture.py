@@ -20,7 +20,7 @@ os.environ.update(FLASK_ENV='development', PYTHON_DOTENV_DISABLED='1', SOCKETIO_
                   HF_HUB_OFFLINE='1', TRANSFORMERS_OFFLINE='1', CORS_ALLOWED_ORIGINS=f'http://127.0.0.1:{PORT}')
 
 from app import create_app, db, socketio
-from app.models import User, Project, WorkspaceMember, MentorLink, Paper
+from app.models import User, Project, WorkspaceMember, MentorLink, Paper, ProjectInvitation
 from app.llm_service.llm_model import LLMModel
 LLMModel.get_db_path = staticmethod(lambda: str(root / 'llm.db'))
 app = create_app({'TESTING': True, 'AUTH_MODE': 'session', 'API_AUTH_ENABLED': False, 'WTF_CSRF_ENABLED': True,
@@ -123,6 +123,11 @@ with app.app_context():
         if role:
             db.session.add(WorkspaceMember(user_id=user.id, pid=PID, role=role))
     db.session.add(MentorLink(mentor_id=users['professor'], mentee_id=users['researcher']))
+    # 與真實流程相同：教授經「教授邀請」加入（viewer、只授予審閱權）→ Study R2 的審閱身分。
+    from datetime import datetime, timedelta, timezone
+    db.session.add(ProjectInvitation(id='0' * 32, pid=PID, invited_email='professor@example.invalid', created_by=users['researcher'],
+                                     accepted_by=users['professor'], kind='professor', role='viewer', sections_json='[]',
+                                     token_hash='0' * 64, status='accepted', expires_at=datetime.now(timezone.utc) + timedelta(days=7)))
     db.session.add(Paper(paper_id=PAPER, pid=PID, title=PAGES[0][1][0][1], interpretation_status=Paper.STATUS_GOLD_READY))
     db.session.commit()
     _write_paper()

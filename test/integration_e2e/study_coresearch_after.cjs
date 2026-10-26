@@ -52,7 +52,8 @@ module.exports=async function after(ctx){
         pointEvidence:el.querySelectorAll('.study-points [data-evidence-anchor]').length,
         rejected:el.querySelectorAll('[data-rejected-quote]').length,
         fakeShownAsEvidence:[...el.querySelectorAll('[data-evidence-anchor]')].some(a=>a.textContent.includes(fake)),
-        supports:[...el.querySelectorAll('[data-support]')].map(s=>s.dataset.support),
+        supports:[...el.querySelectorAll('[data-quote-match]')].map(s=>s.dataset.quoteMatch),
+        verifiedWord:/驗證/.test(el.innerText),
         uncertainty:el.querySelector('[data-uncertainty]')?.textContent||'',
         systemCheck:el.querySelector('[data-system-check]')?.textContent||'',
     }),FAKE);
@@ -60,8 +61,9 @@ module.exports=async function after(ctx){
     evidence.metrics.answer_rejected_quotes=answer.rejected;
     evidence.metrics.answer_uncertainty_shown=answer.uncertainty?1:0;
     check('AC3 假引文 0 個成為證據且明示被排除',answer.pointEvidence===1&&answer.rejected===1&&!answer.fakeShownAsEvidence,answer);
-    check('AC3 無原文支持的論點標成 AI 推論',JSON.stringify(answer.supports)==='["source_quoted","ai_inference"]',answer.supports);
-    check('AC5 同時顯示 AI 自評與系統檢查',answer.uncertainty.includes('AI 自評')&&answer.systemCheck.includes('已驗證引文 1'),answer);
+    check('AC3 沒有原文引文的論點標出來',JSON.stringify(answer.supports)==='["found","none"]',answer.supports);
+    check('AC5 同時顯示 AI 自評與系統檢查',answer.uncertainty.includes('AI 自評')&&answer.systemCheck.includes('原文中找到的引文 1'),answer);
+    check('B9 回答卡不用「驗證」描述引文比對，並說明不判斷是否支持',!answer.verifiedWord&&answer.systemCheck.includes('不判斷是否支持論點'),answer.systemCheck);
     await snapshot(page,'03-structured-answer');
 
     // ---------- 點證據回原文 ----------
@@ -115,7 +117,7 @@ module.exports=async function after(ctx){
     await critique.waitFor();
     const critiqueCheck=await critique.locator('[data-system-check]').innerText();
     check('譯文選段標明來自機器譯文',critiqueCheck.includes('選段來自機器譯文'),critiqueCheck);
-    check('譯文選段附整段原文作來源',await critique.getByText('來源事實改用同段原文').count()===1);
+    check('譯文選段附整段原文作來源並標明是推定',await critique.getByText('來源事實改用由譯文推定的整段原文（非逐句對應）：').count()===1);
     await snapshot(page,'07-translation-critique');
 
     // ---------- 舊流程：純文字 Tutor 照常 ----------
@@ -183,5 +185,64 @@ module.exports=async function after(ctx){
     const final=(await notes(page))[0];
     check('人類回饋不改陳述與類別',JSON.stringify(final.statements)===JSON.stringify(saved[0].statements));
     await snapshot(page,'10-researcher-sees-feedback');
+
+    // ---------- R2-C：非作者提建議，作者明確接受 ----------
+    const mate2=await pageFor();
+    await login(mate2,'teammate');
+    await openReader(mate2);
+    await mate2.locator('[data-notes-tab="evidence"]').click();
+    const mcard=mate2.locator('[data-evidence-note]').first();
+    await mcard.waitFor();
+    check('B11 非作者看不到改寫與請求審閱，只能提建議',
+        await mcard.locator('[data-evidence-edit],[data-evidence-review]').count()===0&&await mcard.locator('[data-evidence-suggest]').count()===1);
+    await mcard.locator('[data-evidence-suggest]').click();
+    const sEditor=mcard.locator('[data-evidence-editor="suggest"]');
+    await sEditor.locator('textarea').last().fill('只限樣本 A、300 K；退火時間可能是混淆因素。');
+    await sEditor.locator('input[aria-label="建議理由"]').fill('把範圍寫清楚');
+    await sEditor.locator('[data-evidence-editor-submit]').click();
+    await mate2.waitForFunction(()=>document.querySelector('#evidence-notes-status')?.textContent.includes('已送出建議'));
+    const suggested=(await notes(mate2))[0];
+    check('B11 建議不改作者內容',JSON.stringify(suggested.statements)===JSON.stringify(final.statements)&&suggested.suggestions.length===1);
+    await snapshot(mate2,'11-teammate-suggestion');
+    await mate2.context().close();
+
+    await page.reload();
+    await page.waitForFunction(()=>window.studyEvidence);
+    await page.locator('[data-notes-tab="evidence"]').click();
+    await page.locator('[data-suggestion-accept]').first().click();
+    await page.waitForFunction(()=>document.querySelector('#evidence-notes-status')?.textContent.includes('已接受建議'));
+    const merged=(await notes(page))[0];
+    check('B11 作者接受後內容改變且可追溯',merged.statements.at(-1).text.includes('混淆因素')&&merged.statements.at(-1).added_by.username==='teammate'&&
+        merged.revisions[0].action==='accepted_suggestion'&&merged.revisions[0].previous_statements.at(-1).text.includes('退火時間可能是混淆因素，需另外驗證'));
+    check('B11 協作紀錄看得到',await page.locator('[data-evidence-history]').count()===1);
+
+    // ---------- R2-B：支持判斷只由研究者設定 ----------
+    await page.locator('[data-evidence-edit]').first().click();
+    const aEditor=page.locator('[data-evidence-editor="edit"]');
+    await aEditor.locator('select[aria-label^="引文是否支持"]').first().selectOption('partial');
+    await aEditor.locator('[data-evidence-editor-submit]').click();
+    await page.waitForFunction(()=>document.querySelector('#evidence-notes-status')?.textContent.includes('已改寫'));
+    const judged=(await notes(page))[0].statements.find(st=>st.claim_support==='partial');
+    check('B10 研究者的支持判斷有紀錄',judged&&judged.claim_support_by.username==='researcher');
+    check('B10 清單標示研究者判斷',await page.locator('[data-evidence-note] [data-claim-support="partial"]').count()>=1);
+    await snapshot(page,'12-author-accepts-and-judges');
     await page.context().close();
+
+    // ---------- R2-A：教授審閱模式 ----------
+    const prof2=await pageFor();
+    const asked=[];
+    prof2.on('request',r=>{if(r.url().includes('/api/study/'))asked.push(r.url().replace(base,''));});
+    await login(prof2,'professor');
+    await prof2.goto(`${base}/study/project/${pid}?pid=${pid}`);
+    await prof2.waitForFunction(()=>window.studyEvidence&&window.STUDY_REVIEW_SCOPE===true);
+    await prof2.locator('[data-evidence-note]').first().waitFor();
+    const reviewNotes=await prof2.locator('[data-evidence-note]').count();
+    const banner=await prof2.locator('#evidence-notes-list').innerText();
+    check('B2 教授只看到請求審閱的筆記',reviewNotes===1&&banner.includes('審閱模式'),{reviewNotes});
+    check('B1 教授頁面不呼叫私人資料 API',!asked.some(u=>/notes\/load|conversations|conversation\/|matrix/.test(u)),asked);
+    const privateRead=await api(prof2,`/api/study/notes/load/${pid}`);
+    check('B1 教授直接讀自由筆記被拒',privateRead.status===403&&privateRead.data.review_scope===true,privateRead.status);
+    check('B3 教授仍能讀全文',(await api(prof2,`/api/study/get_fulltext/${pid}/${ctx.paper}`)).status===200);
+    await snapshot(prof2,'13-professor-review-mode');
+    await prof2.context().close();
 };
