@@ -342,6 +342,8 @@ def _enforce_manuscript_acl():
     token = getattr(g, "auth_token", "")
     if token and not check_ownership(token, pid):
         return jsonify({"ok": False, "message": "Forbidden"}), 403
+    from app.log_provenance import bind_request_pid
+    bind_request_pid(pid)
     return None
 
 
@@ -2941,3 +2943,7 @@ def get_revisions(pid):
     except Exception as e:
         logger.error("[get_revisions] %s", e, exc_info=True)
         return jsonify({"ok": False, "message": "Internal server error"}), 500
+
+
+# R4：段落出處 API 註冊在同一個藍圖上（模組內容見 provenance_routes.py）。
+from app.core_pro.manuscript import provenance_routes as _provenance_routes  # noqa: E402,F401

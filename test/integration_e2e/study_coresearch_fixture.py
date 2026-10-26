@@ -131,6 +131,11 @@ with app.app_context():
     db.session.add(Paper(paper_id=PAPER, pid=PID, title=PAGES[0][1][0][1], interpretation_status=Paper.STATUS_GOLD_READY))
     db.session.commit()
     _write_paper()
+    # R4 段落出處：已保存一版的 Introduction（兩段），供 Manuscript「段落出處」旅程使用。
+    from app.core_pro.manuscript.manuscript_io import ManuscriptIO
+    ManuscriptIO.save_block_version(PID, 'introduction', 'Introduction',
+                                    '<p>本研究只在 300 K 觀察到樣本 A 的改善，結論不能外推到其他溫度或樣本。</p>'
+                                    '<p>我們推測退火時間可能影響結果，這是研究者自己的推論。</p>', updated_by='researcher')
 print(json.dumps({'url': f'http://127.0.0.1:{PORT}', 'pid': PID, 'paper_id': PAPER, 'root': str(root), 'users': users}),
       flush=True)
 socketio.run(app, host='127.0.0.1', port=PORT, allow_unsafe_werkzeug=True, use_reloader=False, log_output=False)

@@ -273,6 +273,7 @@
                         <i class="bi bi-quote"></i> 引用
                     </button>
                     <button class="btn btn-sm btn-outline-primary" onclick="window.paragraphReview.open()">主張與審閱</button>
+                    <button class="btn btn-sm btn-outline-primary" id="btn-paragraph-provenance" onclick="window.paragraphProvenance.open()" title="把已保存的一段連到 Study 證據筆記，或標成自由寫作">段落出處</button>
 
                     <div class="vr mx-1"></div>
 
@@ -654,6 +655,7 @@
     <script src="{{ url_for('static', filename='js/manuscript_ws.js') }}?v=5.5"></script>
     <script src="{{ url_for('static', filename='js/manuscript_citation.js') }}?v=0.1"></script>
     <script src="{{ url_for('static', filename='js/paragraph_review.js') }}?v=1"></script>
+    <script src="{{ url_for('static', filename='js/paragraph_provenance.js') }}?v=1"></script>
     <script src="{{ url_for('static', filename='js/scientific_review.js') }}?v=2"></script>
 
 </body>

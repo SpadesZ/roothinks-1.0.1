@@ -246,6 +246,72 @@ module.exports=async function after(ctx){
     check('R3 插入的內容經既有存檔路徑寫入伺服器',JSON.stringify(savedFree.data).includes('【證據筆記】'),savedFree.status);
     await snapshot(page,'12b-evidence-into-notes');
     await snapshot(page,'12-author-accepts-and-judges');
+
+    // ---------- R4：Manuscript 段落出處（寫作 → 證據筆記 → 修訂 → 匯出）----------
+    const PARA1='本研究只在 300 K 觀察到樣本 A 的改善';
+    await page.goto(`${base}/manuscript/?pid=${pid}`);
+    await page.waitForFunction(()=>window.wsApp&&window.wsApp.collab&&window.paragraphProvenance);
+    await page.locator('#sectionDropdownBtn').click();
+    await page.locator('#sectionDropdownMenu [data-section-id="introduction"]').first().click();
+    await page.waitForFunction(()=>window.wsApp.collab.currentSVer()&&document.querySelector('.editor-card[data-section="introduction"]')?.textContent.includes('300 K'),null,{timeout:15000});
+    const selectText=async needle=>page.evaluate(n=>{
+        const card=document.querySelector('.editor-card[data-section="introduction"]');
+        const walker=document.createTreeWalker(card,NodeFilter.SHOW_TEXT);
+        let node;while((node=walker.nextNode())){const i=node.textContent.indexOf(n);if(i>=0){
+            const r=document.createRange();r.setStart(node,0);r.setEnd(node,node.textContent.length);
+            const sel=window.getSelection();sel.removeAllRanges();sel.addRange(r);return node.textContent;}}
+        return null;
+    },needle);
+    const selected=await selectText(PARA1);
+    await page.locator('#btn-paragraph-provenance').click();
+    await page.locator('#paragraphProvenancePanel.show').waitFor();
+    await page.waitForFunction(()=>document.querySelector('#ppNote')?.options.length>0,null,{timeout:10000});
+    check('R4 段落出處面板帶入選取的段落與證據筆記',(await page.locator('#ppParagraph').inputValue()).includes(PARA1)&&
+        await page.locator('#ppNote option').count()>=1,{selected});
+    await page.locator('[data-provenance-link]').click();
+    await page.locator('[data-provenance-kind="evidence_note"]').first().waitFor({timeout:10000});
+    const linkedCard=page.locator('[data-provenance-kind="evidence_note"]').first();
+    const linkedText=await linkedCard.innerText();
+    check('R4 段落連到證據筆記，分開顯示原文引文、AI 解讀、研究者判斷',linkedText.includes('不代表支持')&&linkedText.includes('AI 解讀')&&
+        linkedText.includes('研究者判斷')&&await linkedCard.locator('[data-provenance-issues]').count()===0,linkedText.slice(0,300));
+    await page.locator('#ppParagraph').fill('我們推測退火時間可能影響結果，這是研究者自己的推論。');
+    await page.locator('#ppReason').fill('研究者推論，尚無文獻');
+    await page.locator('[data-provenance-free]').click();
+    await page.locator('[data-provenance-kind="free_writing"]').first().waitFor({timeout:10000});
+    check('R4 沒有證據的段落可以標為自由寫作',await page.locator('[data-provenance-kind="free_writing"]').count()===1);
+    await snapshot(page,'14-manuscript-provenance-linked');
+    // 改寫已連結的段落並保存：保存成功（不被出處擋住），出處標示需要重新核對
+    await page.keyboard.press('Escape');
+    await page.locator('#paragraphProvenancePanel').evaluate(el=>bootstrap.Offcanvas.getOrCreateInstance(el).hide());
+    await page.waitForTimeout(400);
+    const beforeVer=await page.evaluate(()=>window.wsApp.collab.currentSVer());
+    await page.evaluate(n=>{
+        const card=document.querySelector('.editor-card[data-section="introduction"]');
+        const walker=document.createTreeWalker(card,NodeFilter.SHOW_TEXT);let node;
+        while((node=walker.nextNode())){if(node.textContent.includes(n)){node.textContent=node.textContent.replace('300 K','300 K 與 310 K');break;}}
+        card.querySelector('[contenteditable="true"]')?.dispatchEvent(new Event('input',{bubbles:true}));
+    },PARA1);
+    await page.locator('button:has-text("Save")').first().click();
+    await page.waitForFunction(v=>window.wsApp.collab.currentSVer()&&window.wsApp.collab.currentSVer()!==v,beforeVer,{timeout:15000});
+    const afterVer=await page.evaluate(()=>window.wsApp.collab.currentSVer());
+    check('R4 有出處的段落仍可改寫並保存成新版本',afterVer!==beforeVer,{beforeVer,afterVer});
+    await page.locator('#btn-paragraph-provenance').click();
+    await page.waitForFunction(()=>document.querySelector('[data-provenance-kind="evidence_note"] [data-provenance-issues]'),null,{timeout:10000});
+    const issues=await page.locator('[data-provenance-kind="evidence_note"] [data-provenance-issues]').first().getAttribute('data-provenance-issues');
+    check('R4 段落改寫後出處標示需要重新核對',issues.split(',').includes('paragraph_changed'),issues);
+    await page.locator('#paragraphProvenancePanel.show').waitFor();
+    await page.waitForTimeout(500);  // offcanvas 滑入動畫
+    await snapshot(page,'15-manuscript-provenance-recheck');
+    const provExport=await page.evaluate(async p=>{const r=await fetch(`/manuscript/api/provenance/export?pid=${p}`);return {status:r.status,text:await r.text()};},pid);
+    check('R4 出處紀錄可匯出，標明需要重新核對與自由寫作',provExport.status===200&&provExport.text.includes('需要重新核對')&&
+        provExport.text.includes('自由寫作')&&provExport.text.includes('不代表支持'),provExport.status);
+    evidence.metrics.provenance_export_chars=provExport.text.length;
+    // Study 端看得到反向連結
+    await page.goto(`${base}/study/project/${pid}?pid=${pid}`);
+    await page.waitForFunction(()=>window.studyEvidence);
+    await page.locator('[data-notes-tab="evidence"]').click();
+    await page.locator('[data-evidence-used-in]').first().waitFor({timeout:10000});
+    check('R4 Study 證據筆記顯示被用在稿件哪一段',(await page.locator('[data-evidence-used-in]').first().innerText()).includes('introduction'));
     await page.context().close();
 
     // ---------- R2-A：教授審閱模式 ----------
@@ -262,6 +328,11 @@ module.exports=async function after(ctx){
     check('B1 教授頁面不呼叫私人資料 API',!asked.some(u=>/notes\/load|conversations|conversation\/|matrix/.test(u)),asked);
     const privateRead=await api(prof2,`/api/study/notes/load/${pid}`);
     check('B1 教授直接讀自由筆記被拒',privateRead.status===403&&privateRead.data.review_scope===true,privateRead.status);
+    const provProf=await api(prof2,`/manuscript/api/provenance?pid=${pid}&section=introduction`);
+    const profNote=(provProf.data.links||[]).find(l=>l.kind==='evidence_note')?.note||{};
+    const shared=(await api(prof2,`/api/study/evidence_notes/${pid}`)).data.notes?.length>0;
+    check('R4 教授看得到段落出處，但只看得到已請求審閱的筆記內容',provProf.status===200&&(provProf.data.notes||[]).length===0&&
+        (shared?!profNote.hidden:profNote.hidden===true),{status:provProf.status,shared,profNote:Object.keys(profNote)});
     check('R3 教授看不到修改前的內容',await prof2.locator('[data-revision-previous]').count()===0&&await prof2.locator('[data-evidence-insert]').count()===0);
     check('B3 教授仍能讀全文',(await api(prof2,`/api/study/get_fulltext/${pid}/${ctx.paper}`)).status===200);
     await snapshot(prof2,'13-professor-review-mode');

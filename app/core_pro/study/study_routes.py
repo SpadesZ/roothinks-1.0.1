@@ -2384,6 +2384,15 @@ def list_evidence_notes(pid):
             doc["notes"] = study_evidence_notes.review_shared(doc["notes"])
         if request.args.get('verify') == '1':
             _attach_current_anchor_status(pid, doc["notes"])
+        if not scoped:
+            # 反向連結：這則筆記被用在稿件哪幾段（R4 段落出處）。讀不到出處檔時不影響筆記清單。
+            try:
+                from app.core_pro.manuscript import paragraph_provenance
+                links = paragraph_provenance.load(resolve_data_root(), pid)["links"]
+                for note in doc["notes"]:
+                    note["used_in"] = paragraph_provenance.used_in(links, note.get("note_id"))
+            except Exception:
+                logger.warning("[evidence_notes] 讀取段落出處失敗 pid=%s", pid, exc_info=True)
         return jsonify({"ok": True, "rev": doc.get("_rev", 0), "notes": doc["notes"], "review_scope": scoped})
     except Exception as e:
         return _internal_error("list_evidence_notes", e)

@@ -466,6 +466,13 @@
                 line.setAttribute('data-ai-uncertainty', unc.level || 'unknown');
                 card.appendChild(line);
             }
+            if ((note.used_in || []).length) {
+                // 反向連結（R4）：這則筆記被用在稿件哪幾段。
+                const used = el('div', 'small text-muted mb-1');
+                used.setAttribute('data-evidence-used-in', String(note.used_in.length));
+                used.textContent = '用在稿件：' + note.used_in.map(u => `${u.section} S.Ver ${u.s_ver}「${u.excerpt}」`).join('；');
+                card.appendChild(used);
+            }
             card.appendChild(this._historyBlock(note));
 
             const comments = el('div', 'study-comments mt-1');
