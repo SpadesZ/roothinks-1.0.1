@@ -13,7 +13,7 @@ filelock==4.2.1
 alembic>=1.13,<2.0
 google-generativeai==0.8.6
 openai>=1.0.0,<2.0
-deep-translator>=1.11,<2.0
+# deep-translator 已移除（2026-10-26）：PYSEC-2022-252 掃描標記、請求無逾時；改用 app/core_pro/literature/literature_quick_google.py。
 python-dotenv>=1.0.1,<2.0
 requests>=2.32.3,<3.0
 httpx>=0.23.0,<1.0

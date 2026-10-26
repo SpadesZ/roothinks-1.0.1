@@ -72,7 +72,7 @@ class TranslationContext(Enum):
 # 機器條件差異太大，不是程式猜得準的事，交給使用者按情況選。
 ENGINE_AUTO = "auto"      # 沿用原本的自動判斷（預設，行為不變）
 ENGINE_NLLB = "nllb"      # 本機 NLLB-200-600M，零 API 費用，但吃 CPU
-ENGINE_GOOGLE = "google"  # Google 翻譯（deep-translator），免金鑰、快
+ENGINE_GOOGLE = "google"  # Google 翻譯行動版（literature_quick_google），免金鑰、快，但會把該段文字送到 Google
 ENGINE_LLM = "llm"        # 雲端 LLM（走 llm_bus 綁定的模型），品質最好、要錢
 
 VALID_ENGINES = {ENGINE_AUTO, ENGINE_NLLB, ENGINE_GOOGLE, ENGINE_LLM}
@@ -143,10 +143,11 @@ class HybridTranslator:
             logger.error(f"[HybridTranslator] Gemini check error: {e}")
 
         # 3. Quick translator (network-based, no API key)
+        # 不再用 deep-translator：它被 PYSEC-2022-252 掃描標記，且請求沒有逾時（見 literature_quick_google）。
         try:
-            from deep_translator import GoogleTranslator
-            self._quick_translator = GoogleTranslator(source='en', target='zh-TW')
-            logger.info("[HybridTranslator] Quick translator ready (deep-translator)")
+            from app.core_pro.literature.literature_quick_google import QuickGoogleTranslator
+            self._quick_translator = QuickGoogleTranslator(source='en', target='zh-TW')
+            logger.info("[HybridTranslator] Quick translator ready (literature_quick_google)")
         except Exception as e:
             logger.warning(f"[HybridTranslator] Quick translator unavailable: {e}")
     
@@ -226,7 +227,7 @@ class HybridTranslator:
             return ready, "" if ready else "本機 NLLB 模型未就緒"
         if engine == ENGINE_GOOGLE:
             ready = bool(self._quick_translator)
-            return ready, "" if ready else "Google 翻譯不可用（deep-translator 未安裝或無外網）"
+            return ready, "" if ready else "Google 翻譯不可用（客戶端未載入）"
         if engine == ENGINE_LLM:
             return bool(self._gemini_available), "" if self._gemini_available else "未設定可用的雲端 LLM 連線"
         return True, ""
