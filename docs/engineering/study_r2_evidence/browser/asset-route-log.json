@@ -1,0 +1,32 @@
+{
+  "serve_plotly": false,
+  "served_count": 146,
+  "distinct_served": [
+    "ex/bootstrap-5.3.0/dist/css/bootstrap.min.css",
+    "ex/bootstrap-5.3.0/dist/js/bootstrap.bundle.min.js",
+    "ex/bootstrap-icons-1.11.1/font/bootstrap-icons.css",
+    "ex/bootstrap-icons-1.11.1/font/fonts/bootstrap-icons.woff2",
+    "ex/katex-0.16.9/dist/contrib/auto-render.min.js",
+    "ex/katex-0.16.9/dist/katex.min.css",
+    "ex/katex-0.16.9/dist/katex.min.js",
+    "ex/split.js-1.6.0/dist/split.min.js"
+  ],
+  "external_requests_distinct": [
+    "https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css",
+    "https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/fonts/bootstrap-icons.woff2",
+    "https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css",
+    "https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js",
+    "https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js",
+    "https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css",
+    "https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js",
+    "https://cdnjs.cloudflare.com/ajax/libs/split.js/1.6.0/split.min.js"
+  ],
+  "request_failures": [],
+  "request_failures_distinct": [],
+  "aborted_distinct": [],
+  "missing": [],
+  "console_errors": [
+    "Failed to load resource: the server responded with a status of 403 (FORBIDDEN)",
+    "Failed to load resource: the server responded with a status of 404 (NOT FOUND)"
+  ]
+}

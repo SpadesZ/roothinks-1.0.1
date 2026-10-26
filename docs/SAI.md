@@ -64,7 +64,7 @@ RootThinks 的目標是一個**整合的人機協作科學研究工作區**：AI
 | Cloud R1：移除 deep-translator、Google 翻譯客戶端、測試資料隔離、科學天花板分析 | TESTED（`cfd488c`，1,525／50／0）；線上 Google **BLOCKED**（雲端 403） | [R1 交付](engineering/CLOUD_PRIMARY_R1_DELIVERY_2026-10-26.md) |
 | R2-1／R2-2 資料防護：寫入 repo `data/` 前阻擋、執行前拒跑、Flow B debug fail closed | TESTED（`aa8ff3e`，1,553／50／0） | [接手文件](engineering/CLOUD_PRIMARY_HANDOFF.md)、`test/unit/test_data_safety_guard.py` |
 | Study 共研 R1：伺服器錨點、解釋／批判、拒絕假引文、研究者接受的證據筆記、留言與審閱請求、頁碼順序修正 | TESTED（`1e06c9f`，1,588／50／0；瀏覽器 29／29） | [Study R1 交付](engineering/STUDY_CORESEARCH_DELIVERY_2026-10-26.md) |
-| Study R2：教授審閱範圍、字面相符與主張支持分開、同段重複引文、筆記所有權與建議、真模型評估預先登記 | IMPLEMENTED、TESTED（見 [Study R2 交付](engineering/STUDY_R2_DELIVERY_2026-10-26.md)）；權限收窄與所有權為 §8 **提議修訂** | [Study R2 設計](engineering/STUDY_R2_DESIGN_2026-10-26.md) |
+| Study R2：教授審閱範圍、字面相符與主張支持分開、同段重複引文、筆記所有權與建議、真模型評估預先登記 | IMPLEMENTED、TESTED（程式 `4fb65e9`，1,620／50／0；瀏覽器 40／40 於 `c100ac3`）；PA-01／02／03 **待核准** | [Study R2 交付](engineering/STUDY_R2_DELIVERY_2026-10-26.md)、[設計](engineering/STUDY_R2_DESIGN_2026-10-26.md)、[證據](engineering/study_r2_evidence/) |
 | Study 真模型回答品質 | **NOT MEASURED／BLOCKED**：協議、資料集（`e4ef1759…`）、工具與成本估計已登記；環境沒有產品模型憑證 | [評估協議](engineering/STUDY_R2_EVAL_PROTOCOL_2026-10-26.md) |
 
 科學引擎 `advisory-rules-4`（`4c2034bf…`）自 I09 起未改；產品 SUPPORT TP 1、CONTRADICT TP 0、UNKNOWN 299／300（I13 記錄）。

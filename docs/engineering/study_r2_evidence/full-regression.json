@@ -1,0 +1,11 @@
+{
+ "code_sha": "4fb65e9",
+ "tests": "1670",
+ "failures": "0",
+ "errors": "0",
+ "skipped": "50",
+ "time": "256.798",
+ "command": "env -u DATABASE_URL -u SECRET_KEY -u FERNET_KEY -u LLM_PROVIDER -u LLM_API_KEY -u NLTK_DATA APP_ENV=test python -m pytest test/unit tests test/integration_e2e test/integration_smoke -q -p no:cacheprovider -rs",
+ "repo_data_dir_after": "absent",
+ "python": "3.12.3"
+}
