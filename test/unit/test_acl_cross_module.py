@@ -187,9 +187,28 @@ def test_stale_suggestion_needs_explicit_confirmation(env):
     assert note["revisions"][-1]["previous_statements"][-1]["text"] == "AUTHOR_NEWER_EDIT", "被蓋掉的較新內容保留在修訂紀錄"
 
 
-def test_route_matrix_conclusions_are_locked():
+def test_route_matrix_conclusions_are_locked(monkeypatch):
     """自動列舉全部 GET 路由、六種角色實測；唯一剩下的教授可讀項目是文獻庫閱讀筆記（Owner 決定事項）。"""
-    sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "test" / "integration_e2e"))
+    # 矩陣腳本在 import 與 build_app 時改環境變數與模組全域；先登記原值，測完由 monkeypatch 還原，
+    # 否則後面的測試（例如 user journey）會沿用被清空的 literature service 與 APP_ENV。
+    import os
+    from app.core_pro.literature import literature_routes
+    from app.llm_service.llm_model import LLMModel
+    for key in ("DATABASE_URL", "SECRET_KEY", "FERNET_KEY", "APP_ENV", "AUTH_MODE", "FLASK_ENV", "LOCK_ROOT", "LECTURE_SYSTEM_LOG_FILE"):
+        if key in os.environ:
+            monkeypatch.setenv(key, os.environ[key])
+        else:
+            monkeypatch.delenv(key, raising=False)
+    # 走過每條 GET 路由會建立延遲初始化的單例（例如 context_chain_service 綁在矩陣的 tmp 根目錄），一併還原。
+    from app.core_pro.paq import paq_routes
+    from app.core_pro.study import study_routes
+    for module in (literature_routes, study_routes, paq_routes):
+        for name in list(vars(module)):
+            if name == "DATA_ROOT" or name.endswith("_service"):
+                monkeypatch.setattr(module, name, getattr(module, name))
+    monkeypatch.setattr(LLMModel, "get_db_path", LLMModel.__dict__["get_db_path"])
+    monkeypatch.syspath_prepend(str(Path(__file__).resolve().parents[2] / "test" / "integration_e2e"))
+    sys.modules.pop("acl_route_matrix", None)
     import acl_route_matrix
     result = acl_route_matrix.run()
     assert result["routes"] >= 80
