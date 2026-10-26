@@ -1,8 +1,8 @@
 # Cloud primary 接手文件
 
-溝通及實作報告用繁體中文。**每完成一步就更新本文件。** 目前狀態：R1 已交付；R2 只完成資料防護（R2-1、R2-2），其餘 R2 項目與翻譯研究被 Owner 中斷，改做 **Study 共研升級（已交付，停在 Owner Gate）**。
+溝通及實作報告用繁體中文。**每完成一步就更新本文件。** 目前狀態：R1 已交付；R2 只完成資料防護（R2-1、R2-2），其餘 R2 項目與翻譯研究被 Owner 中斷，改做 Study 共研升級：**R1 與 R2 都已交付，停在 Owner Gate**。規格與整體狀態以 [`docs/SAI.md`](../SAI.md) 為唯一入口。
 
-最後完整驗證點：`aa8ff3e`（R2 資料防護），1,553 通過／50 略過／0 失敗，且執行後 repo 沒有 `data/`。
+最後完整驗證點：見下方 Study R2 段（最新）；更早的 `aa8ff3e`（R2 資料防護）為 1,553 通過／50 略過／0 失敗。
 已推送個人倉庫（`7c905b5` 起）；推送前後核對，main、整合分支與其他所有分支的遠端 SHA 都沒變。
 
 ## 角色與邊界
@@ -16,7 +16,9 @@
 
 ## 從哪裡接手
 
-- 分支 `codex/py312-cloud-primary-20261026`（從整合分支 `29e87c6` 開出）。先 fetch 並核對遠端 SHA。
+- 線性堆疊：整合 `29e87c6` → `codex/py312-cloud-primary-20261026`（R1、R2 資料防護）→ `codex/study-coresearch-20261026`（Study R1）
+  → `codex/study-coresearch-r2-20261026`（Study R2，**最新**）。先 fetch 並核對遠端 SHA；以上都不在 `main`。
+- 先讀 `docs/SAI.md`（唯一入口；§8 提議修訂待 Owner 核准）。
 - 必讀：`CLOUD_PRIMARY_R1_DELIVERY_2026-10-26.md`、`CLOUD_PRIMARY_R1_EVIDENCE_2026-10-26.json`、
   `PY312_LOCAL_FIRST_DELIVERY_2026-10-26.md`、`PY312_DEPENDENCY_RECONCILIATION.md`、`GATE_D_PROTOCOL_DRAFT_2026-10-26.md`、
   `SCI_HEADROOM_RESULT_2026-10-26.json`。
@@ -69,11 +71,25 @@ Flow B debug 輸出在 `DATA_ROOT` 不可用時不再寫到 repo `data/`（`Flow
 - 重要限制：教授是 viewer，既有 Study ACL 讓 viewer 讀整個 Study；「只看已請求審閱」是導師介面範圍，不是存取控制（要改需 Owner 核准）。
   沒有用真模型量測品質（只用模型替身證明假引文會被擋）。
 
+## Study R2（2026-10-26，停在 Owner Gate）
+
+- 分支 `codex/study-coresearch-r2-20261026`（從 R1 `1e06c9f` 開出）。交付：`STUDY_R2_DELIVERY_2026-10-26.md`；設計：`STUDY_R2_DESIGN_2026-10-26.md`；
+  評估協議：`STUDY_R2_EVAL_PROTOCOL_2026-10-26.md`；證據：`study_r2_evidence/`。
+- 權限：`security.is_review_scoped`（viewer＋已接受的教授邀請）。Study 白名單 `_REVIEW_SCOPE_ENDPOINTS`；**新增 Study 端點預設不開放給審閱身分**，需要時要明確加入並補測試。
+- 語意：不要再用 verified 描述引文比對；`TEXT_FOUND`（含 `ambiguous_in_block`）可作原文事實，`LOCATED` 才有 start／end。
+- 所有權：只有作者 `update`／`review`；其他人用 `suggest`，作者 `suggestion` accept／decline（需 `base_rev`）。
+- 探針：`python test/integration_e2e/study_r2_probe.py <out.json>`（真邀請流程，前後對照）。
+- 評估：`python scripts/study_r2_eval.py --dry-run|--simulate faithful|adversarial --out x.json`；真模型需要產品憑證與 `--live --confirm-spend`（**未執行**）。
+  `--live` 會用 `create_app()` 的正式設定，**不要在 repo 測試環境跑**。
+- 待 Owner：PA-01／02／03（`docs/SAI.md` §8）、模型憑證與預算、舊 MentorLink 教授是否收窄、Literature／PAQ 的教授範圍。
+
 ## 下一步（依 Owner 決定）
 
 1. 若 Gate D 核准：照 `GATE_D_PROTOCOL_DRAFT_2026-10-26.md` 執行；先記錄 wheel／模型 sha256 與 `meta.json` 授權。
 2. 若 Gate D 不核准：考慮檢索（28 個沒檢索到）或維持保守引擎；兩者都要先寫協議。
 3. 工程待辦：`google.generativeai` → `google-genai`（新相依，需核准）；`datetime.utcnow()` 清理；可連網的 staging 重建。
+4. Study：PA-01／02／03 核准後才可列入合併候選；真模型評估等憑證；之後 `localStorage` 標記遷移、Reflow／圖表錨點、證據筆記接手稿出處。
+5. 暫停中：翻譯比較研究（REA／BabelDOC／Immersive Translate）、Google 失敗行為證據矩陣。
 
 ## 執行環境注意
 
