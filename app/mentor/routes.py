@@ -51,7 +51,7 @@ from uuid import uuid4
 
 from flask import Blueprint, jsonify, render_template, request, send_file
 from flask_login import current_user, login_required
-from werkzeug.exceptions import BadRequest
+from werkzeug.exceptions import BadRequest, Forbidden, NotFound
 from werkzeug.exceptions import Conflict
 
 from app import db
@@ -788,6 +788,63 @@ def create_review_item(mentee_id, pid):
         raise
 
     return jsonify({"success": True, "item": _review_item_dict(row)}), 201
+
+
+# ---------------------------------------------------------------------------
+# Study 證據筆記審閱請求
+# NOTE: 沿用 _require_review_project（與教授提交 2C 意見同一道門）；只列出研究者明確請求審閱的筆記。
+#       教授留言只追加到該筆記的留言串，不改陳述、不改類別。
+# ---------------------------------------------------------------------------
+
+
+def _study_review_doc(clean_pid):
+    from app.core_pro.study import study_evidence_notes
+    path = study_evidence_notes.notes_path(_data_root(), clean_pid)
+    return path, study_evidence_notes.load(path, clean_pid)
+
+
+@mentor_api_bp.route("/mentees/<int:mentee_id>/study-reviews/<pid>", methods=["GET"])
+@login_required
+def list_study_review_requests(mentee_id, pid):
+    guard, target = _require_review_project(mentee_id, pid)
+    if guard is not None:
+        return guard
+    _mentee, clean_pid = target
+    _path, doc = _study_review_doc(clean_pid)
+    notes = [note for note in doc["notes"] if (note.get("review") or {}).get("state") == "requested"]
+    return jsonify({"success": True, "pid": clean_pid, "notes": notes})
+
+
+@mentor_api_bp.route("/mentees/<int:mentee_id>/study-reviews/<pid>/<note_id>/comments", methods=["POST"])
+@login_required
+def comment_study_review_request(mentee_id, pid, note_id):
+    from app.core_pro.study import study_evidence_notes
+    from app.security import mutate_versioned_json
+    guard, target = _require_review_project(mentee_id, pid)
+    if guard is not None:
+        return guard
+    _mentee, clean_pid = target
+    try:
+        nid = study_evidence_notes.note_id(note_id)
+        data = request.get_json(silent=True) or {}
+        entry = study_evidence_notes.comment(data.get("body") if isinstance(data, dict) else None,
+                                             {"user_id": current_user.id, "username": current_user.username}, "mentor")
+        path, _doc = _study_review_doc(clean_pid)
+        def mutate(current):
+            doc = study_evidence_notes.document(current, clean_pid)
+            note = study_evidence_notes.find(doc, nid)
+            if (note.get("review") or {}).get("state") != "requested":
+                raise Forbidden("這則筆記沒有請求審閱")
+            note["comments"].append(entry)
+            return doc
+        mutate_versioned_json(path, mutate, None, str(current_user.id), history_dir=path + ".history")
+    except NotFound:
+        return _forbidden()
+    except Forbidden:
+        return _forbidden()
+    except BadRequest as exc:
+        return jsonify({"success": False, "message": exc.description}), 400
+    return jsonify({"success": True, "comment": entry}), 201
 
 
 @mentor_api_bp.route("/review-items/<int:item_id>/download", methods=["GET"])

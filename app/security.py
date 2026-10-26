@@ -840,6 +840,15 @@ def update_json_locked(path: str, update, fallback=None):
 
 def check_and_save_json(path: str, payload: dict, base_rev, updated_by=None, history_dir=None) -> dict:
     """以現有 _rev 契約保護整段 read/compare/write；破損檔案禁止覆蓋。"""
+    return mutate_versioned_json(path, lambda current: payload, base_rev, updated_by, history_dir)
+
+
+def mutate_versioned_json(path: str, mutate, base_rev, updated_by=None, history_dir=None) -> dict:
+    """同 check_and_save_json 的 _rev／歷史契約，但新內容由 mutate(目前內容) 在同一把鎖內算出。
+
+    base_rev=None 只給「追加型」修改（例如留言）使用：它們不覆蓋別人的內容，所以不需要呼叫端先讀版本。
+    mutate 丟出例外時不落盤。
+    """
     from datetime import datetime, timezone
     if base_rev is not None and (type(base_rev) is not int or base_rev < 0):
         raise BadRequest("Invalid base_rev")
@@ -854,6 +863,7 @@ def check_and_save_json(path: str, payload: dict, base_rev, updated_by=None, his
             result.update(ok=False, conflict=True, current_rev=rev, base_rev=base_rev,
                           updated_by=current.get("_updated_by"), updated_at=current.get("_updated_at"))
             return None
+        payload = mutate(current)
         if history_dir and current:
             os.makedirs(history_dir, exist_ok=True)
             snapshot = os.path.join(history_dir, f"{rev}.json")

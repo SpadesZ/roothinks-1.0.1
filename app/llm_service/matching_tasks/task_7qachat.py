@@ -70,6 +70,54 @@ class TutorEngine:
 
         return response_text
 
+    def process_anchored_query(self, query, mode, window, selection):
+        """選段解釋／批判：只給模型選取段落與同頁前後段落（E1…En），要求逐字引文的 JSON。
+
+        回傳模型原文；引文核對與結構整理由 study_anchors.verify_structured 負責，這裡不相信模型的任何宣稱。
+        """
+        prompt = self._construct_anchored_prompt(query, mode, window, selection)
+        success, response_text = self.bus.dispatch_task("task_7_qachat", prompt, max_retries=1)
+        if not success:
+            raise RuntimeError("Tutor provider request failed")
+        return response_text
+
+    def _construct_anchored_prompt(self, query, mode, window, selection):
+        blocks = []
+        for item in window:
+            role = "contains the selection" if item["label"] == "E1" else "nearby"
+            blocks.append(f"{item['label']} (page {item['page']}, {role}):\n<<<\n{item['original']}\n>>>")
+        translation = next((w["translation"] for w in window if w["label"] == "E1" and w["translation"]), "")
+        side = "machine translation (Chinese)" if selection.get("side") == "translation" else "original text"
+        task = ("Critique the passage: identify assumptions, limitations, alternative explanations and the evidence "
+                "that would be needed. Do not invent results." if mode == "critique" else
+                "Explain the passage: its meaning, scope, conditions and how it relates to the nearby blocks.")
+        return f"""ROOTHINKS_ANCHORED_JSON
+MODE: {mode}
+You are an academic reading partner. A researcher selected a passage in a paper. {task}
+
+[Selected passage, from the {side}]
+"{selection.get('quote', '')}"
+
+[Evidence blocks: ORIGINAL text of the paper]
+{chr(10).join(blocks)}
+
+[Machine translation of E1, reference only, never quote it as evidence]
+{translation or "(none)"}
+
+[Researcher question]
+{query}
+
+[Rules]
+1. Return ONLY one JSON object with keys: "interpretation" (string, Traditional Chinese),
+   "points" (array of {{"text": string in Traditional Chinese, "evidence": [{{"ref": "E1".."En", "quote": string}}]}}),
+   "uncertainty" ({{"level": "low"|"medium"|"high", "reasons": [strings in Traditional Chinese]}}),
+   "open_questions" (array of strings in Traditional Chinese).
+2. Every evidence quote MUST be copied character for character from the ORIGINAL text of the cited block.
+   Do not translate, paraphrase, shorten or join sentences inside a quote. If you cannot quote, give an empty evidence list.
+3. Do not state facts that are not in the blocks. Your own reasoning belongs in "text" or "interpretation", never in "quote".
+4. Do not say that a result is verified, replicated, significant or peer reviewed unless a block says so.
+"""
+
     def _normalize_focus_pids(self, payload):
         raw = payload.get('focus_pids', [])
         if not isinstance(raw, list):

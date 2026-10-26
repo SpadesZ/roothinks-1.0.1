@@ -10,6 +10,7 @@
 # 本檔案目前定位為 MVP/Prototype 實作；非最終產品級設計。
 # 對應規劃檔：CHANGE_PLAN_STUDY_FLOWB_2026-04-20.md
 # 與 Study Matrix/Fulltext/Task7 互動相關的階段性變更，請由人類團隊後續統一 hardening。
+import hashlib
 import json
 import time
 import os
@@ -17,13 +18,14 @@ import logging
 import re
 from flask import Blueprint, request, jsonify, current_app, render_template, redirect, send_file
 from urllib.parse import quote
-from werkzeug.exceptions import BadRequest, Forbidden
+from werkzeug.exceptions import BadRequest, Forbidden, NotFound
 from app.models import db, Paper, Project
 from app.services.context_chain_service import ContextChainService
 from app.services.formal_project_sync import resolve_data_root
 from app.security import (
     enforce_project_ownership,
     check_and_save_json,
+    mutate_versioned_json,
     update_json_locked,
     get_acl_context,
     load_json_locked,
@@ -32,6 +34,7 @@ from app.security import (
     write_json_locked,
 )
 from app.core_pro.storage_layout import list_literature_papers, resolve_literature_paper_dir
+from app.core_pro.study import study_anchors, study_evidence_notes
 
 # [Upgrade] 引入新版 AI 引擎 (v2.0)
 from app.core_pro.study.study_matrix import MatrixEngine, matrix_outcome
@@ -2033,6 +2036,11 @@ def chat_with_tutor():
             return jsonify({"ok": False, "msg": "Question is empty"}), 400
         if data.get('pid') and not pid:
             return jsonify({"ok": False, "msg": "Invalid PID"}), 404
+        mode = data.get('mode')
+        if mode is not None:
+            if mode not in ('explain', 'critique'):
+                return jsonify({"ok": False, "msg": "Invalid mode"}), 400
+            return _anchored_tutor_reply(pid, str(query)[:2000], mode, data, conv_id)
 
         if not isinstance(context_payload, dict):
             context_payload = {}
@@ -2093,32 +2101,81 @@ def chat_with_tutor():
         # AI 處理
         answer = tutor_engine.process_query(query, context_payload)
         
-        saved = False
-        if conv_id and pid:
-            try:
-                conv_path = os.path.join(_get_conversations_dir(pid), f"{conv_id}.json")
-                def append_messages(conv_data):
-                    if not isinstance(conv_data, dict) or conv_data.get('pid') != pid:
-                        raise ValueError("Conversation missing or outside project")
-                    now = time.strftime('%Y-%m-%d %H:%M:%S')
-                    conv_data['messages'].extend([
-                        {"role": "user", "content": query, "timestamp": now},
-                        {"role": "assistant", "content": answer, "timestamp": now},
-                    ])
-                    if conv_data.get('title') == '新的對話' and len(conv_data['messages']) == 2:
-                        conv_data['title'] = query[:30]
-                    conv_data['updated_at'] = now
-                    return conv_data
-                update_json_locked(conv_path, append_messages)
-                saved = True
-            except Exception:
-                logger.exception("Failed to save chat history")
-                return jsonify({"ok": False, "saved": False, "answer": answer,
-                                "msg": "回答已產生，但對話未儲存；請保留本次問答後重試。"}), 503
-        return jsonify({"ok": True, "saved": saved, "answer": answer})
+        return _reply_and_save(pid, conv_id, query, answer)
 
     except Exception as e:
         return _internal_error("chat_with_tutor", e)
+
+
+def _reply_and_save(pid, conv_id, query, answer, structured=None):
+    """回答與對話保存；保存失敗時仍把回答交給使用者（503），結構化結果一併保留。"""
+    saved = False
+    extra = {"structured": structured} if structured is not None else {}
+    if conv_id and pid:
+        try:
+            conv_path = os.path.join(_get_conversations_dir(pid), f"{conv_id}.json")
+            def append_messages(conv_data):
+                if not isinstance(conv_data, dict) or conv_data.get('pid') != pid:
+                    raise ValueError("Conversation missing or outside project")
+                now = time.strftime('%Y-%m-%d %H:%M:%S')
+                conv_data['messages'].extend([
+                    {"role": "user", "content": query, "timestamp": now},
+                    {"role": "assistant", "content": answer, "timestamp": now, **extra},
+                ])
+                if conv_data.get('title') == '新的對話' and len(conv_data['messages']) == 2:
+                    conv_data['title'] = query[:30]
+                conv_data['updated_at'] = now
+                return conv_data
+            update_json_locked(conv_path, append_messages)
+            saved = True
+        except Exception:
+            logger.exception("Failed to save chat history")
+            return jsonify({"ok": False, "saved": False, "answer": answer, **extra,
+                            "msg": "回答已產生，但對話未儲存；請保留本次問答後重試。"}), 503
+    return jsonify({"ok": True, "saved": saved, "answer": answer, **extra})
+
+
+def _anchor_source(pid, paper_id, source_hint=None):
+    """讀與閱讀器相同的全文來源；source_hint 是閱讀器回報的 fulltext_source。"""
+    hint = str(source_hint or '')
+    prefer = 'flowb' if hint.startswith('flowb') else ('flowa' if hint.startswith('flowa') else 'auto')
+    data_root = resolve_data_root()
+    paper_dir = resolve_literature_paper_dir(data_root, pid, paper_id, for_write=False, migrate_legacy=True)
+    source = _read_fulltext_source(data_root, pid, paper_id, paper_dir, prefer)
+    if source is None:
+        raise FileNotFoundError(paper_id)
+    meta = {"pid": pid, "paper_id": paper_id, "source": source["target_source"], "source_sha256": source["source_sha256"]}
+    return source["blocks"], meta
+
+
+def _selection_hint(selection):
+    return selection.get('source') if isinstance(selection, dict) else None
+
+
+def _anchored_tutor_reply(pid, query, mode, data, conv_id):
+    """選段解釋／批判：先由伺服器驗證選段，再請模型回 JSON，最後逐字核對模型引文。"""
+    try:
+        paper_id = validate_id(data.get('paper_id'), "paper_id")
+    except BadRequest:
+        return jsonify({"ok": False, "msg": "Invalid paper_id"}), 400
+    selection = data.get('selection')
+    try:
+        pages, meta = _anchor_source(pid, paper_id, _selection_hint(selection))
+        anchor = study_anchors.resolve(pages, selection, meta)
+    except study_anchors.AnchorError as exc:
+        return jsonify({"ok": False, "msg": str(exc)}), 400
+    except FileNotFoundError:
+        return jsonify({"ok": False, "msg": "全文尚未就緒，無法定位選取文字"}), 404
+    if anchor["status"] not in study_anchors.VERIFIED:
+        return jsonify({"ok": False, "anchor": anchor,
+                        "msg": "選取的文字在目前原文中找不到或出現多次；請重新選取（沒有呼叫模型）"}), 409
+    window = study_anchors.evidence_window(pages, anchor)
+    raw = tutor_engine.process_anchored_query(query, mode, window, anchor)
+    structured = study_anchors.verify_structured(raw, window, anchor, meta)
+    structured["mode"] = mode
+    if anchor["side"] == "translation":
+        structured["selection_source"] = study_anchors.original_for(pages, anchor, meta)
+    return _reply_and_save(pid, conv_id, query, study_anchors.render_text(structured, mode), structured)
 
 # -----------------------------------------------------------------------------
 # 4. 筆記存檔 (Notes)
@@ -2209,6 +2266,346 @@ def load_user_notes(pid):
     except Exception as e:
         return _internal_error("load_user_notes", e)
 
+# -----------------------------------------------------------------------------
+# 5B. 證據筆記 (roothinks.study.evidence_notes/1)
+#     權限沿用本檔 before_request：GET＝viewer、POST＝editor；限定編輯進不了 Study。
+#     AI 草稿只有 accepted=True 才寫入；原文事實由伺服器重新驗證；留言與審閱事件只追加。
+# -----------------------------------------------------------------------------
+
+def _actor():
+    from flask_login import current_user
+    try:
+        if current_user.is_authenticated:
+            return {"user_id": current_user.id, "username": current_user.username}
+    except AttributeError:
+        pass
+    return None
+
+
+def _evidence_path(pid):
+    return study_evidence_notes.notes_path(resolve_data_root(), pid)
+
+
+def _evidence_write(pid, mutate, base_rev):
+    path = _evidence_path(pid)
+    actor = _actor()
+    result = mutate_versioned_json(path, mutate, base_rev, str(actor["user_id"]) if actor else None,
+                                   history_dir=path + '.history')
+    return result
+
+
+def _evidence_error(exc):
+    status = 404 if isinstance(exc, NotFound) else 403 if isinstance(exc, Forbidden) else 400
+    return jsonify({"ok": False, "msg": exc.description}), status
+
+
+def _resolve_note_anchors(pid, paper_id, selections):
+    """把前端的選段與引文（順序不變）重新交給伺服器驗證；全文讀不到時標 unavailable，仍可存成無證據筆記。"""
+    if not selections:
+        return []
+    if not isinstance(selections, list) or len(selections) > 1 + study_evidence_notes.MAX_EVIDENCE:
+        raise BadRequest("證據數量不合法")
+    try:
+        pages, meta = _anchor_source(pid, paper_id, _selection_hint(selections[0]))
+    except FileNotFoundError:
+        pages, meta = None, None
+    anchors = []
+    for item in selections:
+        try:
+            sel = study_anchors.clean_selection(item)
+        except study_anchors.AnchorError as exc:
+            raise BadRequest(str(exc))
+        if pages is None:
+            anchors.append({"schema": study_anchors.ANCHOR_SCHEMA, "pid": pid, "paper_id": paper_id, "side": sel["side"],
+                            "quote": sel["quote"], "ref": sel["ref"], "status": "unavailable"})
+        else:
+            anchors.append(study_anchors.resolve(pages, item, meta))
+    return anchors
+
+
+@study_bp.route('/api/study/evidence_notes/<pid>', methods=['GET'])
+def list_evidence_notes(pid):
+    try:
+        pid = _normalize_study_pid(pid)
+        if not pid:
+            return jsonify({"ok": False, "msg": "Invalid PID"}), 404
+        doc = study_evidence_notes.load(_evidence_path(pid), pid)
+        if request.args.get('verify') == '1':
+            _attach_current_anchor_status(pid, doc["notes"])
+        return jsonify({"ok": True, "rev": doc.get("_rev", 0), "notes": doc["notes"]})
+    except Exception as e:
+        return _internal_error("list_evidence_notes", e)
+
+
+def _attach_current_anchor_status(pid, notes):
+    """只在回應中附上「現在」的錨點狀態（不寫回）；原文重跑後會顯示版本已變更或找不到。"""
+    sources = {}
+    for note in notes:
+        for anchor in note.get("anchors") or []:
+            paper_id = anchor.get("paper_id")
+            if not paper_id or anchor.get("status") == "unavailable":
+                continue
+            key = (paper_id, str(anchor.get("source") or "")[:5])
+            if key not in sources:
+                try:
+                    sources[key] = _anchor_source(pid, validate_id(paper_id, "paper_id"), anchor.get("source"))
+                except Exception:
+                    sources[key] = None
+            if sources[key] is None:
+                anchor["current"] = {"status": "unavailable"}
+                continue
+            current = study_anchors.resolve(sources[key][0], anchor, sources[key][1])
+            anchor["current"] = {k: current.get(k) for k in ("status", "version_changed", "ref", "page")}
+
+
+@study_bp.route('/api/study/evidence_notes/accept', methods=['POST'])
+def accept_evidence_note():
+    try:
+        data = request.get_json(silent=True) or {}
+        pid = _normalize_study_pid(data.get('pid'))
+        if not pid:
+            return jsonify({"ok": False, "msg": "Invalid PID"}), 404
+        if data.get('accepted') is not True:
+            return jsonify({"ok": False, "msg": "AI 草稿必須由研究者明確接受才會存檔"}), 400
+        if 'base_rev' not in data or data['base_rev'] is None:
+            return jsonify({"ok": False, "msg": "請重新載入證據筆記後再儲存"}), 428
+        note_in = data.get('note')
+        if not isinstance(note_in, dict):
+            return jsonify({"ok": False, "msg": "Invalid note"}), 400
+        selections = note_in.get('anchors') or []
+        paper_id = None
+        if selections or note_in.get('paper_id'):
+            paper_id = validate_id(note_in.get('paper_id'), "paper_id")
+        anchors = _resolve_note_anchors(pid, paper_id, selections)
+        note = study_evidence_notes.build_note(note_in, anchors, _actor())
+        def mutate(current):
+            doc = study_evidence_notes.document(current, pid)
+            doc["notes"].append(note)
+            return doc
+        result = _evidence_write(pid, mutate, data['base_rev'])
+        if result.get('ok'):
+            result['note'] = note
+        return jsonify(result), (200 if result.get('ok') else 409)
+    except (BadRequest, NotFound, Forbidden) as e:
+        return _evidence_error(e)
+    except Exception as e:
+        return _internal_error("accept_evidence_note", e)
+
+
+@study_bp.route('/api/study/evidence_notes/update', methods=['POST'])
+def update_evidence_note():
+    """研究者改寫陳述；舊分頁送出得到 409，不覆蓋。錨點不可在此修改。"""
+    try:
+        data = request.get_json(silent=True) or {}
+        pid = _normalize_study_pid(data.get('pid'))
+        if not pid:
+            return jsonify({"ok": False, "msg": "Invalid PID"}), 404
+        if 'base_rev' not in data or data['base_rev'] is None:
+            return jsonify({"ok": False, "msg": "請重新載入證據筆記後再儲存"}), 428
+        nid = study_evidence_notes.note_id(data.get('note_id'))
+        actor = _actor()
+        def mutate(current):
+            doc = study_evidence_notes.document(current, pid)
+            note = study_evidence_notes.find(doc, nid)
+            note["statements"] = study_evidence_notes.statements(data.get('statements'), note.get("anchors") or [])
+            if 'title' in data:
+                note["title"] = str(data.get('title') or '').strip()[:200]
+            note["edited_at"], note["edited_by"] = study_evidence_notes.now(), actor
+            return doc
+        result = _evidence_write(pid, mutate, data['base_rev'])
+        return jsonify(result), (200 if result.get('ok') else 409)
+    except (BadRequest, NotFound, Forbidden) as e:
+        return _evidence_error(e)
+    except Exception as e:
+        return _internal_error("update_evidence_note", e)
+
+
+@study_bp.route('/api/study/evidence_notes/comment', methods=['POST'])
+def comment_evidence_note():
+    try:
+        data = request.get_json(silent=True) or {}
+        pid = _normalize_study_pid(data.get('pid'))
+        if not pid:
+            return jsonify({"ok": False, "msg": "Invalid PID"}), 404
+        nid = study_evidence_notes.note_id(data.get('note_id'))
+        entry = study_evidence_notes.comment(data.get('body'), _actor(), 'member')
+        def mutate(current):
+            doc = study_evidence_notes.document(current, pid)
+            study_evidence_notes.find(doc, nid)["comments"].append(entry)
+            return doc
+        result = _evidence_write(pid, mutate, None)
+        result['comment'] = entry
+        return jsonify(result), 200
+    except (BadRequest, NotFound, Forbidden) as e:
+        return _evidence_error(e)
+    except Exception as e:
+        return _internal_error("comment_evidence_note", e)
+
+
+@study_bp.route('/api/study/evidence_notes/review', methods=['POST'])
+def review_evidence_note():
+    """請求或撤回審閱；只改審閱狀態與事件紀錄，不改陳述。"""
+    try:
+        data = request.get_json(silent=True) or {}
+        pid = _normalize_study_pid(data.get('pid'))
+        if not pid:
+            return jsonify({"ok": False, "msg": "Invalid PID"}), 404
+        nid = study_evidence_notes.note_id(data.get('note_id'))
+        actor = _actor()
+        def mutate(current):
+            doc = study_evidence_notes.document(current, pid)
+            study_evidence_notes.review_event(study_evidence_notes.find(doc, nid), data.get('action'), actor, data.get('message'))
+            return doc
+        result = _evidence_write(pid, mutate, None)
+        return jsonify(result), 200
+    except (BadRequest, NotFound, Forbidden) as e:
+        return _evidence_error(e)
+    except Exception as e:
+        return _internal_error("review_evidence_note", e)
+
+
+@study_bp.route('/api/study/evidence_notes/<pid>/export', methods=['GET'])
+def export_evidence_notes(pid):
+    try:
+        pid = _normalize_study_pid(pid)
+        if not pid:
+            return jsonify({"ok": False, "msg": "Invalid PID"}), 404
+        doc = study_evidence_notes.load(_evidence_path(pid), pid)
+        body = study_evidence_notes.to_markdown(doc, pid)
+        response = current_app.response_class(body, mimetype='text/markdown; charset=utf-8')
+        response.headers['Content-Disposition'] = f"attachment; filename*=UTF-8''{quote(pid)}_evidence_notes.md"
+        return response
+    except Exception as e:
+        return _internal_error("export_evidence_notes", e)
+
+
+def _read_fulltext_source(data_root, pid, paper_id, paper_dir, prefer_mode):
+    """讀取 Study 全文來源；閱讀器與錨點驗證共用，確保 page／block 編號一致。缺檔回傳 None。"""
+    # 優先查找 full_text_trans.json (含 NLLB 翻譯的版本)
+    trans_path = safe_join_under(paper_dir, "05_interprets", "full_text_trans.json")
+    # Backward-compatible legacy location
+    trans_path_legacy = safe_join_under(paper_dir, "05_interprets", "fusion", "full_text_trans.json")
+    # Flow B (Slim) output location
+    trans_path_flowb = safe_join_under(paper_dir, "06_translates", "fusion", "full_text_trans.json")
+    fusion_path = safe_join_under(paper_dir, "05_interprets", "fusion", "full_text.json")
+    
+    # 檢查翻譯檔是否真的包含翻譯欄位(content_zh)
+    translation_ready = False
+    if not os.path.exists(trans_path) and os.path.exists(trans_path_legacy):
+        trans_path = trans_path_legacy
+    if not os.path.exists(trans_path) and os.path.exists(trans_path_flowb):
+        trans_path = trans_path_flowb
+
+    if os.path.exists(trans_path):
+        try:
+            trans_data = load_json_locked(trans_path, {})
+            trans_content = trans_data.get("content", []) if isinstance(trans_data, dict) else []
+            for page in trans_content:
+                if not isinstance(page, dict):
+                    continue
+                for block in page.get("blocks", []):
+                    if isinstance(block, dict) and str(block.get("content_zh", "")).strip():
+                        translation_ready = True
+                        break
+                if translation_ready:
+                    break
+        except Exception:
+            translation_ready = False
+
+    # source 選擇策略：
+    # - prefer=flowa -> 強制讀 Flow A 融合檔，避免舊翻譯檔覆蓋最新切塊
+    # - prefer=flowb -> 優先讀 trans（可用時）
+    # - prefer=auto  -> 維持原行為（trans 可用時優先）
+    target_source = "flowa_fusion"
+    if prefer_mode in {"flowa", "a", "fusion", "raw"}:
+        target_path = fusion_path
+        target_source = "flowa_fusion"
+    elif prefer_mode in {"flowb", "b", "trans", "translation"}:
+        if os.path.exists(trans_path) and translation_ready:
+            target_path = trans_path
+            target_source = "flowb_trans"
+        else:
+            target_path = fusion_path
+            target_source = "flowa_fusion"
+    else:
+        if os.path.exists(trans_path) and translation_ready:
+            target_path = trans_path
+            target_source = "flowb_trans"
+        else:
+            target_path = fusion_path
+            target_source = "flowa_fusion"
+    
+    if not os.path.exists(target_path):
+        return None
+    data = load_json_locked(target_path, {})
+    
+    # 提取內容
+    blocks_array = []  # Store blocks in original structure
+    content_raw = data.get("content", [])
+    equation_fallback_injected = 0
+
+    if target_source == "flowa_fusion" and isinstance(content_raw, list):
+        content_raw, equation_fallback_injected = _inject_segmentation_equation_fallback(
+            content_raw,
+            data_root,
+            pid,
+            paper_id,
+        )
+        if equation_fallback_injected > 0:
+            logger.warning(
+                "[get_fulltext] injected %s segmentation equation blocks for %s/%s",
+                equation_fallback_injected,
+                pid,
+                paper_id,
+            )
+            target_source = "flowa_fusion+seg_eq_fallback"
+    
+    if isinstance(content_raw, list):
+        # 數據結構: content = [{ page: 1, blocks: [{ content: "...", type: "...", content_zh: "..." }, ...] }, ...]
+        text_blocks = []
+        for page in content_raw:
+            if isinstance(page, dict):
+                page_blocks = page.get("blocks", [])
+                
+                # [Fix v2.8] 映射 content_zh -> translation
+                processed_blocks = []
+                for block in page_blocks:
+                    if isinstance(block, dict):
+                        processed_block = dict(block)  # Copy
+                        # Map content_zh to translation for frontend
+                        if "content_zh" in processed_block and "translation" not in processed_block:
+                            processed_block["translation"] = processed_block["content_zh"]
+                        processed_blocks.append(processed_block)
+                        
+                        if block.get("content"):
+                            text_blocks.append(block["content"])
+                    else:
+                        processed_blocks.append(block)
+                
+                blocks_array.append({
+                    "page": page.get("page", 0),
+                    "blocks": processed_blocks  # Use processed blocks with translation
+                })
+        
+        full_content = "\n\n".join(text_blocks) if text_blocks else ""
+    elif isinstance(content_raw, dict):
+        full_content = content_raw.get("text", json.dumps(content_raw, ensure_ascii=False))
+    else:
+        full_content = str(content_raw)
+    
+    return {
+        "data": data,
+        "target_path": target_path,
+        "target_source": target_source,
+        "translation_ready": translation_ready,
+        "blocks": blocks_array,
+        "full_content": full_content,
+        "equation_fallback_injected": equation_fallback_injected,
+        # 內容版本：以正規化 JSON 計算，與檔案排版無關；重跑解析就會改變。
+        "source_sha256": hashlib.sha256(json.dumps(data, sort_keys=True, ensure_ascii=False).encode("utf-8")).hexdigest(),
+    }
+
+
 @study_bp.route('/api/study/get_fulltext/<pid>/<paper_id>', methods=['GET'])
 def get_fulltext(pid, paper_id):
     """
@@ -2237,118 +2634,16 @@ def get_fulltext(pid, paper_id):
         # Default to Flow A so even stale frontend bundles still render latest segmentation first.
         prefer_mode = str(request.args.get("prefer", "flowa") or "flowa").strip().lower()
 
-        # 優先查找 full_text_trans.json (含 NLLB 翻譯的版本)
-        trans_path = safe_join_under(paper_dir, "05_interprets", "full_text_trans.json")
-        # Backward-compatible legacy location
-        trans_path_legacy = safe_join_under(paper_dir, "05_interprets", "fusion", "full_text_trans.json")
-        # Flow B (Slim) output location
-        trans_path_flowb = safe_join_under(paper_dir, "06_translates", "fusion", "full_text_trans.json")
-        fusion_path = safe_join_under(paper_dir, "05_interprets", "fusion", "full_text.json")
-        
-        # 檢查翻譯檔是否真的包含翻譯欄位(content_zh)
-        translation_ready = False
-        if not os.path.exists(trans_path) and os.path.exists(trans_path_legacy):
-            trans_path = trans_path_legacy
-        if not os.path.exists(trans_path) and os.path.exists(trans_path_flowb):
-            trans_path = trans_path_flowb
-
-        if os.path.exists(trans_path):
-            try:
-                trans_data = load_json_locked(trans_path, {})
-                trans_content = trans_data.get("content", []) if isinstance(trans_data, dict) else []
-                for page in trans_content:
-                    if not isinstance(page, dict):
-                        continue
-                    for block in page.get("blocks", []):
-                        if isinstance(block, dict) and str(block.get("content_zh", "")).strip():
-                            translation_ready = True
-                            break
-                    if translation_ready:
-                        break
-            except Exception:
-                translation_ready = False
-
-        # source 選擇策略：
-        # - prefer=flowa -> 強制讀 Flow A 融合檔，避免舊翻譯檔覆蓋最新切塊
-        # - prefer=flowb -> 優先讀 trans（可用時）
-        # - prefer=auto  -> 維持原行為（trans 可用時優先）
-        target_source = "flowa_fusion"
-        if prefer_mode in {"flowa", "a", "fusion", "raw"}:
-            target_path = fusion_path
-            target_source = "flowa_fusion"
-        elif prefer_mode in {"flowb", "b", "trans", "translation"}:
-            if os.path.exists(trans_path) and translation_ready:
-                target_path = trans_path
-                target_source = "flowb_trans"
-            else:
-                target_path = fusion_path
-                target_source = "flowa_fusion"
-        else:
-            if os.path.exists(trans_path) and translation_ready:
-                target_path = trans_path
-                target_source = "flowb_trans"
-            else:
-                target_path = fusion_path
-                target_source = "flowa_fusion"
-        
-        if os.path.exists(target_path):
-            data = load_json_locked(target_path, {})
+        source = _read_fulltext_source(data_root, pid, paper_id, paper_dir, prefer_mode)
+        if source is not None:
+            data = source["data"]
+            target_source = source["target_source"]
+            translation_ready = source["translation_ready"]
+            blocks_array = source["blocks"]
+            full_content = source["full_content"]
+            equation_fallback_injected = source["equation_fallback_injected"]
             display_title = _resolve_fulltext_display_title(pid, paper_id, data if isinstance(data, dict) else None, project_dir)
-            
-            # 提取內容
-            blocks_array = []  # Store blocks in original structure
-            content_raw = data.get("content", [])
-            equation_fallback_injected = 0
 
-            if target_source == "flowa_fusion" and isinstance(content_raw, list):
-                content_raw, equation_fallback_injected = _inject_segmentation_equation_fallback(
-                    content_raw,
-                    data_root,
-                    pid,
-                    paper_id,
-                )
-                if equation_fallback_injected > 0:
-                    logger.warning(
-                        "[get_fulltext] injected %s segmentation equation blocks for %s/%s",
-                        equation_fallback_injected,
-                        pid,
-                        paper_id,
-                    )
-                    target_source = "flowa_fusion+seg_eq_fallback"
-            
-            if isinstance(content_raw, list):
-                # 數據結構: content = [{ page: 1, blocks: [{ content: "...", type: "...", content_zh: "..." }, ...] }, ...]
-                text_blocks = []
-                for page in content_raw:
-                    if isinstance(page, dict):
-                        page_blocks = page.get("blocks", [])
-                        
-                        # [Fix v2.8] 映射 content_zh -> translation
-                        processed_blocks = []
-                        for block in page_blocks:
-                            if isinstance(block, dict):
-                                processed_block = dict(block)  # Copy
-                                # Map content_zh to translation for frontend
-                                if "content_zh" in processed_block and "translation" not in processed_block:
-                                    processed_block["translation"] = processed_block["content_zh"]
-                                processed_blocks.append(processed_block)
-                                
-                                if block.get("content"):
-                                    text_blocks.append(block["content"])
-                            else:
-                                processed_blocks.append(block)
-                        
-                        blocks_array.append({
-                            "page": page.get("page", 0),
-                            "blocks": processed_blocks  # Use processed blocks with translation
-                        })
-                
-                full_content = "\n\n".join(text_blocks) if text_blocks else ""
-            elif isinstance(content_raw, dict):
-                full_content = content_raw.get("text", json.dumps(content_raw, ensure_ascii=False))
-            else:
-                full_content = str(content_raw)
-            
             # [Fix] 讀取 summary.json 並做欄位相容
             summary_data = ""
             summary_path = safe_join_under(paper_dir, "05_interprets", "summary.json")
@@ -2526,6 +2821,7 @@ def get_fulltext(pid, paper_id):
                 "fulltext_source": target_source,
                 "equation_fallback_injected": equation_fallback_injected,
                 "prefer_mode": prefer_mode,
+                "source_sha256": source["source_sha256"],
                 "paper_id": data.get("paper_id", paper_id)
             })
         

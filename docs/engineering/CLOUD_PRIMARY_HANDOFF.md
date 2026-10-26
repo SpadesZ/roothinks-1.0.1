@@ -1,6 +1,6 @@
 # Cloud primary 接手文件
 
-溝通及實作報告用繁體中文。**每完成一步就更新本文件。** 目前狀態：R1 已交付；R2 只完成資料防護（R2-1、R2-2），其餘 R2 項目與翻譯研究被 Owner 中斷，改做 Study 共研升級。
+溝通及實作報告用繁體中文。**每完成一步就更新本文件。** 目前狀態：R1 已交付；R2 只完成資料防護（R2-1、R2-2），其餘 R2 項目與翻譯研究被 Owner 中斷，改做 **Study 共研升級（進行中）**。
 
 最後完整驗證點：`aa8ff3e`（R2 資料防護），1,553 通過／50 略過／0 失敗，且執行後 repo 沒有 `data/`。
 已推送個人倉庫（`7c905b5` 起）；推送前後核對，main、整合分支與其他所有分支的遠端 SHA 都沒變。
@@ -55,6 +55,17 @@ Flow B debug 輸出在 `DATA_ROOT` 不可用時不再寫到 repo `data/`（`Flow
 | R2-4 Google 失敗行為＋證據矩陣 | **暫停** |
 | 翻譯逆向研究（Immersive／BabelDOC／REA） | **暫停**；沒有安裝 REA、沒有改 agent 設定 |
 
+## Study 共研升級（進行中，2026-10-26）
+
+- 分支 `codex/study-coresearch-20261026`（從 `27f5862` 開出）。設計與驗收標準：`STUDY_CORESEARCH_DESIGN_2026-10-26.md`（先於程式碼 commit）。
+- 已完成：後端錨點契約（`app/core_pro/study/study_anchors.py`）、證據筆記（`study_evidence_notes.py`、`/api/study/evidence_notes/*`）、
+  Tutor 選段模式（`/api/study/chat` 帶 `mode`＋`selection`）、教授審閱請求 API（`/api/mentor/mentees/<id>/study-reviews/<pid>`）、
+  `security.mutate_versioned_json`（`check_and_save_json` 改為它的薄包裝，語意不變）。測試：`test_study_anchors.py`（20）、`test_study_evidence_notes.py`（15），紅色檢查 6 失敗。
+- 進行中：前端（閱讀器錨點屬性、頁碼順序、選字動作列、結構化回答卡、筆記草稿與接受、證據筆記清單、導師工作台區塊）。
+- 合成瀏覽器站：`python test/integration_e2e/study_coresearch_fixture.py`（port 8894）；旅程：
+  `STUDY_PHASE=before|after NODE_PATH=/opt/node-tools/node_modules I12_VENDOR_DIR=<vendor> node --require ./test/integration_e2e/vendor-route.cjs test/integration_e2e/study_coresearch_browser.cjs`。
+  vendor 目錄是 npm 發佈的 bootstrap／katex 等真品（I12 下載）；`vendor-route.cjs` 現在放在 `test/integration_e2e/`（舊文件寫的 `docs/engineering/py312_verification/` 不存在）。
+
 ## 下一步（依 Owner 決定）
 
 1. 若 Gate D 核准：照 `GATE_D_PROTOCOL_DRAFT_2026-10-26.md` 執行；先記錄 wheel／模型 sha256 與 `meta.json` 授權。
@@ -64,7 +75,7 @@ Flow B debug 輸出在 `DATA_ROOT` 不可用時不再寫到 repo `data/`（`Flow
 ## 執行環境注意
 
 - 瀏覽器：Node `/opt/node22/bin/node`、Chromium `/opt/pw-browsers/chromium-1243/chrome-linux64/chrome`。不要跑 `playwright install`。
-  資產導流用 I12 的 `vendor-route.cjs`（副本在 `docs/engineering/py312_verification/`）。fixture 啟動後印一行 JSON，`root` 即 `SAI_SYNTHETIC_ROOT`。
+  資產導流用 `test/integration_e2e/vendor-route.cjs`。fixture 啟動後印一行 JSON，`root` 即 `SAI_SYNTHETIC_ROOT`。
 - 結束背景程序時用 PID，不要用 `pkill -f <含本指令字串的樣式>`（會把自己的 shell 一起殺掉）。
 - 不可達：PyTorch CPU index（403）、Debian snapshot、HuggingFace、translate.google.com（403）、api.osv.dev（403）。
   可達：PyPI、npm registry、GitHub releases、raw.githubusercontent.com、Docker Hub、archive.ubuntu.com。
