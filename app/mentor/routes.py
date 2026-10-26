@@ -49,7 +49,7 @@ from datetime import datetime, timedelta, timezone
 from urllib.parse import urlsplit
 from uuid import uuid4
 
-from flask import Blueprint, jsonify, render_template, request, send_file
+from flask import Blueprint, current_app, jsonify, render_template, request, send_file
 from flask_login import current_user, login_required
 from werkzeug.exceptions import BadRequest, Forbidden, NotFound
 from werkzeug.exceptions import Conflict
@@ -832,6 +832,14 @@ def list_study_review_requests(mentee_id, pid):
     _path, doc = _study_review_doc(clean_pid)
     from app.core_pro.study import study_evidence_notes
     notes = study_evidence_notes.review_shared(doc["notes"])
+    # R4：教授看得到這則（已請求審閱的）筆記被用在稿件哪一段；稿件本身教授本來就可審閱。
+    try:
+        from app.core_pro.manuscript import paragraph_provenance
+        links = paragraph_provenance.load(_data_root(), clean_pid)["links"]
+        for note in notes:
+            note["used_in"] = paragraph_provenance.used_in(links, note.get("note_id"))
+    except Exception:
+        current_app.logger.warning("[study-reviews] 讀取段落出處失敗 pid=%s", clean_pid, exc_info=True)
     return jsonify({"success": True, "pid": clean_pid, "notes": notes})
 
 

@@ -48,7 +48,10 @@ PAGES = [
          ('body', 'Sample A improved by 12 percent at 300 K relative to the uncalibrated baseline. The effect was not tested at other temperatures.',
           '相對於未校正基線，樣本 A 在 300 K 改善 12%。其他溫度沒有測試。'),
          ('body', 'The result may depend on the annealing time, which this study held constant.',
-          '結果可能取決於退火時間，而本研究把退火時間固定。')]),
+          '結果可能取決於退火時間，而本研究把退火時間固定。'),
+         # R4：故意寫錯數字的「機器翻譯」，驗證閱讀器只在這一段提示（其他段落 0 誤報）。
+         ('body', 'Calibration drift stayed below 0.5 percent across 12 runs.',
+          '在 12 次量測中，校正漂移低於 0.3%。')]),
 ]
 
 

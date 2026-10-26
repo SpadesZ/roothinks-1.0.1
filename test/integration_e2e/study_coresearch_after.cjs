@@ -22,6 +22,8 @@ module.exports=async function after(ctx){
     check('R3 介面沒有殘留英文狀態字',!/Original Text|Context: None|Single View|Matrix View|Fulltext \(Block\)|\bIdle\b/.test(ui.text));
     check('R3 譯文欄標明機器翻譯',ui.trans.some(t=>t.includes('機器翻譯')),ui.trans.slice(0,4));
     check('R3 沒有矩陣時只請求一次',matrixCalls.length<=1,matrixCalls.length);
+    const numberWarnings=await page.evaluate(()=>[...document.querySelectorAll('#fulltext-content [data-translation-check="numbers"]')].map(e=>e.textContent));
+    check('R4 機器翻譯數字不一致只在錯的那段提示（其他段 0 誤報）',numberWarnings.length===1&&numberWarnings[0].includes('0.5'),numberWarnings);
     evidence.metrics.matrix_latest_requests=matrixCalls.length;
     const reader=await page.evaluate(()=>{
         const rows=[...document.querySelectorAll('#fulltext-content .original-content')];
@@ -333,6 +335,14 @@ module.exports=async function after(ctx){
     const shared=(await api(prof2,`/api/study/evidence_notes/${pid}`)).data.notes?.length>0;
     check('R4 教授看得到段落出處，但只看得到已請求審閱的筆記內容',provProf.status===200&&(provProf.data.notes||[]).length===0&&
         (shared?!profNote.hidden:profNote.hidden===true),{status:provProf.status,shared,profNote:Object.keys(profNote)});
+    await prof2.goto(`${base}/mentor/`);
+    await prof2.locator('[data-mentee-id]').first().click();
+    await prof2.locator('[data-study-review-used-in]').first().waitFor({timeout:10000});
+    check('R4 教授工作台看得到請求審閱的筆記用在稿件哪一段',(await prof2.locator('[data-study-review-used-in]').first().innerText()).includes('introduction'));
+    await snapshot(prof2,'16-mentor-sees-manuscript-use');
+    await prof2.goto(`${base}/study/project/${pid}?pid=${pid}`);
+    await prof2.waitForFunction(()=>window.studyEvidence&&window.STUDY_REVIEW_SCOPE===true);
+    await prof2.locator('[data-evidence-note]').first().waitFor();
     check('R3 教授看不到修改前的內容',await prof2.locator('[data-revision-previous]').count()===0&&await prof2.locator('[data-evidence-insert]').count()===0);
     check('B3 教授仍能讀全文',(await api(prof2,`/api/study/get_fulltext/${pid}/${ctx.paper}`)).status===200);
     await snapshot(prof2,'13-professor-review-mode');

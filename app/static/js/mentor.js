@@ -329,6 +329,11 @@ class MentorDashboard {
                 }
                 card.appendChild(make('div', '', `【${labels[st.kind] || st.kind}】${st.text}${tail}`));
             });
+            if ((note.used_in || []).length) {
+                const used = make('div', 'text-muted mt-1', '用在稿件：' + note.used_in.map(u => `${u.section} S.Ver ${u.s_ver}「${u.excerpt}」`).join('；'));
+                used.setAttribute('data-study-review-used-in', String(note.used_in.length));
+                card.appendChild(used);
+            }
             (note.comments || []).forEach(c => card.appendChild(make('div', 'border-start ps-2 mt-1 text-muted',
                 `${(c.author && c.author.username) || '未知'}（${c.author_role === 'mentor' ? '指導教授' : '成員'}）：${c.body}`)));
             const row = make('div', 'input-group input-group-sm mt-1');

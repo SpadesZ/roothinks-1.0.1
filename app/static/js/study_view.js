@@ -59,6 +59,27 @@ class StudyView {
         console.log("[StudyView] Initialized v3.2 (isSidebarCollapsed: " + this.isSidebarCollapsed + ")");
     }
 
+    /**
+     * 機器翻譯的數字與遺失片段提示（R4）。只提示、不改寫譯文。
+     * 只比對「量測型」數字（有小數點或兩位數以上）：中文常把 3 runs 寫成「三次」，單位數字比對會誤報。
+     * 「〔翻譯時遺失、已補回…〕」是翻譯保護層補回的公式／URL，提醒讀者句尾那段不是原位置。
+     */
+    _translationCheckHtml(original, translation) {
+        if (!translation) return '';
+        const norm = s => String(s || '').replace(/(\d),(?=\d{3}\b)/g, '$1');
+        const want = norm(original).match(/\d+\.\d+|\d{2,}/g) || [];
+        const got = norm(translation);
+        const missing = [...new Set(want.filter(n => !new RegExp(`(^|[^\\d.])${n.replace('.', '\\.')}(?![\\d])`).test(got)))];
+        let html = '';
+        if (missing.length) {
+            html += `<div class="small text-warning-emphasis mt-1" data-translation-check="numbers" style="user-select:none;">⚠ 原文的數字 ${this._escapeHtml(missing.slice(0, 6).join('、'))} 在譯文中找不到；請以原文為準。</div>`;
+        }
+        if (translation.includes('〔翻譯時遺失')) {
+            html += `<div class="small text-warning-emphasis mt-1" data-translation-check="lost" style="user-select:none;">⚠ 翻譯時有公式或網址遺失，已補在這段譯文句尾〔…〕；位置請對照原文。</div>`;
+        }
+        return html;
+    }
+
     _escapeHtml(value) {
         return String(value ?? '')
             .replace(/&/g, '&amp;')
@@ -245,6 +266,7 @@ class StudyView {
         `;
         if (translation) {
             html += `<div class="translation-content selectable-text" style="font-size: ${compact ? '0.95rem' : '1.02rem'}; line-height: 1.8; color: #1a202c; text-align: justify;">${this._escapeHtml(translation)}</div>`;
+            html += this._translationCheckHtml(text, translation);
         } else {
             const tipDesc = translationReady ? '此段落暫無可用翻譯' : '尚未產生翻譯，請回 Literature 重新執行 Flow B';
             html += `<div class="text-muted small">${this._escapeHtml(tipDesc)}</div>`;
@@ -328,6 +350,7 @@ class StudyView {
                 }
                 if (row.transHtml) {
                     html += `<div class="translation-content selectable-text" data-side="translation" ${anchorAttrs} style="font-size:${compact ? '0.95rem' : '1.02rem'};line-height:1.8;color:#1a202c;text-align:justify;">${row.transHtml}</div>`;
+                    html += row.checkHtml || '';
                 } else {
                     html += `<div class="text-muted small">${this._escapeHtml(tipDesc)}</div>`;
                 }
@@ -459,8 +482,9 @@ class StudyView {
                     origHtml += `<p class="${idx > 0 ? 'mt-3' : ''}" style="font-size:${fontSize};line-height:1.75;color:#2d3748;text-align:justify;margin-bottom:0;">${this._escapeHtml(para)}</p>`;
                 });
                 const transHtml = translation ? this._escapeHtml(translation) : '';
+                const checkHtml = this._translationCheckHtml(text, translation);
 
-                sectionRows.push({ origHtml, transHtml, ...anchor });
+                sectionRows.push({ origHtml, transHtml, checkHtml, ...anchor });
                 lastRowIdx = sectionRows.length - 1;
             });
         });
