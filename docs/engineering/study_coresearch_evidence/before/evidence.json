@@ -1,0 +1,27 @@
+{
+  "run": "study-before-2026-10-26T05-03-03-284Z",
+  "phase": "before",
+  "sha": "27f5862df15173e25854357aa3a307e8c326c1a6",
+  "dirty": 3,
+  "checks": [
+    {
+      "name": "selection found",
+      "ok": true,
+      "detail": null
+    }
+  ],
+  "metrics": {
+    "reader_rows": 6,
+    "rows_with_anchor_attrs": 0,
+    "context_badge": "Context: synthetic_calibration / Selected Text (74)",
+    "selection_context_chars": 74,
+    "selection_context_has_anchor": false,
+    "selection_actions_visible": 0,
+    "answer_text": "\n點擊左側矩陣單元格，\nAI 將針對該內容進行解說。\n請解釋這段在說什麼？\n 根據目前文獻資料：樣本 A 只在 300 K 量測。（合成模型替身）",
+    "answer_evidence_links": 0,
+    "answer_uncertainty_shown": 0,
+    "accept_note_controls": 0,
+    "evidence_note_list": 0
+  },
+  "errors": []
+}
