@@ -683,11 +683,13 @@ class StudyCore {
         if (!pid) return;
         const switchMode = options.switchMode !== false;
         const silentWhenMissing = options.silentWhenMissing !== false;
+        let status = 0;
         fetch(`/api/study/${pid}/matrix/latest`)
-            .then(r => r.json())
+            .then(r => { status = r.status; return r.json(); })
             .then(res => {
                 if (!res.ok || !res.record || !res.record.data) {
-                    if (attempt < 3) {
+                    // 404「沒有矩陣」是確定的答案，不是暫時錯誤；只有 5xx 才重試（舊版每次都多打 3 次 404）。
+                    if (status >= 500 && attempt < 3) {
                         setTimeout(() => this.loadLatestMatrix(attempt + 1, options), 300 * (attempt + 1));
                     } else if (!silentWhenMissing) {
                         this.showToast('目前沒有可載入的矩陣記錄', 'warning');

@@ -13,8 +13,16 @@ module.exports=async function after(ctx){
 
     // ---------- 研究者：閱讀器 ----------
     const page=await pageFor();
+    const matrixCalls=[];
+    page.on('request',r=>{if(r.url().includes('/matrix/latest'))matrixCalls.push(r.url());});
     await login(page,'researcher');
     await openReader(page);
+    // R3：介面用繁中研究用語；譯文明示是機器翻譯；沒有矩陣時不重打 404。
+    const ui=await page.evaluate(()=>({text:document.body.innerText,trans:[...document.querySelectorAll('#fulltext-content .section-header')].map(e=>e.textContent)}));
+    check('R3 介面沒有殘留英文狀態字',!/Original Text|Context: None|Single View|Matrix View|Fulltext \(Block\)|\bIdle\b/.test(ui.text));
+    check('R3 譯文欄標明機器翻譯',ui.trans.some(t=>t.includes('機器翻譯')),ui.trans.slice(0,4));
+    check('R3 沒有矩陣時只請求一次',matrixCalls.length<=1,matrixCalls.length);
+    evidence.metrics.matrix_latest_requests=matrixCalls.length;
     const reader=await page.evaluate(()=>{
         const rows=[...document.querySelectorAll('#fulltext-content .original-content')];
         let current=null;const order=[];
@@ -225,6 +233,18 @@ module.exports=async function after(ctx){
     const judged=(await notes(page))[0].statements.find(st=>st.claim_support==='partial');
     check('B10 研究者的支持判斷有紀錄',judged&&judged.claim_support_by.username==='researcher');
     check('B10 清單標示研究者判斷',await page.locator('[data-evidence-note] [data-claim-support="partial"]').count()>=1);
+
+    // ---------- R3：不確定性、修訂前內容、寫進研究筆記 ----------
+    check('R3 已存筆記仍顯示 AI 自評不確定性',await page.locator('[data-evidence-note] [data-ai-uncertainty]').count()>=1);
+    await page.locator('[data-evidence-history] > summary').first().click();
+    check('R3 作者看得到每次修改前的內容',await page.locator('[data-revision-previous]').count()>=1);
+    await page.locator('[data-evidence-insert]').first().click();
+    const inserted=await page.locator('#study-notes').inputValue();
+    check('R3 插入研究筆記帶出處與判斷狀態',inserted.includes('【證據筆記】')&&inserted.includes('證據 1')&&inserted.includes('不代表支持')&&inserted.includes('研究者判斷：部分支持'),inserted.slice(0,300));
+    await page.waitForFunction(()=>document.querySelector('#study-notes-status')?.textContent==='已儲存',null,{timeout:15000});
+    const savedFree=await api(page,`/api/study/notes/load/${pid}`);
+    check('R3 插入的內容經既有存檔路徑寫入伺服器',JSON.stringify(savedFree.data).includes('【證據筆記】'),savedFree.status);
+    await snapshot(page,'12b-evidence-into-notes');
     await snapshot(page,'12-author-accepts-and-judges');
     await page.context().close();
 
@@ -242,6 +262,7 @@ module.exports=async function after(ctx){
     check('B1 教授頁面不呼叫私人資料 API',!asked.some(u=>/notes\/load|conversations|conversation\/|matrix/.test(u)),asked);
     const privateRead=await api(prof2,`/api/study/notes/load/${pid}`);
     check('B1 教授直接讀自由筆記被拒',privateRead.status===403&&privateRead.data.review_scope===true,privateRead.status);
+    check('R3 教授看不到修改前的內容',await prof2.locator('[data-revision-previous]').count()===0&&await prof2.locator('[data-evidence-insert]').count()===0);
     check('B3 教授仍能讀全文',(await api(prof2,`/api/study/get_fulltext/${pid}/${ctx.paper}`)).status===200);
     await snapshot(prof2,'13-professor-review-mode');
     await prof2.context().close();

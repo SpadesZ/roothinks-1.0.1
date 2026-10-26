@@ -231,7 +231,7 @@ class StudyView {
             ">
                 <div class="row g-0" style="min-height: ${compact ? 140 : 160}px;">
                     <div class="col-md-6" style="border-right: 2px solid #e2e8f0; padding: ${compact ? '1rem' : '1.5rem'}; background: #fafbfc;">
-                        <div class="section-header mb-3 small fw-bold text-uppercase text-secondary">Original Text</div>
+                        <div class="section-header mb-3 small fw-bold text-uppercase text-secondary">原文</div>
                         <div class="original-content selectable-text">
         `;
         paragraphs.forEach((para, idx) => {
@@ -241,7 +241,7 @@ class StudyView {
                         </div>
                     </div>
                     <div class="col-md-6" style="padding: ${compact ? '1rem' : '1.5rem'}; background: #ffffff;">
-                        <div class="section-header mb-3 small fw-bold text-uppercase" style="color:#667eea;">中文翻譯</div>
+                        <div class="section-header mb-3 small fw-bold text-uppercase" style="color:#667eea;" title="由翻譯引擎產生，引用請以原文為準">中文翻譯（機器翻譯）</div>
         `;
         if (translation) {
             html += `<div class="translation-content selectable-text" style="font-size: ${compact ? '0.95rem' : '1.02rem'}; line-height: 1.8; color: #1a202c; text-align: justify;">${this._escapeHtml(translation)}</div>`;
@@ -317,14 +317,14 @@ class StudyView {
                 // Left: original
                 html += `<div class="col-md-6" style="border-right:2px solid #e2e8f0;padding:${compact ? '0.75rem 1rem' : '1rem 1.5rem'};background:#fafbfc;">`;
                 if (isFirst) {
-                    html += `<div class="section-header mb-2 small fw-bold text-uppercase text-secondary">Original Text</div>`;
+                    html += `<div class="section-header mb-2 small fw-bold text-uppercase text-secondary">原文</div>`;
                 }
                 html += `<div class="original-content selectable-text" data-side="original" ${anchorAttrs}>${row.origHtml}</div>`;
                 html += `</div>`;
                 // Right: translation
                 html += `<div class="col-md-6" style="padding:${compact ? '0.75rem 1rem' : '1rem 1.5rem'};background:#ffffff;">`;
                 if (isFirst) {
-                    html += `<div class="section-header mb-2 small fw-bold text-uppercase" style="color:#667eea;">中文翻譯</div>`;
+                    html += `<div class="section-header mb-2 small fw-bold text-uppercase" style="color:#667eea;" title="由翻譯引擎產生，引用請以原文為準">中文翻譯（機器翻譯）</div>`;
                 }
                 if (row.transHtml) {
                     html += `<div class="translation-content selectable-text" data-side="translation" ${anchorAttrs} style="font-size:${compact ? '0.95rem' : '1.02rem'};line-height:1.8;color:#1a202c;text-align:justify;">${row.transHtml}</div>`;
@@ -691,13 +691,13 @@ class StudyView {
         if (this.modeBadge) {
             if (nextMode === 'single') {
                 this.modeBadge.className = 'badge bg-info text-dark';
-                this.modeBadge.textContent = 'Single View';
+                this.modeBadge.textContent = '單篇全文';
             } else if (nextMode === 'matrix') {
                 this.modeBadge.className = 'badge bg-primary';
-                this.modeBadge.textContent = 'Matrix View';
+                this.modeBadge.textContent = '比較矩陣';
             } else {
                 this.modeBadge.className = 'badge bg-secondary';
-                this.modeBadge.textContent = 'Idle';
+                this.modeBadge.textContent = '尚未開啟';
             }
         }
     }
@@ -944,7 +944,7 @@ class StudyView {
             });
         }
         if (this.contextBadge) {
-            this.contextBadge.textContent = `Context: ${paperId} / ${kind === 'figure' ? 'Figures' : 'Tables'}`;
+            this.contextBadge.textContent = `內容：${paperId}／${kind === 'figure' ? '圖' : '表'}`;
             this.contextBadge.className = 'badge bg-success';
         }
         this.setDisplayMode('single');
@@ -1186,7 +1186,7 @@ class StudyView {
         if(this.contextBadge) {
             const shortPid = shorten(pid, 42);
             const shortDim = shorten(dimension, 18);
-            this.contextBadge.innerText = `Context: ${shortPid} / ${shortDim}`;
+            this.contextBadge.innerText = `內容：${shortPid}／${shortDim}`;
             this.contextBadge.title = `${pid} / ${dimension}`;
             this.contextBadge.className = "badge bg-success"; 
         }
@@ -1617,7 +1617,7 @@ class StudyView {
                         </div>
                     </div>
                 `;
-                const blockModeHtml = buildReaderFrame('Block 對照版', rawBlocksHtml);
+                const blockModeHtml = buildReaderFrame('段落對照', rawBlocksHtml);
                 // Reflow mode: prefer source-order document_flow; semantic sections are legacy fallback.
                 // If neither exists, fall back to the merged block stream so the reader still sees content.
                 const reflowPrimaryHtml = (hasDocumentFlow || hasReflowSections || hasReflowMeta)
@@ -1627,7 +1627,7 @@ class StudyView {
                         </div>
                     `
                     : rawBlocksHtml;
-                const reflowModeHtml = buildReaderFrame(hasDocumentFlow ? 'Reflow 文件流' : 'Reflow 章節版', reflowPrimaryHtml);
+                const reflowModeHtml = buildReaderFrame(hasDocumentFlow ? '文件流' : '章節版', reflowPrimaryHtml);
 
                 this.currentFulltextPaperId = targetPaperId;
                 this.currentFulltextPayload = data;
@@ -1671,7 +1671,7 @@ class StudyView {
                         }
                     });
                     if (!silent) {
-                        const modeLabel = normalizedMode === 'fulltext_reflow' ? 'Reflow 文件流' : 'Block 對照版';
+                        const modeLabel = normalizedMode === 'fulltext_reflow' ? '文件流' : '段落對照';
                         window.studyCore?.showToast(`全文已載入（${modeLabel}）`, 'success');
                     }
                 } else {
@@ -1692,7 +1692,7 @@ class StudyView {
                         });
                     }
                     if (this.contextBadge) {
-                        this.contextBadge.textContent = `Context: ${this.currentFulltextPaperId || '-'} / ${contextDimension}`;
+                        this.contextBadge.textContent = `內容：${this.currentFulltextPaperId || '-'}／${contextDimension}`;
                         this.contextBadge.className = 'badge bg-success';
                     }
                 }
@@ -1761,7 +1761,7 @@ class StudyView {
                 });
                 if (this.contextBadge) {
                     const where = picked.page ? ` · p.${picked.page}` : '';
-                    this.contextBadge.textContent = `Context: ${this.currentFulltextPaperId || '-'} / Selected Text (${text.length})${where}`;
+                    this.contextBadge.textContent = `選取：${this.currentFulltextPaperId || '-'}／${text.length} 字${where}`;
                     this.contextBadge.className = 'badge bg-success';
                 }
             }

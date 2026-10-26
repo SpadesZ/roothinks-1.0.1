@@ -1,0 +1,398 @@
+{
+  "run": "study-after-2026-10-26T13-22-50-621Z",
+  "phase": "after",
+  "sha": "34ab1dfb0234234bb946f52d502dc8c75dd33c2b",
+  "dirty": 5,
+  "checks": [
+    {
+      "name": "R3 介面沒有殘留英文狀態字",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "name": "R3 譯文欄標明機器翻譯",
+      "ok": true,
+      "detail": [
+        "原文",
+        "中文翻譯（機器翻譯）",
+        "原文",
+        "中文翻譯（機器翻譯）"
+      ]
+    },
+    {
+      "name": "R3 沒有矩陣時只請求一次",
+      "ok": true,
+      "detail": 1
+    },
+    {
+      "name": "AC1 每個正文列都帶錨點屬性",
+      "ok": true,
+      "detail": {
+        "rows": 6,
+        "withAttrs": 6,
+        "order": [
+          {
+            "ref": "p1-b2",
+            "page": 1,
+            "marker": 1
+          },
+          {
+            "ref": "p1-b3",
+            "page": 1,
+            "marker": 1
+          },
+          {
+            "ref": "p2-b2",
+            "page": 2,
+            "marker": 2
+          },
+          {
+            "ref": "p2-b3",
+            "page": 2,
+            "marker": 2
+          },
+          {
+            "ref": "p3-b2",
+            "page": 3,
+            "marker": 3
+          },
+          {
+            "ref": "p3-b3",
+            "page": 3,
+            "marker": 3
+          }
+        ]
+      }
+    },
+    {
+      "name": "AC1 每列都在自己頁碼標記之後",
+      "ok": true,
+      "detail": [
+        {
+          "ref": "p1-b2",
+          "page": 1,
+          "marker": 1
+        },
+        {
+          "ref": "p1-b3",
+          "page": 1,
+          "marker": 1
+        },
+        {
+          "ref": "p2-b2",
+          "page": 2,
+          "marker": 2
+        },
+        {
+          "ref": "p2-b3",
+          "page": 2,
+          "marker": 2
+        },
+        {
+          "ref": "p3-b2",
+          "page": 3,
+          "marker": 3
+        },
+        {
+          "ref": "p3-b3",
+          "page": 3,
+          "marker": 3
+        }
+      ]
+    },
+    {
+      "name": "選到原文",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "name": "AC2 選字後出現解釋／批判動作",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "name": "AC2 伺服器驗證選段為 exact",
+      "ok": true,
+      "detail": {
+        "block_index": 2,
+        "end": 140,
+        "match_kind": "quote",
+        "page": 1,
+        "paper_id": "synthetic_calibration",
+        "pid": "STUDYCO-p",
+        "prefix": " thermal response for sample A. ",
+        "quote": "The improvement was observed only at 300 K under one calibration protocol.",
+        "quote_sha256": "f4463d652056a4e2b38a244248e0a7bbeb6fc8666ab51cb0951aaafc185a3c5c",
+        "ref": "p1-b2",
+        "schema": "roothinks.study.anchor/1",
+        "seq_id": "p1_body_2",
+        "side": "original",
+        "source": "flowb_trans",
+        "source_sha256": "7f67455b2313a9303090ee80ac916ff4b07944f33662cfb68ea4aaab52c0e9c3",
+        "start": 66,
+        "status": "exact",
+        "suffix": "",
+        "version_changed": false
+      }
+    },
+    {
+      "name": "AC3 假引文 0 個成為證據且明示被排除",
+      "ok": true,
+      "detail": {
+        "pointEvidence": 1,
+        "rejected": 1,
+        "fakeShownAsEvidence": false,
+        "supports": [
+          "found",
+          "none"
+        ],
+        "verifiedWord": false,
+        "uncertainty": "不確定性（AI 自評）：中：只有單一溫度；退火時間沒有改變",
+        "systemCheck": "系統檢查（只檢查引文是否存在，不判斷是否支持論點）：原文中找到的引文 1・排除 1・選段 exact"
+      }
+    },
+    {
+      "name": "AC3 沒有原文引文的論點標出來",
+      "ok": true,
+      "detail": [
+        "found",
+        "none"
+      ]
+    },
+    {
+      "name": "AC5 同時顯示 AI 自評與系統檢查",
+      "ok": true,
+      "detail": {
+        "pointEvidence": 1,
+        "rejected": 1,
+        "fakeShownAsEvidence": false,
+        "supports": [
+          "found",
+          "none"
+        ],
+        "verifiedWord": false,
+        "uncertainty": "不確定性（AI 自評）：中：只有單一溫度；退火時間沒有改變",
+        "systemCheck": "系統檢查（只檢查引文是否存在，不判斷是否支持論點）：原文中找到的引文 1・排除 1・選段 exact"
+      }
+    },
+    {
+      "name": "B9 回答卡不用「驗證」描述引文比對，並說明不判斷是否支持",
+      "ok": true,
+      "detail": "系統檢查（只檢查引文是否存在，不判斷是否支持論點）：原文中找到的引文 1・排除 1・選段 exact"
+    },
+    {
+      "name": "AC4 點證據定位到同一列並標出引文",
+      "ok": true,
+      "detail": {
+        "ref": "p1-b2",
+        "mode": "quote",
+        "side": "original",
+        "inView": true,
+        "highlight": true
+      }
+    },
+    {
+      "name": "AC6 接受前伺服器沒有證據筆記",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "name": "AC3 引文全被排除的 AI 論點不預設進草稿",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "name": "AC6 草稿編輯中伺服器仍沒有筆記",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "name": "復原：重新整理後草稿仍在本機",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "name": "AC6 接受後才寫入，三種類別正確",
+      "ok": true,
+      "detail": [
+        "source_fact",
+        "ai_interpretation",
+        "ai_interpretation",
+        "human_hypothesis"
+      ]
+    },
+    {
+      "name": "AC6 原文事實是伺服器核對的原文",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "name": "AC6 接受者有紀錄",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "name": "AC3 假出處的說法沒有存進筆記",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "name": "無證據的陳述在清單上標示",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "name": "選到譯文",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "name": "譯文選段標明來自機器譯文",
+      "ok": true,
+      "detail": "系統檢查（只檢查引文是否存在，不判斷是否支持論點）：原文中找到的引文 0・排除 2・選段 exact・選段來自機器譯文"
+    },
+    {
+      "name": "譯文選段附整段原文作來源並標明是推定",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "name": "AC10 不帶 mode 的 Tutor 回答不變",
+      "ok": true,
+      "detail": {
+        "answer": "根據目前文獻資料：樣本 A 只在 300 K 量測。（合成模型替身）",
+        "ok": true,
+        "saved": true
+      }
+    },
+    {
+      "name": "S4 研究者請求審閱",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "name": "AC11 匯出 Markdown 帶類別標籤",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "name": "AC9 隊友（editor）可留言",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "name": "AC9 viewer 不能用 Study API 寫",
+      "ok": true,
+      "detail": 403
+    },
+    {
+      "name": "AC9 教授在工作台看到已請求審閱的筆記並留言",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "name": "AC9 外人讀不到",
+      "ok": true,
+      "detail": 403
+    },
+    {
+      "name": "人類回饋不改陳述與類別",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "name": "B11 非作者看不到改寫與請求審閱，只能提建議",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "name": "B11 建議不改作者內容",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "name": "B11 作者接受後內容改變且可追溯",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "name": "B11 協作紀錄看得到",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "name": "B10 研究者的支持判斷有紀錄",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "name": "B10 清單標示研究者判斷",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "name": "R3 已存筆記仍顯示 AI 自評不確定性",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "name": "R3 作者看得到每次修改前的內容",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "name": "R3 插入研究筆記帶出處與判斷狀態",
+      "ok": true,
+      "detail": "【證據筆記】未命名（作者：researcher，2026/10/26 13:22:56）\n- 證據 1（synthetic_calibration 原文 p.1，原文中找到）：「The improvement was observed only at 300 K under one calibration protocol.」\n- 原文事實：The improvement was observed only at 300 K under one calibration protocol.\n- AI 解讀：這段只支持樣本 A、300 K、單一校正流程下的改善；不能外推到其他樣本或溫度。（無證據）"
+    },
+    {
+      "name": "R3 插入的內容經既有存檔路徑寫入伺服器",
+      "ok": true,
+      "detail": 200
+    },
+    {
+      "name": "B2 教授只看到請求審閱的筆記",
+      "ok": true,
+      "detail": {
+        "reviewNotes": 1
+      }
+    },
+    {
+      "name": "B1 教授頁面不呼叫私人資料 API",
+      "ok": true,
+      "detail": [
+        "/api/study/paper_list/STUDYCO-p",
+        "/api/study/evidence_notes/STUDYCO-p?verify=1",
+        "/api/study/notes/load/STUDYCO-p",
+        "/api/study/get_fulltext/STUDYCO-p/synthetic_calibration"
+      ]
+    },
+    {
+      "name": "B1 教授直接讀自由筆記被拒",
+      "ok": true,
+      "detail": 403
+    },
+    {
+      "name": "R3 教授看不到修改前的內容",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "name": "B3 教授仍能讀全文",
+      "ok": true,
+      "detail": null
+    }
+  ],
+  "metrics": {
+    "matrix_latest_requests": 1,
+    "reader_rows": 6,
+    "rows_with_anchor_attrs": 6,
+    "selection_actions_visible": 3,
+    "selection_context_chars": 74,
+    "selection_context_has_anchor": true,
+    "answer_evidence_links": 1,
+    "answer_rejected_quotes": 1,
+    "answer_uncertainty_shown": 1
+  },
+  "errors": []
+}

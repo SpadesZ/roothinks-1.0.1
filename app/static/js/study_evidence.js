@@ -14,6 +14,7 @@
     const STATUS_LABELS = { exact: '原文中找到', relocated: '原文中找到（已重新定位）', ambiguous_in_block: '同段多處，只確定段落',
         ambiguous: '多段都有，無法定位', not_found: '原文找不到', unavailable: '全文無法讀取' };
     const SUPPORT_LABELS = { not_assessed: '未判定是否支持', supports: '我判斷：支持', partial: '我判斷：部分支持', does_not_support: '我判斷：不支持' };
+    const UNCERTAINTY_LABELS = { low: '低', medium: '中', high: '高', unknown: '未知' };
     const SUPPORT_SHORT = { not_assessed: '未判定是否支持', supports: '研究者判斷：支持', partial: '研究者判斷：部分支持', does_not_support: '研究者判斷：不支持' };
 
     function currentUserId() {
@@ -286,9 +287,8 @@
 
             const unc = draft.origin?.uncertainty;
             if (unc) {
-                const levels = { low: '低', medium: '中', high: '高', unknown: '未知' };
                 box.appendChild(el('div', 'small text-muted mb-1',
-                    `AI 自評不確定性：${levels[unc.level] || '未知'}${(unc.reasons || []).length ? '：' + unc.reasons.join('；') : ''}`));
+                    `AI 自評不確定性：${UNCERTAINTY_LABELS[unc.level] || '未知'}${(unc.reasons || []).length ? '：' + unc.reasons.join('；') : ''}`));
             }
             const actions = el('div', 'd-flex flex-wrap gap-1');
             actions.appendChild(button('加入我的假說', 'btn btn-sm btn-outline-primary', () => {
@@ -458,6 +458,14 @@
                 }
                 card.appendChild(row);
             });
+            const unc = note.origin?.ai_uncertainty;
+            if (unc) {
+                // 存成筆記後 AI 的自評不確定性仍要看得到，否則讀者只看到「AI 解讀」而不知道它多不確定。
+                const line = el('div', 'small text-muted mb-1',
+                    `AI 自評不確定性：${UNCERTAINTY_LABELS[unc.level] || '未知'}${(unc.reasons || []).length ? '：' + unc.reasons.join('；') : ''}`);
+                line.setAttribute('data-ai-uncertainty', unc.level || 'unknown');
+                card.appendChild(line);
+            }
             card.appendChild(this._historyBlock(note));
 
             const comments = el('div', 'study-comments mt-1');
@@ -482,6 +490,9 @@
             actions.appendChild(input);
             actions.appendChild(button('留言', 'btn btn-sm btn-outline-secondary text-nowrap', () => this.comment(note.note_id, input, msg),
                 { 'data-evidence-comment': note.note_id }));
+            actions.appendChild(button('插入研究筆記', 'btn btn-sm btn-outline-secondary text-nowrap',
+                () => this.insertIntoNotes(note, msg), { 'data-evidence-insert': note.note_id,
+                    title: '把這則筆記連同出處與判斷狀態附加到「研究筆記」' }));
             const me = currentUserId();
             const isAuthor = !note.accepted_by || me === null || note.accepted_by.user_id === me;
             if (isAuthor) {
@@ -501,6 +512,38 @@
             return card;
         }
 
+        citationText(note) {
+            // 帶出處與判斷狀態的純文字：寫進研究筆記後，日後讀的人仍分得出原文、AI 解讀與自己的判斷。
+            const lines = [`【證據筆記】${note.title || '未命名'}（作者：${note.accepted_by?.username || '未知'}，${shortTime(note.accepted_at)}）`];
+            (note.anchors || []).forEach((anchor, i) => {
+                const where = anchor.page ? `${anchor.side === 'translation' ? '譯文' : '原文'} p.${anchor.page}` : '位置不明';
+                lines.push(`- 證據 ${i + 1}（${note.paper_id || ''} ${where}，${STATUS_LABELS[anchor.status] || anchor.status || '狀態不明'}）：「${anchor.quote || ''}」`);
+            });
+            (note.statements || []).forEach(st => {
+                const refs = (st.evidence || []).map(i => `證據 ${i + 1}`).join('、');
+                let tail = '';
+                if (st.kind !== 'source_fact') tail = refs ? `（${refs}；${SUPPORT_SHORT[st.claim_support || 'not_assessed']}）` : '（無證據）';
+                lines.push(`- ${KIND_LABELS[st.kind]}：${st.text}${tail}`);
+            });
+            const unc = note.origin?.ai_uncertainty;
+            if (unc) lines.push(`- AI 自評不確定性：${UNCERTAINTY_LABELS[unc.level] || '未知'}`);
+            lines.push('（引文在原文中找到，只代表引文存在，不代表支持上述陳述。）');
+            return lines.join('\n');
+        }
+
+        insertIntoNotes(note, msg) {
+            const area = document.getElementById('study-notes');
+            if (!area) return;
+            const block = this.citationText(note);
+            area.value = area.value.trimEnd() ? `${area.value.trimEnd()}\n\n${block}\n` : `${block}\n`;
+            // 走自由筆記既有的存檔路徑（版本號與衝突處理都在 study_core.initNotes）。
+            area.dispatchEvent(new Event('input', { bubbles: true }));
+            this.showPane('free');
+            area.focus();
+            area.scrollTop = area.scrollHeight;
+            if (msg) msg.textContent = '';
+        }
+
         _historyBlock(note) {
             const box = el('div', 'small text-muted');
             const revisions = note.revisions || [];
@@ -509,9 +552,19 @@
             const details = el('details', 'mt-1');
             details.setAttribute('data-evidence-history', String(revisions.length));
             details.appendChild(el('summary', '', `協作紀錄：修訂 ${revisions.length}、建議 ${suggestions.length}`));
-            revisions.forEach(rev => details.appendChild(el('div', '', rev.action === 'accepted_suggestion'
-                ? `${shortTime(rev.at)} ${rev.by?.username || '未知'} 接受了 ${rev.suggested_by?.username || '未知'} 的建議`
-                : `${shortTime(rev.at)} ${rev.by?.username || '未知'} 改寫`)));
+            revisions.forEach(rev => {
+                const row = el('div', '', rev.action === 'accepted_suggestion'
+                    ? `${shortTime(rev.at)} ${rev.by?.username || '未知'} 接受了 ${rev.suggested_by?.username || '未知'} 的建議`
+                    : `${shortTime(rev.at)} ${rev.by?.username || '未知'} 改寫`);
+                if ((rev.previous_statements || []).length) {
+                    const prev = el('details', 'ms-2');
+                    prev.setAttribute('data-revision-previous', String(rev.previous_statements.length));
+                    prev.appendChild(el('summary', '', '這次修改前的內容'));
+                    rev.previous_statements.forEach(st => prev.appendChild(el('div', '', `【${KIND_LABELS[st.kind] || st.kind}】${st.text || ''}`)));
+                    row.appendChild(prev);
+                }
+                details.appendChild(row);
+            });
             suggestions.forEach(sg => details.appendChild(el('div', '',
                 `${shortTime(sg.at)} ${sg.by?.username || '未知'} 建議（${{ open: '待處理', accepted: '已接受', declined: '未採用' }[sg.status] || sg.status}）${sg.reason ? '：' + sg.reason : ''}`)));
             box.appendChild(details);

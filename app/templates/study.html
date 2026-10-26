@@ -228,13 +228,13 @@ Study 的 Matrix/Fulltext 內嵌切換為階段性方案，後續請由人類團
         <div id="matrix-pane" class="d-flex flex-column position-relative" style="background-color: #f8f9fa;">
             <div class="bg-white border-bottom p-2 d-flex justify-content-between align-items-center shadow-sm matrix-toolbar">
                 <div class="d-flex align-items-center gap-2">
-                    <span id="matrix-mode-badge" class="badge bg-secondary"><i class="bi bi-display me-1"></i>Idle</span>
+                    <span id="matrix-mode-badge" class="badge bg-secondary"><i class="bi bi-display me-1"></i>尚未開啟</span>
                     <div class="btn-group btn-group-sm" role="group" aria-label="Study display mode">
                         <button id="btn-view-matrix" class="btn btn-outline-primary" onclick="window.studyView.switchToMatrixView()">
-                            <i class="bi bi-grid-3x3-gap me-1"></i>Matrix
+                            <i class="bi bi-grid-3x3-gap me-1"></i>比較矩陣
                         </button>
                         <button id="btn-view-fulltext" class="btn btn-outline-primary" onclick="window.studyView.switchToFulltextView()" disabled>
-                            <i class="bi bi-book-half me-1"></i>Fulltext
+                            <i class="bi bi-book-half me-1"></i>全文
                         </button>
                     </div>
                     <div class="input-group input-group-sm" style="width: 220px;">
@@ -242,10 +242,10 @@ Study 的 Matrix/Fulltext 內嵌切換為階段性方案，後續請由人類團
                             <i class="bi bi-collection"></i>
                         </span>
                         <select id="study-content-mode-select" class="form-select form-select-sm" disabled>
-                            <option value="fulltext_block" selected>Fulltext (Block)</option>
-                            <option value="fulltext_reflow">Fulltext (Reflow)</option>
-                            <option value="figure">Figures</option>
-                            <option value="table">Tables</option>
+                            <option value="fulltext_block" selected>全文（段落對照）</option>
+                            <option value="fulltext_reflow">全文（文件流）</option>
+                            <option value="figure">圖</option>
+                            <option value="table">表</option>
                         </select>
                     </div>
                     <!-- 預設留空。空的時候由 CSS (#matrix-title:empty) 整個隱藏，
@@ -314,7 +314,7 @@ Study 的 Matrix/Fulltext 內嵌切換為階段性方案，後續請由人類團
             <div id="aux-chat-pane" class="d-flex flex-column border-bottom">
                 <div class="p-2 bg-light border-bottom fw-bold text-primary d-flex justify-content-between align-items-center">
                     <span class="text-nowrap"><i class="bi bi-robot me-2"></i>AI 家教</span>
-                    <span class="badge bg-secondary text-truncate ms-2" id="chat-context-badge" title="Current Context" style="max-width: 70%;">Context: None</span>
+                    <span class="badge bg-secondary text-truncate ms-2" id="chat-context-badge" title="AI 家教目前看的內容" style="max-width: 70%;">尚未選取內容</span>
                 </div>
                 
                 <div id="chat-history" class="flex-grow-1 p-3 overflow-auto bg-white">
