@@ -57,6 +57,15 @@ CORPUS = [
     "Hardness increased by 18 percent; see 10.1016/j.actamat.2020.01.001.",
     "The ratio $R_{1/2}$ was 0.45 in restored sites [1].",
 ]
+# R4 邊界語料：同一句出現相同的公式／URL 兩次。舊的「文字有沒有出現」判定在這裡看不到遺失。
+REPEATED_CORPUS = [
+    "Set $x$ to zero, then $x$ again after the update.",
+    "Both $\\alpha$ and $\\alpha$ decay as $t$ grows.",
+    "See https://example.org/a first; https://example.org/a also hosts the data.",
+    "The term $k$ appears in $k$-space and in $E(k)$.",
+    "Constants $c$ and $c$ were tied in 3 runs.",
+    "We minimize $f$ then re-evaluate $f$ at 10 points.",
+]
 
 
 def old_restore(text, mapping):
@@ -88,30 +97,62 @@ def engine_digit(masked, i):
     return "【譯】" + re.sub(r"(?<![\w_])(\d+)(?![\w_])", lambda m: str(int(m.group(1)) + 1), masked, count=1)
 
 
+def engine_strip_underscores(masked, i):
+    return "【譯】" + re.sub(r"__RTK_KEEP_(\d+)__", r"RTK KEEP \1", masked)
+
+
+def engine_duplicate_first(masked, i):
+    tokens = re.findall(r"__RTK_KEEP_\d+__", masked)
+    return "【譯】" + (masked.replace(tokens[0], tokens[0] + " " + tokens[0], 1) if tokens else masked)
+
+
+def engine_renumber_last(masked, i):
+    """把最後一個佔位符的編號改成不存在的 99：位置還在、編號壞了。"""
+    tokens = re.findall(r"__RTK_KEEP_\d+__", masked)
+    return "【譯】" + (masked[::-1].replace(tokens[-1][::-1], "__RTK_KEEP_99__"[::-1], 1)[::-1] if tokens else masked)
+
+
 ENGINES = {"faithful": engine_faithful, "spacing": engine_spacing, "case_fullwidth": engine_case_fullwidth,
-           "drop_last_token": engine_drop, "digit_change": engine_digit}
+           "drop_last_token": engine_drop, "digit_change": engine_digit,
+           "strip_underscores": engine_strip_underscores, "duplicate_first_token": engine_duplicate_first,
+           "renumber_last_token": engine_renumber_last}
 
 
-def evaluate(extended):
+def _preserved(spans, text):
+    """以次數計算：同一片段在原句出現兩次，譯文也要兩次才算都保留。"""
+    body = text.split("〔")[0]
+    return sum(min(spans.count(o), body.count(o)) for o in set(spans))
+
+
+def _all_present(spans, text):
+    return all(text.count(o) >= spans.count(o) for o in set(spans))
+
+
+
+
+def evaluate(extended, corpus=None):
     results = {}
     for name, engine in ENGINES.items():
         stats = {"sentences": 0, "spans": 0, "old_spans_preserved": 0, "new_spans_preserved": 0,
                  "old_silent_loss_sentences": 0, "new_silent_loss_sentences": 0, "new_loss_flagged_sentences": 0,
+                 "new_token_residue_sentences": 0, "new_repositioned": 0, "new_duplicated_removed": 0,
                  "number_change_detected": 0, "number_changed_sentences": 0}
-        for i, src in enumerate(CORPUS):
+        for i, src in enumerate(corpus or CORPUS):
             masked, mapping = guard.protect(src, extended=extended)
             out_raw = engine(masked, i)
             old = old_restore(out_raw, mapping)
             new, report = guard.restore(out_raw, mapping, source=src)
             stats["sentences"] += 1
             stats["spans"] += len(mapping)
-            stats["old_spans_preserved"] += sum(1 for o in mapping.values() if o in old)
-            stats["new_spans_preserved"] += sum(1 for o in mapping.values() if o in new.split("〔")[0])
-            old_lost = any(o not in old for o in mapping.values())
-            stats["old_silent_loss_sentences"] += int(old_lost)  # 舊作法遺失時沒有任何標示
-            new_lost_unflagged = any(o not in new for o in mapping.values())
-            stats["new_silent_loss_sentences"] += int(new_lost_unflagged)
+            spans = list(mapping.values())
+            stats["old_spans_preserved"] += _preserved(spans, old)
+            stats["new_spans_preserved"] += _preserved(spans, new)
+            stats["old_silent_loss_sentences"] += int(not _all_present(spans, old))  # 舊作法遺失時沒有任何標示
+            stats["new_silent_loss_sentences"] += int(not _all_present(spans, new))
             stats["new_loss_flagged_sentences"] += int(bool(report.lost))
+            stats["new_token_residue_sentences"] += int(bool(re.search(r"(?i)rtk\W*keep", new)))
+            stats["new_repositioned"] += report.repositioned
+            stats["new_duplicated_removed"] += report.duplicated
             if name == "digit_change":
                 changed = guard.number_mismatch(src, out_raw.replace("【譯】", ""), mapping)
                 plain_changed = out_raw != engine_faithful(masked, i)
@@ -126,7 +167,8 @@ def main(argv=None):
     ap.add_argument("--out")
     args = ap.parse_args(argv)
     result = {"nature": "SIMULATION of placeholder damage; not a measurement of any real translation engine",
-              "corpus_sentences": len(CORPUS), "base_patterns": evaluate(False), "extended_patterns": evaluate(True)}
+              "corpus_sentences": len(CORPUS), "base_patterns": evaluate(False), "extended_patterns": evaluate(True),
+              "repeated_spans_corpus_sentences": len(REPEATED_CORPUS), "repeated_spans": evaluate(False, REPEATED_CORPUS)}
     text = json.dumps(result, ensure_ascii=False, indent=1)
     if args.out:
         Path(args.out).write_text(text, encoding="utf-8")
