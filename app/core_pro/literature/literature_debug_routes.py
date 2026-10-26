@@ -15,10 +15,16 @@ from datetime import datetime, timezone
 
 from flask import jsonify, request
 
+from app.security import require_system_admin
+
 
 def register_debug_routes(literature_bp, deps):
     @literature_bp.route('/api/literature/debug/runtime_log_tail', methods=['GET'])
     def debug_runtime_log_tail():
+        # 全站執行日誌含所有專案的活動：只給系統管理員（不帶 pid，專案 ACL 不會擋）。
+        denied = require_system_admin()
+        if denied is not None:
+            return denied
         lines_raw = request.args.get("lines", "120")
         keyword = str(request.args.get("keyword", "")).strip().lower()
         try:

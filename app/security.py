@@ -693,6 +693,37 @@ def client_error(message: str, status: int = 400):
     return jsonify({"success": False, "message": message}), status
 
 
+def require_system_admin():
+    """全站資源（例如全站執行日誌）只認系統角色；專案 owner／mentor 不是管理員。
+
+    AUTH_MODE=session：必須登入且 system_role == admin。
+    API_AUTH_ENABLED（無 session）：token 必須有效，且 TOKEN_ACL_MAP 對該 token 明確設 system_role=admin。
+    兩者皆關（僅開發／測試）：放行。
+    """
+    if _get_auth_mode() == "session":
+        from flask_login import current_user
+        if not current_user.is_authenticated:
+            return client_error("Unauthorized", 401)
+        if getattr(current_user, "system_role", None) != "admin":
+            return client_error("Forbidden", 403)
+        g.system_admin_actor = f"user:{current_user.id}"
+        return None
+    if _auth_enabled():
+        token = get_request_token()
+        if not _token_matches_configured(token, _configured_tokens()):
+            return client_error("Unauthorized", 401)
+        # 機器帳號也需明確授權；專案 wildcard 不授予全站權限。
+        token_acl = _token_acl_map().get(token, {})
+        if not isinstance(token_acl, dict) or token_acl.get("system_role") != "admin":
+            return client_error("Forbidden", 403)
+        g.system_admin_actor = "token:" + hashlib.sha256(token.encode()).hexdigest()[:12]
+        return None
+    if _get_auth_mode() == "none":
+        g.system_admin_actor = "local-auth-disabled"
+        return None
+    return client_error("Forbidden", 403)
+
+
 def _lock_path(path: str) -> str:
     return build_lock_path(path)
 
