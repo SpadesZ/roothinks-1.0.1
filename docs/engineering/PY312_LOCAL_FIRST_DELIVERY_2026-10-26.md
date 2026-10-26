@@ -1,5 +1,7 @@
 # LOCAL-FIRST Python 3.12 整合交付
 
+> 此為初次整合的歷史判定。後續已移除 deep-translator、修復 OCR 執行邊界並完成 Owner 授權的本機 3.12.15 切換；目前見[本機升級交付](PY312_LOCAL_UPGRADE_DELIVERY_2026-10-26.md)。GCP 未部署。
+
 **正式遷移建議：NO-GO。** 工程候選已完成建置與回歸；deep-translator 的已知供應鏈通報仍未關閉，Google 真 OAuth／Drive 尚無授權測試帳號，獨立外部審查仍待 Owner 指派。本輪沒有 merge main、部署、正式資料操作或啟動 cloud handoff。
 
 本輪分支 `codex/py312-local-first-integration-20261025`。先讀並比較本機 `433eec4` 與雲端 `e64c4e7`；保留兩原分支與舊證據，選用本機已驗證的 bookworm／CPU 路線。正式產品凍結 **`84b0ea9b0bf47b16afc71b002458ae5097a21405`**；交付 commit 只補證據、文件及已獨立執行的驗證工具。最後 SHA 由 Git log／remote 給出，不把文件 SHA 說成當時完整測試 SHA。

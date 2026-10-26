@@ -1,0 +1,376 @@
+{
+  "schema": "roothinks-local-py312-upgrade-v1",
+  "created_utc": "2026-10-26T07:16:56.845369+00:00",
+  "decisions": {
+    "local": "GO_UPGRADED",
+    "gcp": "NO_GO_NOT_CHANGED",
+    "main_merge": "NOT_AUTHORIZED",
+    "external_publication": "OWNER_GATE"
+  },
+  "branch": "codex/py312-local-first-integration-20261025",
+  "frozen_product_sha": "a3c5c0ad852b2fa9bded50f01d36ec47dc9dfe80",
+  "runtime_image": "sha256:f297185fb0bb9e4d7b746805caf8ace6a37e87d6f7498e2845860cb5449ad0da",
+  "verification_image": "sha256:903f7f7d5022a291fc4badaa8ac7e9fa634d8e8033f0fa8af9a2391a378aa080",
+  "live": {
+    "status": "passed",
+    "checked_utc": "2026-10-26T07:15:55.445727+00:00",
+    "runtime_sha": "a3c5c0ad852b2fa9bded50f01d36ec47dc9dfe80",
+    "checker_sha256": "6284b158ba23ec0b599fa1a08daf9fe14c10b221224ad377a6645e851b40be4f",
+    "python": "3.12.15",
+    "uid": 1000,
+    "health": "healthy",
+    "live_source_files_matched": 212,
+    "http": {
+      "root": 302,
+      "login": 200,
+      "anonymous": 401,
+      "csrf_missing_html": 303,
+      "csrf_missing_api": 403
+    },
+    "actual_image": "sha256:f297185fb0bb9e4d7b746805caf8ace6a37e87d6f7498e2845860cb5449ad0da",
+    "container_id": "8dbfc8443007d103705d10d563e50b5afbe1f793c4c2793b55f73c40df641e6c",
+    "data_volume": "roothinks10005_py312_data_20261026_attempt02",
+    "redis_id_and_start_unchanged": true,
+    "env_bytes_and_keys_preserved": true,
+    "original_checkout_and_dirty_state_preserved": true,
+    "research_content_accessed": false,
+    "provider_called": false,
+    "initial_qa_expectation_corrected": {
+      "assumed_html_status": 400,
+      "contract_html_status": 303,
+      "product_changed": false
+    }
+  },
+  "data_integrity": {
+    "all_legacy_rows_preserved": true,
+    "legacy_tables": 25,
+    "legacy_rows": 272,
+    "original_files_verified": 2469,
+    "sqlite_integrity": "ok"
+  },
+  "restore": {
+    "files": 2478,
+    "bytes": 618373630,
+    "all_bytes_verified": true,
+    "uid": 1000
+  },
+  "regression": {
+    "passed": 1538,
+    "skipped": 50,
+    "failed": 0,
+    "errors": 0,
+    "reused": true
+  },
+  "regression_seconds": 777.26,
+  "regression_warnings": 1290,
+  "node_checks": 11,
+  "evidence_reuse": {
+    "frozen_source_files_matched_before_document_edits": 487,
+    "live_product_source_files_matched": 212,
+    "unchanged_product_full_regression_reused": true,
+    "three_original_browsers_pdf_workers_real_models_reused": true
+  },
+  "mermaid": {
+    "control": "passed",
+    "load_ms": 550,
+    "timeout_ms_unchanged": 15000,
+    "original_failure_preserved": true,
+    "intermittent_timeout_root_cause": "NOT_DETERMINED",
+    "assertions_unchanged": true
+  },
+  "security": {
+    "dependencies": 110,
+    "known_dependency_vulnerabilities": 0,
+    "dependency_audit_skipped": 0,
+    "bandit_high_b324_legacy_sha1": 9,
+    "other_bandit_low_medium_remain": true,
+    "prior_product_history_gitleaks": "passed",
+    "attempt_public_artifacts_gitleaks": "passed",
+    "independent_external_audit": "NOT_MEASURED",
+    "private_backup_not_scanned_or_packaged": true
+  },
+  "failure_history": [
+    {
+      "phase": "prior_cutover",
+      "cause": "CP950 decoding UTF-8 helper",
+      "outcome": "automatic_rollback_to_3.10.20"
+    },
+    {
+      "phase": "readonly_snapshot",
+      "cause": "SQLite WAL header without sidecars on read-only filesystem",
+      "resolution": "immutable only after rejecting nonempty WAL"
+    },
+    {
+      "phase": "additional_mermaid_control",
+      "cause": "15 second load timeout; not reproduced",
+      "resolution": "same-image same-assertion control passed; residual risk retained"
+    },
+    {
+      "phase": "additional_live_csrf_QA",
+      "cause": "incorrect assumed HTML 400 status",
+      "resolution": "verified existing contract: HTML 303 to login, API 403 with CSRF message; product unchanged"
+    }
+  ],
+  "boundaries": {
+    "scientific_quality": "NOT MEASURED",
+    "fresh_blind_holdout": "NOT_ACCESSED",
+    "real_experts": 0,
+    "google_free_translation": "429; success not verified",
+    "real_google_oauth": "NOT_CONFIGURED_NOT_VERIFIED",
+    "full_os_cve_load_power_failure_multi_host": "NOT_MEASURED",
+    "rickie_mcp": "UNAVAILABLE"
+  },
+  "rollback": {
+    "prior_real_automatic_rollback_verified": true,
+    "attempt02_fresh_lock_backup_and_volume": true,
+    "original_bind_and_all_volumes_preserved": true,
+    "post_acceptance_new_edits_require_new_snapshot_before_rollback": true
+  },
+  "artifacts": [
+    {
+      "path": "D:\\Documents\\RootThinksValidation\\py312-upgrade-20261026\\attempt-02\\helper-encoding-receipt.json",
+      "sha256": "538d84e019749ed78ef923c8ba400647ae2c6e99f80bc03d86927352d36f40e5",
+      "bytes": 1081
+    },
+    {
+      "path": "D:\\Documents\\RootThinksValidation\\py312-upgrade-20261026\\attempt-02\\prior-candidate-readonly-receipt.json",
+      "sha256": "16fe38e63ec14461856fb55d9645dab49d0b9b5ba7e3606001d70d67324b9e72",
+      "bytes": 479
+    },
+    {
+      "path": "D:\\Documents\\RootThinksValidation\\py312-upgrade-20261026\\attempt-02\\prior-candidate-readonly-failure.json",
+      "sha256": "9e9dc3cfbdf720d111bbee94589bd4162de62e6f73972f076aaca99a06d49a9b",
+      "bytes": 190
+    },
+    {
+      "path": "D:\\Documents\\RootThinksValidation\\py312-upgrade-20261026\\attempt-02\\frozen-evidence-audit.json",
+      "sha256": "759a30f6c4151a4b74df3cd7c29725e3d1735743ddeb75c8190dc59893b9c6d2",
+      "bytes": 2223
+    },
+    {
+      "path": "D:\\Documents\\RootThinksValidation\\py312-upgrade-20261026\\attempt-02\\online-backup-receipt.json",
+      "sha256": "cb49d68271e8b6beed0889ef488973bfff45e4bc5d6c1257b73b0958a293a150",
+      "bytes": 288
+    },
+    {
+      "path": "D:\\Documents\\RootThinksValidation\\py312-upgrade-20261026\\attempt-02\\offline-backup-receipt.json",
+      "sha256": "2c369a84158f3e19f4ce22eba8a2da46a6b419c92c4acd70c7c44a71867ae726",
+      "bytes": 73
+    },
+    {
+      "path": "D:\\Documents\\RootThinksValidation\\py312-upgrade-20261026\\attempt-02\\offline-volume-restore-receipt.json",
+      "sha256": "c5cdd62f4cba7e868a5948b608cce215acb6ca56352547bea3d69c38133f940c",
+      "bytes": 91
+    },
+    {
+      "path": "D:\\Documents\\RootThinksValidation\\py312-upgrade-20261026\\attempt-02\\runtime-source-receipt.json",
+      "sha256": "f420aafab318b5f673a122c5d5ec4b3356afd853a0fc75b70adfc5f494e963f9",
+      "bytes": 266
+    },
+    {
+      "path": "D:\\Documents\\RootThinksValidation\\py312-upgrade-20261026\\attempt-02\\local-upgrade-receipt.json",
+      "sha256": "90f1e8041d784c9fb167f8aad7decc17df85717df2e5c950bfe832e7cc342994",
+      "bytes": 1051
+    },
+    {
+      "path": "D:\\Documents\\RootThinksValidation\\py312-upgrade-20261026\\attempt-02\\post-upgrade-verify-receipt.json",
+      "sha256": "d2d9e125a4bd0b4476c2931c5fd6205649415ae5922f3c2611c6229f82134abf",
+      "bytes": 979
+    },
+    {
+      "path": "D:\\Documents\\RootThinksValidation\\py312-upgrade-20261026\\attempt-02\\post-upgrade-verify-final.json",
+      "sha256": "d957977fb71999db403e490847c7b784e8dbcc03c09f5df45a03089f41d0a6b2",
+      "bytes": 1068
+    },
+    {
+      "path": "D:\\Documents\\RootThinksValidation\\py312-upgrade-20261026\\attempt-02\\cutover-journal.jsonl",
+      "sha256": "1cd6d88cc63ab1748c3e2035de340cea9ba3235083d9be366273f4ed87ae5599",
+      "bytes": 554
+    },
+    {
+      "path": "D:\\Documents\\RootThinksValidation\\py312-upgrade-20261026\\local-rollback-receipt.json",
+      "sha256": "6455e2b4d03b629808f97d8ef0a0097cdf1724f4abbd9a9092ca10f60a1db3ee",
+      "bytes": 289
+    },
+    {
+      "path": "D:\\Documents\\RootThinksValidation\\py312-upgrade-20261026\\archive-selfcheck-receipt.json",
+      "sha256": "72fcc02b2dc032a4a29295262979efc302efd63744c8a15d26be18f811a2b2ca",
+      "bytes": 2289
+    },
+    {
+      "path": "D:\\Documents\\RootThinksValidation\\py312-upgrade-20261026\\regression-final\\receipt.json",
+      "sha256": "1e533ebf3d36da8b9e26e836b36b46529ff24ce603abecdbab97334e4fed5f9b",
+      "bytes": 1030
+    },
+    {
+      "path": "D:\\Documents\\RootThinksValidation\\py312-upgrade-20261026\\regression-final\\full.xml",
+      "sha256": "698dac6905c23805045a80f8549390102d1c7f91f2bea67a93747a70022d0311",
+      "bytes": 364877
+    },
+    {
+      "path": "D:\\Documents\\RootThinksValidation\\py312-upgrade-20261026\\regression-final\\stdout.txt",
+      "sha256": "6b4719fcf63c9ebaadc4807910052c89106673e6d162bf1529e5970e291bb047",
+      "bytes": 4223
+    },
+    {
+      "path": "D:\\Documents\\RootThinksValidation\\py312-upgrade-20261026\\node-checks.json",
+      "sha256": "89b440fa5e7e15cb91a27daf4722fd33798f822fe5fd1d3fa9f2551e7f20cae2",
+      "bytes": 450
+    },
+    {
+      "path": "D:\\Documents\\RootThinksValidation\\py312-upgrade-20261026\\dependency-audit-all.json",
+      "sha256": "599f516dbb39a10d29738e4c53936c8e175b9fa472686f306b8b813484ed99df",
+      "bytes": 6311
+    },
+    {
+      "path": "D:\\Documents\\RootThinksValidation\\py312-upgrade-20261026\\runtime-source-receipt.json",
+      "sha256": "f420aafab318b5f673a122c5d5ec4b3356afd853a0fc75b70adfc5f494e963f9",
+      "bytes": 266
+    },
+    {
+      "path": "D:\\Documents\\RootThinksValidation\\py312-upgrade-20261026\\frozen-v2\\source-manifest.json",
+      "sha256": "604fdabbe227b2be6e54ab7551f4b52253f4f3f6b7d70aef8dd42000c94f28a2",
+      "bytes": 75296
+    },
+    {
+      "path": "D:\\Documents\\RootThinksValidation\\py312-upgrade-20261026\\frozen-v2\\runtime-v1-receipt.json",
+      "sha256": "da05f3426588444856271bd7f66b167b6ffd9e4aecb07cfa40b0438ba590437b",
+      "bytes": 825
+    },
+    {
+      "path": "D:\\Documents\\RootThinksValidation\\py312-upgrade-20261026\\frozen-v2\\verification-v1-receipt.json",
+      "sha256": "99286213ee6847191b95224812f5280147f75c23e4c540e0434d5c090d855e54",
+      "bytes": 997
+    },
+    {
+      "path": "D:\\Documents\\RootThinksValidation\\py312-upgrade-20261026\\integrated-diagram-control-pdf-receipt.json",
+      "sha256": "cb2566237d95c83807283f7d63f0a40bb74799df1c11c3ea370c411ee35cd237",
+      "bytes": 681
+    },
+    {
+      "path": "D:\\Documents\\RootThinksValidation\\py312-upgrade-20261026\\integrated-diagram-control-diag02-receipt.json",
+      "sha256": "4dbd4d2aeb59598ecd463837eb6615cef226501f496b9c5150b03067f1e030f0",
+      "bytes": 681
+    },
+    {
+      "path": "D:\\Documents\\RootThinksValidation\\py312-upgrade-20261026\\integrated-diagram-control-diag02-timing.json",
+      "sha256": "66113613f65a0f377f6eba2d46f9fc8c2529c711ac3567e92104dd06e09184b5",
+      "bytes": 24157
+    },
+    {
+      "path": "D:\\Documents\\RootThinksValidation\\py312-upgrade-20261026\\diagram-and-google.json",
+      "sha256": "8c6517ca44af63ce114db00760fafa82e1a6a8769395d675e9a2afe83d68f73e",
+      "bytes": 207
+    },
+    {
+      "path": "D:\\Documents\\RootThinksValidation\\py312-upgrade-20261026\\diagram-and-optional-google.png",
+      "sha256": "47c12f2e3985c6bc056c84ac101df3bd5ad42725b6c9fbcb5cfca74f35bf6d05",
+      "bytes": 132622
+    },
+    {
+      "path": "D:\\Documents\\RootThinksValidation\\py312-upgrade-20261026\\gitleaks-new-commits.json",
+      "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+      "bytes": 3
+    },
+    {
+      "path": "D:\\Documents\\RootThinksValidation\\py312-upgrade-20261026\\attempt-02-secrets-scan.json",
+      "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+      "bytes": 3
+    },
+    {
+      "path": "D:\\Documents\\RootThinksValidation\\py312-upgrade-20261026\\scientific-engine-parity-delivery.json",
+      "sha256": "1468719ea097219b832b5ab35f1cc40ecd345bd408697296bad58de305973ea3",
+      "bytes": 987
+    },
+    {
+      "path": "D:\\Documents\\RootThinksValidation\\py312-upgrade-20261026\\integrated-sai-autonomy-upgrade-receipt.json",
+      "sha256": "d8f50ae0b157e27900a4ceb6b75d3507c58ffe452248ca79f9370f54074e18de",
+      "bytes": 646
+    },
+    {
+      "path": "D:\\Documents\\RootThinksValidation\\py312-upgrade-20261026\\integrated-sai-assets-upgrade-receipt.json",
+      "sha256": "f750f870cc4e2a24c6303b381a2243df815d5c3a204d9b99d8ca864272ca7d68",
+      "bytes": 644
+    },
+    {
+      "path": "D:\\Documents\\RootThinksValidation\\py312-upgrade-20261026\\integrated-sai-scientific-upgrade-receipt.json",
+      "sha256": "38ced5abffd47b1d4df859ebdc2a42ac58700bc5c7727cfcca0a41ec17faf32a",
+      "bytes": 648
+    },
+    {
+      "path": "D:\\Documents\\RootThinksValidation\\py312-upgrade-20261026\\integrated-pdf-pdf-receipt.json",
+      "sha256": "708b3812c58d142bd2e1b0fe6aae51902319825fdeadd0da7fcc6f161cb8dd79",
+      "bytes": 715
+    },
+    {
+      "path": "D:\\Documents\\RootThinksValidation\\py312-upgrade-20261026\\final-capabilities-receipt.json",
+      "sha256": "b6a95dcc47cc6e663f5f7ebab5f2b29fd4d679e8a38ade1fa2839246db38f760",
+      "bytes": 907
+    },
+    {
+      "path": "D:\\Documents\\RootThinksValidation\\py312-upgrade-20261026\\final-model-receipt.json",
+      "sha256": "39cf1a2c2914d1dd7d4bb1302cce9ae3a5909a0a443efa978d3b4c31d8ab1b74",
+      "bytes": 893
+    },
+    {
+      "path": "D:\\Documents\\RootThinksValidation\\py312-upgrade-20261026\\final-easyocr-receipt.json",
+      "sha256": "79ce93b0a964578c8389cd5c8ac04538012236e39f300a65211e03ec56998995",
+      "bytes": 882
+    },
+    {
+      "path": "D:\\Documents\\RootThinksValidation\\py312-upgrade-20261026\\final-gunicorn-eventlet-receipt.json",
+      "sha256": "9d8f43acb20eb2ea2a7111f8a2a41d9f9dfb406fa3f07f3da61e3ba8fe3fa7d4",
+      "bytes": 608
+    },
+    {
+      "path": "D:\\Documents\\RootThinksValidation\\py312-upgrade-20261026\\final-gunicorn-gthread-receipt.json",
+      "sha256": "3ec78b04c191fe5a4b9b6b9f982cdb2272f5dd6f6559b539904c84841123d8f9",
+      "bytes": 607
+    },
+    {
+      "path": "D:\\Documents\\RootThinksValidation\\py312-upgrade-20261026\\attempt-02\\audit_evidence.py",
+      "sha256": "813dd3c453df836b035fe09bd3808e7dead7b5d13ef13075748e13c4399a9146",
+      "bytes": 3804
+    },
+    {
+      "path": "D:\\Documents\\RootThinksValidation\\py312-upgrade-20261026\\attempt-02\\cutover_local.py",
+      "sha256": "c907561c92121249eb05960c7db09fd445409a4343dd0ea89f236c7b4ce09b7c",
+      "bytes": 12314
+    },
+    {
+      "path": "D:\\Documents\\RootThinksValidation\\py312-upgrade-20261026\\attempt-02\\post_upgrade_verify.py",
+      "sha256": "6284b158ba23ec0b599fa1a08daf9fe14c10b221224ad377a6645e851b40be4f",
+      "bytes": 4410
+    },
+    {
+      "path": "D:\\Documents\\RootThinksValidation\\py312-upgrade-20261026\\attempt-02\\prepare_helpers.py",
+      "sha256": "2d670e03ae3849c1a4627319a99eb33613d85a9d2c2b115dd8fa6a61c691d870",
+      "bytes": 3344
+    },
+    {
+      "path": "D:\\Documents\\RootThinksValidation\\py312-upgrade-20261026\\attempt-02\\protect_local.py",
+      "sha256": "6f33a416d51ed68efdf977354368c31e4f1b76cece2ffd553fd8fe7917c4c638",
+      "bytes": 5095
+    },
+    {
+      "path": "D:\\Documents\\RootThinksValidation\\py312-upgrade-20261026\\attempt-02\\seal_evidence.py",
+      "sha256": "251b0898333dfb17ea171c45acffd3f7943e70a8cbf296483d934d67c10839d4",
+      "bytes": 5298
+    },
+    {
+      "path": "D:\\Documents\\RootThinksValidation\\py312-upgrade-20261026\\attempt-02\\seed_archive.py",
+      "sha256": "c93dab7121c50379ada3efb2038e87b9ff7d928e9b468b2912e521d1fa50c385",
+      "bytes": 1411
+    },
+    {
+      "path": "D:\\Documents\\RootThinksValidation\\py312-upgrade-20261026\\attempt-02\\verify_live_data.py",
+      "sha256": "2e685e4c798b820dfed8e6bbba96396ed2c7aaf6aade5284e554609772b26cf2",
+      "bytes": 1681
+    },
+    {
+      "path": "D:\\Documents\\RootThinksValidation\\py312-upgrade-20261026\\attempt-02\\verify_prior_candidate.py",
+      "sha256": "334b2d496c5161c508e0f2e9796f4a28389de81e5529463d751138082648059c",
+      "bytes": 2101
+    }
+  ]
+}

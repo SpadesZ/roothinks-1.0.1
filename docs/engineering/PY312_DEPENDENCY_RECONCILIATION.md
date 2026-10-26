@@ -1,5 +1,7 @@
 # LOCAL-FIRST：29 項依賴調和
 
+> 下表保留初次 113 套件調和。後續 `b6f0b3b` 移除 deep-translator、beautifulsoup4、soupsieve，正式 lock 為 110 套件，其餘版本不變；目前見[本機升級交付](PY312_LOCAL_UPGRADE_DELIVERY_2026-10-26.md)。
+
 選定 113 個 hash-pinned 套件。每列最終驗證見本輪交付；選版理由不是通過證明。
 
 | 套件 | 雲端 | 原本機 | 整合選版 | 調查與理由 |

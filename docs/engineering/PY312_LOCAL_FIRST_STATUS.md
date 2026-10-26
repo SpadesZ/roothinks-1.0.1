@@ -1,4 +1,29 @@
-# LOCAL-FIRST Python 3.12 整合進度
+# 本機 Python 3.12 目前狀態
+
+**2026-10-26：本機已完成 Python 3.12.15 升級。GCP 未動，NO-GO，停 Owner Gate。**
+
+- 分支：`codex/py312-local-first-integration-20261025`。
+- 已測產品 SHA：`a3c5c0ad852b2fa9bded50f01d36ec47dc9dfe80`；後續文件 tip 與映像來源分開列示。
+- App：`roothinks_progress_paq_v8_10005`，healthy、UID 1000、debug off、`127.0.0.1:10005`。
+- Runtime：`sha256:f297185fb0bb9e4d7b746805caf8ace6a37e87d6f7498e2845860cb5449ad0da`。
+- 新卷：`roothinks10005_py312_data_20261026_attempt02`。
+
+## 本次完成
+
+1. 移除有通報的 deep-translator；OCR shell 邊界與模型 SHA1 fallback 已修。110 項依賴 audit 0 已知漏洞、0 skipped；既有 Bandit findings 保留。
+2. 同版本完整回歸 1,538 passed／50 skipped、11 Node、三研究流程／原三 browser、PDF／export、兩 worker與真模型已有證據；本次核對來源及 JUnit，未無理由重跑。
+3. 修正切換 QA 的 CP950／UTF-8 缺陷；先唯讀驗證保留候選卷，再用全新 attempt、online／offline 備份與資料卷切換。
+4. 2,478 個離線檔案逐檔還原相同；live 25 表／272 rows／2,469 原檔與三 DB 完整。212 個 live source hashes 相符。
+5. 認證／CSRF／Socket 邊界通過；SECRET_KEY／FERNET_KEY、.env bytes、Redis ID／啟動時間、原 60cf9f7 checkout／dirty state 保留。
+6. Mermaid 額外控制於同一斷言下通過；前輪逾時保留、間歇原因未確定。Google 真帳號與科學品質未驗。
+
+最新[本機升級報告](PY312_LOCAL_UPGRADE_DELIVERY_2026-10-26.md)與[機器索引](PY312_LOCAL_UPGRADE_EVIDENCE_2026-10-26.json)。QA：`D:\Documents\RootThinksValidation\py312-upgrade-20261026\attempt-02`。
+
+成功切換後如有新編輯，回退前須先備份當前新卷，不可直接套舊 bind。一次性 cutover helper 不重跑、不刪 lock。只 push personal 本隔離分支；不 merge main、不動 LAVA-Cowork origin、不部署 GCP、不啟動 cloud handoff。
+
+## 以下為初次整合歷史，非目前 runtime
+
+下列 113 套件、1,506 tests 與尚未實際切換的記錄保留供追溯。目前以本頁上半部及最新交付為準。
 
 Owner 於 2026-10-25 核准本機主導、單一隔離整合分支完成後 push personal。禁止 main merge、部署、LAVA-Cowork、科學規則變更與 sealed holdout。不得自行啟動 cloud handoff。
 

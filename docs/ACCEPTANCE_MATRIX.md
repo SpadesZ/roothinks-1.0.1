@@ -306,3 +306,19 @@ Owner 已改採本機主導；新隔離分支 `codex/py312-local-first-integrati
 | 安全與正式 migration | **NO-GO** | deep-translator 1.11.4 通報無修復版、既有 shell／SHA1 風險、獨立外部 auditor 待完成 |
 
 見[本輪交付](engineering/PY312_LOCAL_FIRST_DELIVERY_2026-10-26.md)、[機器證據](engineering/PY312_LOCAL_FIRST_EVIDENCE.json)與[Owner 啟動的接手指令](engineering/PY312_LOCAL_FIRST_CLOUD_HANDOFF.md)。獨立 scanner 與自我稽核不等於獨立外部審查；不得直接 merge／部署。
+
+## 本機實際切換（2026-10-26；取代上述本機待遷移判定）
+
+Owner 已授權本機升級；已測產品 `a3c5c0a`，實際運行 **Python 3.12.15**。GCP 未動，科學判斷規則不改。
+
+| 驗收 | 實際證據 | 判定／界線 |
+|---|---|---|
+| 必要安全修復 | 移除 deep-translator 與兩孤立相依；OCR argv／shell、SHA-256-only 模型來源；110 項依賴 audit 0 vulnerabilities、0 skipped | 工程通過；Bandit 9 個 HIGH SHA1 與其他 findings 保留，非全面安全認證 |
+| 同版本完整功能 | 1,538 passed／50 skipped／0 failed／0 errors；11 Node、原三 browser、三研究流程／歷史／DOCX、PDF 恢復、兩 worker／真模型 | 本次核對凍結版 source／JUnit；科學品質 NOT MEASURED |
+| 額外 Mermaid | 同映像／斷言／15 秒限制通過，真 SVG、錯誤 HTML 安全、原稿不變；550 ms 載入 | 原逾時未再現，間歇原因未確定 |
+| 真舊資料／還原 | 新 online／offline 快照與新卷；2,478 檔／618,373,630 bytes SHA-256 相同；live 25 表／272 rows／2,469 原檔，三 DB 完整 | 本機通過；非容量、多主機／網路磁碟或斷電驗收 |
+| Runtime／認證 | healthy、3.12.15、UID 1000、debug off、212 live source hashes；CSRF／Socket 邊界；密鑰／.env／Redis／舊 checkout 不變 | 本機通過；真 Google OAuth／免費翻譯成功未驗 |
+| 回退 | 前輪 CP950 失敗已真實自動回退；新 attempt 明確 UTF-8，同一自動回退路徑、舊 image／bind／所有卷與備份保留 | 成功切換後如有新編輯，後續回退須先備份當前新卷 |
+| 最終範圍 | **本機 GO，已升級；GCP／main merge／對外發布 NO-GO** | 停 Owner Gate；外部稽核、真專家／fresh holdout／科學品質仍開放 |
+
+最新[交付與重現指令](engineering/PY312_LOCAL_UPGRADE_DELIVERY_2026-10-26.md)、[機器索引](engineering/PY312_LOCAL_UPGRADE_EVIDENCE_2026-10-26.json)、[STATUS](engineering/PY312_LOCAL_FIRST_STATUS.md)。原失敗與歷史證據不覆寫。
