@@ -1,0 +1,132 @@
+{
+ "protocol": "STUDY_EVAL_PROTOCOL_V2_2026-10-26 (v1 gates kept for comparison)",
+ "dataset_sha256": "e4ef1759258e946b052dab5d2df739da59e48ca6f3a3be8ebafa83c789414c1d",
+ "gates": {
+  "Q1_format_ok_rate": [
+   ">=",
+   0.95
+  ],
+  "Q2_quote_text_match_rate": [
+   ">=",
+   0.9
+  ],
+  "Q3_fabricated_quote_rate": [
+   "<=",
+   0.05
+  ],
+  "Q4_items_with_unsupported_numbers_rate": [
+   "<=",
+   0.1
+  ],
+  "Q5_uncertainty_provided_rate": [
+   ">=",
+   0.9
+  ],
+  "Q6_numeric_condition_retention_rate": [
+   ">=",
+   0.8
+  ]
+ },
+ "gates_v2": {
+  "Q1_format_ok_rate": [
+   ">=",
+   0.95
+  ],
+  "Q2_quote_text_match_rate": [
+   ">=",
+   0.9
+  ],
+  "Q3_fabricated_quote_rate": [
+   "<=",
+   0.05
+  ],
+  "Q4_items_with_unsupported_numbers_rate": [
+   "<=",
+   0.1
+  ],
+  "Q5_uncertainty_provided_rate": [
+   ">=",
+   0.9
+  ],
+  "Q6_numeric_condition_retention_rate": [
+   ">=",
+   0.8
+  ],
+  "Q7_items_with_overclaim_rate": [
+   "<=",
+   0.1
+  ]
+ },
+ "mode": "NEGATIVE CONTROLS (simulation)",
+ "controls": {
+  "fabricated_quote": {
+   "failed_gates": [
+    "Q2_quote_text_match_rate",
+    "Q3_fabricated_quote_rate"
+   ],
+   "expected": [
+    "Q2_quote_text_match_rate",
+    "Q3_fabricated_quote_rate"
+   ],
+   "as_expected": true
+  },
+  "added_number": {
+   "failed_gates": [
+    "Q4_items_with_unsupported_numbers_rate"
+   ],
+   "expected": [
+    "Q4_items_with_unsupported_numbers_rate"
+   ],
+   "as_expected": true
+  },
+  "overclaim": {
+   "failed_gates": [
+    "Q7_items_with_overclaim_rate"
+   ],
+   "expected": [
+    "Q7_items_with_overclaim_rate"
+   ],
+   "as_expected": true
+  },
+  "no_uncertainty": {
+   "failed_gates": [
+    "Q5_uncertainty_provided_rate"
+   ],
+   "expected": [
+    "Q5_uncertainty_provided_rate"
+   ],
+   "as_expected": true
+  },
+  "dropped_conditions": {
+   "failed_gates": [
+    "Q6_numeric_condition_retention_rate"
+   ],
+   "expected": [
+    "Q6_numeric_condition_retention_rate"
+   ],
+   "as_expected": true
+  },
+  "format_break": {
+   "failed_gates": [
+    "Q1_format_ok_rate",
+    "Q5_uncertainty_provided_rate",
+    "Q6_numeric_condition_retention_rate"
+   ],
+   "expected": [
+    "Q1_format_ok_rate",
+    "Q5_uncertainty_provided_rate",
+    "Q6_numeric_condition_retention_rate"
+   ],
+   "as_expected": true
+  }
+ },
+ "provenance": {
+  "label": "negative-controls",
+  "code_sha": "994ee3359fc19d32bebf6efd2e78a71ea4a06781",
+  "worktree_dirty": true,
+  "dataset_sha256": "e4ef1759258e946b052dab5d2df739da59e48ca6f3a3be8ebafa83c789414c1d",
+  "scorer_sha256": "43d30b6a9eac1c27c945b702f0440e32fec2816a99c530c1b6621dbfbc75272b",
+  "anchors_sha256": "f4bc4177bdd75f6535dff3ddd16c0d3db4c0cbdb98c7f79171c64c6557aa2f20",
+  "started_at": "2026-10-26T13:11:41.358004+00:00"
+ }
+}
