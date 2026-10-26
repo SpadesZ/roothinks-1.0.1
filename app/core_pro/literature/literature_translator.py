@@ -51,6 +51,7 @@
 
 import logging
 import re
+import requests
 from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeout
 from enum import Enum
 from typing import Optional, Tuple
@@ -72,7 +73,7 @@ class TranslationContext(Enum):
 # 機器條件差異太大，不是程式猜得準的事，交給使用者按情況選。
 ENGINE_AUTO = "auto"      # 沿用原本的自動判斷（預設，行為不變）
 ENGINE_NLLB = "nllb"      # 本機 NLLB-200-600M，零 API 費用，但吃 CPU
-ENGINE_GOOGLE = "google"  # Google 翻譯（deep-translator），免金鑰、快
+ENGINE_GOOGLE = "google"  # Google 相容網頁端點，免金鑰；無服務保證
 ENGINE_LLM = "llm"        # 雲端 LLM（走 llm_bus 綁定的模型），品質最好、要錢
 
 VALID_ENGINES = {ENGINE_AUTO, ENGINE_NLLB, ENGINE_GOOGLE, ENGINE_LLM}
@@ -89,6 +90,58 @@ def normalize_engine(value) -> str:
     if v == "gemini":
         return ENGINE_LLM
     return v if v in VALID_ENGINES else ENGINE_AUTO
+
+
+class _QuickGoogleTranslator:
+    """僅送使用者已選擇的翻譯文字；固定 HTTPS 端點，不接受任意 URL。
+
+    ponytail: 小批次沿用逐句請求，無新增併發；若需 SLA，應改用正式付費 API。
+    不跟隨 redirect，也不回傳 requests 可能帶有原文的 exception URL。
+    """
+    _LANGS = {"zho_Hant": "zh-TW", "zho_Hans": "zh-CN", "eng_Latn": "en",
+              "jpn_Jpan": "ja", "kor_Hang": "ko", "fra_Latn": "fr",
+              "deu_Latn": "de", "spa_Latn": "es"}
+    _MAX_BYTES = 128 * 1024
+
+    def translate(self, text, *, target_lang="zho_Hant"):
+        target = self._LANGS.get(target_lang, target_lang)
+        if not isinstance(target, str) or not re.fullmatch(r"[a-z]{2,3}(?:-[A-Za-z]{2,4})?", target):
+            raise ValueError("Unsupported Google target language")
+        if not isinstance(text, str) or len(text) > 5000:
+            raise ValueError("Google translation input exceeds 5000 characters")
+        if not text.strip():
+            return ""
+        try:
+            with requests.get("https://translate.googleapis.com/translate_a/single",
+                    params={"client": "gtx", "sl": "en", "tl": target, "dt": "t", "q": text},
+                    timeout=(3, 10), allow_redirects=False, stream=True) as response:
+                if response.status_code != 200:
+                    raise ValueError("Google translation provider rejected request")
+                body = bytearray()
+                for chunk in response.iter_content(chunk_size=8192):
+                    body.extend(chunk)
+                    if len(body) > self._MAX_BYTES:
+                        raise ValueError("Google translation response exceeds limit")
+            import json
+            payload = json.loads(body)
+            segments = payload[0]
+            if not isinstance(segments, list) or not segments:
+                raise ValueError("Invalid Google translation response")
+            if any(not isinstance(s, list) or not s or not isinstance(s[0], str) or not s[0].strip() for s in segments):
+                raise ValueError("Invalid Google translation segment")
+            return "".join(s[0] for s in segments)
+        except requests.RequestException:
+            raise ValueError("Google translation network unavailable") from None
+        except (IndexError, KeyError, TypeError, UnicodeError):
+            raise ValueError("Invalid Google translation response") from None
+        except ValueError as exc:
+            # JSONDecodeError may contain a provider response; only expose a stable code.
+            if type(exc) is not ValueError:
+                raise ValueError("Invalid Google translation JSON") from None
+            raise
+
+    def translate_batch(self, texts, *, target_lang="zho_Hant"):
+        return [self.translate(text, target_lang=target_lang) for text in texts]
 
 
 class HybridTranslator:
@@ -144,9 +197,8 @@ class HybridTranslator:
 
         # 3. Quick translator (network-based, no API key)
         try:
-            from deep_translator import GoogleTranslator
-            self._quick_translator = GoogleTranslator(source='en', target='zh-TW')
-            logger.info("[HybridTranslator] Quick translator ready (deep-translator)")
+            self._quick_translator = _QuickGoogleTranslator()
+            logger.info("[HybridTranslator] Quick translator configured (network not yet checked)")
         except Exception as e:
             logger.warning(f"[HybridTranslator] Quick translator unavailable: {e}")
     
@@ -358,7 +410,7 @@ class HybridTranslator:
             return False, "quick translator unavailable"
         try:
             protected_text, protected_map = self._protect_nonlinguistic_segments(text)
-            out = self._quick_translator.translate(protected_text)
+            out = self._quick_translator.translate(protected_text, target_lang=target_lang)
             out = self._restore_nonlinguistic_segments(out, protected_map)
             if out and out.strip():
                 return True, out
@@ -502,7 +554,7 @@ class HybridTranslator:
                         ptxt, pmap = self._protect_nonlinguistic_segments(seg)
                         protected_batch.append(ptxt)
                         maps.append(pmap)
-                    outs = self._quick_translator.translate_batch(protected_batch)
+                    outs = self._quick_translator.translate_batch(protected_batch, target_lang=target_lang)
                     if isinstance(outs, list) and len(outs) == len(batch):
                         for out, pmap in zip(outs, maps):
                             restored = self._restore_nonlinguistic_segments(str(out), pmap)
@@ -532,7 +584,7 @@ class HybridTranslator:
                     ok, out = self._translate_quick_google(seg, target_lang)
                 # (3) REALTIME (calls translate() which may use Gemini or NLLB again)
                 if not ok:
-                    ok, out, _ = self.translate(seg, TranslationContext.REALTIME)
+                    ok, out, _ = self.translate(seg, TranslationContext.REALTIME, target_lang=target_lang)
                 # (4) Gemini per-seg retry — v1.2: Gemini has independent quota from quick-google
                 if not ok:
                     try:
@@ -583,7 +635,7 @@ class HybridTranslator:
                         ptxt, pmap = self._protect_nonlinguistic_segments(seg)
                         protected.append(ptxt)
                         maps.append(pmap)
-                    outs = self._quick_translator.translate_batch(protected)
+                    outs = self._quick_translator.translate_batch(protected, target_lang=target_lang)
                     if isinstance(outs, list) and len(outs) == len(batch):
                         for out, pmap in zip(outs, maps):
                             translated.append(

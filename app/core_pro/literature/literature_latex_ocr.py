@@ -22,6 +22,7 @@ import json
 import logging
 import os
 import re
+import shlex
 import subprocess
 import tempfile
 import time
@@ -457,21 +458,30 @@ class LatexOCREngine:
             return None
 
         try:
-            if "{image}" in cmd_template:
-                cmd = cmd_template.format(
+            # 先拆可信設定，再插入不可信資料。檔名/序號永遠只是一個 argv，
+            # 不得再經 shell 或 interpreter -c/-e 當成程式碼解讀。
+            tokens = shlex.split(cmd_template)
+            executable = tokens[0].replace("\\", "/").rsplit("/", 1)[-1].lower()
+            forbidden = {"sh", "bash", "dash", "zsh", "fish", "ksh", "cmd", "cmd.exe",
+                         "powershell", "powershell.exe", "pwsh", "pwsh.exe", "env", "busybox"}
+            if ("{" in tokens[0] or executable in forbidden or executable.endswith((".bat", ".cmd"))
+                    or any(t in {"|", "||", "&&", ";", ">", "<"}
+                           or t.lower().startswith(("-c", "-e", "--eval")) for t in tokens[1:])):
+                raise ValueError("UniMERNet requires a direct executable or script, without shell/code flags")
+            cmd = [token.format(
                     image=image_path,
                     seq_id=seq_id,
                     page=page_num,
                     bbox=json.dumps(bbox, ensure_ascii=True),
                     page_w=page_w,
                     page_h=page_h,
-                )
-            else:
-                cmd = f'{cmd_template} "{image_path}"'
+                ) for token in tokens]
+            if "{image}" not in cmd_template:
+                cmd.append(image_path)
 
             proc = subprocess.run(
                 cmd,
-                shell=True,
+                shell=False,
                 capture_output=True,
                 text=True,
                 timeout=self.unimernet_timeout_sec,

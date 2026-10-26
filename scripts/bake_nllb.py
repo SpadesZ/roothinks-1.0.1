@@ -32,13 +32,8 @@ def bake():
         for name,expected in manifest['files'].items():
             downloaded=Path(hf_hub_download(manifest['repository'],name,revision=manifest['revision'],
                 cache_dir='/tmp/public-hf-cache',token=False))
-            if 'sha256' in expected:
-                if digest(downloaded)!=expected['sha256'] or ('bytes' in expected and downloaded.stat().st_size!=expected['bytes']):
-                    raise ValueError('Public model file integrity mismatch: '+name)
-            else:
-                raw=downloaded.read_bytes()
-                if hashlib.sha1(b'blob '+str(len(raw)).encode()+b'\0'+raw).hexdigest()!=expected['git_blob']:
-                    raise ValueError('Public metadata blob mismatch: '+name)
+            if digest(downloaded)!=expected['sha256'] or ('bytes' in expected and downloaded.stat().st_size!=expected['bytes']):
+                raise ValueError('Public model file integrity mismatch: '+name)
             shutil.copyfile(downloaded,stage/name);actual[name]=digest(downloaded)
         tokenizer=AutoTokenizer.from_pretrained(stage,local_files_only=True,trust_remote_code=False)
         model,info=AutoModelForSeq2SeqLM.from_pretrained(stage,local_files_only=True,

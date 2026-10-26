@@ -34,7 +34,7 @@ def _mk_translator(monkeypatch):
 def test_failed_segment_gets_untranslated_mark(monkeypatch):
     tr = _mk_translator(monkeypatch)
     monkeypatch.setattr(tr, "_translate_quick_google", lambda seg, lang: (False, "err"))
-    monkeypatch.setattr(tr, "translate", lambda seg, ctx: (False, "", "err"))
+    monkeypatch.setattr(tr, "translate", lambda seg, ctx, **kwargs: (False, "", "err"))
     monkeypatch.setattr(tr, "_translate_gemini", lambda seg, lang: (False, "err"))
 
     ok, merged = tr._translate_segments_small_batch(["This failed segment."], "zho_Hant")
@@ -47,7 +47,7 @@ def test_gemini_per_segment_retry_used(monkeypatch):
     tr = _mk_translator(monkeypatch)
     calls = {"gemini": 0}
     monkeypatch.setattr(tr, "_translate_quick_google", lambda seg, lang: (False, "rate limited"))
-    monkeypatch.setattr(tr, "translate", lambda seg, ctx: (False, "", "nllb unavailable"))
+    monkeypatch.setattr(tr, "translate", lambda seg, ctx, **kwargs: (False, "", "nllb unavailable"))
 
     def fake_gemini(seg, lang):
         calls["gemini"] += 1

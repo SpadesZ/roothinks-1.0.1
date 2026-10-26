@@ -60,11 +60,11 @@ class _FakeGoogle:
     def __init__(self):
         self.calls = 0
 
-    def translate(self, text):
+    def translate(self, text, *, target_lang="zho_Hant"):
         self.calls += 1
         return "谷歌結果"
 
-    def translate_batch(self, texts):
+    def translate_batch(self, texts, *, target_lang="zho_Hant"):
         self.calls += 1
         return ["谷歌結果" for _ in texts]
 
