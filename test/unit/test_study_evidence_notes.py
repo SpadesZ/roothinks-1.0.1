@@ -229,7 +229,7 @@ def test_notes_save_and_export_without_professor_or_verified_evidence(env):
     export = client.get(f"/api/study/evidence_notes/{PID}/export")
     assert export.status_code == 200 and export.mimetype == "text/markdown"
     text = export.get_data(as_text=True)
-    assert "**我的假說**：我的推論，尚無證據" in text and "無已驗證證據" in text and "純手寫" in text
+    assert "**我的假說**：我的推論，尚無證據（無證據）" in text and "無已驗證證據" in text and "純手寫" in text
 
 
 def test_team_comments_and_review_requests_use_existing_study_acl(env):

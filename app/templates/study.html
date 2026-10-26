@@ -115,7 +115,7 @@ Study 的 Matrix/Fulltext 內嵌切換為階段性方案，後續請由人類團
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <!-- 改 study.css 一定要一起 bump 這個版號，否則瀏覽器吃舊樣式表，
          看起來就像「CSS 改了但沒生效」。 -->
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/study.css') }}?v=1.2">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/study.css') }}?v=1.3">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" crossorigin="anonymous">
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" crossorigin="anonymous"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" crossorigin="anonymous"></script>
@@ -313,8 +313,8 @@ Study 的 Matrix/Fulltext 內嵌切換為階段性方案，後續請由人類團
             
             <div id="aux-chat-pane" class="d-flex flex-column border-bottom">
                 <div class="p-2 bg-light border-bottom fw-bold text-primary d-flex justify-content-between align-items-center">
-                    <span><i class="bi bi-robot me-2"></i>AI 家教 (Task 7)</span>
-                    <span class="badge bg-secondary" id="chat-context-badge" title="Current Context">Context: None</span>
+                    <span class="text-nowrap"><i class="bi bi-robot me-2"></i>AI 家教</span>
+                    <span class="badge bg-secondary text-truncate ms-2" id="chat-context-badge" title="Current Context" style="max-width: 70%;">Context: None</span>
                 </div>
                 
                 <div id="chat-history" class="flex-grow-1 p-3 overflow-auto bg-white">
@@ -335,10 +335,19 @@ Study 的 Matrix/Fulltext 內嵌切換為階段性方案，後續請由人類團
             </div>
 
             <div id="aux-notes-pane" class="d-flex flex-column bg-light">
-                <div class="p-2 border-bottom fw-bold text-success d-flex justify-content-between">
-                    <span><i class="bi bi-journal-text me-2"></i>研究筆記</span>
+                <div class="p-2 border-bottom fw-bold text-success d-flex justify-content-between align-items-center">
+                    <div class="btn-group btn-group-sm" role="group" aria-label="筆記類型">
+                        <button type="button" class="btn btn-outline-success active" data-notes-tab="free" aria-pressed="true"><i class="bi bi-journal-text me-1"></i>研究筆記</button>
+                        <button type="button" class="btn btn-outline-success" data-notes-tab="evidence" aria-pressed="false"><i class="bi bi-link-45deg me-1"></i>證據筆記 <span class="badge bg-success" id="evidence-notes-count">0</span></button>
+                    </div>
                     <button class="btn btn-xs btn-link text-success p-0" onclick="window.studyCore.saveNotes()">儲存</button>
                 </div>
+                <div id="evidence-notes-pane" class="flex-grow-1 overflow-auto p-2" hidden>
+                    <div id="evidence-notes-status" class="small text-muted" role="status" aria-live="polite">讀取中…</div>
+                    <div id="evidence-note-draft" hidden></div>
+                    <div id="evidence-notes-list"></div>
+                </div>
+                <div id="free-notes-pane" class="d-flex flex-column flex-grow-1">
                 <div class="px-2 small">
                     <span id="study-notes-status" role="status" aria-live="polite">讀取中…</span>
                     <button class="btn btn-sm btn-link" onclick="window.studyCore.downloadNotesDraft()">下載本機草稿</button>
@@ -356,6 +365,7 @@ Study 的 Matrix/Fulltext 內嵌切換為階段性方案，後續請由人類團
                 <textarea data-owner="{{ current_user.id if current_user.is_authenticated else 'local' }}" id="study-notes" class="form-control border-0 flex-grow-1 p-3"
                           style="resize: none; background: #fffdf0; font-family: monospace;" 
                           placeholder="在此記錄您的發現與 Insight... (自動儲存)"></textarea>
+                </div>
             </div>
         </div>
 
@@ -366,9 +376,10 @@ Study 的 Matrix/Fulltext 內嵌切換為階段性方案，後續請由人類團
 <script src="https://cdnjs.cloudflare.com/ajax/libs/split.js/1.6.0/split.min.js" integrity="sha384-0blL3GqHy6+9fw0cyY2Aoiwg4onHAtslAs4OkqZY7UQBrR65/K4gI+hxLdWDrjpz" crossorigin="anonymous"></script>
 
 <script src="{{ url_for('static', filename='js/study_split_prefs.js') }}?v=1.0"></script>
-<script src="{{ url_for('static', filename='js/study_view.js') }}?v=3.9"></script>
+<script src="{{ url_for('static', filename='js/study_view.js') }}?v=4.0"></script>
 <script src="{{ url_for('static', filename='js/study_core.js') }}?v=2.8"></script>
-<script src="{{ url_for('static', filename='js/study_chat.js') }}?v=1.6"></script>
+<script src="{{ url_for('static', filename='js/study_chat.js') }}?v=1.7"></script>
+<script src="{{ url_for('static', filename='js/study_evidence.js') }}?v=1.0"></script>
 
 <script>
     // 全局錯誤捕捉
@@ -431,6 +442,12 @@ Study 的 Matrix/Fulltext 內嵌切換為階段性方案，後續請由人類團
             console.log('[App Init] 3/3 - 初始化 StudyChat...');
             window.studyChat = new StudyChat();
             console.log('[App Init] ✓ StudyChat 初始化完成');
+            // 證據筆記失敗不影響其他功能；自由筆記、Tutor、矩陣照常可用。
+            try {
+                window.studyEvidence = new StudyEvidence(window.studyCore.pid);
+            } catch (evidenceError) {
+                console.error('[App Init] StudyEvidence 初始化失敗', evidenceError);
+            }
             
             // 初始化 Split.js
             console.log('[App Init] 初始化 Split.js...');

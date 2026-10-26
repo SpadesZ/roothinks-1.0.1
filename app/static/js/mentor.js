@@ -226,6 +226,11 @@ class MentorDashboard {
                         <div class="form-text">只接受 PDF，單檔上限 20 MB。</div>
                     </div>
                     <div id="reviewItems"><div class="text-muted small">載入回饋與資源…</div></div>
+                    <div class="border rounded p-3 mt-3" id="studyReviewBox">
+                        <h6 class="fw-bold mb-1">Study 審閱請求</h6>
+                        <div class="form-text mb-2">研究者明確請求審閱的證據筆記。留言只追加，不會改動筆記內容或類別。</div>
+                        <div id="studyReviewList" class="small text-muted">載入中…</div>
+                    </div>
                 </div>
             </div>`;
         document.getElementById('reviewProjectSelect').addEventListener('change', event => {
@@ -267,6 +272,7 @@ class MentorDashboard {
             document.getElementById('reviewDecisionPreview').textContent='';
             this._renderManuscript(data.manuscript);
             this._renderItems(data.items || [], data.legacy_comments || []);
+            this.loadStudyReviews(pid, menteeId, requestSeq);
         } catch (err) {
             if (
                 requestSeq !== this.reviewRequestSeq
@@ -275,6 +281,71 @@ class MentorDashboard {
             ) return;
             this.showError(err.message);
         }
+    }
+
+    async loadStudyReviews(pid, menteeId, requestSeq) {
+        const box = document.getElementById('studyReviewList');
+        if (!box) return;
+        try {
+            const data = await this._fetchJson(`/api/mentor/mentees/${menteeId}/study-reviews/${encodeURIComponent(pid)}`);
+            if (requestSeq !== this.reviewRequestSeq || this.currentId !== menteeId || this.currentPid !== pid) return;
+            this._renderStudyReviews(pid, menteeId, data.notes || []);
+        } catch (err) {
+            if (requestSeq !== this.reviewRequestSeq) return;
+            box.textContent = `Study 審閱請求讀取失敗：${err.message}`;
+        }
+    }
+
+    _renderStudyReviews(pid, menteeId, notes) {
+        const box = document.getElementById('studyReviewList');
+        box.replaceChildren();
+        if (!notes.length) {
+            box.textContent = '目前沒有 Study 審閱請求。';
+            return;
+        }
+        const labels = {source_fact: '原文事實', ai_interpretation: 'AI 解讀', human_hypothesis: '研究者假說'};
+        const make = (tag, cls, text) => {
+            const el = document.createElement(tag);
+            if (cls) el.className = cls;
+            if (text !== undefined) el.textContent = String(text);
+            return el;
+        };
+        notes.forEach(note => {
+            const card = make('div', 'border rounded p-2 mb-2 bg-white text-dark');
+            card.setAttribute('data-study-review-note', note.note_id);
+            card.appendChild(make('div', 'fw-bold', note.title || '證據筆記'));
+            if (note.review && note.review.message) card.appendChild(make('div', 'text-muted', `請求說明：${note.review.message}`));
+            (note.anchors || []).forEach((anchor, i) => {
+                card.appendChild(make('div', 'text-success fst-italic',
+                    `證據 ${i + 1}（${anchor.paper_id || ''} p.${anchor.page || '?'}，${anchor.side === 'translation' ? '譯文' : '原文'}）：“${anchor.quote}”`));
+            });
+            (note.statements || []).forEach(st => card.appendChild(make('div', '',
+                `【${labels[st.kind] || st.kind}】${st.text}${st.kind !== 'source_fact' && !(st.evidence || []).length ? '（無證據）' : ''}`)));
+            (note.comments || []).forEach(c => card.appendChild(make('div', 'border-start ps-2 mt-1 text-muted',
+                `${(c.author && c.author.username) || '未知'}（${c.author_role === 'mentor' ? '指導教授' : '成員'}）：${c.body}`)));
+            const row = make('div', 'input-group input-group-sm mt-1');
+            const input = make('input', 'form-control');
+            input.placeholder = '對這則筆記留言';
+            input.setAttribute('aria-label', '對 Study 證據筆記留言');
+            const btn = make('button', 'btn btn-outline-primary', '留言');
+            btn.type = 'button';
+            btn.setAttribute('data-study-review-comment', note.note_id);
+            btn.addEventListener('click', async () => {
+                const body = input.value.trim();
+                if (!body) return;
+                try {
+                    await this._fetchJson(`/api/mentor/mentees/${menteeId}/study-reviews/${encodeURIComponent(pid)}/${encodeURIComponent(note.note_id)}/comments`, {
+                        method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({body}),
+                    });
+                    this.loadStudyReviews(pid, menteeId, this.reviewRequestSeq);
+                } catch (err) {
+                    this.showError(err.message);
+                }
+            });
+            row.append(input, btn);
+            card.appendChild(row);
+            box.appendChild(card);
+        });
     }
 
     _renderManuscript(manuscript) {

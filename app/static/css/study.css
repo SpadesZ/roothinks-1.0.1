@@ -260,3 +260,69 @@
     word-break: break-word;
     overflow-wrap: anywhere;
 }
+
+/* ---- Study 共研：選字動作列、證據定位、結構化回答、證據筆記 ---- */
+.study-selection-toolbar {
+    position: fixed;
+    z-index: 1080;
+    display: none;
+    gap: 4px;
+    align-items: center;
+    padding: 4px 6px;
+    background: #fff;
+    border: 1px solid #cbd5e0;
+    border-radius: 8px;
+}
+.study-evidence-flash {
+    animation: study-evidence-flash 2.6s ease-out;
+}
+@keyframes study-evidence-flash {
+    0% { box-shadow: inset 0 0 0 3px #f59e0b; background-color: #fffbeb; }
+    100% { box-shadow: inset 0 0 0 0 transparent; }
+}
+::highlight(study-evidence) {
+    background-color: #fde68a;
+    color: #1a202c;
+}
+[data-evidence-current] {
+    outline: 2px solid #f59e0b;
+    outline-offset: 2px;
+}
+.study-structured-card {
+    max-width: 95%;
+    font-size: 0.9rem;
+}
+.study-evidence-chip {
+    font-size: 0.85rem;
+    line-height: 1.4;
+    text-decoration: none;
+    white-space: normal;
+}
+.study-evidence-chip .study-quote {
+    color: #14532d;
+    font-style: italic;
+}
+.study-kind-label {
+    display: inline-block;
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 0 6px;
+    border-radius: 4px;
+}
+.study-statement {
+    border-left: 3px solid #cbd5e0;
+    padding-left: 6px;
+}
+.study-kind-source { border-left-color: #16a34a; }
+.study-kind-ai { border-left-color: #7c3aed; }
+.study-kind-human { border-left-color: #2563eb; }
+.study-kind-source .study-kind-label, .study-kind-label.study-kind-source { background: #dcfce7; color: #14532d; }
+.study-kind-ai .study-kind-label, .study-kind-label.study-kind-ai { background: #ede9fe; color: #4c1d95; }
+.study-kind-human .study-kind-label, .study-kind-label.study-kind-human { background: #dbeafe; color: #1e3a8a; }
+.study-rejected-quote {
+    text-decoration: line-through;
+    color: #92400e;
+}
+#evidence-notes-pane[hidden], #free-notes-pane[hidden] {
+    display: none !important;
+}

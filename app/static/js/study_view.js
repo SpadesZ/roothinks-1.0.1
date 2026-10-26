@@ -97,6 +97,11 @@ class StudyView {
         return words.length >= 16 && mathSignals < 8;
     }
 
+    _anchorAttrs(row) {
+        if (!row || !row.ref) return '';
+        return `data-ref="${this._escapeHtml(row.ref)}" data-page="${this._escapeHtml(String(row.page || ''))}" data-seq-id="${this._escapeHtml(row.seqId || '')}"`;
+    }
+
     _renderPageMarker(pageNum) {
         const pageLabel = Number.isFinite(Number(pageNum)) && Number(pageNum) > 0 ? Number(pageNum) : '?';
         return `
@@ -283,7 +288,7 @@ class StudyView {
         // Accumulated state for the current open section card.
         let sectionOpen = false;
         let sectionTitleHtml = '';   // full-width heading HTML for this section
-        let sectionRows = [];        // [{origHtml, transHtml}]
+        let sectionRows = [];        // [{origHtml, transHtml, ref, page, seqId}] 或 {pageMarker}
         let lastRowIdx = -1;         // index into sectionRows of the last body row
 
         // Flush an open section card to html.
@@ -297,16 +302,24 @@ class StudyView {
             if (sectionTitleHtml) {
                 html += `<div class="section-title-header px-4 pt-3 pb-2" style="border-bottom:1px solid #e2e8f0;">` + sectionTitleHtml + `</div>`;
             }
+            let firstBody = true;
             sectionRows.forEach((row, idx) => {
-                const isFirst = idx === 0;
+                if (row.pageMarker) {
+                    // 頁界落在段落卡片中間：標記放在列與列之間，才不會出現在上一頁內容之前。
+                    html += `<div class="border-top">${this._renderPageMarker(row.pageMarker)}</div>`;
+                    return;
+                }
+                const isFirst = firstBody;
+                firstBody = false;
                 const borderTop = idx > 0 ? 'border-top:1px solid #edf2f7;' : '';
-                html += `<div class="row g-0" style="min-height:${compact ? 100 : 120}px;${borderTop}">`;
+                const anchorAttrs = this._anchorAttrs(row);
+                html += `<div class="row g-0 study-anchor-row" ${anchorAttrs} style="min-height:${compact ? 100 : 120}px;${borderTop}">`;
                 // Left: original
                 html += `<div class="col-md-6" style="border-right:2px solid #e2e8f0;padding:${compact ? '0.75rem 1rem' : '1rem 1.5rem'};background:#fafbfc;">`;
                 if (isFirst) {
                     html += `<div class="section-header mb-2 small fw-bold text-uppercase text-secondary">Original Text</div>`;
                 }
-                html += `<div class="original-content selectable-text">${row.origHtml}</div>`;
+                html += `<div class="original-content selectable-text" data-side="original" ${anchorAttrs}>${row.origHtml}</div>`;
                 html += `</div>`;
                 // Right: translation
                 html += `<div class="col-md-6" style="padding:${compact ? '0.75rem 1rem' : '1rem 1.5rem'};background:#ffffff;">`;
@@ -314,7 +327,7 @@ class StudyView {
                     html += `<div class="section-header mb-2 small fw-bold text-uppercase" style="color:#667eea;">中文翻譯</div>`;
                 }
                 if (row.transHtml) {
-                    html += `<div class="translation-content selectable-text" style="font-size:${compact ? '0.95rem' : '1.02rem'};line-height:1.8;color:#1a202c;text-align:justify;">${row.transHtml}</div>`;
+                    html += `<div class="translation-content selectable-text" data-side="translation" ${anchorAttrs} style="font-size:${compact ? '0.95rem' : '1.02rem'};line-height:1.8;color:#1a202c;text-align:justify;">${row.transHtml}</div>`;
                 } else {
                     html += `<div class="text-muted small">${this._escapeHtml(tipDesc)}</div>`;
                 }
@@ -343,15 +356,25 @@ class StudyView {
             const pageNum = Number.isFinite(rawPage) && rawPage > 0 ? rawPage : (pageIdx + 1);
 
             if (pageNum !== lastPage) {
-                // Page break: flush section, emit marker, reopen
-                // We do NOT flush — page breaks happen mid-section in real papers.
-                // Just emit the page marker inline before the first block of the page.
-                html += this._renderPageMarker(pageNum);
+                // 頁界不關閉段落卡片（真實論文常在段落中換頁）。卡片已開時把標記放進列序；
+                // 舊版直接寫進 html，卡片稍後才輸出，結果「Page 2」出現在第 1 頁內容之前。
+                if (sectionOpen && (sectionRows.length || sectionTitleHtml)) {
+                    sectionRows.push({ pageMarker: pageNum });
+                    lastRowIdx = -1;
+                } else {
+                    html += this._renderPageMarker(pageNum);
+                }
                 lastPage = pageNum;
             }
 
             const pageBlocks = Array.isArray(pageData.blocks) ? pageData.blocks : [];
-            pageBlocks.forEach((rawBlock) => {
+            pageBlocks.forEach((rawBlock, blockIdx) => {
+                // 與 loadFulltext 的 blockRefMap 及伺服器 study_anchors.iter_blocks 同一編號。
+                const anchor = {
+                    ref: `p${pageNum}-b${blockIdx + 1}`,
+                    page: pageNum,
+                    seqId: (rawBlock && typeof rawBlock === 'object') ? String(rawBlock.seq_id || '') : '',
+                };
                 const safeBlock = (rawBlock && typeof rawBlock === 'object')
                     ? rawBlock
                     : { type: 'body', content: String(rawBlock || '') };
@@ -377,7 +400,7 @@ class StudyView {
                     flushSection();
                     sectionOpen = true;
                     sectionTitleHtml = text
-                        ? `<h4 class="mb-0 selectable-text" style="font-weight:600;font-size:1.25rem;color:#2d3748;">${this._escapeHtml(text)}</h4>`
+                        ? `<h4 class="mb-0 selectable-text" data-side="original" ${this._anchorAttrs(anchor)} style="font-weight:600;font-size:1.25rem;color:#2d3748;">${this._escapeHtml(text)}</h4>`
                         : '';
                     sectionRows = [];
                     lastRowIdx = -1;
@@ -411,7 +434,7 @@ class StudyView {
                     if (lastRowIdx >= 0 && sectionRows[lastRowIdx]) {
                         sectionRows[lastRowIdx].origHtml += dimmed;
                     } else {
-                        sectionRows.push({ origHtml: dimmed, transHtml: '' });
+                        sectionRows.push({ origHtml: dimmed, transHtml: '', ...anchor });
                         lastRowIdx = sectionRows.length - 1;
                     }
                     return;
@@ -437,7 +460,7 @@ class StudyView {
                 });
                 const transHtml = translation ? this._escapeHtml(translation) : '';
 
-                sectionRows.push({ origHtml, transHtml });
+                sectionRows.push({ origHtml, transHtml, ...anchor });
                 lastRowIdx = sectionRows.length - 1;
             });
         });
@@ -1627,6 +1650,11 @@ class StudyView {
                     placeholder.style.display = 'none';
                     content.style.display = 'block';
                     this.initTextSelection();
+                    if (this._pendingReveal) {
+                        const pending = this._pendingReveal;
+                        this._pendingReveal = null;
+                        setTimeout(() => this.revealAnchor(pending), 0);
+                    }
                     // 渲染 KaTeX 公式
                     content.querySelectorAll('.katex-eq[data-latex]').forEach(el => {
                         try {
@@ -1716,31 +1744,226 @@ class StudyView {
             const range = selection.getRangeAt(0);
             if (!content.contains(range.commonAncestorContainer)) return;
             const text = selection.toString().trim();
-            
-            if (text.length > 3) {
-                // 將選取內容設為 Chat Context
-                if (window.studyChat) {
-                    window.studyChat.setContext({
-                        type: 'text_selection',
-                        pid: this.currentFulltextPaperId || '',
-                        focus_pids: this.currentFulltextPaperId ? [this.currentFulltextPaperId] : [],
-                        content: text.substring(0, 200), // 限制長度
-                        source: 'fulltext',
-                        dimension: 'Selected Text'
-                    });
-                    
-                    // 更新 Context Badge
-                    if (this.contextBadge) {
-                        this.contextBadge.textContent = `Context: ${this.currentFulltextPaperId || '-'} / Selected Text (${text.length})`;
-                        this.contextBadge.className = 'badge bg-success';
-                    }
+            if (text.length <= 3) return;
+
+            // 段落提示＋選取文字交給伺服器驗證；前端不宣告任何驗證狀態。
+            const picked = this._buildSelection(range, text);
+            this.pendingSelection = picked;
+            if (window.studyChat) {
+                window.studyChat.setContext({
+                    type: 'text_selection',
+                    pid: this.currentFulltextPaperId || '',
+                    focus_pids: this.currentFulltextPaperId ? [this.currentFulltextPaperId] : [],
+                    content: text.substring(0, 1400), // 與伺服器上限一致；舊版只送 200 字
+                    selection: picked,
+                    source: 'fulltext',
+                    dimension: 'Selected Text'
+                });
+                if (this.contextBadge) {
+                    const where = picked.page ? ` · p.${picked.page}` : '';
+                    this.contextBadge.textContent = `Context: ${this.currentFulltextPaperId || '-'} / Selected Text (${text.length})${where}`;
+                    this.contextBadge.className = 'badge bg-success';
                 }
             }
+            this._showSelectionToolbar(range, picked);
         };
 
         this._selectionTarget = content;
         content.addEventListener('mouseup', this._selectionHandler);
         content.addEventListener('keyup', this._selectionHandler);
+        if (!this._selectionToolbarWired) {
+            this._selectionToolbarWired = true;
+            document.addEventListener('selectionchange', () => {
+                const sel = window.getSelection();
+                if (!sel || sel.isCollapsed) this._hideSelectionToolbar();
+            });
+            document.addEventListener('keydown', (e) => { if (e.key === 'Escape') this._hideSelectionToolbar(); });
+            const scroller = document.getElementById('inline-fulltext-panel');
+            // 捲動時跟著選取移動；選取離開畫面才收起（舊作法一捲就關，選完自動捲動也會被關掉）。
+            scroller?.addEventListener('scroll', () => this._followSelection(), true);
+        }
+    }
+
+    _anchorHost(node) {
+        const el = node && (node.nodeType === 1 ? node : node.parentElement);
+        return el ? el.closest('#fulltext-content [data-side][data-ref]') : null;
+    }
+
+    _buildSelection(range, text) {
+        const startHost = this._anchorHost(range.startContainer);
+        const endHost = this._anchorHost(range.endContainer);
+        let quote = text;
+        let crossBlock = false;
+        if (startHost && endHost !== startHost) {
+            // 跨段落時只取第一段內的部分：錨點必須對應單一段落。
+            const clipped = range.cloneRange();
+            clipped.setEnd(startHost, startHost.childNodes.length);
+            quote = clipped.toString().trim() || text;
+            crossBlock = true;
+        }
+        const startEl = range.startContainer.nodeType === 1 ? range.startContainer : range.startContainer.parentElement;
+        const side = startHost ? startHost.dataset.side : (startEl?.closest('.translation-content') ? 'translation' : 'original');
+        let prefix = '';
+        let suffix = '';
+        if (startHost) {
+            const before = document.createRange();
+            before.selectNodeContents(startHost);
+            before.setEnd(range.startContainer, range.startOffset);
+            prefix = before.toString().slice(-32);
+            if (!crossBlock) {
+                const after = document.createRange();
+                after.selectNodeContents(startHost);
+                after.setStart(range.endContainer, range.endOffset);
+                suffix = after.toString().slice(0, 32);
+            }
+        }
+        const payload = this.currentFulltextPayload || {};
+        return {
+            quote: quote.slice(0, 2000),
+            truncated: quote.length > 2000,
+            side,
+            ref: startHost?.dataset.ref || '',
+            seq_id: startHost?.dataset.seqId || '',
+            page: Number(startHost?.dataset.page || 0) || null,
+            prefix,
+            suffix,
+            source: payload.fulltext_source || '',
+            source_sha256: payload.source_sha256 || '',
+            paper_id: this.currentFulltextPaperId || '',
+            crossBlock,
+        };
+    }
+
+    _showSelectionToolbar(range, picked) {
+        let bar = document.getElementById('study-selection-toolbar');
+        if (!bar) {
+            bar = document.createElement('div');
+            bar.id = 'study-selection-toolbar';
+            bar.className = 'study-selection-toolbar shadow';
+            bar.setAttribute('role', 'toolbar');
+            bar.setAttribute('aria-label', '選取文字的動作');
+            bar.innerHTML = `
+                <button type="button" class="btn btn-sm btn-primary" data-study-selection-action="explain" title="AI 解釋這段的意思、範圍與條件"><i class="bi bi-lightbulb me-1"></i>解釋</button>
+                <button type="button" class="btn btn-sm btn-outline-danger" data-study-selection-action="critique" title="AI 指出假設、限制與替代解釋"><i class="bi bi-search me-1"></i>批判</button>
+                <button type="button" class="btn btn-sm btn-outline-secondary" data-study-selection-action="ask" title="帶著這段自己輸入問題"><i class="bi bi-chat-dots me-1"></i>自己提問</button>
+                <span class="small text-muted ms-1" data-selection-note></span>`;
+            bar.addEventListener('mousedown', (e) => e.preventDefault()); // 點按鈕時保留選取
+            bar.addEventListener('click', (e) => {
+                const btn = e.target.closest('[data-study-selection-action]');
+                if (!btn || !this.pendingSelection) return;
+                const action = btn.dataset.studySelectionAction;
+                this._hideSelectionToolbar();
+                if (action === 'ask') {
+                    window.studyChat?.inputEl?.focus();
+                    return;
+                }
+                window.studyChat?.askAboutSelection(action, this.pendingSelection);
+            });
+            document.body.appendChild(bar);
+        }
+        const note = bar.querySelector('[data-selection-note]');
+        note.textContent = picked.crossBlock ? '跨段落：只以第一段為依據'
+            : picked.side === 'translation' ? '譯文：來源事實會改用整段原文'
+            : picked.ref ? '' : '此版面沒有段落位置，伺服器會全文搜尋';
+        bar.style.display = 'flex';
+        const rect = range.getBoundingClientRect();
+        const top = rect.top - bar.offsetHeight - 8 > 8 ? rect.top - bar.offsetHeight - 8 : rect.bottom + 8;
+        bar.style.top = `${Math.min(window.innerHeight - bar.offsetHeight - 8, top)}px`;
+        bar.style.left = `${Math.min(window.innerWidth - bar.offsetWidth - 8, Math.max(8, rect.left))}px`;
+    }
+
+    _followSelection() {
+        const bar = document.getElementById('study-selection-toolbar');
+        if (!bar || bar.style.display === 'none') return;
+        const sel = window.getSelection();
+        if (!sel || sel.isCollapsed || sel.rangeCount < 1) {
+            this._hideSelectionToolbar();
+            return;
+        }
+        const range = sel.getRangeAt(0);
+        const rect = range.getBoundingClientRect();
+        if (rect.bottom < 0 || rect.top > window.innerHeight) {
+            this._hideSelectionToolbar();
+            return;
+        }
+        this._showSelectionToolbar(range, this.pendingSelection || {});
+    }
+
+    _hideSelectionToolbar() {
+        const bar = document.getElementById('study-selection-toolbar');
+        if (bar) bar.style.display = 'none';
+    }
+
+    /**
+     * 點證據回到原文：換論文或換版面時先載入 Block 對照版，載入完成後再定位。
+     * 回傳 false 代表目前原文找不到（可能已重跑），呼叫端不可假裝定位成功。
+     */
+    revealAnchor(anchor) {
+        if (!anchor) return false;
+        const target = (anchor.current && anchor.current.ref) ? { ...anchor, ref: anchor.current.ref } : anchor;
+        const paperId = String(target.paper_id || '');
+        const needsLoad = (paperId && paperId !== this.currentFulltextPaperId)
+            || this.getSelectedContentMode() !== 'fulltext_block';
+        if (needsLoad) {
+            this._pendingReveal = target;
+            if (this.contentModeSelect) this.contentModeSelect.value = 'fulltext_block';
+            this.loadFulltext(window.studyCore?.pid, paperId || this.currentFulltextPaperId, { silent: true });
+            return true;
+        }
+        this.setDisplayMode('single');
+        const content = document.getElementById('fulltext-content');
+        const side = target.side === 'translation' ? 'translation' : 'original';
+        const host = target.ref && content
+            ? content.querySelector(`[data-side="${side}"][data-ref="${CSS.escape(target.ref)}"]`)
+            : null;
+        if (!host) {
+            window.studyCore?.showToast('目前原文找不到這段（原文可能已重新解析）', 'warning');
+            return false;
+        }
+        const row = host.closest('.study-anchor-row') || host;
+        row.scrollIntoView({ block: 'center', behavior: 'smooth' });
+        row.classList.remove('study-evidence-flash');
+        void row.offsetWidth;
+        row.classList.add('study-evidence-flash');
+        const range = this._rangeForQuote(host, target.quote);
+        if (range && window.CSS && CSS.highlights && window.Highlight) {
+            CSS.highlights.set('study-evidence', new Highlight(range));
+        }
+        content.querySelectorAll('[data-evidence-current]').forEach(el => el.removeAttribute('data-evidence-current'));
+        host.setAttribute('data-evidence-current', range ? 'quote' : 'block');
+        return true;
+    }
+
+    _rangeForQuote(host, quote) {
+        const wanted = String(quote || '').replace(/\s+/g, ' ').trim();
+        if (!wanted) return null;
+        const walker = document.createTreeWalker(host, NodeFilter.SHOW_TEXT);
+        const marks = [];
+        let flat = '';
+        let lastSpace = true;
+        let node;
+        while ((node = walker.nextNode())) {
+            const t = node.textContent;
+            for (let i = 0; i < t.length; i++) {
+                if (/\s/.test(t[i])) {
+                    if (!lastSpace) { flat += ' '; marks.push([node, i]); lastSpace = true; }
+                    continue;
+                }
+                flat += t[i];
+                marks.push([node, i]);
+                lastSpace = false;
+            }
+            // 段落 <p> 之間在 DOM 沒有空白，比對時當成一個空白。
+            if (!lastSpace) { flat += ' '; marks.push([node, t.length]); lastSpace = true; }
+        }
+        const at = flat.indexOf(wanted);
+        if (at < 0) return null;
+        const [startNode, startOffset] = marks[at];
+        const [endNode, endOffset] = marks[at + wanted.length - 1];
+        const range = document.createRange();
+        range.setStart(startNode, startOffset);
+        range.setEnd(endNode, Math.min(endOffset + 1, endNode.textContent.length));
+        return range;
     }
 
     toggleHighlight() {

@@ -270,7 +270,7 @@ def verify_structured(raw, window, selection_anchor, meta):
     for item in (parsed.get("points") if isinstance(parsed.get("points"), list) else [])[:8]:
         if not isinstance(item, dict) or not str(item.get("text") or "").strip():
             continue
-        evidence = []
+        evidence, rejected_here = [], 0
         for ev in (item.get("evidence") if isinstance(item.get("evidence"), list) else [])[:4]:
             if not isinstance(ev, dict):
                 continue
@@ -279,11 +279,13 @@ def verify_structured(raw, window, selection_anchor, meta):
                 continue
             anchor = _verify_quote(window, ref, quote, meta)
             if anchor is None:
+                rejected_here += 1
                 rejected.append({"ref": ref, "quote": quote, "reason": "原文中找不到這段文字"})
             else:
                 evidence.append(anchor)
+        # rejected_evidence>0 且沒有證據：模型為這個論點給的引文全是假的，前端預設不放進筆記草稿。
         points.append({"text": str(item["text"]).strip()[:1000], "evidence": evidence,
-                       "support": "source_quoted" if evidence else "ai_inference"})
+                       "support": "source_quoted" if evidence else "ai_inference", "rejected_evidence": rejected_here})
     raw_unc = parsed.get("uncertainty") if isinstance(parsed.get("uncertainty"), dict) else {}
     level = str(raw_unc.get("level") or "").strip().lower()
     uncertainty = {"level": level if level in _LEVELS else "unknown", "reasons": _strings(raw_unc.get("reasons"), 5, 200),

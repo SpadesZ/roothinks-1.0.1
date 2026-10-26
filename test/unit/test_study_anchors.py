@@ -116,6 +116,7 @@ def test_fabricated_quotes_are_rejected_and_never_become_evidence():
         {"text": "轉述不是引文", "evidence": [{"ref": "E1", "quote": "improvement only seen at 300 K"}]},
     ], "uncertainty": {"level": "medium", "reasons": ["只有一個溫度"]}, "open_questions": ["其他溫度？"]})
     assert [p["support"] for p in out["points"]] == ["source_quoted", "ai_inference", "ai_inference"]
+    assert [p["rejected_evidence"] for p in out["points"]] == [0, 1, 1]
     assert out["points"][0]["evidence"][0]["quote"] == QUOTE
     assert [r["quote"] for r in out["rejected_quotes"]] == ["replicated in three independent laboratories",
                                                            "improvement only seen at 300 K"]

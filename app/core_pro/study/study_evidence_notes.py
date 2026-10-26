@@ -177,7 +177,8 @@ def to_markdown(doc, title=""):
                          f"\"{anchor.get('quote')}\"")
         for st in note.get("statements") or []:
             refs = "、".join(f"證據 {i + 1}" for i in st.get("evidence") or [])
-            lines.append(f"- **{KIND_LABELS[st['kind']]}**：{st['text']}" + (f"（{refs}）" if refs else ""))
+            note_refs = f"（{refs}）" if refs else ("" if st["kind"] == "source_fact" else "（無證據）")
+            lines.append(f"- **{KIND_LABELS[st['kind']]}**：{st['text']}{note_refs}")
         unc = (note.get("origin") or {}).get("ai_uncertainty")
         if unc:
             lines.append(f"- AI 自評不確定性：{unc.get('level')}；" + "；".join(unc.get("reasons") or []))

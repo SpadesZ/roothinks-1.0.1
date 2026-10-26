@@ -309,7 +309,12 @@ class StudyChat {
                 
                 const messages = data.conversation.messages || [];
                 messages.forEach(msg => {
-                    this.appendMessage(msg.role, msg.content, false); // false = 不滾動
+                    // 結構化回答（選段解釋／批判）重新顯示時仍分開原文、AI 與不確定性。
+                    if (msg.structured && typeof msg.structured === 'object') {
+                        this.appendStructured(msg.structured, false);
+                    } else {
+                        this.appendMessage(msg.role, msg.content, false); // false = 不滾動
+                    }
                 });
                 
                 // 完成後滾動到底部
@@ -519,6 +524,192 @@ class StudyChat {
         } finally {
             this.isSending = false;
         }
+    }
+
+    /**
+     * 選段解釋／批判。伺服器先驗證選段；模型的引文逐字核對後才顯示成證據。
+     * 失敗時保留使用者輸入的問題，不吞掉任何內容。
+     */
+    async askAboutSelection(mode, selection) {
+        if (!selection || !selection.quote) {
+            this.appendMessage('system', '請先在全文中選取一段文字。');
+            return;
+        }
+        if (this.isSending) return;
+        if (!this.currentConversation) {
+            const conv = await this.createNewConversation({ silent: true, clearHistory: false, focusInput: false, title: '新的對話' });
+            if (!conv || !conv.conv_id) {
+                this.appendMessage('system', '目前無法自動建立對話，請稍後再試。');
+                return;
+            }
+        }
+        const typed = this.inputEl ? this.inputEl.value.trim() : '';
+        const question = typed || (mode === 'critique'
+            ? '請批判這段：它的假設、限制、替代解釋，以及還需要什麼證據？'
+            : '請解釋這段：它的意思、適用範圍與條件。');
+        const label = mode === 'critique' ? '批判' : '解釋';
+        const where = selection.page ? `p.${selection.page}` : '位置待伺服器確認';
+        this.appendMessage('user', `【${label}選段・${where}】「${selection.quote.slice(0, 160)}${selection.quote.length > 160 ? '…' : ''}」\n${question}`);
+        if (this.inputEl) this.inputEl.value = '';
+        const loadingId = this.appendTyping();
+        this.isSending = true;
+        try {
+            const response = await fetch('/api/study/chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    pid: this.pid,
+                    question,
+                    mode,
+                    paper_id: selection.paper_id,
+                    selection,
+                    conv_id: this.currentConversation.conv_id,
+                    context: this._buildContextPayload(),
+                }),
+            });
+            const res = await response.json().catch(() => ({}));
+            this.removeMessage(loadingId);
+            if (res.structured) this.appendStructured(res.structured);
+            if (response.status === 409 && res.anchor) {
+                this.appendMessage('system', `${res.msg || '選取的文字在目前原文中找不到'}（狀態：${res.anchor.status}）`);
+                if (!this.inputEl.value && typed) this.inputEl.value = typed;
+            } else if (!response.ok || res.ok !== true) {
+                this.appendMessage('system', res.msg || res.error || '處理失敗，請保留本次問答。');
+                if (!this.inputEl.value && typed) this.inputEl.value = typed;
+            }
+        } catch (err) {
+            this.removeMessage(loadingId);
+            this.appendMessage('system', '連線或回應失敗；本次問題已保留。');
+            if (!this.inputEl.value && typed) this.inputEl.value = typed;
+        } finally {
+            this.isSending = false;
+        }
+    }
+
+    _el(tag, className, text) {
+        const el = document.createElement(tag);
+        if (className) el.className = className;
+        if (text !== undefined && text !== null) el.textContent = String(text);
+        return el;
+    }
+
+    _evidenceChip(anchor, label) {
+        const btn = this._el('button', 'btn btn-link btn-sm p-0 text-start study-evidence-chip');
+        btn.type = 'button';
+        btn.setAttribute('data-evidence-anchor', anchor.ref || '');
+        btn.title = '在左側原文中定位這段';
+        btn.appendChild(this._el('span', 'badge bg-success-subtle text-success-emphasis me-1', label || (anchor.page ? `原文 p.${anchor.page}` : '原文')));
+        btn.appendChild(this._el('span', 'study-quote', `“${anchor.quote}”`));
+        btn.addEventListener('click', () => window.studyView?.revealAnchor(anchor));
+        return btn;
+    }
+
+    /**
+     * 結構化回答卡。只用 textContent 放模型文字（不經 innerHTML），並把三種內容分區：
+     * 原文（已驗證引文，可點）、AI 解讀／推論、不確定性（AI 自評與系統檢查分開）。
+     */
+    appendStructured(structured, shouldScroll = true) {
+        if (!this.historyContainer || !structured) return;
+        const levels = { low: '低', medium: '中', high: '高', unknown: '未知' };
+        const mode = structured.mode === 'critique' ? '批判' : '解釋';
+        const wrap = this._el('div', 'd-flex mb-3 justify-content-start');
+        const card = this._el('div', 'study-structured-card p-3 rounded-3 shadow-sm border bg-white');
+        card.setAttribute('data-structured-answer', structured.mode || 'explain');
+        wrap.appendChild(card);
+
+        const head = this._el('div', 'd-flex flex-wrap align-items-center gap-1 mb-2');
+        head.appendChild(this._el('span', 'badge bg-primary', `AI ${mode}`));
+        const sel = structured.selection || {};
+        if (sel.ref) head.appendChild(this._evidenceChip(sel, sel.side === 'translation' ? `選段（譯文）p.${sel.page}` : `選段 p.${sel.page}`));
+        if (sel.status === 'relocated') head.appendChild(this._el('span', 'badge bg-warning text-dark', '位置已重新定位'));
+        if (sel.version_changed) head.appendChild(this._el('span', 'badge bg-warning text-dark', '原文版本已變更'));
+        card.appendChild(head);
+
+        if (structured.selection_source) {
+            const box = this._el('div', 'small text-muted mb-2', '選段在譯文；來源事實改用同段原文：');
+            box.appendChild(this._evidenceChip(structured.selection_source, `原文 p.${structured.selection_source.page}`));
+            card.appendChild(box);
+        }
+
+        const interp = this._el('div', 'mb-2');
+        interp.appendChild(this._el('div', 'study-kind-label study-kind-ai', 'AI 解讀（不是原文）'));
+        interp.appendChild(this._el('div', 'study-ai-text', structured.interpretation || '（模型沒有提供解讀）'));
+        card.appendChild(interp);
+
+        const points = structured.points || [];
+        if (points.length) {
+            const list = this._el('ol', 'study-points ps-3 mb-2');
+            points.forEach(point => {
+                const li = this._el('li', 'mb-2');
+                li.appendChild(this._el('span', '', point.text));
+                const supported = (point.evidence || []).length > 0;
+                const tag = this._el('span', `badge ms-1 ${supported ? 'bg-success' : 'bg-secondary'}`, supported ? '有原文引文' : 'AI 推論，無原文支持');
+                tag.setAttribute('data-support', point.support || (supported ? 'source_quoted' : 'ai_inference'));
+                li.appendChild(tag);
+                if (!supported && point.rejected_evidence) {
+                    li.appendChild(this._el('span', 'badge ms-1 bg-warning text-dark', '所附引文被排除'));
+                }
+                (point.evidence || []).forEach(ev => {
+                    const row = this._el('div', 'mt-1');
+                    row.appendChild(this._evidenceChip(ev));
+                    if (ev.ref_corrected_from) row.appendChild(this._el('span', 'small text-muted ms-1', `（模型標成 ${ev.ref_corrected_from}，已更正段落）`));
+                    li.appendChild(row);
+                });
+                list.appendChild(li);
+            });
+            card.appendChild(list);
+        }
+
+        const rejected = structured.rejected_quotes || [];
+        if (rejected.length) {
+            const warn = this._el('div', 'alert alert-warning py-2 px-2 small mb-2');
+            warn.appendChild(this._el('div', 'fw-bold', `已排除 ${rejected.length} 個引文：模型提供，但原文中找不到`));
+            rejected.forEach(item => {
+                const line = this._el('div', 'study-rejected-quote', `「${item.quote}」`);
+                line.setAttribute('data-rejected-quote', item.ref || '');
+                warn.appendChild(line);
+            });
+            card.appendChild(warn);
+        }
+
+        const unc = structured.uncertainty || {};
+        const uncBox = this._el('div', 'small mb-1');
+        uncBox.setAttribute('data-uncertainty', unc.level || 'unknown');
+        uncBox.appendChild(this._el('span', 'fw-bold', unc.source === 'system' ? '不確定性：' : '不確定性（AI 自評）：'));
+        uncBox.appendChild(this._el('span', '', `${levels[unc.level] || '未知'}${(unc.reasons || []).length ? '：' + unc.reasons.join('；') : ''}`));
+        card.appendChild(uncBox);
+
+        const check = structured.system_check || {};
+        const checkParts = [`已驗證引文 ${check.verified_quotes || 0}`, `排除 ${check.rejected_quotes || 0}`,
+            `選段 ${check.selection_status || '未知'}`];
+        if (check.translation_based) checkParts.push('選段來自機器譯文');
+        if (check.version_changed) checkParts.push('原文版本已變更');
+        if (check.format_ok === false) checkParts.push('模型沒有回傳結構化格式');
+        const checkBox = this._el('div', 'small text-muted mb-2', `系統檢查：${checkParts.join('・')}`);
+        checkBox.setAttribute('data-system-check', String(check.verified_quotes || 0));
+        card.appendChild(checkBox);
+
+        if ((structured.open_questions || []).length) {
+            const qs = this._el('div', 'small mb-2');
+            qs.appendChild(this._el('div', 'fw-bold', '待釐清'));
+            structured.open_questions.forEach(q => qs.appendChild(this._el('div', '', `・${q}`)));
+            card.appendChild(qs);
+        }
+
+        const footer = this._el('div', 'd-flex gap-2 align-items-center border-top pt-2');
+        const draftBtn = this._el('button', 'btn btn-sm btn-outline-success', '建立研究筆記草稿');
+        draftBtn.type = 'button';
+        draftBtn.setAttribute('data-evidence-note-draft', '1');
+        draftBtn.addEventListener('click', () => window.studyEvidence?.openDraft(structured, {
+            conv_id: this.currentConversation?.conv_id || '',
+        }));
+        footer.appendChild(draftBtn);
+        footer.appendChild(this._el('span', 'small text-muted', '草稿要你編輯並按「接受」才會存檔'));
+        card.appendChild(footer);
+
+        this.historyContainer.appendChild(wrap);
+        if (shouldScroll) this.scrollToBottom();
+        return card;
     }
 
     appendMessage(role, text, shouldScroll = true) {
