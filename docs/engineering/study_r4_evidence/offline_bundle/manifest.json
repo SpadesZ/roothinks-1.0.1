@@ -1,0 +1,20 @@
+{
+ "schema": "roothinks.offline_evidence_bundle/1",
+ "code_sha": "7c235b0b5f95fc84d3ae317c3a8447d3162b0526",
+ "worktree_dirty": false,
+ "python": "3.12.3",
+ "outputs": {
+  "study_eval_negative_controls": {
+   "file": "study_eval_negative_controls.json",
+   "stable_sha256": "59ce48a879886376ffe4d8c0b2693ad9954ad81b47e1908cc9c9ce7afb0975c6"
+  },
+  "study_eval_stub_gates": {
+   "file": "study_eval_stub_gates.json",
+   "stable_sha256": "6f28ca8cf728c98ec3dc270eb280cf9b01efa91da8c81a4bfcedcc4ede3c7d86"
+  },
+  "translation_guard_benchmark": {
+   "file": "translation_guard_benchmark.json",
+   "stable_sha256": "0d7b4f50bd242354094847e551e8a0f717a4195f7a701c9f25590b83e2bfe674"
+  }
+ }
+}

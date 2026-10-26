@@ -1,0 +1,84 @@
+{
+ "nature": "TOOL SELF-CHECK on stubs; not a model-quality result",
+ "dataset_sha256": "e4ef1759258e946b052dab5d2df739da59e48ca6f3a3be8ebafa83c789414c1d",
+ "faithful": {
+  "metrics": {
+   "items": 30,
+   "Q1_format_ok_rate": 1.0,
+   "Q2_quote_text_match_rate": 1.0,
+   "Q3_fabricated_quote_rate": 0.0,
+   "Q4_items_with_unsupported_numbers_rate": 0.0,
+   "Q5_uncertainty_provided_rate": 1.0,
+   "Q6_numeric_condition_retention_rate": 1.0,
+   "quotes_given": 30,
+   "v2": {
+    "items": 30,
+    "Q1_format_ok_rate": 1.0,
+    "Q2_quote_text_match_rate": 1.0,
+    "Q3_fabricated_quote_rate": 0.0,
+    "Q4_items_with_unsupported_numbers_rate": 0.0,
+    "Q5_uncertainty_provided_rate": 1.0,
+    "Q6_numeric_condition_retention_rate": 1.0,
+    "quotes_given": 30,
+    "Q7_items_with_overclaim_rate": 0.0
+   },
+   "v2_gates": {
+    "Q1_format_ok_rate": true,
+    "Q2_quote_text_match_rate": true,
+    "Q3_fabricated_quote_rate": true,
+    "Q4_items_with_unsupported_numbers_rate": true,
+    "Q5_uncertainty_provided_rate": true,
+    "Q6_numeric_condition_retention_rate": true,
+    "Q7_items_with_overclaim_rate": true
+   }
+  },
+  "gates": {
+   "Q1_format_ok_rate": true,
+   "Q2_quote_text_match_rate": true,
+   "Q3_fabricated_quote_rate": true,
+   "Q4_items_with_unsupported_numbers_rate": true,
+   "Q5_uncertainty_provided_rate": true,
+   "Q6_numeric_condition_retention_rate": true
+  }
+ },
+ "adversarial": {
+  "metrics": {
+   "items": 30,
+   "Q1_format_ok_rate": 0.9,
+   "Q2_quote_text_match_rate": 0.5,
+   "Q3_fabricated_quote_rate": 0.5,
+   "Q4_items_with_unsupported_numbers_rate": 1.0,
+   "Q5_uncertainty_provided_rate": 0.0,
+   "Q6_numeric_condition_retention_rate": 0.0,
+   "quotes_given": 54,
+   "v2": {
+    "items": 30,
+    "Q1_format_ok_rate": 0.9,
+    "Q2_quote_text_match_rate": 0.5,
+    "Q3_fabricated_quote_rate": 0.5,
+    "Q4_items_with_unsupported_numbers_rate": 1.0,
+    "Q5_uncertainty_provided_rate": 0.0,
+    "Q6_numeric_condition_retention_rate": 0.0,
+    "quotes_given": 54,
+    "Q7_items_with_overclaim_rate": 0.9
+   },
+   "v2_gates": {
+    "Q1_format_ok_rate": false,
+    "Q2_quote_text_match_rate": false,
+    "Q3_fabricated_quote_rate": false,
+    "Q4_items_with_unsupported_numbers_rate": false,
+    "Q5_uncertainty_provided_rate": false,
+    "Q6_numeric_condition_retention_rate": false,
+    "Q7_items_with_overclaim_rate": false
+   }
+  },
+  "gates": {
+   "Q1_format_ok_rate": false,
+   "Q2_quote_text_match_rate": false,
+   "Q3_fabricated_quote_rate": false,
+   "Q4_items_with_unsupported_numbers_rate": false,
+   "Q5_uncertainty_provided_rate": false,
+   "Q6_numeric_condition_retention_rate": false
+  }
+ }
+}
