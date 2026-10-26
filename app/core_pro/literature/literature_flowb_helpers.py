@@ -80,6 +80,19 @@ _FLOWB_BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirnam
 _FLOWB_DATA_ROOT = os.path.join(_FLOWB_BASE_DIR, "data")
 
 
+def _flowb_data_root() -> str:
+    """與 Flow B 其他產物同一個資料根目錄（literature_routes.DATA_ROOT）。
+
+    正式環境兩者是同一路徑；不跟著設定走的話，DATA_ROOT 指到別處時（例如測試的 tmp），
+    含論文內容的 LLM 原始回覆會被寫到 repo 的 data/。
+    """
+    try:
+        from app.core_pro.literature import literature_routes
+        return literature_routes.DATA_ROOT
+    except Exception:
+        return _FLOWB_DATA_ROOT
+
+
 def _flowb_write_debug_reply(pid: str, paper_id: str, tag: str, content: str):
     try:
         p = str(pid or "").strip()
@@ -87,7 +100,7 @@ def _flowb_write_debug_reply(pid: str, paper_id: str, tag: str, content: str):
         if not p or not paper:
             return
         paper_dir = resolve_literature_paper_dir(
-            _FLOWB_DATA_ROOT,
+            _flowb_data_root(),
             p,
             paper,
             for_write=False,

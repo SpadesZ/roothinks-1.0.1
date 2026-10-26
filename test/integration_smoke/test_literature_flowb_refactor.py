@@ -8,18 +8,21 @@
 from pathlib import Path
 
 
-def _create_dev_app(monkeypatch):
+def _create_dev_app(monkeypatch, tmp_path):
     project_root = Path(__file__).resolve().parents[2]
     monkeypatch.syspath_prepend(str(project_root))
     monkeypatch.setenv("FLASK_ENV", "development")
     monkeypatch.delenv("APP_ENV", raising=False)
     from app import create_app
 
-    return create_app({"TESTING": True})
+    return create_app({"TESTING": True,
+        # 測試用 SQLite；不給的話會建立 repo 的 data/roothinks.db 與 data/manu_core.db。
+        "SQLALCHEMY_DATABASE_URI": f"sqlite:///{tmp_path / 'app.db'}",
+        "SQLALCHEMY_BINDS": {"manuscript": f"sqlite:///{tmp_path / 'manu.db'}"}})
 
 
-def test_run_translation_wrapper_delegates_to_bflow_module(monkeypatch):
-    app = _create_dev_app(monkeypatch)
+def test_run_translation_wrapper_delegates_to_bflow_module(monkeypatch, tmp_path):
+    app = _create_dev_app(monkeypatch, tmp_path)
     from app.core_pro.literature import literature_routes
 
     called = {}

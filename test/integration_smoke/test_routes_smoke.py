@@ -8,14 +8,17 @@
 from pathlib import Path
 
 
-def test_literature_and_study_routes_register(monkeypatch):
+def test_literature_and_study_routes_register(monkeypatch, tmp_path):
     project_root = Path(__file__).resolve().parents[2]
     monkeypatch.syspath_prepend(str(project_root))
     monkeypatch.setenv("FLASK_ENV", "development")
     monkeypatch.delenv("APP_ENV", raising=False)
     from app import create_app
 
-    app = create_app({"TESTING": True})
+    app = create_app({"TESTING": True,
+        # 測試用 SQLite；不給的話會建立 repo 的 data/roothinks.db 與 data/manu_core.db。
+        "SQLALCHEMY_DATABASE_URI": f"sqlite:///{tmp_path / 'app.db'}",
+        "SQLALCHEMY_BINDS": {"manuscript": f"sqlite:///{tmp_path / 'manu.db'}"}})
     routes = {rule.rule for rule in app.url_map.iter_rules()}
 
     assert "/literature" in routes
