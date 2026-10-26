@@ -2,7 +2,7 @@
 
 溝通及實作報告用繁體中文。**每完成一步就更新本文件。** 目前狀態：**R4 交付兩個結果**：（A）從 `main` 開出的安全熱修候選、（B）R4 整合開發候選。都未合併、未部署，停在 Owner 決定點。規格與整體狀態以 [`docs/SAI.md`](../SAI.md) 為唯一入口。
 
-最後完整驗證點：Study R3 `8808665`，1,683 通過／50 略過／0 失敗（見下方 Study R3 段）；更早的 `aa8ff3e`（R2 資料防護）為 1,553 通過／50 略過／0 失敗。
+最後完整驗證點：R4 `457d887`，1,705 通過／50 略過／0 失敗（見下方 R4 段）；更早的 `aa8ff3e`（R2 資料防護）為 1,553 通過／50 略過／0 失敗。
 已推送個人倉庫（`7c905b5` 起）；推送前後核對，main、整合分支與其他所有分支的遠端 SHA 都沒變。
 
 ## 角色與邊界
@@ -88,6 +88,7 @@ Flow B debug 輸出在 `DATA_ROOT` 不可用時不再寫到 repo `data/`（`Flow
 ## R4（2026-10-27，最新）
 
 - 交付：`STUDY_R4_DELIVERY_2026-10-27.md`；證據：`study_r4_evidence/`。
+- 最終狀態：R4 完整回歸 `457d887` **1,705／50／0**；瀏覽器 58／58；熱修 `323ca0b`（3.10 與 3.12 都只有 main 既有的 1 個失敗）。兩條分支都已推送並核對；main `9655546` 未變。
 - **A 熱修** `codex/security-hotfix-log-isolation-20261027`（從 `main`）：只含 H1／H2 修補、`test_security_log_isolation.py`、
   `test_log_exposure_audit.py`、`scripts/security/log_exposure_audit.py`、熱修文件。**不要**把 R1–R4 的任何東西 cherry-pick 進去。
   在 3.10 驗證：`uv python install 3.10`，venv 裝 `requirements.txt`（去掉 easyocr）＋`requirements-dev.txt`。

@@ -71,7 +71,7 @@ RootThinks 的目標是一個**整合的人機協作科學研究工作區**：AI
 | Study R3 安全：跨模組權限矩陣（90 路由 × 6 角色）；修補 2 個 P1 跨專案洩漏（runtime log、Flow B 探針）；Literature／PAQ AI 對話納入審閱範圍；R2 審閱副本洩漏與過期建議覆寫 | IMPLEMENTED、TESTED（`ff71c07`；矩陣 19 → 1 筆，剩下的是待決定項目；完整回歸 `8808665` 1,683／50／0） | [R3 交付](engineering/STUDY_R3_DELIVERY_2026-10-26.md)、[矩陣證據](engineering/study_r3_evidence/) |
 | Study R3 共研 UX：繁中用語、譯文標示機器翻譯、證據筆記帶出處寫入研究筆記、筆記卡顯示 AI 不確定性、修訂前內容、矩陣不再重複請求 | IMPLEMENTED、TESTED（`fba0c46`；瀏覽器 48／48） | 同上 |
 | 翻譯保護層原型（公式／URL／DOI 佔位符容錯還原、遺失補回並標示、數字變動回報） | IMPLEMENTED、TESTED（`994ee33`）；真引擎品質 **NOT MEASURED**（只有模擬） | [比較研究](engineering/TRANSLATION_RESEARCH_2026-10-26.md) |
-| Study R4 安全：寫入／匯出／間接存取權限矩陣（84 條寫入路由 × 對抗角色，434 次請求）；不可復原的刪除只限 owner（論文）或建立者／owner（Study 對話）；日誌每行帶結構化專案出處；教授審閱身分看不到文獻庫閱讀筆記（PA-01 擴充，提議中） | IMPLEMENTED、TESTED（`a31e271`、`f7fba36`；寫入矩陣修補前 2 個非設計寫入 → 0；間接 GET 0 洩漏） | [R4 交付](engineering/STUDY_R4_DELIVERY_2026-10-27.md)、[證據](engineering/study_r4_evidence/) |
+| Study R4 安全：寫入／匯出／間接存取權限矩陣（84 條寫入路由 × 對抗角色，434 次請求）；不可復原的刪除只限 owner（論文）或建立者／owner（Study 對話）；日誌每行帶結構化專案出處；教授審閱身分看不到文獻庫閱讀筆記（PA-01 擴充，提議中） | IMPLEMENTED、TESTED（`a31e271`、`f7fba36`；寫入矩陣修補前 2 個非設計寫入 → 0；間接 GET 0 洩漏；完整回歸 `457d887` 1,705／50／0） | [R4 交付](engineering/STUDY_R4_DELIVERY_2026-10-27.md)、[證據](engineering/study_r4_evidence/) |
 | Study R4 寫作出處：Manuscript 段落連到 Study 證據筆記或標成自由寫作；段落／筆記／原文改變時提示重新核對（不阻擋）；Markdown 出處匯出；Study 與教授工作台顯示「用在稿件哪一段」 | IMPLEMENTED、TESTED（`2683386`、`165a8a1`；瀏覽器 58／58） | 同上 |
 | Study R4 閱讀：機器翻譯數字不一致與遺失片段提示（只提示、不改寫）；翻譯保護層修正重複公式、改壞的佔位符與還原位置 | IMPLEMENTED、TESTED（`165a8a1`、`b9d9bc8`）；真引擎品質仍 **NOT MEASURED** | 同上 |
 | Study R4 可重現性：離線證據包（重跑比對雜湊）、正式資料副本的唯讀就緒檢查 | IMPLEMENTED、TESTED（`7c235b0`、`457d887`）；就緒檢查**未在正式資料上執行**（需要 Owner 提供副本） | 同上 |
