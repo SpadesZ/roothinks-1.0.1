@@ -417,6 +417,12 @@ def delete_paper_impl(deps):
     except deps.BadRequest:
         return jsonify({"status": "error", "message": "Invalid paper_id"}), 400
 
+    # 刪除會移除原始 PDF 與所有衍生資料，無法復原：與 HTTP DELETE 相同，只有專案 owner 可以。
+    from app.security import require_workspace_role
+    denied = require_workspace_role(pid, "owner")
+    if denied is not None:
+        return denied
+
     try:
         project_dir = deps._get_project_dir(pid)
         canonical_paper_dir = deps.safe_join_under(deps._get_literature_dir(pid), "papers", paper_id)

@@ -28,6 +28,17 @@ from werkzeug.exceptions import Conflict
 _IMPORT_MAX_ITEMS = 500
 
 
+def _without_reading_notes(entry):
+    """教授審閱身分（PA-01，提議中）看不到研究者的閱讀筆記，連修訂紀錄裡的舊版本也去掉。
+
+    書目資料、篩選狀態與篩選理由仍可見：那是納入／排除的決定，屬於可審閱的研究紀錄。
+    """
+    out = {k: v for k, v in entry.items() if k not in ("reading_note", "history")}
+    out["reading_note_hidden"] = bool(entry.get("reading_note"))
+    out["history"] = [{k: v for k, v in (h or {}).items() if k != "previous"} for h in entry.get("history") or []]
+    return out
+
+
 def register_library_routes(literature_bp, deps):
     @literature_bp.route('/api/literature/library', methods=['GET'])
     def get_library():
@@ -41,6 +52,9 @@ def register_library_routes(literature_bp, deps):
                 reading=str(request.args.get('reading') or '').strip(),
                 query=str(request.args.get('q') or '').strip(),
             )
+            from app.security import current_user_review_scoped
+            if current_user_review_scoped(pid):
+                entries = [_without_reading_notes(e) for e in entries]
             return jsonify({"status": "success", "count": len(entries), "entries": entries})
         except Exception as e:
             return deps._internal_error("get_library", e)

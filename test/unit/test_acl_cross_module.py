@@ -193,7 +193,7 @@ def test_stale_suggestion_needs_explicit_confirmation(env):
 
 
 def test_route_matrix_conclusions_are_locked(monkeypatch):
-    """自動列舉全部 GET 路由、六種角色實測；唯一剩下的教授可讀項目是文獻庫閱讀筆記（Owner 決定事項）。"""
+    """自動列舉全部 GET 路由、六種角色實測；R4 起沒有任何發現（含教授讀文獻庫閱讀筆記）。"""
     # 矩陣腳本在 import 與 build_app 時改環境變數與模組全域；先登記原值，測完由 monkeypatch 還原，
     # 否則後面的測試（例如 user journey）會沿用被清空的 literature service 與 APP_ENV。
     import os
@@ -217,5 +217,25 @@ def test_route_matrix_conclusions_are_locked(monkeypatch):
     import acl_route_matrix
     result = acl_route_matrix.run()
     assert result["routes"] >= 80
-    assert [(f["role"], f["leaks"]) for f in result["findings"]] == [("prof", ["literature_reading_note"])]
+    # R4：依 Owner 建議，教授審閱身分也看不到文獻庫閱讀筆記（PA-01 擴充，仍是提議）；矩陣不再有任何發現。
+    assert result["findings"] == []
     assert not [r for r in result["rows"] for v in r["roles"].values() if v["status"] == "exception"]
+
+
+def test_professor_sees_library_metadata_but_not_reading_notes(env):
+    """Owner 建議（R4）：教授審閱身分看得到書目與篩選決定，看不到研究者的閱讀筆記與其舊版本；團隊 viewer、舊導師照常。"""
+    app, tmp_path, ids, owner = env
+    from app.services.literature_library import LiteratureLibrary
+    lib = LiteratureLibrary(str(tmp_path))
+    with app.app_context():
+        lib.merge_candidates(PID, [{"title": "Lib paper", "doi": "10.1/lib"}])
+        eid = next(iter(lib.load(PID)["entries"]))
+        lib.update_entry(PID, eid, {"reading_note": "OLD_PRIVATE_NOTE"}, actor="owner", base_rev=0)
+        lib.update_entry(PID, eid, {"reading_note": "PRIVATE_READING_NOTE"}, actor="owner", base_rev=1)
+    prof = login(app, "prof").get(f"/api/literature/library?pid={PID}")
+    body = prof.get_data(as_text=True)
+    assert prof.status_code == 200 and "Lib paper" in body
+    assert "PRIVATE_READING_NOTE" not in body and "OLD_PRIVATE_NOTE" not in body
+    assert prof.json["entries"][0]["reading_note_hidden"] is True
+    for who in ("teamviewer", "legacy", "owner"):
+        assert "PRIVATE_READING_NOTE" in login(app, who).get(f"/api/literature/library?pid={PID}").get_data(as_text=True), who

@@ -745,6 +745,24 @@ def request_pid() -> Optional[str]:
         return None
 
 
+def require_owner_or_creator(pid: str, created_by) -> Optional[Any]:
+    """無法復原的刪除：專案 owner，或該物件的建立者（created_by 為使用者 id）。
+
+    session 模式以外與 require_workspace_role 相同（交給既有 token／開發模式規則）。
+    """
+    if _get_auth_mode() != "session":
+        return None
+    try:
+        from flask_login import current_user
+    except ImportError:
+        return None
+    if not current_user.is_authenticated:
+        return None
+    if created_by is not None and str(created_by) == str(current_user.id):
+        return None
+    return require_workspace_role(pid, "owner")
+
+
 def bind_request_pid(pid):
     """授權成功才把本請求的日誌標成這個專案（app/log_provenance.py）；被拒絕的請求維持 [pid=-]。"""
     from app.log_provenance import bind_request_pid as _bind

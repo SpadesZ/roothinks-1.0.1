@@ -1,0 +1,4003 @@
+{
+ "write": {
+  "write_rules": 84,
+  "requests": 434,
+  "rebuilt_worlds": 9,
+  "findings": [
+   {
+    "severity": "privilege",
+    "role": "editor",
+    "method": "POST",
+    "rule": "/api/literature/delete_paper",
+    "status": 200,
+    "mutated_aclp1": true,
+    "leaks": []
+   },
+   {
+    "severity": "viewer-write",
+    "role": "prof",
+    "method": "DELETE",
+    "rule": "/api/mentor/mentees/<int:mentee_id>",
+    "status": 200,
+    "mutated_aclp1": true,
+    "leaks": []
+   },
+   {
+    "severity": "viewer-write",
+    "role": "legacymentor",
+    "method": "DELETE",
+    "rule": "/api/mentor/mentees/<int:mentee_id>",
+    "status": 200,
+    "mutated_aclp1": true,
+    "leaks": []
+   },
+   {
+    "severity": "viewer-write",
+    "role": "prof",
+    "method": "POST",
+    "rule": "/api/mentor/mentees/<int:mentee_id>/tasks",
+    "status": 201,
+    "mutated_aclp1": true,
+    "leaks": []
+   },
+   {
+    "severity": "viewer-write",
+    "role": "legacymentor",
+    "method": "POST",
+    "rule": "/api/mentor/mentees/<int:mentee_id>/tasks",
+    "status": 201,
+    "mutated_aclp1": true,
+    "leaks": []
+   },
+   {
+    "severity": "privilege",
+    "role": "editor",
+    "method": "POST",
+    "rule": "/api/study/conversation/<conv_id>/delete",
+    "status": 200,
+    "mutated_aclp1": true,
+    "leaks": []
+   },
+   {
+    "severity": "viewer-write",
+    "role": "prof",
+    "method": "POST",
+    "rule": "/manuscript/api/chapter/<pid>/comments",
+    "status": 201,
+    "mutated_aclp1": true,
+    "leaks": []
+   },
+   {
+    "severity": "viewer-write",
+    "role": "legacymentor",
+    "method": "POST",
+    "rule": "/manuscript/api/chapter/<pid>/comments",
+    "status": 201,
+    "mutated_aclp1": true,
+    "leaks": []
+   },
+   {
+    "severity": "viewer-write",
+    "role": "teamviewer",
+    "method": "POST",
+    "rule": "/manuscript/api/chapter/<pid>/comments",
+    "status": 201,
+    "mutated_aclp1": true,
+    "leaks": []
+   }
+  ],
+  "rows": [
+   {
+    "rule": "/api/collaboration/invitations/<iid>/<action>",
+    "method": "POST",
+    "endpoint": "collaboration.invitation_action",
+    "role": "outsider",
+    "status": 400,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/collaboration/invitations/<iid>/<action>",
+    "method": "POST",
+    "endpoint": "collaboration.invitation_action",
+    "role": "prof",
+    "status": 400,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/collaboration/invitations/<iid>/<action>",
+    "method": "POST",
+    "endpoint": "collaboration.invitation_action",
+    "role": "legacymentor",
+    "status": 400,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/collaboration/invitations/<iid>/<action>",
+    "method": "POST",
+    "endpoint": "collaboration.invitation_action",
+    "role": "teamviewer",
+    "status": 400,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/collaboration/invitations/<iid>/<action>",
+    "method": "POST",
+    "endpoint": "collaboration.invitation_action",
+    "role": "editor",
+    "status": 400,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/collaboration/invitations/<iid>/<action>",
+    "method": "POST",
+    "endpoint": "collaboration.invitation_action",
+    "role": "outsider-indirect",
+    "status": 400,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/collaboration/profile",
+    "method": "POST",
+    "endpoint": "collaboration.academic_profile",
+    "role": "outsider",
+    "status": 400,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/collaboration/profile",
+    "method": "POST",
+    "endpoint": "collaboration.academic_profile",
+    "role": "prof",
+    "status": 400,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/collaboration/profile",
+    "method": "POST",
+    "endpoint": "collaboration.academic_profile",
+    "role": "legacymentor",
+    "status": 400,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/collaboration/profile",
+    "method": "POST",
+    "endpoint": "collaboration.academic_profile",
+    "role": "teamviewer",
+    "status": 400,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/collaboration/profile",
+    "method": "POST",
+    "endpoint": "collaboration.academic_profile",
+    "role": "outsider-indirect",
+    "status": 400,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/collaboration/project/<pid>/invitations",
+    "method": "POST",
+    "endpoint": "collaboration.project_invitations",
+    "role": "outsider",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/collaboration/project/<pid>/invitations",
+    "method": "POST",
+    "endpoint": "collaboration.project_invitations",
+    "role": "prof",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/collaboration/project/<pid>/invitations",
+    "method": "POST",
+    "endpoint": "collaboration.project_invitations",
+    "role": "legacymentor",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/collaboration/project/<pid>/invitations",
+    "method": "POST",
+    "endpoint": "collaboration.project_invitations",
+    "role": "teamviewer",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/collaboration/project/<pid>/invitations",
+    "method": "POST",
+    "endpoint": "collaboration.project_invitations",
+    "role": "editor",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/collaboration/project/<pid>/invitations",
+    "method": "POST",
+    "endpoint": "collaboration.project_invitations",
+    "role": "outsider-indirect",
+    "status": 400,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/heartbeat",
+    "method": "POST",
+    "endpoint": "main.heartbeat",
+    "role": "outsider",
+    "status": 200,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/heartbeat",
+    "method": "POST",
+    "endpoint": "main.heartbeat",
+    "role": "prof",
+    "status": 200,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/heartbeat",
+    "method": "POST",
+    "endpoint": "main.heartbeat",
+    "role": "legacymentor",
+    "status": 200,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/heartbeat",
+    "method": "POST",
+    "endpoint": "main.heartbeat",
+    "role": "teamviewer",
+    "status": 200,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/heartbeat",
+    "method": "POST",
+    "endpoint": "main.heartbeat",
+    "role": "outsider-indirect",
+    "status": 200,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/literature/chat",
+    "method": "POST",
+    "endpoint": "literature_bp.literature_chat",
+    "role": "outsider",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/literature/chat",
+    "method": "POST",
+    "endpoint": "literature_bp.literature_chat",
+    "role": "prof",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/literature/chat",
+    "method": "POST",
+    "endpoint": "literature_bp.literature_chat",
+    "role": "legacymentor",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/literature/chat",
+    "method": "POST",
+    "endpoint": "literature_bp.literature_chat",
+    "role": "teamviewer",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/literature/chat",
+    "method": "POST",
+    "endpoint": "literature_bp.literature_chat",
+    "role": "outsider-indirect",
+    "status": 200,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/literature/chat/adopt",
+    "method": "POST",
+    "endpoint": "literature_bp.literature_chat_adopt",
+    "role": "outsider",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/literature/chat/adopt",
+    "method": "POST",
+    "endpoint": "literature_bp.literature_chat_adopt",
+    "role": "prof",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/literature/chat/adopt",
+    "method": "POST",
+    "endpoint": "literature_bp.literature_chat_adopt",
+    "role": "legacymentor",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/literature/chat/adopt",
+    "method": "POST",
+    "endpoint": "literature_bp.literature_chat_adopt",
+    "role": "teamviewer",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/literature/chat/adopt",
+    "method": "POST",
+    "endpoint": "literature_bp.literature_chat_adopt",
+    "role": "outsider-indirect",
+    "status": 400,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/literature/chat/clear",
+    "method": "POST",
+    "endpoint": "literature_bp.literature_chat_clear",
+    "role": "outsider",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/literature/chat/clear",
+    "method": "POST",
+    "endpoint": "literature_bp.literature_chat_clear",
+    "role": "prof",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/literature/chat/clear",
+    "method": "POST",
+    "endpoint": "literature_bp.literature_chat_clear",
+    "role": "legacymentor",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/literature/chat/clear",
+    "method": "POST",
+    "endpoint": "literature_bp.literature_chat_clear",
+    "role": "teamviewer",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/literature/chat/clear",
+    "method": "POST",
+    "endpoint": "literature_bp.literature_chat_clear",
+    "role": "outsider-indirect",
+    "status": 200,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/literature/clear_search_results",
+    "method": "POST",
+    "endpoint": "literature_bp.clear_search_results",
+    "role": "outsider",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/literature/clear_search_results",
+    "method": "POST",
+    "endpoint": "literature_bp.clear_search_results",
+    "role": "prof",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/literature/clear_search_results",
+    "method": "POST",
+    "endpoint": "literature_bp.clear_search_results",
+    "role": "legacymentor",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/literature/clear_search_results",
+    "method": "POST",
+    "endpoint": "literature_bp.clear_search_results",
+    "role": "teamviewer",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/literature/clear_search_results",
+    "method": "POST",
+    "endpoint": "literature_bp.clear_search_results",
+    "role": "outsider-indirect",
+    "status": 200,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/literature/context_chain/override_claim",
+    "method": "POST",
+    "endpoint": "literature_bp.override_context_chain_claim",
+    "role": "outsider",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/literature/context_chain/override_claim",
+    "method": "POST",
+    "endpoint": "literature_bp.override_context_chain_claim",
+    "role": "prof",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/literature/context_chain/override_claim",
+    "method": "POST",
+    "endpoint": "literature_bp.override_context_chain_claim",
+    "role": "legacymentor",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/literature/context_chain/override_claim",
+    "method": "POST",
+    "endpoint": "literature_bp.override_context_chain_claim",
+    "role": "teamviewer",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/literature/context_chain/override_claim",
+    "method": "POST",
+    "endpoint": "literature_bp.override_context_chain_claim",
+    "role": "outsider-indirect",
+    "status": 400,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/literature/debug/recover_flowb",
+    "method": "POST",
+    "endpoint": "literature_bp.debug_recover_flowb",
+    "role": "outsider",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/literature/debug/recover_flowb",
+    "method": "POST",
+    "endpoint": "literature_bp.debug_recover_flowb",
+    "role": "prof",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/literature/debug/recover_flowb",
+    "method": "POST",
+    "endpoint": "literature_bp.debug_recover_flowb",
+    "role": "legacymentor",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/literature/debug/recover_flowb",
+    "method": "POST",
+    "endpoint": "literature_bp.debug_recover_flowb",
+    "role": "teamviewer",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/literature/debug/recover_flowb",
+    "method": "POST",
+    "endpoint": "literature_bp.debug_recover_flowb",
+    "role": "outsider-indirect",
+    "status": 404,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/literature/delete_paper",
+    "method": "POST",
+    "endpoint": "literature_bp.delete_paper",
+    "role": "outsider",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/literature/delete_paper",
+    "method": "POST",
+    "endpoint": "literature_bp.delete_paper",
+    "role": "prof",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/literature/delete_paper",
+    "method": "POST",
+    "endpoint": "literature_bp.delete_paper",
+    "role": "legacymentor",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/literature/delete_paper",
+    "method": "POST",
+    "endpoint": "literature_bp.delete_paper",
+    "role": "teamviewer",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/literature/delete_paper",
+    "method": "POST",
+    "endpoint": "literature_bp.delete_paper",
+    "role": "editor",
+    "status": 200,
+    "mutated_aclp1": true,
+    "leaks": []
+   },
+   {
+    "rule": "/api/literature/delete_paper",
+    "method": "POST",
+    "endpoint": "literature_bp.delete_paper",
+    "role": "outsider-indirect",
+    "status": 200,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/literature/library/import",
+    "method": "POST",
+    "endpoint": "literature_bp.import_library_items",
+    "role": "outsider",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/literature/library/import",
+    "method": "POST",
+    "endpoint": "literature_bp.import_library_items",
+    "role": "prof",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/literature/library/import",
+    "method": "POST",
+    "endpoint": "literature_bp.import_library_items",
+    "role": "legacymentor",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/literature/library/import",
+    "method": "POST",
+    "endpoint": "literature_bp.import_library_items",
+    "role": "teamviewer",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/literature/library/import",
+    "method": "POST",
+    "endpoint": "literature_bp.import_library_items",
+    "role": "outsider-indirect",
+    "status": 400,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/literature/library/update",
+    "method": "POST",
+    "endpoint": "literature_bp.update_library_entry",
+    "role": "outsider",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/literature/library/update",
+    "method": "POST",
+    "endpoint": "literature_bp.update_library_entry",
+    "role": "prof",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/literature/library/update",
+    "method": "POST",
+    "endpoint": "literature_bp.update_library_entry",
+    "role": "legacymentor",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/literature/library/update",
+    "method": "POST",
+    "endpoint": "literature_bp.update_library_entry",
+    "role": "teamviewer",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/literature/library/update",
+    "method": "POST",
+    "endpoint": "literature_bp.update_library_entry",
+    "role": "outsider-indirect",
+    "status": 400,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/literature/preload_translation_models",
+    "method": "POST",
+    "endpoint": "literature_bp.preload_translation_models",
+    "role": "outsider",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/literature/preload_translation_models",
+    "method": "POST",
+    "endpoint": "literature_bp.preload_translation_models",
+    "role": "prof",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/literature/preload_translation_models",
+    "method": "POST",
+    "endpoint": "literature_bp.preload_translation_models",
+    "role": "legacymentor",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/literature/preload_translation_models",
+    "method": "POST",
+    "endpoint": "literature_bp.preload_translation_models",
+    "role": "teamviewer",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/literature/preload_translation_models",
+    "method": "POST",
+    "endpoint": "literature_bp.preload_translation_models",
+    "role": "outsider-indirect",
+    "status": 200,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/literature/rebuild_evidence_index",
+    "method": "POST",
+    "endpoint": "literature_bp.rebuild_evidence_index",
+    "role": "outsider",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/literature/rebuild_evidence_index",
+    "method": "POST",
+    "endpoint": "literature_bp.rebuild_evidence_index",
+    "role": "prof",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/literature/rebuild_evidence_index",
+    "method": "POST",
+    "endpoint": "literature_bp.rebuild_evidence_index",
+    "role": "legacymentor",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/literature/rebuild_evidence_index",
+    "method": "POST",
+    "endpoint": "literature_bp.rebuild_evidence_index",
+    "role": "teamviewer",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/literature/rebuild_evidence_index",
+    "method": "POST",
+    "endpoint": "literature_bp.rebuild_evidence_index",
+    "role": "outsider-indirect",
+    "status": 200,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/literature/recover_upload",
+    "method": "POST",
+    "endpoint": "literature_bp.recover_upload",
+    "role": "outsider",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/literature/recover_upload",
+    "method": "POST",
+    "endpoint": "literature_bp.recover_upload",
+    "role": "prof",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/literature/recover_upload",
+    "method": "POST",
+    "endpoint": "literature_bp.recover_upload",
+    "role": "legacymentor",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/literature/recover_upload",
+    "method": "POST",
+    "endpoint": "literature_bp.recover_upload",
+    "role": "teamviewer",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/literature/recover_upload",
+    "method": "POST",
+    "endpoint": "literature_bp.recover_upload",
+    "role": "outsider-indirect",
+    "status": 409,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/literature/run_batch",
+    "method": "POST",
+    "endpoint": "literature_bp.run_batch",
+    "role": "outsider",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/literature/run_batch",
+    "method": "POST",
+    "endpoint": "literature_bp.run_batch",
+    "role": "prof",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/literature/run_batch",
+    "method": "POST",
+    "endpoint": "literature_bp.run_batch",
+    "role": "legacymentor",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/literature/run_batch",
+    "method": "POST",
+    "endpoint": "literature_bp.run_batch",
+    "role": "teamviewer",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/literature/run_batch",
+    "method": "POST",
+    "endpoint": "literature_bp.run_batch",
+    "role": "outsider-indirect",
+    "status": 200,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/literature/run_translation",
+    "method": "POST",
+    "endpoint": "literature_bp.run_translation",
+    "role": "outsider",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/literature/run_translation",
+    "method": "POST",
+    "endpoint": "literature_bp.run_translation",
+    "role": "prof",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/literature/run_translation",
+    "method": "POST",
+    "endpoint": "literature_bp.run_translation",
+    "role": "legacymentor",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/literature/run_translation",
+    "method": "POST",
+    "endpoint": "literature_bp.run_translation",
+    "role": "teamviewer",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/literature/run_translation",
+    "method": "POST",
+    "endpoint": "literature_bp.run_translation",
+    "role": "outsider-indirect",
+    "status": 409,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/literature/save_context",
+    "method": "POST",
+    "endpoint": "literature_bp.save_context",
+    "role": "outsider",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/literature/save_context",
+    "method": "POST",
+    "endpoint": "literature_bp.save_context",
+    "role": "prof",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/literature/save_context",
+    "method": "POST",
+    "endpoint": "literature_bp.save_context",
+    "role": "legacymentor",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/literature/save_context",
+    "method": "POST",
+    "endpoint": "literature_bp.save_context",
+    "role": "teamviewer",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/literature/save_context",
+    "method": "POST",
+    "endpoint": "literature_bp.save_context",
+    "role": "outsider-indirect",
+    "status": 400,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/literature/save_correction",
+    "method": "POST",
+    "endpoint": "literature_bp.save_correction",
+    "role": "outsider",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/literature/save_correction",
+    "method": "POST",
+    "endpoint": "literature_bp.save_correction",
+    "role": "prof",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/literature/save_correction",
+    "method": "POST",
+    "endpoint": "literature_bp.save_correction",
+    "role": "legacymentor",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/literature/save_correction",
+    "method": "POST",
+    "endpoint": "literature_bp.save_correction",
+    "role": "teamviewer",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/literature/save_correction",
+    "method": "POST",
+    "endpoint": "literature_bp.save_correction",
+    "role": "outsider-indirect",
+    "status": 400,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/literature/save_search_results",
+    "method": "POST",
+    "endpoint": "literature_bp.save_search_results",
+    "role": "outsider",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/literature/save_search_results",
+    "method": "POST",
+    "endpoint": "literature_bp.save_search_results",
+    "role": "prof",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/literature/save_search_results",
+    "method": "POST",
+    "endpoint": "literature_bp.save_search_results",
+    "role": "legacymentor",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/literature/save_search_results",
+    "method": "POST",
+    "endpoint": "literature_bp.save_search_results",
+    "role": "teamviewer",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/literature/save_search_results",
+    "method": "POST",
+    "endpoint": "literature_bp.save_search_results",
+    "role": "outsider-indirect",
+    "status": 400,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/literature/search",
+    "method": "POST",
+    "endpoint": "literature_bp.execute_search",
+    "role": "outsider",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/literature/search",
+    "method": "POST",
+    "endpoint": "literature_bp.execute_search",
+    "role": "prof",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/literature/search",
+    "method": "POST",
+    "endpoint": "literature_bp.execute_search",
+    "role": "legacymentor",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/literature/search",
+    "method": "POST",
+    "endpoint": "literature_bp.execute_search",
+    "role": "teamviewer",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/literature/search",
+    "method": "POST",
+    "endpoint": "literature_bp.execute_search",
+    "role": "outsider-indirect",
+    "status": 400,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/literature/upload",
+    "method": "POST",
+    "endpoint": "literature_bp.upload_file",
+    "role": "outsider",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/literature/upload",
+    "method": "POST",
+    "endpoint": "literature_bp.upload_file",
+    "role": "prof",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/literature/upload",
+    "method": "POST",
+    "endpoint": "literature_bp.upload_file",
+    "role": "legacymentor",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/literature/upload",
+    "method": "POST",
+    "endpoint": "literature_bp.upload_file",
+    "role": "teamviewer",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/literature/upload",
+    "method": "POST",
+    "endpoint": "literature_bp.upload_file",
+    "role": "outsider-indirect",
+    "status": 400,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/llm/binding/lock",
+    "method": "POST",
+    "endpoint": "llm_service.lock_binding",
+    "role": "outsider",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/llm/binding/lock",
+    "method": "POST",
+    "endpoint": "llm_service.lock_binding",
+    "role": "prof",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/llm/binding/lock",
+    "method": "POST",
+    "endpoint": "llm_service.lock_binding",
+    "role": "legacymentor",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/llm/binding/lock",
+    "method": "POST",
+    "endpoint": "llm_service.lock_binding",
+    "role": "teamviewer",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/llm/binding/lock",
+    "method": "POST",
+    "endpoint": "llm_service.lock_binding",
+    "role": "outsider-indirect",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/llm/binding/test",
+    "method": "POST",
+    "endpoint": "llm_service.test_binding",
+    "role": "outsider",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/llm/binding/test",
+    "method": "POST",
+    "endpoint": "llm_service.test_binding",
+    "role": "prof",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/llm/binding/test",
+    "method": "POST",
+    "endpoint": "llm_service.test_binding",
+    "role": "legacymentor",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/llm/binding/test",
+    "method": "POST",
+    "endpoint": "llm_service.test_binding",
+    "role": "teamviewer",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/llm/binding/test",
+    "method": "POST",
+    "endpoint": "llm_service.test_binding",
+    "role": "outsider-indirect",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/llm/binding/unlock",
+    "method": "POST",
+    "endpoint": "llm_service.unlock_binding",
+    "role": "outsider",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/llm/binding/unlock",
+    "method": "POST",
+    "endpoint": "llm_service.unlock_binding",
+    "role": "prof",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/llm/binding/unlock",
+    "method": "POST",
+    "endpoint": "llm_service.unlock_binding",
+    "role": "legacymentor",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/llm/binding/unlock",
+    "method": "POST",
+    "endpoint": "llm_service.unlock_binding",
+    "role": "teamviewer",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/llm/binding/unlock",
+    "method": "POST",
+    "endpoint": "llm_service.unlock_binding",
+    "role": "outsider-indirect",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/llm/binding/update",
+    "method": "POST",
+    "endpoint": "llm_service.update_binding",
+    "role": "outsider",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/llm/binding/update",
+    "method": "POST",
+    "endpoint": "llm_service.update_binding",
+    "role": "prof",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/llm/binding/update",
+    "method": "POST",
+    "endpoint": "llm_service.update_binding",
+    "role": "legacymentor",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/llm/binding/update",
+    "method": "POST",
+    "endpoint": "llm_service.update_binding",
+    "role": "teamviewer",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/llm/binding/update",
+    "method": "POST",
+    "endpoint": "llm_service.update_binding",
+    "role": "outsider-indirect",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/llm/connection/create",
+    "method": "POST",
+    "endpoint": "llm_service.create_connection",
+    "role": "outsider",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/llm/connection/create",
+    "method": "POST",
+    "endpoint": "llm_service.create_connection",
+    "role": "prof",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/llm/connection/create",
+    "method": "POST",
+    "endpoint": "llm_service.create_connection",
+    "role": "legacymentor",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/llm/connection/create",
+    "method": "POST",
+    "endpoint": "llm_service.create_connection",
+    "role": "teamviewer",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/llm/connection/create",
+    "method": "POST",
+    "endpoint": "llm_service.create_connection",
+    "role": "outsider-indirect",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/llm/connection/delete/<int:conn_id>",
+    "method": "DELETE",
+    "endpoint": "llm_service.delete_connection",
+    "role": "outsider",
+    "status": 404,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/llm/connection/delete/<int:conn_id>",
+    "method": "DELETE",
+    "endpoint": "llm_service.delete_connection",
+    "role": "prof",
+    "status": 404,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/llm/connection/delete/<int:conn_id>",
+    "method": "DELETE",
+    "endpoint": "llm_service.delete_connection",
+    "role": "legacymentor",
+    "status": 404,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/llm/connection/delete/<int:conn_id>",
+    "method": "DELETE",
+    "endpoint": "llm_service.delete_connection",
+    "role": "teamviewer",
+    "status": 404,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/llm/connection/delete/<int:conn_id>",
+    "method": "DELETE",
+    "endpoint": "llm_service.delete_connection",
+    "role": "editor",
+    "status": 404,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/llm/connection/delete/<int:conn_id>",
+    "method": "DELETE",
+    "endpoint": "llm_service.delete_connection",
+    "role": "outsider-indirect",
+    "status": 404,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/llm/connection/fetch_models",
+    "method": "POST",
+    "endpoint": "llm_service.fetch_models",
+    "role": "outsider",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/llm/connection/fetch_models",
+    "method": "POST",
+    "endpoint": "llm_service.fetch_models",
+    "role": "prof",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/llm/connection/fetch_models",
+    "method": "POST",
+    "endpoint": "llm_service.fetch_models",
+    "role": "legacymentor",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/llm/connection/fetch_models",
+    "method": "POST",
+    "endpoint": "llm_service.fetch_models",
+    "role": "teamviewer",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/llm/connection/fetch_models",
+    "method": "POST",
+    "endpoint": "llm_service.fetch_models",
+    "role": "outsider-indirect",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/llm/connection/test",
+    "method": "POST",
+    "endpoint": "llm_service.test_connection",
+    "role": "outsider",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/llm/connection/test",
+    "method": "POST",
+    "endpoint": "llm_service.test_connection",
+    "role": "prof",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/llm/connection/test",
+    "method": "POST",
+    "endpoint": "llm_service.test_connection",
+    "role": "legacymentor",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/llm/connection/test",
+    "method": "POST",
+    "endpoint": "llm_service.test_connection",
+    "role": "teamviewer",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/llm/connection/test",
+    "method": "POST",
+    "endpoint": "llm_service.test_connection",
+    "role": "outsider-indirect",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/llm/connection/update",
+    "method": "POST",
+    "endpoint": "llm_service.update_connection",
+    "role": "outsider",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/llm/connection/update",
+    "method": "POST",
+    "endpoint": "llm_service.update_connection",
+    "role": "prof",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/llm/connection/update",
+    "method": "POST",
+    "endpoint": "llm_service.update_connection",
+    "role": "legacymentor",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/llm/connection/update",
+    "method": "POST",
+    "endpoint": "llm_service.update_connection",
+    "role": "teamviewer",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/llm/connection/update",
+    "method": "POST",
+    "endpoint": "llm_service.update_connection",
+    "role": "outsider-indirect",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/llm/runtime/cpu",
+    "method": "POST",
+    "endpoint": "llm_service.runtime_cpu",
+    "role": "outsider",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/llm/runtime/cpu",
+    "method": "POST",
+    "endpoint": "llm_service.runtime_cpu",
+    "role": "prof",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/llm/runtime/cpu",
+    "method": "POST",
+    "endpoint": "llm_service.runtime_cpu",
+    "role": "legacymentor",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/llm/runtime/cpu",
+    "method": "POST",
+    "endpoint": "llm_service.runtime_cpu",
+    "role": "teamviewer",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/llm/runtime/cpu",
+    "method": "POST",
+    "endpoint": "llm_service.runtime_cpu",
+    "role": "outsider-indirect",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/llm/runtime/flowa_workers",
+    "method": "POST",
+    "endpoint": "llm_service.runtime_flowa_workers",
+    "role": "outsider",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/llm/runtime/flowa_workers",
+    "method": "POST",
+    "endpoint": "llm_service.runtime_flowa_workers",
+    "role": "prof",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/llm/runtime/flowa_workers",
+    "method": "POST",
+    "endpoint": "llm_service.runtime_flowa_workers",
+    "role": "legacymentor",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/llm/runtime/flowa_workers",
+    "method": "POST",
+    "endpoint": "llm_service.runtime_flowa_workers",
+    "role": "teamviewer",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/llm/runtime/flowa_workers",
+    "method": "POST",
+    "endpoint": "llm_service.runtime_flowa_workers",
+    "role": "outsider-indirect",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/mentor/mentees",
+    "method": "POST",
+    "endpoint": "mentor_api.add_mentee",
+    "role": "outsider",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/mentor/mentees",
+    "method": "POST",
+    "endpoint": "mentor_api.add_mentee",
+    "role": "prof",
+    "status": 409,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/mentor/mentees",
+    "method": "POST",
+    "endpoint": "mentor_api.add_mentee",
+    "role": "legacymentor",
+    "status": 409,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/mentor/mentees",
+    "method": "POST",
+    "endpoint": "mentor_api.add_mentee",
+    "role": "teamviewer",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/mentor/mentees",
+    "method": "POST",
+    "endpoint": "mentor_api.add_mentee",
+    "role": "outsider-indirect",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/mentor/mentees/<int:mentee_id>",
+    "method": "DELETE",
+    "endpoint": "mentor_api.remove_mentee",
+    "role": "outsider",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/mentor/mentees/<int:mentee_id>",
+    "method": "DELETE",
+    "endpoint": "mentor_api.remove_mentee",
+    "role": "prof",
+    "status": 200,
+    "mutated_aclp1": true,
+    "leaks": []
+   },
+   {
+    "rule": "/api/mentor/mentees/<int:mentee_id>",
+    "method": "DELETE",
+    "endpoint": "mentor_api.remove_mentee",
+    "role": "legacymentor",
+    "status": 200,
+    "mutated_aclp1": true,
+    "leaks": []
+   },
+   {
+    "rule": "/api/mentor/mentees/<int:mentee_id>",
+    "method": "DELETE",
+    "endpoint": "mentor_api.remove_mentee",
+    "role": "teamviewer",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/mentor/mentees/<int:mentee_id>",
+    "method": "DELETE",
+    "endpoint": "mentor_api.remove_mentee",
+    "role": "editor",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/mentor/mentees/<int:mentee_id>",
+    "method": "DELETE",
+    "endpoint": "mentor_api.remove_mentee",
+    "role": "outsider-indirect",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/mentor/mentees/<int:mentee_id>/comments",
+    "method": "POST",
+    "endpoint": "mentor_api.create_mentor_comment",
+    "role": "outsider",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/mentor/mentees/<int:mentee_id>/comments",
+    "method": "POST",
+    "endpoint": "mentor_api.create_mentor_comment",
+    "role": "prof",
+    "status": 201,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/mentor/mentees/<int:mentee_id>/comments",
+    "method": "POST",
+    "endpoint": "mentor_api.create_mentor_comment",
+    "role": "legacymentor",
+    "status": 201,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/mentor/mentees/<int:mentee_id>/comments",
+    "method": "POST",
+    "endpoint": "mentor_api.create_mentor_comment",
+    "role": "teamviewer",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/mentor/mentees/<int:mentee_id>/comments",
+    "method": "POST",
+    "endpoint": "mentor_api.create_mentor_comment",
+    "role": "outsider-indirect",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/mentor/mentees/<int:mentee_id>/reviews/<pid>/items",
+    "method": "POST",
+    "endpoint": "mentor_api.create_review_item",
+    "role": "outsider",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/mentor/mentees/<int:mentee_id>/reviews/<pid>/items",
+    "method": "POST",
+    "endpoint": "mentor_api.create_review_item",
+    "role": "prof",
+    "status": 409,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/mentor/mentees/<int:mentee_id>/reviews/<pid>/items",
+    "method": "POST",
+    "endpoint": "mentor_api.create_review_item",
+    "role": "legacymentor",
+    "status": 409,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/mentor/mentees/<int:mentee_id>/reviews/<pid>/items",
+    "method": "POST",
+    "endpoint": "mentor_api.create_review_item",
+    "role": "teamviewer",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/mentor/mentees/<int:mentee_id>/reviews/<pid>/items",
+    "method": "POST",
+    "endpoint": "mentor_api.create_review_item",
+    "role": "outsider-indirect",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/mentor/mentees/<int:mentee_id>/study-reviews/<pid>/<note_id>/comments",
+    "method": "POST",
+    "endpoint": "mentor_api.comment_study_review_request",
+    "role": "outsider",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/mentor/mentees/<int:mentee_id>/study-reviews/<pid>/<note_id>/comments",
+    "method": "POST",
+    "endpoint": "mentor_api.comment_study_review_request",
+    "role": "prof",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/mentor/mentees/<int:mentee_id>/study-reviews/<pid>/<note_id>/comments",
+    "method": "POST",
+    "endpoint": "mentor_api.comment_study_review_request",
+    "role": "legacymentor",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/mentor/mentees/<int:mentee_id>/study-reviews/<pid>/<note_id>/comments",
+    "method": "POST",
+    "endpoint": "mentor_api.comment_study_review_request",
+    "role": "teamviewer",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/mentor/mentees/<int:mentee_id>/study-reviews/<pid>/<note_id>/comments",
+    "method": "POST",
+    "endpoint": "mentor_api.comment_study_review_request",
+    "role": "outsider-indirect",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/mentor/mentees/<int:mentee_id>/tasks",
+    "method": "POST",
+    "endpoint": "mentor_api.create_task",
+    "role": "outsider",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/mentor/mentees/<int:mentee_id>/tasks",
+    "method": "POST",
+    "endpoint": "mentor_api.create_task",
+    "role": "prof",
+    "status": 201,
+    "mutated_aclp1": true,
+    "leaks": []
+   },
+   {
+    "rule": "/api/mentor/mentees/<int:mentee_id>/tasks",
+    "method": "POST",
+    "endpoint": "mentor_api.create_task",
+    "role": "legacymentor",
+    "status": 201,
+    "mutated_aclp1": true,
+    "leaks": []
+   },
+   {
+    "rule": "/api/mentor/mentees/<int:mentee_id>/tasks",
+    "method": "POST",
+    "endpoint": "mentor_api.create_task",
+    "role": "teamviewer",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/mentor/mentees/<int:mentee_id>/tasks",
+    "method": "POST",
+    "endpoint": "mentor_api.create_task",
+    "role": "outsider-indirect",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/mentor/tasks/<int:task_id>",
+    "method": "DELETE",
+    "endpoint": "mentor_api.delete_task",
+    "role": "outsider",
+    "status": 404,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/mentor/tasks/<int:task_id>",
+    "method": "DELETE",
+    "endpoint": "mentor_api.delete_task",
+    "role": "prof",
+    "status": 404,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/mentor/tasks/<int:task_id>",
+    "method": "DELETE",
+    "endpoint": "mentor_api.delete_task",
+    "role": "legacymentor",
+    "status": 404,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/mentor/tasks/<int:task_id>",
+    "method": "DELETE",
+    "endpoint": "mentor_api.delete_task",
+    "role": "teamviewer",
+    "status": 404,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/mentor/tasks/<int:task_id>",
+    "method": "DELETE",
+    "endpoint": "mentor_api.delete_task",
+    "role": "editor",
+    "status": 404,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/mentor/tasks/<int:task_id>",
+    "method": "DELETE",
+    "endpoint": "mentor_api.delete_task",
+    "role": "outsider-indirect",
+    "status": 404,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/mentor/tasks/<int:task_id>",
+    "method": "PATCH",
+    "endpoint": "mentor_api.update_task",
+    "role": "outsider",
+    "status": 404,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/mentor/tasks/<int:task_id>",
+    "method": "PATCH",
+    "endpoint": "mentor_api.update_task",
+    "role": "prof",
+    "status": 404,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/mentor/tasks/<int:task_id>",
+    "method": "PATCH",
+    "endpoint": "mentor_api.update_task",
+    "role": "legacymentor",
+    "status": 404,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/mentor/tasks/<int:task_id>",
+    "method": "PATCH",
+    "endpoint": "mentor_api.update_task",
+    "role": "teamviewer",
+    "status": 404,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/mentor/tasks/<int:task_id>",
+    "method": "PATCH",
+    "endpoint": "mentor_api.update_task",
+    "role": "outsider-indirect",
+    "status": 404,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/paq/promote",
+    "method": "POST",
+    "endpoint": "paq.promote_project",
+    "role": "outsider",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/paq/promote",
+    "method": "POST",
+    "endpoint": "paq.promote_project",
+    "role": "prof",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/paq/promote",
+    "method": "POST",
+    "endpoint": "paq.promote_project",
+    "role": "legacymentor",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/paq/promote",
+    "method": "POST",
+    "endpoint": "paq.promote_project",
+    "role": "teamviewer",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/paq/promote",
+    "method": "POST",
+    "endpoint": "paq.promote_project",
+    "role": "outsider-indirect",
+    "status": 200,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/paq/run_task",
+    "method": "POST",
+    "endpoint": "paq.run_paq_task",
+    "role": "outsider",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/paq/run_task",
+    "method": "POST",
+    "endpoint": "paq.run_paq_task",
+    "role": "prof",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/paq/run_task",
+    "method": "POST",
+    "endpoint": "paq.run_paq_task",
+    "role": "legacymentor",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/paq/run_task",
+    "method": "POST",
+    "endpoint": "paq.run_paq_task",
+    "role": "teamviewer",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/paq/run_task",
+    "method": "POST",
+    "endpoint": "paq.run_paq_task",
+    "role": "outsider-indirect",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/paq/save_taxonomy",
+    "method": "POST",
+    "endpoint": "paq.save_taxonomy",
+    "role": "outsider",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/paq/save_taxonomy",
+    "method": "POST",
+    "endpoint": "paq.save_taxonomy",
+    "role": "prof",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/paq/save_taxonomy",
+    "method": "POST",
+    "endpoint": "paq.save_taxonomy",
+    "role": "legacymentor",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/paq/save_taxonomy",
+    "method": "POST",
+    "endpoint": "paq.save_taxonomy",
+    "role": "teamviewer",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/paq/save_taxonomy",
+    "method": "POST",
+    "endpoint": "paq.save_taxonomy",
+    "role": "outsider-indirect",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/project/<pid>/members",
+    "method": "POST",
+    "endpoint": "project_portfolio.add_member",
+    "role": "outsider",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/project/<pid>/members",
+    "method": "POST",
+    "endpoint": "project_portfolio.add_member",
+    "role": "prof",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/project/<pid>/members",
+    "method": "POST",
+    "endpoint": "project_portfolio.add_member",
+    "role": "legacymentor",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/project/<pid>/members",
+    "method": "POST",
+    "endpoint": "project_portfolio.add_member",
+    "role": "teamviewer",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/project/<pid>/members",
+    "method": "POST",
+    "endpoint": "project_portfolio.add_member",
+    "role": "editor",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/project/<pid>/members",
+    "method": "POST",
+    "endpoint": "project_portfolio.add_member",
+    "role": "outsider-indirect",
+    "status": 200,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/project/<pid>/members/<username>",
+    "method": "DELETE",
+    "endpoint": "project_portfolio.remove_member",
+    "role": "outsider",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/project/<pid>/members/<username>",
+    "method": "DELETE",
+    "endpoint": "project_portfolio.remove_member",
+    "role": "prof",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/project/<pid>/members/<username>",
+    "method": "DELETE",
+    "endpoint": "project_portfolio.remove_member",
+    "role": "legacymentor",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/project/<pid>/members/<username>",
+    "method": "DELETE",
+    "endpoint": "project_portfolio.remove_member",
+    "role": "teamviewer",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/project/<pid>/members/<username>",
+    "method": "DELETE",
+    "endpoint": "project_portfolio.remove_member",
+    "role": "editor",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/project/<pid>/members/<username>",
+    "method": "DELETE",
+    "endpoint": "project_portfolio.remove_member",
+    "role": "outsider-indirect",
+    "status": 404,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/project/<pid>/members/<username>",
+    "method": "PATCH",
+    "endpoint": "project_portfolio.update_member_role",
+    "role": "outsider",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/project/<pid>/members/<username>",
+    "method": "PATCH",
+    "endpoint": "project_portfolio.update_member_role",
+    "role": "prof",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/project/<pid>/members/<username>",
+    "method": "PATCH",
+    "endpoint": "project_portfolio.update_member_role",
+    "role": "legacymentor",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/project/<pid>/members/<username>",
+    "method": "PATCH",
+    "endpoint": "project_portfolio.update_member_role",
+    "role": "teamviewer",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/project/<pid>/members/<username>",
+    "method": "PATCH",
+    "endpoint": "project_portfolio.update_member_role",
+    "role": "editor",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/project/<pid>/members/<username>",
+    "method": "PATCH",
+    "endpoint": "project_portfolio.update_member_role",
+    "role": "outsider-indirect",
+    "status": 404,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/project/create",
+    "method": "POST",
+    "endpoint": "project_portfolio.create_project",
+    "role": "outsider",
+    "status": 201,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/project/create",
+    "method": "POST",
+    "endpoint": "project_portfolio.create_project",
+    "role": "prof",
+    "status": 201,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/project/create",
+    "method": "POST",
+    "endpoint": "project_portfolio.create_project",
+    "role": "legacymentor",
+    "status": 201,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/project/create",
+    "method": "POST",
+    "endpoint": "project_portfolio.create_project",
+    "role": "teamviewer",
+    "status": 201,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/project/create",
+    "method": "POST",
+    "endpoint": "project_portfolio.create_project",
+    "role": "outsider-indirect",
+    "status": 201,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/project/delete/<pid>",
+    "method": "DELETE",
+    "endpoint": "project_portfolio.delete_project",
+    "role": "outsider",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/project/delete/<pid>",
+    "method": "DELETE",
+    "endpoint": "project_portfolio.delete_project",
+    "role": "prof",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/project/delete/<pid>",
+    "method": "DELETE",
+    "endpoint": "project_portfolio.delete_project",
+    "role": "legacymentor",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/project/delete/<pid>",
+    "method": "DELETE",
+    "endpoint": "project_portfolio.delete_project",
+    "role": "teamviewer",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/project/delete/<pid>",
+    "method": "DELETE",
+    "endpoint": "project_portfolio.delete_project",
+    "role": "editor",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/project/delete/<pid>",
+    "method": "DELETE",
+    "endpoint": "project_portfolio.delete_project",
+    "role": "outsider-indirect",
+    "status": 200,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/project/update/<pid>",
+    "method": "POST",
+    "endpoint": "project_portfolio.update_project",
+    "role": "outsider",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/project/update/<pid>",
+    "method": "POST",
+    "endpoint": "project_portfolio.update_project",
+    "role": "prof",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/project/update/<pid>",
+    "method": "POST",
+    "endpoint": "project_portfolio.update_project",
+    "role": "legacymentor",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/project/update/<pid>",
+    "method": "POST",
+    "endpoint": "project_portfolio.update_project",
+    "role": "teamviewer",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/project/update/<pid>",
+    "method": "POST",
+    "endpoint": "project_portfolio.update_project",
+    "role": "outsider-indirect",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/study/<pid>/matrix/<matrix_id>",
+    "method": "DELETE",
+    "endpoint": "study_bp.delete_matrix_history_item",
+    "role": "outsider",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/study/<pid>/matrix/<matrix_id>",
+    "method": "DELETE",
+    "endpoint": "study_bp.delete_matrix_history_item",
+    "role": "prof",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/study/<pid>/matrix/<matrix_id>",
+    "method": "DELETE",
+    "endpoint": "study_bp.delete_matrix_history_item",
+    "role": "legacymentor",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/study/<pid>/matrix/<matrix_id>",
+    "method": "DELETE",
+    "endpoint": "study_bp.delete_matrix_history_item",
+    "role": "teamviewer",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/study/<pid>/matrix/<matrix_id>",
+    "method": "DELETE",
+    "endpoint": "study_bp.delete_matrix_history_item",
+    "role": "editor",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/study/<pid>/matrix/<matrix_id>",
+    "method": "DELETE",
+    "endpoint": "study_bp.delete_matrix_history_item",
+    "role": "outsider-indirect",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/study/<pid>/matrix/<matrix_id>/rename",
+    "method": "PATCH",
+    "endpoint": "study_bp.rename_matrix_history_item",
+    "role": "outsider",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/study/<pid>/matrix/<matrix_id>/rename",
+    "method": "PATCH",
+    "endpoint": "study_bp.rename_matrix_history_item",
+    "role": "prof",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/study/<pid>/matrix/<matrix_id>/rename",
+    "method": "PATCH",
+    "endpoint": "study_bp.rename_matrix_history_item",
+    "role": "legacymentor",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/study/<pid>/matrix/<matrix_id>/rename",
+    "method": "PATCH",
+    "endpoint": "study_bp.rename_matrix_history_item",
+    "role": "teamviewer",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/study/<pid>/matrix/<matrix_id>/rename",
+    "method": "PATCH",
+    "endpoint": "study_bp.rename_matrix_history_item",
+    "role": "outsider-indirect",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/study/chat",
+    "method": "POST",
+    "endpoint": "study_bp.chat_with_tutor",
+    "role": "outsider",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/study/chat",
+    "method": "POST",
+    "endpoint": "study_bp.chat_with_tutor",
+    "role": "prof",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/study/chat",
+    "method": "POST",
+    "endpoint": "study_bp.chat_with_tutor",
+    "role": "legacymentor",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/study/chat",
+    "method": "POST",
+    "endpoint": "study_bp.chat_with_tutor",
+    "role": "teamviewer",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/study/chat",
+    "method": "POST",
+    "endpoint": "study_bp.chat_with_tutor",
+    "role": "outsider-indirect",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/study/compare",
+    "method": "POST",
+    "endpoint": "study_bp.run_matrix_comparison",
+    "role": "outsider",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/study/compare",
+    "method": "POST",
+    "endpoint": "study_bp.run_matrix_comparison",
+    "role": "prof",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/study/compare",
+    "method": "POST",
+    "endpoint": "study_bp.run_matrix_comparison",
+    "role": "legacymentor",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/study/compare",
+    "method": "POST",
+    "endpoint": "study_bp.run_matrix_comparison",
+    "role": "teamviewer",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/study/compare",
+    "method": "POST",
+    "endpoint": "study_bp.run_matrix_comparison",
+    "role": "outsider-indirect",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/study/conversation/<conv_id>/delete",
+    "method": "POST",
+    "endpoint": "study_bp.delete_conversation",
+    "role": "outsider",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/study/conversation/<conv_id>/delete",
+    "method": "POST",
+    "endpoint": "study_bp.delete_conversation",
+    "role": "prof",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/study/conversation/<conv_id>/delete",
+    "method": "POST",
+    "endpoint": "study_bp.delete_conversation",
+    "role": "legacymentor",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/study/conversation/<conv_id>/delete",
+    "method": "POST",
+    "endpoint": "study_bp.delete_conversation",
+    "role": "teamviewer",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/study/conversation/<conv_id>/delete",
+    "method": "POST",
+    "endpoint": "study_bp.delete_conversation",
+    "role": "editor",
+    "status": 200,
+    "mutated_aclp1": true,
+    "leaks": []
+   },
+   {
+    "rule": "/api/study/conversation/<conv_id>/delete",
+    "method": "POST",
+    "endpoint": "study_bp.delete_conversation",
+    "role": "outsider-indirect",
+    "status": 404,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/study/conversation/<conv_id>/rename",
+    "method": "POST",
+    "endpoint": "study_bp.rename_conversation",
+    "role": "outsider",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/study/conversation/<conv_id>/rename",
+    "method": "POST",
+    "endpoint": "study_bp.rename_conversation",
+    "role": "prof",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/study/conversation/<conv_id>/rename",
+    "method": "POST",
+    "endpoint": "study_bp.rename_conversation",
+    "role": "legacymentor",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/study/conversation/<conv_id>/rename",
+    "method": "POST",
+    "endpoint": "study_bp.rename_conversation",
+    "role": "teamviewer",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/study/conversation/<conv_id>/rename",
+    "method": "POST",
+    "endpoint": "study_bp.rename_conversation",
+    "role": "outsider-indirect",
+    "status": 404,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/study/conversations/create",
+    "method": "POST",
+    "endpoint": "study_bp.create_conversation",
+    "role": "outsider",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/study/conversations/create",
+    "method": "POST",
+    "endpoint": "study_bp.create_conversation",
+    "role": "prof",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/study/conversations/create",
+    "method": "POST",
+    "endpoint": "study_bp.create_conversation",
+    "role": "legacymentor",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/study/conversations/create",
+    "method": "POST",
+    "endpoint": "study_bp.create_conversation",
+    "role": "teamviewer",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/study/conversations/create",
+    "method": "POST",
+    "endpoint": "study_bp.create_conversation",
+    "role": "outsider-indirect",
+    "status": 200,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/study/evidence_notes/accept",
+    "method": "POST",
+    "endpoint": "study_bp.accept_evidence_note",
+    "role": "outsider",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/study/evidence_notes/accept",
+    "method": "POST",
+    "endpoint": "study_bp.accept_evidence_note",
+    "role": "prof",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/study/evidence_notes/accept",
+    "method": "POST",
+    "endpoint": "study_bp.accept_evidence_note",
+    "role": "legacymentor",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/study/evidence_notes/accept",
+    "method": "POST",
+    "endpoint": "study_bp.accept_evidence_note",
+    "role": "teamviewer",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/study/evidence_notes/accept",
+    "method": "POST",
+    "endpoint": "study_bp.accept_evidence_note",
+    "role": "outsider-indirect",
+    "status": 200,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/study/evidence_notes/comment",
+    "method": "POST",
+    "endpoint": "study_bp.comment_evidence_note",
+    "role": "outsider",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/study/evidence_notes/comment",
+    "method": "POST",
+    "endpoint": "study_bp.comment_evidence_note",
+    "role": "prof",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/study/evidence_notes/comment",
+    "method": "POST",
+    "endpoint": "study_bp.comment_evidence_note",
+    "role": "legacymentor",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/study/evidence_notes/comment",
+    "method": "POST",
+    "endpoint": "study_bp.comment_evidence_note",
+    "role": "teamviewer",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/study/evidence_notes/comment",
+    "method": "POST",
+    "endpoint": "study_bp.comment_evidence_note",
+    "role": "outsider-indirect",
+    "status": 404,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/study/evidence_notes/review",
+    "method": "POST",
+    "endpoint": "study_bp.review_evidence_note",
+    "role": "outsider",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/study/evidence_notes/review",
+    "method": "POST",
+    "endpoint": "study_bp.review_evidence_note",
+    "role": "prof",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/study/evidence_notes/review",
+    "method": "POST",
+    "endpoint": "study_bp.review_evidence_note",
+    "role": "legacymentor",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/study/evidence_notes/review",
+    "method": "POST",
+    "endpoint": "study_bp.review_evidence_note",
+    "role": "teamviewer",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/study/evidence_notes/review",
+    "method": "POST",
+    "endpoint": "study_bp.review_evidence_note",
+    "role": "outsider-indirect",
+    "status": 404,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/study/evidence_notes/suggest",
+    "method": "POST",
+    "endpoint": "study_bp.suggest_evidence_note",
+    "role": "outsider",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/study/evidence_notes/suggest",
+    "method": "POST",
+    "endpoint": "study_bp.suggest_evidence_note",
+    "role": "prof",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/study/evidence_notes/suggest",
+    "method": "POST",
+    "endpoint": "study_bp.suggest_evidence_note",
+    "role": "legacymentor",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/study/evidence_notes/suggest",
+    "method": "POST",
+    "endpoint": "study_bp.suggest_evidence_note",
+    "role": "teamviewer",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/study/evidence_notes/suggest",
+    "method": "POST",
+    "endpoint": "study_bp.suggest_evidence_note",
+    "role": "outsider-indirect",
+    "status": 404,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/study/evidence_notes/suggestion",
+    "method": "POST",
+    "endpoint": "study_bp.resolve_evidence_suggestion",
+    "role": "outsider",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/study/evidence_notes/suggestion",
+    "method": "POST",
+    "endpoint": "study_bp.resolve_evidence_suggestion",
+    "role": "prof",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/study/evidence_notes/suggestion",
+    "method": "POST",
+    "endpoint": "study_bp.resolve_evidence_suggestion",
+    "role": "legacymentor",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/study/evidence_notes/suggestion",
+    "method": "POST",
+    "endpoint": "study_bp.resolve_evidence_suggestion",
+    "role": "teamviewer",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/study/evidence_notes/suggestion",
+    "method": "POST",
+    "endpoint": "study_bp.resolve_evidence_suggestion",
+    "role": "outsider-indirect",
+    "status": 404,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/study/evidence_notes/update",
+    "method": "POST",
+    "endpoint": "study_bp.update_evidence_note",
+    "role": "outsider",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/study/evidence_notes/update",
+    "method": "POST",
+    "endpoint": "study_bp.update_evidence_note",
+    "role": "prof",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/study/evidence_notes/update",
+    "method": "POST",
+    "endpoint": "study_bp.update_evidence_note",
+    "role": "legacymentor",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/study/evidence_notes/update",
+    "method": "POST",
+    "endpoint": "study_bp.update_evidence_note",
+    "role": "teamviewer",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/study/evidence_notes/update",
+    "method": "POST",
+    "endpoint": "study_bp.update_evidence_note",
+    "role": "outsider-indirect",
+    "status": 404,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/study/notes/save",
+    "method": "POST",
+    "endpoint": "study_bp.save_user_notes",
+    "role": "outsider",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/study/notes/save",
+    "method": "POST",
+    "endpoint": "study_bp.save_user_notes",
+    "role": "prof",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/study/notes/save",
+    "method": "POST",
+    "endpoint": "study_bp.save_user_notes",
+    "role": "legacymentor",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/study/notes/save",
+    "method": "POST",
+    "endpoint": "study_bp.save_user_notes",
+    "role": "teamviewer",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/api/study/notes/save",
+    "method": "POST",
+    "endpoint": "study_bp.save_user_notes",
+    "role": "outsider-indirect",
+    "status": 200,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/manuscript/api/change-impact/reconfirm",
+    "method": "POST",
+    "endpoint": "manuscript.reconfirm_affected_outcome",
+    "role": "outsider",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/manuscript/api/change-impact/reconfirm",
+    "method": "POST",
+    "endpoint": "manuscript.reconfirm_affected_outcome",
+    "role": "prof",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/manuscript/api/change-impact/reconfirm",
+    "method": "POST",
+    "endpoint": "manuscript.reconfirm_affected_outcome",
+    "role": "legacymentor",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/manuscript/api/change-impact/reconfirm",
+    "method": "POST",
+    "endpoint": "manuscript.reconfirm_affected_outcome",
+    "role": "teamviewer",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/manuscript/api/change-impact/reconfirm",
+    "method": "POST",
+    "endpoint": "manuscript.reconfirm_affected_outcome",
+    "role": "outsider-indirect",
+    "status": 400,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/manuscript/api/chapter/<pid>/assignments",
+    "method": "POST",
+    "endpoint": "manuscript.create_assignment",
+    "role": "outsider",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/manuscript/api/chapter/<pid>/assignments",
+    "method": "POST",
+    "endpoint": "manuscript.create_assignment",
+    "role": "prof",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/manuscript/api/chapter/<pid>/assignments",
+    "method": "POST",
+    "endpoint": "manuscript.create_assignment",
+    "role": "legacymentor",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/manuscript/api/chapter/<pid>/assignments",
+    "method": "POST",
+    "endpoint": "manuscript.create_assignment",
+    "role": "teamviewer",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/manuscript/api/chapter/<pid>/assignments",
+    "method": "POST",
+    "endpoint": "manuscript.create_assignment",
+    "role": "outsider-indirect",
+    "status": 201,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/manuscript/api/chapter/<pid>/assignments/<int:assignment_id>",
+    "method": "DELETE",
+    "endpoint": "manuscript.delete_assignment",
+    "role": "outsider",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/manuscript/api/chapter/<pid>/assignments/<int:assignment_id>",
+    "method": "DELETE",
+    "endpoint": "manuscript.delete_assignment",
+    "role": "prof",
+    "status": 404,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/manuscript/api/chapter/<pid>/assignments/<int:assignment_id>",
+    "method": "DELETE",
+    "endpoint": "manuscript.delete_assignment",
+    "role": "legacymentor",
+    "status": 404,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/manuscript/api/chapter/<pid>/assignments/<int:assignment_id>",
+    "method": "DELETE",
+    "endpoint": "manuscript.delete_assignment",
+    "role": "teamviewer",
+    "status": 404,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/manuscript/api/chapter/<pid>/assignments/<int:assignment_id>",
+    "method": "DELETE",
+    "endpoint": "manuscript.delete_assignment",
+    "role": "editor",
+    "status": 404,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/manuscript/api/chapter/<pid>/assignments/<int:assignment_id>",
+    "method": "DELETE",
+    "endpoint": "manuscript.delete_assignment",
+    "role": "outsider-indirect",
+    "status": 404,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/manuscript/api/chapter/<pid>/comments",
+    "method": "POST",
+    "endpoint": "manuscript.create_comment",
+    "role": "outsider",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/manuscript/api/chapter/<pid>/comments",
+    "method": "POST",
+    "endpoint": "manuscript.create_comment",
+    "role": "prof",
+    "status": 201,
+    "mutated_aclp1": true,
+    "leaks": []
+   },
+   {
+    "rule": "/manuscript/api/chapter/<pid>/comments",
+    "method": "POST",
+    "endpoint": "manuscript.create_comment",
+    "role": "legacymentor",
+    "status": 201,
+    "mutated_aclp1": true,
+    "leaks": []
+   },
+   {
+    "rule": "/manuscript/api/chapter/<pid>/comments",
+    "method": "POST",
+    "endpoint": "manuscript.create_comment",
+    "role": "teamviewer",
+    "status": 201,
+    "mutated_aclp1": true,
+    "leaks": []
+   },
+   {
+    "rule": "/manuscript/api/chapter/<pid>/comments",
+    "method": "POST",
+    "endpoint": "manuscript.create_comment",
+    "role": "outsider-indirect",
+    "status": 201,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/manuscript/api/chapter/<pid>/comments/<int:comment_id>",
+    "method": "DELETE",
+    "endpoint": "manuscript.delete_comment",
+    "role": "outsider",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/manuscript/api/chapter/<pid>/comments/<int:comment_id>",
+    "method": "DELETE",
+    "endpoint": "manuscript.delete_comment",
+    "role": "prof",
+    "status": 404,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/manuscript/api/chapter/<pid>/comments/<int:comment_id>",
+    "method": "DELETE",
+    "endpoint": "manuscript.delete_comment",
+    "role": "legacymentor",
+    "status": 404,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/manuscript/api/chapter/<pid>/comments/<int:comment_id>",
+    "method": "DELETE",
+    "endpoint": "manuscript.delete_comment",
+    "role": "teamviewer",
+    "status": 404,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/manuscript/api/chapter/<pid>/comments/<int:comment_id>",
+    "method": "DELETE",
+    "endpoint": "manuscript.delete_comment",
+    "role": "editor",
+    "status": 404,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/manuscript/api/chapter/<pid>/comments/<int:comment_id>",
+    "method": "DELETE",
+    "endpoint": "manuscript.delete_comment",
+    "role": "outsider-indirect",
+    "status": 404,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/manuscript/api/chapter/<pid>/comments/<int:comment_id>",
+    "method": "PATCH",
+    "endpoint": "manuscript.update_comment",
+    "role": "outsider",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/manuscript/api/chapter/<pid>/comments/<int:comment_id>",
+    "method": "PATCH",
+    "endpoint": "manuscript.update_comment",
+    "role": "prof",
+    "status": 404,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/manuscript/api/chapter/<pid>/comments/<int:comment_id>",
+    "method": "PATCH",
+    "endpoint": "manuscript.update_comment",
+    "role": "legacymentor",
+    "status": 404,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/manuscript/api/chapter/<pid>/comments/<int:comment_id>",
+    "method": "PATCH",
+    "endpoint": "manuscript.update_comment",
+    "role": "teamviewer",
+    "status": 404,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/manuscript/api/chapter/<pid>/comments/<int:comment_id>",
+    "method": "PATCH",
+    "endpoint": "manuscript.update_comment",
+    "role": "outsider-indirect",
+    "status": 404,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/manuscript/api/chapter/<pid>/comments/<int:comment_id>/events",
+    "method": "POST",
+    "endpoint": "manuscript.append_review_event",
+    "role": "outsider",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/manuscript/api/chapter/<pid>/comments/<int:comment_id>/events",
+    "method": "POST",
+    "endpoint": "manuscript.append_review_event",
+    "role": "prof",
+    "status": 404,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/manuscript/api/chapter/<pid>/comments/<int:comment_id>/events",
+    "method": "POST",
+    "endpoint": "manuscript.append_review_event",
+    "role": "legacymentor",
+    "status": 404,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/manuscript/api/chapter/<pid>/comments/<int:comment_id>/events",
+    "method": "POST",
+    "endpoint": "manuscript.append_review_event",
+    "role": "teamviewer",
+    "status": 404,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/manuscript/api/chapter/<pid>/comments/<int:comment_id>/events",
+    "method": "POST",
+    "endpoint": "manuscript.append_review_event",
+    "role": "outsider-indirect",
+    "status": 404,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/manuscript/api/chapter/<pid>/settings",
+    "method": "PUT",
+    "endpoint": "manuscript.update_collab_settings",
+    "role": "outsider",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/manuscript/api/chapter/<pid>/settings",
+    "method": "PUT",
+    "endpoint": "manuscript.update_collab_settings",
+    "role": "prof",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/manuscript/api/chapter/<pid>/settings",
+    "method": "PUT",
+    "endpoint": "manuscript.update_collab_settings",
+    "role": "legacymentor",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/manuscript/api/chapter/<pid>/settings",
+    "method": "PUT",
+    "endpoint": "manuscript.update_collab_settings",
+    "role": "teamviewer",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/manuscript/api/chapter/<pid>/settings",
+    "method": "PUT",
+    "endpoint": "manuscript.update_collab_settings",
+    "role": "outsider-indirect",
+    "status": 400,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/manuscript/api/citation/decide",
+    "method": "POST",
+    "endpoint": "manuscript.citation_decide_api",
+    "role": "outsider",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/manuscript/api/citation/decide",
+    "method": "POST",
+    "endpoint": "manuscript.citation_decide_api",
+    "role": "prof",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/manuscript/api/citation/decide",
+    "method": "POST",
+    "endpoint": "manuscript.citation_decide_api",
+    "role": "legacymentor",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/manuscript/api/citation/decide",
+    "method": "POST",
+    "endpoint": "manuscript.citation_decide_api",
+    "role": "teamviewer",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/manuscript/api/citation/decide",
+    "method": "POST",
+    "endpoint": "manuscript.citation_decide_api",
+    "role": "outsider-indirect",
+    "status": 400,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/manuscript/api/citation/suggest",
+    "method": "POST",
+    "endpoint": "manuscript.citation_suggest_api",
+    "role": "outsider",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/manuscript/api/citation/suggest",
+    "method": "POST",
+    "endpoint": "manuscript.citation_suggest_api",
+    "role": "prof",
+    "status": 200,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/manuscript/api/citation/suggest",
+    "method": "POST",
+    "endpoint": "manuscript.citation_suggest_api",
+    "role": "legacymentor",
+    "status": 200,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/manuscript/api/citation/suggest",
+    "method": "POST",
+    "endpoint": "manuscript.citation_suggest_api",
+    "role": "teamviewer",
+    "status": 200,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/manuscript/api/citation/suggest",
+    "method": "POST",
+    "endpoint": "manuscript.citation_suggest_api",
+    "role": "outsider-indirect",
+    "status": 200,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/manuscript/api/draft/flush",
+    "method": "POST",
+    "endpoint": "manuscript.flush_draft_on_unload",
+    "role": "outsider",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/manuscript/api/draft/flush",
+    "method": "POST",
+    "endpoint": "manuscript.flush_draft_on_unload",
+    "role": "prof",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/manuscript/api/draft/flush",
+    "method": "POST",
+    "endpoint": "manuscript.flush_draft_on_unload",
+    "role": "legacymentor",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/manuscript/api/draft/flush",
+    "method": "POST",
+    "endpoint": "manuscript.flush_draft_on_unload",
+    "role": "teamviewer",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/manuscript/api/draft/flush",
+    "method": "POST",
+    "endpoint": "manuscript.flush_draft_on_unload",
+    "role": "outsider-indirect",
+    "status": 200,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/manuscript/api/export/docx/<pid>",
+    "method": "POST",
+    "endpoint": "manuscript.export_fusion_docx",
+    "role": "outsider",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/manuscript/api/export/docx/<pid>",
+    "method": "POST",
+    "endpoint": "manuscript.export_fusion_docx",
+    "role": "prof",
+    "status": 200,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/manuscript/api/export/docx/<pid>",
+    "method": "POST",
+    "endpoint": "manuscript.export_fusion_docx",
+    "role": "legacymentor",
+    "status": 200,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/manuscript/api/export/docx/<pid>",
+    "method": "POST",
+    "endpoint": "manuscript.export_fusion_docx",
+    "role": "teamviewer",
+    "status": 200,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/manuscript/api/export/docx/<pid>",
+    "method": "POST",
+    "endpoint": "manuscript.export_fusion_docx",
+    "role": "outsider-indirect",
+    "status": 200,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/manuscript/api/import_word/<pid>",
+    "method": "POST",
+    "endpoint": "manuscript.import_word_to_canvas",
+    "role": "outsider",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/manuscript/api/import_word/<pid>",
+    "method": "POST",
+    "endpoint": "manuscript.import_word_to_canvas",
+    "role": "prof",
+    "status": 400,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/manuscript/api/import_word/<pid>",
+    "method": "POST",
+    "endpoint": "manuscript.import_word_to_canvas",
+    "role": "legacymentor",
+    "status": 400,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/manuscript/api/import_word/<pid>",
+    "method": "POST",
+    "endpoint": "manuscript.import_word_to_canvas",
+    "role": "teamviewer",
+    "status": 400,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/manuscript/api/import_word/<pid>",
+    "method": "POST",
+    "endpoint": "manuscript.import_word_to_canvas",
+    "role": "outsider-indirect",
+    "status": 400,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/manuscript/api/paragraph/<decision_id>/reconfirm",
+    "method": "POST",
+    "endpoint": "manuscript.reconfirm_paragraph_context",
+    "role": "outsider",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/manuscript/api/paragraph/<decision_id>/reconfirm",
+    "method": "POST",
+    "endpoint": "manuscript.reconfirm_paragraph_context",
+    "role": "prof",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/manuscript/api/paragraph/<decision_id>/reconfirm",
+    "method": "POST",
+    "endpoint": "manuscript.reconfirm_paragraph_context",
+    "role": "legacymentor",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/manuscript/api/paragraph/<decision_id>/reconfirm",
+    "method": "POST",
+    "endpoint": "manuscript.reconfirm_paragraph_context",
+    "role": "teamviewer",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/manuscript/api/paragraph/<decision_id>/reconfirm",
+    "method": "POST",
+    "endpoint": "manuscript.reconfirm_paragraph_context",
+    "role": "outsider-indirect",
+    "status": 400,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/manuscript/api/paragraph/confirm",
+    "method": "POST",
+    "endpoint": "manuscript.confirm_paragraph_context",
+    "role": "outsider",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/manuscript/api/paragraph/confirm",
+    "method": "POST",
+    "endpoint": "manuscript.confirm_paragraph_context",
+    "role": "prof",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/manuscript/api/paragraph/confirm",
+    "method": "POST",
+    "endpoint": "manuscript.confirm_paragraph_context",
+    "role": "legacymentor",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/manuscript/api/paragraph/confirm",
+    "method": "POST",
+    "endpoint": "manuscript.confirm_paragraph_context",
+    "role": "teamviewer",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/manuscript/api/paragraph/confirm",
+    "method": "POST",
+    "endpoint": "manuscript.confirm_paragraph_context",
+    "role": "outsider-indirect",
+    "status": 400,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/manuscript/api/progress/<pid>",
+    "method": "POST",
+    "endpoint": "manuscript.set_section_progress",
+    "role": "outsider",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/manuscript/api/progress/<pid>",
+    "method": "POST",
+    "endpoint": "manuscript.set_section_progress",
+    "role": "prof",
+    "status": 400,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/manuscript/api/progress/<pid>",
+    "method": "POST",
+    "endpoint": "manuscript.set_section_progress",
+    "role": "legacymentor",
+    "status": 400,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/manuscript/api/progress/<pid>",
+    "method": "POST",
+    "endpoint": "manuscript.set_section_progress",
+    "role": "teamviewer",
+    "status": 400,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/manuscript/api/progress/<pid>",
+    "method": "POST",
+    "endpoint": "manuscript.set_section_progress",
+    "role": "outsider-indirect",
+    "status": 400,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/manuscript/api/scientific/assess",
+    "method": "POST",
+    "endpoint": "manuscript.scientific_assess",
+    "role": "outsider",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/manuscript/api/scientific/assess",
+    "method": "POST",
+    "endpoint": "manuscript.scientific_assess",
+    "role": "prof",
+    "status": 400,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/manuscript/api/scientific/assess",
+    "method": "POST",
+    "endpoint": "manuscript.scientific_assess",
+    "role": "legacymentor",
+    "status": 400,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/manuscript/api/scientific/assess",
+    "method": "POST",
+    "endpoint": "manuscript.scientific_assess",
+    "role": "teamviewer",
+    "status": 400,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/manuscript/api/scientific/assess",
+    "method": "POST",
+    "endpoint": "manuscript.scientific_assess",
+    "role": "outsider-indirect",
+    "status": 400,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/manuscript/api/scientific/reports/<rid>/responses",
+    "method": "POST",
+    "endpoint": "manuscript.scientific_response",
+    "role": "outsider",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/manuscript/api/scientific/reports/<rid>/responses",
+    "method": "POST",
+    "endpoint": "manuscript.scientific_response",
+    "role": "prof",
+    "status": 404,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/manuscript/api/scientific/reports/<rid>/responses",
+    "method": "POST",
+    "endpoint": "manuscript.scientific_response",
+    "role": "legacymentor",
+    "status": 404,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/manuscript/api/scientific/reports/<rid>/responses",
+    "method": "POST",
+    "endpoint": "manuscript.scientific_response",
+    "role": "teamviewer",
+    "status": 404,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/manuscript/api/scientific/reports/<rid>/responses",
+    "method": "POST",
+    "endpoint": "manuscript.scientific_response",
+    "role": "outsider-indirect",
+    "status": 404,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/manuscript/api/sections/<pid>",
+    "method": "POST",
+    "endpoint": "manuscript.save_sections",
+    "role": "outsider",
+    "status": 403,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/manuscript/api/sections/<pid>",
+    "method": "POST",
+    "endpoint": "manuscript.save_sections",
+    "role": "prof",
+    "status": 400,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/manuscript/api/sections/<pid>",
+    "method": "POST",
+    "endpoint": "manuscript.save_sections",
+    "role": "legacymentor",
+    "status": 400,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/manuscript/api/sections/<pid>",
+    "method": "POST",
+    "endpoint": "manuscript.save_sections",
+    "role": "teamviewer",
+    "status": 400,
+    "mutated_aclp1": false,
+    "leaks": []
+   },
+   {
+    "rule": "/manuscript/api/sections/<pid>",
+    "method": "POST",
+    "endpoint": "manuscript.save_sections",
+    "role": "outsider-indirect",
+    "status": 400,
+    "mutated_aclp1": false,
+    "leaks": []
+   }
+  ]
+ },
+ "get_indirect": {
+  "get_rules": 90,
+  "requests": 90,
+  "findings": []
+ }
+}

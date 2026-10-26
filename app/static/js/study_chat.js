@@ -355,6 +355,10 @@ class StudyChat {
             
             const data = await response.json();
             
+            if (response.status === 403) {
+                alert('只有專案 owner 或這個對話的建立者可以刪除。');
+                return;
+            }
             if (!data.ok) {
                 alert('刪除失敗: ' + (data.msg || '未知錯誤'));
                 return;

@@ -1917,10 +1917,19 @@ def create_conversation():
         conv_id = _safe_conv_id(conv_id)
         now = time.strftime('%Y-%m-%d %H:%M:%S')
         
+        actor = None
+        try:
+            from flask_login import current_user
+            if current_user.is_authenticated:
+                actor = current_user.id
+        except Exception:
+            actor = None
         conv_data = {
             "conv_id": conv_id,
             "pid": pid,
             "title": title,
+            # 誰建立的：刪除只允許建立者或專案 owner（舊對話沒有這個欄位 → 只有 owner 能刪）。
+            "created_by": actor,
             "created_at": now,
             "updated_at": now,
             "messages": []  # [{role: 'user'/'assistant', content: '', timestamp: ''}]
@@ -1990,6 +1999,16 @@ def delete_conversation(conv_id):
         conv_path = os.path.join(conv_dir, f"{conv_id}.json")
         
         if os.path.exists(conv_path):
+            # 刪除無法復原：editor 只能刪自己建立的對話，其他人的（含沒有建立者紀錄的舊對話）只有 owner 能刪。
+            from app.security import require_owner_or_creator
+            try:
+                with open(conv_path, encoding="utf-8") as fh:
+                    created_by = (json.load(fh) or {}).get("created_by")
+            except Exception:
+                created_by = None
+            denied = require_owner_or_creator(pid, created_by)
+            if denied is not None:
+                return denied
             os.remove(conv_path)
             return jsonify({"ok": True})
         else:

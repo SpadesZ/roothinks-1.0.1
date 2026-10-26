@@ -93,7 +93,7 @@
                     <details class="mt-2 lib-decision" data-entry="${esc(e.entry_id)}" data-rev="${revision}" data-server-rev="${revision}">
                         <summary>理由、閱讀筆記與來源版本</summary>
                         <label class="d-block mt-2">採用／排除理由<textarea class="form-control form-control-sm" data-field="screening_note" rows="2">${esc(e.screening_note || '')}</textarea></label>
-                        <label class="d-block mt-2">閱讀筆記與適用限制<textarea class="form-control form-control-sm" data-field="reading_note" rows="2">${esc(e.reading_note || '')}</textarea></label>
+                        <label class="d-block mt-2">閱讀筆記與適用限制${e.reading_note_hidden ? '<div class="small text-muted border rounded p-1" data-reading-note-hidden="1">研究者有閱讀筆記；審閱模式不顯示。</div>' : `<textarea class="form-control form-control-sm" data-field="reading_note" rows="2">${esc(e.reading_note || '')}</textarea>`}</label>
                         <label class="d-block mt-2">對應 PDF（核對同篇後選擇）<select class="form-select form-select-sm" data-field="paper_id">
                             <option value="">尚未連結</option>${papers.map(p => `<option value="${esc(p)}" ${p === e.paper_id ? 'selected' : ''}>${esc(p)}</option>`).join('')}
                         </select></label>
@@ -106,7 +106,7 @@
                             <button class="btn btn-sm btn-outline-primary lib-resolve">採用目前編輯內容，另存新版決策</button>
                         </details>
                         <div class="small mt-2">決策者：${esc(e.screening_decided_by || '尚未確認')} · ${esc(e.screening_decided_at || '')} · 修訂 ${revision}</div>
-                        <details class="mt-2"><summary>變更紀錄（${(e.history || []).length}）</summary>${(e.history || []).slice().reverse().map(h => `<p class="small">修訂 ${Number(h.revision)} · ${esc(h.actor || '舊版／內部流程')} · ${esc(h.at)}<br>${esc(h.previous.screening_status)} · ${esc(h.previous.paper_id)}<br>${esc(h.previous.screening_note)}<br>${esc(h.previous.reading_note)}</p>`).join('')}</details>
+                        <details class="mt-2"><summary>變更紀錄（${(e.history || []).length}）</summary>${(e.history || []).slice().reverse().map(h => { const prev = h.previous || {}; return `<p class="small">修訂 ${Number(h.revision)} · ${esc(h.actor || '舊版／內部流程')} · ${esc(h.at)}${h.previous ? `<br>${esc(prev.screening_status)} · ${esc(prev.paper_id)}<br>${esc(prev.screening_note)}<br>${esc(prev.reading_note)}` : ''}</p>`; }).join('')}</details>
                         <div class="small">來源：${esc((e.sources || []).join(', '))} · 原 ID：${esc((e.source_entry_ids || [e.entry_id]).join(', '))}</div>
                         ${(e.uploaded_sources || []).map(src => `<div class="small text-break">${esc(src.filename)} · ${esc(src.paper_id)} · SHA256 ${esc(src.sha256)}</div>`).join('')}
                     </details>`;

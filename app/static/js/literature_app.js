@@ -402,11 +402,13 @@ window.literatureApp = {
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({ pid: this.currentPid, paper_id: paperId })
         })
-        .then(res => res.json())
-        .then(data => {
+        .then(res => res.json().then(data => ({ status: res.status, data })))
+        .then(({ status, data }) => {
             if(data.status === 'success') {
                 alert('文件已刪除');
                 this.loadPipelineTable();
+            } else if (status === 403) {
+                alert('只有專案 owner 可以刪除文件（會一併刪除原始 PDF，無法復原）。');
             } else {
                 alert('刪除失敗: ' + (data.message || 'Unknown error'));
             }
