@@ -1,0 +1,285 @@
+{
+  "round": "cloud-primary-R1",
+  "date": "2026-10-26",
+  "branch": "codex/py312-cloud-primary-20261026",
+  "base_sha": "29e87c68e6a08c94087483a3144d660b5043c101",
+  "head_sha": "10fd56fda3db2e71c288af9dc4db7bf351d226e7",
+  "commits": [
+    {
+      "sha": "2d2123c",
+      "subject": "docs(sci): preregister the frozen-engine headroom analysis before running it"
+    },
+    {
+      "sha": "2ccb573",
+      "subject": "fix(translation): replace deep-translator and stop silent empty batch output"
+    },
+    {
+      "sha": "af6f5e6",
+      "subject": "fix(tests): keep every test run out of the repository data/ directory"
+    },
+    {
+      "sha": "be05fa6",
+      "subject": "fix(tests): write the browser fixture log under its own synthetic tmp root"
+    },
+    {
+      "sha": "10fd56f",
+      "subject": "docs: cloud primary R1 delivery, headroom result, Gate D draft and handoff"
+    }
+  ],
+  "changed_paths": [
+    "app/core_pro/literature/literature_flowb_helpers.py",
+    "app/core_pro/literature/literature_quick_google.py",
+    "app/core_pro/literature/literature_translator.py",
+    "conftest.py",
+    "docs/ACCEPTANCE_MATRIX.md",
+    "docs/engineering/CLOUD_PRIMARY_HANDOFF.md",
+    "docs/engineering/CLOUD_PRIMARY_R1_DELIVERY_2026-10-26.md",
+    "docs/engineering/GATE_D_PROTOCOL_DRAFT_2026-10-26.md",
+    "docs/engineering/PY312_DEPENDENCY_RECONCILIATION.json",
+    "docs/engineering/PY312_DEPENDENCY_RECONCILIATION.md",
+    "docs/engineering/SCI_HEADROOM_PROTOCOL_2026-10-26.md",
+    "docs/engineering/SCI_HEADROOM_RESULT_2026-10-26.json",
+    "pytest.ini",
+    "requirements-py312.constraints.txt",
+    "requirements-py312.lock",
+    "requirements.txt",
+    "scripts/scientific_headroom.py",
+    "test/integration_e2e/sai_browser_fixture.py",
+    "test/integration_smoke/test_literature_flowb_refactor.py",
+    "test/integration_smoke/test_routes_smoke.py",
+    "test/unit/test_flowb_debug_data_root.py",
+    "test/unit/test_quick_google_translate.py"
+  ],
+  "boundaries": {
+    "scientific_engine_sha256": "4c2034bf8fdbf2ad49276d136a0d37c6201240bd2570bffca5b1fbc0f5f7bd82",
+    "dockerfile_changed": false,
+    "merged_main": false,
+    "deployed": false,
+    "lava_modified": false,
+    "holdout_accessed": false,
+    "models_downloaded": false
+  },
+  "dev_baseline": {
+    "python": "3.12.3 (/usr/bin/python3.12, cloud host)",
+    "install": "requirements-py312.lock --require-hashes --no-deps --only-binary=:all:, torch/torchvision URL entries excluded (PyPI CPU index 403)",
+    "regression_at_base": {
+      "environment": "29e87c6 整合鎖定檔",
+      "tests": 1556,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 50,
+      "passed": 1506,
+      "seconds": 204.73
+    },
+    "local_agent_reported": "1,506 passed / 50 skipped / 0 failed / 0 errors"
+  },
+  "deep_translator": {
+    "advisory": {
+      "id": "PYSEC-2022-252",
+      "source": "https://raw.githubusercontent.com/pypa/advisory-database/main/vulns/deep-translator/PYSEC-2022-252.yaml",
+      "affected_versions": [
+        "1.8.5"
+      ],
+      "range_events": [
+        {
+          "introduced": "1.8.5"
+        }
+      ],
+      "fixed": null,
+      "note": "範圍沒有結束版本，所以 1.8.5 之後所有版本都被掃描器標記"
+    },
+    "pypi_releases_around": [
+      "1.8.3 (2022-03-31)",
+      "1.9.0 (2022-09-20)"
+    ],
+    "pinned": "1.11.4 (2023-06-28)",
+    "malicious_release_on_pypi": false,
+    "wheel_sha256": "d635df037e23fa35d12fd42dab72a0b55c9dd19e6292009ee7207e3f30b9e60a",
+    "wheel_matches_lock": true,
+    "code_review": "無 subprocess、exec、base64；os.getenv 只在其他服務的 API 金鑰預設參數",
+    "defects": [
+      "Google 請求沒有逾時",
+      "批次路徑把空譯文當成功；舊行為重現 ['好句子。', '', 'None']"
+    ],
+    "replacement": "app/core_pro/literature/literature_quick_google.py",
+    "differential": {
+      "fuzz_cases": 2000,
+      "fuzz_value_mismatches": 488,
+      "mismatch_kind": "全部是舊版回傳 '' 而新版報錯",
+      "caller_level_differences": 0,
+      "fixed_cases": 13,
+      "status_cases": 7,
+      "length_cases": 3,
+      "requests_identical": true,
+      "versions": {
+        "deep_translator": "1.11.4",
+        "beautifulsoup4": "4.15.0",
+        "soupsieve": "3.0.4"
+      }
+    },
+    "pip_audit": {
+      "tool": "pip-audit 2.10.1",
+      "before": {
+        "packages": 111,
+        "findings": [
+          {
+            "name": "deep-translator",
+            "version": "1.11.4",
+            "ids": [
+              "PYSEC-2022-252"
+            ]
+          }
+        ]
+      },
+      "after": {
+        "packages": 108,
+        "findings": []
+      },
+      "torch_2_13_0_pypi_vulns": [],
+      "torchvision_0_28_0_pypi_vulns": []
+    },
+    "lock_entries": {
+      "before": 113,
+      "after": 110
+    },
+    "live_google_verified": false,
+    "live_google_blocker": "translate.google.com 代理 403"
+  },
+  "test_isolation": {
+    "leaked_entries_before_fix": 23,
+    "leaked": [
+      ".roothinks-runtime",
+      ".roothinks-runtime/gate.lock",
+      ".roothinks-runtime/lease-20f32ea1b793490dad9fd14994e9e365.lock",
+      ".roothinks-runtime/lease-c5b0d23e55d34bc7b94fc00b2f8a9a24.lock",
+      ".roothinks-runtime/storage.json",
+      ".schema_fix.lock",
+      "BXLOLQ-p",
+      "BXLOLQ-p/literature",
+      "BXLOLQ-p/literature/papers",
+      "BXLOLQ-p/literature/papers/journey_alpha",
+      "BXLOLQ-p/literature/papers/journey_alpha/06_translates",
+      "BXLOLQ-p/literature/papers/journey_alpha/06_translates/reflow",
+      "BXLOLQ-p/literature/papers/journey_alpha/06_translates/reflow/_debug",
+      "BXLOLQ-p/literature/papers/journey_alpha/06_translates/reflow/_debug/20261026T033555Z_task_5interpret_invalid_json_raw.txt",
+      "_logs",
+      "_logs/system",
+      "_logs/system/runtime.log",
+      "manu_core.db",
+      "manu_core.db-shm",
+      "manu_core.db-wal",
+      "roothinks.db",
+      "sys",
+      "sys/llm_match.db"
+    ],
+    "sources": {
+      "smoke_tests_without_db": [
+        "test/integration_smoke/test_routes_smoke.py",
+        "test/integration_smoke/test_literature_flowb_refactor.py"
+      ],
+      "create_app_defaults": [
+        "data/sys/llm_match.db",
+        "data/_logs/system/runtime.log"
+      ],
+      "product_flowb_debug": "app/core_pro/literature/literature_flowb_helpers.py:_flowb_write_debug_reply"
+    },
+    "guard": "conftest.py（stat 比對，無略過開關）+ pytest.ini（固定 rootdir）",
+    "red_run": "1,524 passed，但因 23 項寫入 data/ 整次失敗",
+    "subdirectory_run_loads_guard": true,
+    "existing_data_modification_detected": true
+  },
+  "integration_review": {
+    "defects_found": 0,
+    "mermaid_10_9_6_sri_verified_independently": true,
+    "node_tests": {
+      "passed": 12,
+      "failed": 0
+    },
+    "browser": {
+      "noplotly-aut": {
+        "status": "passed",
+        "app_sha": "be05fa6582821d3bf301d95d485e7e03fdc7cfbd",
+        "checks": 4,
+        "page_errors": 0,
+        "failed_requests": null
+      },
+      "noplotly-sci": {
+        "status": "passed",
+        "app_sha": "be05fa6582821d3bf301d95d485e7e03fdc7cfbd",
+        "checks": 8,
+        "page_errors": 0,
+        "failed_requests": null
+      },
+      "assets-0": {
+        "status": "passed",
+        "app_sha": "be05fa6582821d3bf301d95d485e7e03fdc7cfbd",
+        "checks": 4,
+        "page_errors": 0,
+        "failed_requests": []
+      },
+      "assets-1": {
+        "status": "passed",
+        "app_sha": "be05fa6582821d3bf301d95d485e7e03fdc7cfbd",
+        "checks": 4,
+        "page_errors": 0,
+        "failed_requests": []
+      }
+    },
+    "note": "不服務 plotly 時外部失敗由 I12 的 3 次變 0 次；Google SDK 未設定時不再請求"
+  },
+  "headroom": {
+    "protocol_commit": "2d2123c",
+    "result_file": "docs/engineering/SCI_HEADROOM_RESULT_2026-10-26.json",
+    "result_sha256": "a3f65497fe95608e2f754a60c31cd2079adc34d0b1cb6b05430a46ad9d98dc5c",
+    "counts": {
+      "SUPPORT": {
+        "H0_already_correct": 1,
+        "H1_structurally_reachable": 99,
+        "H2_blocked_by_conservative_gates": 6,
+        "H3_not_retrieved": 18
+      },
+      "CONTRADICT": {
+        "H1_structurally_reachable": 50,
+        "H2_blocked_by_conservative_gates": 4,
+        "H3_not_retrieved": 10
+      }
+    },
+    "h1_total": 149,
+    "h3_total": 28,
+    "decision": "Gate D 選項 1 的天花板 ≥ 6，值得在核准後實測",
+    "post_hoc_strict_ceiling": 134,
+    "predictions_sha256": "a7a22bcfa8438daec9e1871ec5b8159e38db5e57c7a42c53ec5d214fd347d09e"
+  },
+  "gate_d": {
+    "status": "draft, awaiting Owner approval",
+    "protocol": "docs/engineering/GATE_D_PROTOCOL_DRAFT_2026-10-26.md",
+    "spacy_pypi": "3.8.16 MIT, cp312 wheel, 0 PyPI vulns",
+    "model": "en_core_web_sm 3.8.0 GitHub release HTTP 302 (2026-10-26)",
+    "downloaded": false
+  },
+  "final_regression": {
+    "environment": "10fd56f 雲端主機 Python 3.12.3、新鎖定檔",
+    "tests": 1575,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 50,
+    "passed": 1525,
+    "seconds": 186.95
+  },
+  "final_regression_sha": "10fd56fda3db2e71c288af9dc4db7bf351d226e7",
+  "repo_data_created_by_tests": false,
+  "pip_check": [
+    "easyocr 1.7.2 requires torch, which is not installed.",
+    "easyocr 1.7.2 requires torchvision, which is not installed."
+  ],
+  "not_verified": [
+    "線上 Google 翻譯（403）",
+    "正式 Docker 映像重建（PyTorch index、Debian snapshot、HuggingFace 不可達）",
+    "torch 相關模型載入（雲端未裝 torch；以本機 agent 證據為準）",
+    "Google 真帳號 OAuth／Picker",
+    "真論文品質",
+    "正式容量與正式資料還原",
+    "獨立人類稽核"
+  ],
+  "builder_sha256": "34c05814b19bd228c0551bba16b9314604089e9b0f3894b28b95ee49bcbcbec9"
+}

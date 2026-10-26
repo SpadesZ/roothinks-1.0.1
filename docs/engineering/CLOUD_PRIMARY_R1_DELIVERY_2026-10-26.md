@@ -115,7 +115,7 @@ Google SDK 未設定不載入）、`app/__init__.py`、兩支 bake 腳本。
 | deep-translator 取代後 | 全新 venv、新鎖定檔 | 1,525／49／0／0（多 18 個新測試；1 個需要正式 DB 的測試因前一輪外漏的 `data/roothinks.db` 而執行） |
 | 加守門、修正前 | 同上 | 1,524 通過，但**整次失敗**（23 項寫入 `data/`） |
 | 修正後 | 同上 | 1,525／50／0／0，`data/` 未建立 |
-| 最終 | 見機器證據 | FINAL_RESULT |
+| 最終 `10fd56f` | 雲端主機 Python 3.12.3、新鎖定檔 | **1,525／50／0／0**，`data/` 未建立；`pip check` 只報 easyocr 缺 torch／torchvision |
 
 ## 七、P0／P1 發現
 
