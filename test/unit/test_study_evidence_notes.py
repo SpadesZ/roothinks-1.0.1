@@ -120,7 +120,7 @@ def test_explain_mode_verifies_selection_and_rejects_fabricated_quotes(env):
     data = resp.json
     structured = data["structured"]
     assert structured["selection"]["status"] == "exact" and structured["selection"]["ref"] == "p1-b2"
-    assert [p["support"] for p in structured["points"]] == ["source_quoted", "ai_inference"]
+    assert [p["quote_match"] for p in structured["points"]] == ["found", "none"]
     assert structured["rejected_quotes"][0]["quote"] == FAKE
     assert FAKE not in json.dumps([p["evidence"] for p in structured["points"]])
     assert "E1 (page 1, contains the selection)" in bus.prompts[-1] and QUOTE in bus.prompts[-1]
@@ -161,7 +161,7 @@ def test_note_is_written_only_after_explicit_acceptance(env):
     note = resp.json["note"]
     assert [s["kind"] for s in note["statements"]] == ["source_fact", "ai_interpretation", "human_hypothesis"]
     assert note["statements"][0]["text"] == QUOTE and note["anchors"][0]["status"] == "exact"
-    assert note["accepted_by"] == {"user_id": ids["owner"], "username": "owner"} and note["evidence_status"] == "verified"
+    assert note["accepted_by"] == {"user_id": ids["owner"], "username": "owner"} and note["quote_match"] == "found"
     listed = client.get(f"/api/study/evidence_notes/{PID}").json
     assert listed["rev"] == 1 and listed["notes"][0]["note_id"] == note["note_id"]
 
@@ -221,7 +221,7 @@ def test_notes_save_and_export_without_professor_or_verified_evidence(env):
     client = client_for(app, "owner")
     (root / PID / "literature").rename(root / PID / "literature-gone")
     resp = accept(client, statements=[{"kind": "human_hypothesis", "text": "我的推論，尚無證據"}])
-    assert resp.status_code == 200 and resp.json["note"]["evidence_status"] == "unverified"
+    assert resp.status_code == 200 and resp.json["note"]["quote_match"] == "none"
     assert resp.json["note"]["anchors"][0]["status"] == "unavailable"
     manual = client.post("/api/study/evidence_notes/accept", json={"pid": PID, "base_rev": 1, "accepted": True,
                                                                    "note": {"statements": [{"kind": "human_hypothesis", "text": "純手寫"}]}})
@@ -229,7 +229,7 @@ def test_notes_save_and_export_without_professor_or_verified_evidence(env):
     export = client.get(f"/api/study/evidence_notes/{PID}/export")
     assert export.status_code == 200 and export.mimetype == "text/markdown"
     text = export.get_data(as_text=True)
-    assert "**我的假說**：我的推論，尚無證據（無證據）" in text and "無已驗證證據" in text and "純手寫" in text
+    assert "**我的假說**：我的推論，尚無證據（無證據）" in text and "沒有在原文中找到的引文" in text and "純手寫" in text
 
 
 def test_team_comments_and_review_requests_use_existing_study_acl(env):

@@ -10,7 +10,31 @@
 
     const KIND_LABELS = { source_fact: '原文事實', ai_interpretation: 'AI 解讀', human_hypothesis: '我的假說' };
     const KIND_CLASS = { source_fact: 'study-kind-source', ai_interpretation: 'study-kind-ai', human_hypothesis: 'study-kind-human' };
-    const STATUS_LABELS = { exact: '已核對', relocated: '已重新定位', ambiguous: '多處相同', not_found: '原文找不到', unavailable: '全文無法讀取' };
+    // 狀態只描述「引文在原文中找不找得到、在哪裡」，不描述是否支持任何論點。
+    const STATUS_LABELS = { exact: '原文中找到', relocated: '原文中找到（已重新定位）', ambiguous_in_block: '同段多處，只確定段落',
+        ambiguous: '多段都有，無法定位', not_found: '原文找不到', unavailable: '全文無法讀取' };
+    const SUPPORT_LABELS = { not_assessed: '未判定是否支持', supports: '我判斷：支持', partial: '我判斷：部分支持', does_not_support: '我判斷：不支持' };
+    const SUPPORT_SHORT = { not_assessed: '未判定是否支持', supports: '研究者判斷：支持', partial: '研究者判斷：部分支持', does_not_support: '研究者判斷：不支持' };
+
+    function currentUserId() {
+        // study.html 的自由筆記欄位帶目前登入者 id；未登入時是 'local'。
+        const owner = document.getElementById('study-notes')?.dataset.owner;
+        return owner && owner !== 'local' ? Number(owner) : null;
+    }
+
+    function supportSelect(st, onChange) {
+        const sel = el('select', 'form-select form-select-sm w-auto');
+        sel.setAttribute('aria-label', '引文是否支持這則陳述（你的判斷）');
+        sel.setAttribute('data-claim-support', st.claim_support || 'not_assessed');
+        Object.entries(SUPPORT_LABELS).forEach(([value, label]) => {
+            const opt = el('option', '', label);
+            opt.value = value;
+            opt.selected = (st.claim_support || 'not_assessed') === value;
+            sel.appendChild(opt);
+        });
+        sel.addEventListener('change', () => { st.claim_support = sel.value; sel.setAttribute('data-claim-support', sel.value); onChange(); });
+        return sel;
+    }
 
     function el(tag, className, text) {
         const node = document.createElement(tag);
@@ -56,7 +80,9 @@
             document.querySelectorAll('[data-notes-tab]').forEach(btn => {
                 btn.addEventListener('click', () => this.showPane(btn.dataset.notesTab));
             });
-            this._restoreDraft();
+            this.reviewScope = !!window.STUDY_REVIEW_SCOPE;
+            if (this.reviewScope) this.showPane('evidence');
+            else this._restoreDraft();
             this.load();
         }
 
@@ -219,7 +245,9 @@
                 row.setAttribute('data-statement-kind', st.kind);
                 const top = el('div', 'd-flex align-items-center gap-1 mb-1');
                 if (st.locked) {
-                    top.appendChild(el('span', 'badge bg-success', '原文事實・伺服器核對'));
+                    const view = draft.views[st.evidence[0]] || {};
+                    top.appendChild(el('span', 'badge bg-success', view.match_kind === 'paragraph_from_translation'
+                        ? '原文事實・由譯文推定的整段原文' : '原文事實・原文中逐字找到'));
                 } else {
                     const kind = el('select', 'form-select form-select-sm w-auto');
                     kind.setAttribute('aria-label', '陳述類別');
@@ -234,6 +262,7 @@
                 }
                 (st.evidence || []).forEach(idx => top.appendChild(el('span', 'badge bg-light text-dark border', `證據 ${idx + 1}`)));
                 if (!st.locked && !(st.evidence || []).length) top.appendChild(el('span', 'badge bg-secondary', '無證據'));
+                if (!st.locked && (st.evidence || []).length) top.appendChild(supportSelect(st, () => this._saveDraftLocal()));
                 top.appendChild(button('移除', 'btn btn-sm btn-link text-danger ms-auto p-0', () => {
                     draft.statements.splice(i, 1);
                     this._saveDraftLocal();
@@ -291,7 +320,9 @@
             if (!draft) return;
             const statements = draft.statements
                 .filter(st => st.locked || String(st.text || '').trim())
-                .map(st => st.locked ? { kind: 'source_fact', evidence: st.evidence } : { kind: st.kind, text: st.text.trim(), evidence: st.evidence || [] });
+                .map(st => st.locked ? { kind: 'source_fact', evidence: st.evidence }
+                    : { kind: st.kind, text: st.text.trim(), evidence: st.evidence || [],
+                        claim_support: (st.evidence || []).length ? (st.claim_support || 'not_assessed') : 'not_assessed' });
             if (!statements.length) {
                 this._draftMessage('至少要有一則陳述。', 'danger');
                 return;
@@ -359,7 +390,9 @@
             this.listEl.replaceChildren();
             if (this.countEl) this.countEl.textContent = String(this.notes.length);
             const tools = el('div', 'd-flex justify-content-between align-items-center mb-1');
-            tools.appendChild(el('span', 'small text-muted', `${this.notes.length} 則證據筆記`));
+            tools.appendChild(el('span', 'small text-muted', this.reviewScope
+                ? `審閱模式：研究者請求審閱的 ${this.notes.length} 則筆記（留言請到導師工作台）`
+                : `${this.notes.length} 則證據筆記`));
             const exportLink = el('a', 'btn btn-sm btn-link p-0', '匯出 Markdown');
             exportLink.href = `/api/study/evidence_notes/${encodeURIComponent(this.pid)}/export`;
             exportLink.setAttribute('data-evidence-export', '1');
@@ -377,8 +410,12 @@
             card.setAttribute('data-evidence-note', note.note_id);
             const head = el('div', 'd-flex flex-wrap align-items-center gap-1 mb-1');
             head.appendChild(el('span', 'fw-bold small', note.title || '證據筆記'));
-            head.appendChild(el('span', `badge ${note.evidence_status === 'verified' ? 'bg-success' : 'bg-secondary'}`,
-                note.evidence_status === 'verified' ? '有已驗證證據' : '無已驗證證據'));
+            const found = (note.quote_match || (note.evidence_status === 'verified' ? 'found' : 'none')) === 'found';
+            const matchBadge = el('span', `badge ${found ? 'bg-light text-success border border-success' : 'bg-secondary'}`,
+                found ? '引文在原文中找到（不代表支持陳述）' : '沒有在原文中找到的引文');
+            matchBadge.setAttribute('data-quote-match', found ? 'found' : 'none');
+            head.appendChild(matchBadge);
+            head.appendChild(el('span', 'small text-muted', `作者：${note.accepted_by?.username || '未知'}`));
             if (note.review?.state === 'requested') {
                 const badge = el('span', 'badge bg-warning text-dark', '已請求審閱');
                 badge.setAttribute('data-review-state', 'requested');
@@ -410,8 +447,18 @@
                 row.appendChild(el('span', '', st.text));
                 if ((st.evidence || []).length) row.appendChild(el('span', 'text-muted ms-1', `（${st.evidence.map(i => `證據 ${i + 1}`).join('、')}）`));
                 else if (st.kind !== 'source_fact') row.appendChild(el('span', 'badge bg-secondary ms-1', '無證據'));
+                if (st.kind === 'source_fact' && st.quote_scope === 'paragraph_from_translation') {
+                    row.appendChild(el('span', 'badge bg-light text-dark border ms-1', '由譯文推定的整段原文'));
+                }
+                if (st.kind !== 'source_fact' && (st.evidence || []).length) {
+                    const support = el('span', `badge ms-1 ${st.claim_support && st.claim_support !== 'not_assessed' ? 'bg-info text-dark' : 'bg-light text-dark border'}`,
+                        SUPPORT_SHORT[st.claim_support || 'not_assessed'] + (st.claim_support_by?.username ? `（${st.claim_support_by.username}）` : ''));
+                    support.setAttribute('data-claim-support', st.claim_support || 'not_assessed');
+                    row.appendChild(support);
+                }
                 card.appendChild(row);
             });
+            card.appendChild(this._historyBlock(note));
 
             const comments = el('div', 'study-comments mt-1');
             (note.comments || []).forEach(c => {
@@ -425,6 +472,7 @@
             });
             card.appendChild(comments);
 
+            if (this.reviewScope) return card;
             const msg = el('div', 'small text-danger');
             msg.setAttribute('role', 'status');
             const actions = el('div', 'd-flex gap-1 mt-1');
@@ -434,12 +482,112 @@
             actions.appendChild(input);
             actions.appendChild(button('留言', 'btn btn-sm btn-outline-secondary text-nowrap', () => this.comment(note.note_id, input, msg),
                 { 'data-evidence-comment': note.note_id }));
-            const requested = note.review?.state === 'requested';
-            actions.appendChild(button(requested ? '撤回審閱請求' : '請求審閱', `btn btn-sm text-nowrap ${requested ? 'btn-outline-warning' : 'btn-outline-primary'}`,
-                () => this.review(note.note_id, requested ? 'withdraw' : 'request', msg), { 'data-evidence-review': requested ? 'withdraw' : 'request' }));
+            const me = currentUserId();
+            const isAuthor = !note.accepted_by || me === null || note.accepted_by.user_id === me;
+            if (isAuthor) {
+                // 只有作者能直接改寫與請求審閱。
+                const requested = note.review?.state === 'requested';
+                actions.appendChild(button(requested ? '撤回審閱請求' : '請求審閱', `btn btn-sm text-nowrap ${requested ? 'btn-outline-warning' : 'btn-outline-primary'}`,
+                    () => this.review(note.note_id, requested ? 'withdraw' : 'request', msg), { 'data-evidence-review': requested ? 'withdraw' : 'request' }));
+                actions.appendChild(button('改寫', 'btn btn-sm btn-outline-secondary text-nowrap',
+                    () => this._openEditor(card, note, 'edit', msg), { 'data-evidence-edit': note.note_id }));
+            } else {
+                actions.appendChild(button('提出修改建議', 'btn btn-sm btn-outline-secondary text-nowrap',
+                    () => this._openEditor(card, note, 'suggest', msg), { 'data-evidence-suggest': note.note_id }));
+            }
             card.appendChild(actions);
             card.appendChild(msg);
+            if (isAuthor) this._openSuggestions(card, note, msg);
             return card;
+        }
+
+        _historyBlock(note) {
+            const box = el('div', 'small text-muted');
+            const revisions = note.revisions || [];
+            const suggestions = note.suggestions || [];
+            if (!revisions.length && !suggestions.length) return box;
+            const details = el('details', 'mt-1');
+            details.setAttribute('data-evidence-history', String(revisions.length));
+            details.appendChild(el('summary', '', `協作紀錄：修訂 ${revisions.length}、建議 ${suggestions.length}`));
+            revisions.forEach(rev => details.appendChild(el('div', '', rev.action === 'accepted_suggestion'
+                ? `${shortTime(rev.at)} ${rev.by?.username || '未知'} 接受了 ${rev.suggested_by?.username || '未知'} 的建議`
+                : `${shortTime(rev.at)} ${rev.by?.username || '未知'} 改寫`)));
+            suggestions.forEach(sg => details.appendChild(el('div', '',
+                `${shortTime(sg.at)} ${sg.by?.username || '未知'} 建議（${{ open: '待處理', accepted: '已接受', declined: '未採用' }[sg.status] || sg.status}）${sg.reason ? '：' + sg.reason : ''}`)));
+            box.appendChild(details);
+            return box;
+        }
+
+        _openSuggestions(card, note, msg) {
+            (note.suggestions || []).filter(sg => sg.status === 'open').forEach(sg => {
+                const box = el('div', 'border border-warning rounded p-2 mt-1 small');
+                box.setAttribute('data-evidence-open-suggestion', sg.suggestion_id);
+                box.appendChild(el('div', 'fw-bold', `${sg.by?.username || '未知'} 建議修改${sg.reason ? '：' + sg.reason : ''}`));
+                (sg.statements || []).forEach(st => box.appendChild(el('div', '', `【${KIND_LABELS[st.kind]}】${st.text}`)));
+                const row = el('div', 'd-flex gap-1 mt-1');
+                row.appendChild(button('接受建議', 'btn btn-sm btn-success', () => this._resolveSuggestion(note, sg, 'accept', msg),
+                    { 'data-suggestion-accept': sg.suggestion_id }));
+                row.appendChild(button('不採用', 'btn btn-sm btn-outline-secondary', () => this._resolveSuggestion(note, sg, 'decline', msg),
+                    { 'data-suggestion-decline': sg.suggestion_id }));
+                box.appendChild(row);
+                card.appendChild(box);
+            });
+        }
+
+        async _resolveSuggestion(note, sg, decision, msg) {
+            try {
+                await this._post('/api/study/evidence_notes/suggestion', { pid: this.pid, base_rev: this.rev, note_id: note.note_id,
+                    suggestion_id: sg.suggestion_id, decision });
+                await this.load();
+                this.setStatus(decision === 'accept' ? '已接受建議；原內容保留在協作紀錄' : '已不採用建議', 'success');
+            } catch (err) {
+                await this.load();
+                msg.textContent = `沒有更新：${err.message}`;
+            }
+        }
+
+        _openEditor(card, note, mode, msg) {
+            card.querySelector('[data-evidence-editor]')?.remove();
+            const work = (note.statements || []).map(st => ({ ...st }));
+            const box = el('div', 'border rounded p-2 mt-1 bg-light');
+            box.setAttribute('data-evidence-editor', mode);
+            box.appendChild(el('div', 'small fw-bold', mode === 'edit' ? '改寫（舊內容會保留在協作紀錄）' : '提出修改建議（作者決定是否接受）'));
+            work.forEach(st => {
+                if (st.kind === 'source_fact') {
+                    box.appendChild(el('div', 'small text-muted', `【原文事實，不能改】${st.text}`));
+                    return;
+                }
+                const text = el('textarea', 'form-control form-control-sm mb-1');
+                text.rows = 2;
+                text.value = st.text;
+                text.setAttribute('aria-label', `修改：${KIND_LABELS[st.kind]}`);
+                text.addEventListener('input', () => { st.text = text.value; });
+                box.appendChild(text);
+                if ((st.evidence || []).length) box.appendChild(supportSelect(st, () => {}));
+            });
+            const reason = el('input', 'form-control form-control-sm mb-1');
+            reason.placeholder = mode === 'edit' ? '標題（可留空）' : '建議理由';
+            reason.setAttribute('aria-label', mode === 'edit' ? '筆記標題' : '建議理由');
+            if (mode === 'edit') reason.value = note.title || '';
+            box.appendChild(reason);
+            box.appendChild(button(mode === 'edit' ? '儲存改寫' : '送出建議', 'btn btn-sm btn-primary', async () => {
+                const statements = work.filter(st => st.kind === 'source_fact' || String(st.text || '').trim()).map(st => st.kind === 'source_fact'
+                    ? { kind: 'source_fact', evidence: st.evidence }
+                    : { kind: st.kind, text: st.text.trim(), evidence: st.evidence || [], claim_support: st.claim_support || 'not_assessed' });
+                try {
+                    if (mode === 'edit') {
+                        await this._post('/api/study/evidence_notes/update', { pid: this.pid, base_rev: this.rev, note_id: note.note_id,
+                            statements, title: reason.value });
+                    } else {
+                        await this._post('/api/study/evidence_notes/suggest', { pid: this.pid, note_id: note.note_id, statements, reason: reason.value });
+                    }
+                    await this.load();
+                    this.setStatus(mode === 'edit' ? '已改寫' : '已送出建議；作者接受前筆記不變', 'success');
+                } catch (err) {
+                    msg.textContent = `沒有送出：${err.message}`;
+                }
+            }, { 'data-evidence-editor-submit': mode }));
+            card.appendChild(box);
         }
     }
 

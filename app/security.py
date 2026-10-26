@@ -455,6 +455,30 @@ def coauthor_open_access(pid: str) -> bool:
         return False
 
 
+def is_review_scoped(user_id: int, pid: str) -> bool:
+    """教授審閱身分：該專案角色為 viewer，且有已接受、未撤銷的教授邀請。
+
+    教授邀請的語意是「只授予審閱權」（collaboration.project_invitations）。審閱身分只能讀研究者明確分享的
+    審閱資料與論文本身，不能讀私人草稿、對話或未分享的筆記。一般團隊 viewer、舊的 MentorLink 關係、
+    被 owner 改成 editor 的教授都不屬於審閱身分（相容既有授權）。撤銷會刪成員資格並把邀請標 revoked，因此自動失效。
+    查詢失敗時回 True（偏向少給資料），因為呼叫端只用它來「收窄」權限。
+    """
+    if get_workspace_role(user_id, pid) != "viewer":
+        return False
+    try:
+        from app.models import ProjectInvitation
+
+        return ProjectInvitation.query.filter(
+            ProjectInvitation.pid.in_(_normalize_pid_aliases(pid)),
+            ProjectInvitation.accepted_by == user_id,
+            ProjectInvitation.kind == "professor",
+            ProjectInvitation.status == "accepted",
+        ).first() is not None
+    except Exception:
+        LOGGER.exception("is_review_scoped failed user_id=%s pid=%s", user_id, pid)
+        return True
+
+
 def is_section_scoped_role(role: Optional[str], pid: Optional[str] = None) -> bool:
     """
     該角色是否為「章節限定」——只看得到也只寫得到被指派的章節。

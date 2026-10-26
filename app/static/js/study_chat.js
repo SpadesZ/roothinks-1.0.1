@@ -72,6 +72,14 @@ class StudyChat {
             console.error('[StudyChat.init] ❌ 無法找到 #chat-input 元素！');
         }
 
+        // 教授審閱模式：對話是研究者的私人工作，不載入也不提供提問。
+        if (window.STUDY_REVIEW_SCOPE) {
+            if (this.inputEl) {
+                this.inputEl.disabled = true;
+                this.inputEl.placeholder = '審閱模式：不提供 AI 對話';
+            }
+            return;
+        }
         // 載入對話列表
         this.loadConversations();
     }
@@ -600,13 +608,16 @@ class StudyChat {
         btn.title = '在左側原文中定位這段';
         btn.appendChild(this._el('span', 'badge bg-success-subtle text-success-emphasis me-1', label || (anchor.page ? `原文 p.${anchor.page}` : '原文')));
         btn.appendChild(this._el('span', 'study-quote', `“${anchor.quote}”`));
+        if (anchor.status === 'ambiguous_in_block') {
+            btn.appendChild(this._el('span', 'badge bg-light text-dark border ms-1', '同段多處，只確定段落'));
+        }
         btn.addEventListener('click', () => window.studyView?.revealAnchor(anchor));
         return btn;
     }
 
     /**
      * 結構化回答卡。只用 textContent 放模型文字（不經 innerHTML），並把三種內容分區：
-     * 原文（已驗證引文，可點）、AI 解讀／推論、不確定性（AI 自評與系統檢查分開）。
+     * 原文（在原文中找到的引文，可點；只代表引文存在，不代表支持論點）、AI 解讀／推論、不確定性（AI 自評與系統檢查分開）。
      */
     appendStructured(structured, shouldScroll = true) {
         if (!this.historyContainer || !structured) return;
@@ -626,7 +637,7 @@ class StudyChat {
         card.appendChild(head);
 
         if (structured.selection_source) {
-            const box = this._el('div', 'small text-muted mb-2', '選段在譯文；來源事實改用同段原文：');
+            const box = this._el('div', 'small text-muted mb-2', '選段在譯文；來源事實改用由譯文推定的整段原文（非逐句對應）：');
             box.appendChild(this._evidenceChip(structured.selection_source, `原文 p.${structured.selection_source.page}`));
             card.appendChild(box);
         }
@@ -643,8 +654,10 @@ class StudyChat {
                 const li = this._el('li', 'mb-2');
                 li.appendChild(this._el('span', '', point.text));
                 const supported = (point.evidence || []).length > 0;
-                const tag = this._el('span', `badge ms-1 ${supported ? 'bg-success' : 'bg-secondary'}`, supported ? '有原文引文' : 'AI 推論，無原文支持');
-                tag.setAttribute('data-support', point.support || (supported ? 'source_quoted' : 'ai_inference'));
+                // 「找到引文」≠「引文支持論點」：系統只檢查前者，後者要研究者自己判斷。
+                const tag = this._el('span', `badge ms-1 ${supported ? 'bg-light text-success border border-success' : 'bg-secondary'}`,
+                    supported ? '附原文引文・是否支持未判定' : '沒有原文引文');
+                tag.setAttribute('data-quote-match', point.quote_match || (supported ? 'found' : 'none'));
                 li.appendChild(tag);
                 if (!supported && point.rejected_evidence) {
                     li.appendChild(this._el('span', 'badge ms-1 bg-warning text-dark', '所附引文被排除'));
@@ -680,13 +693,14 @@ class StudyChat {
         card.appendChild(uncBox);
 
         const check = structured.system_check || {};
-        const checkParts = [`已驗證引文 ${check.verified_quotes || 0}`, `排除 ${check.rejected_quotes || 0}`,
+        const found = check.quotes_found ?? check.verified_quotes ?? 0;  // verified_quotes：R1 存檔的舊欄位名
+        const checkParts = [`原文中找到的引文 ${found}`, `排除 ${check.rejected_quotes || 0}`,
             `選段 ${check.selection_status || '未知'}`];
         if (check.translation_based) checkParts.push('選段來自機器譯文');
         if (check.version_changed) checkParts.push('原文版本已變更');
         if (check.format_ok === false) checkParts.push('模型沒有回傳結構化格式');
-        const checkBox = this._el('div', 'small text-muted mb-2', `系統檢查：${checkParts.join('・')}`);
-        checkBox.setAttribute('data-system-check', String(check.verified_quotes || 0));
+        const checkBox = this._el('div', 'small text-muted mb-2', `系統檢查（只檢查引文是否存在，不判斷是否支持論點）：${checkParts.join('・')}`);
+        checkBox.setAttribute('data-system-check', String(found));
         card.appendChild(checkBox);
 
         if ((structured.open_questions || []).length) {

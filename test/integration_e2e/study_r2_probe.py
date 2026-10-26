@@ -1,7 +1,7 @@
 # Roothinks source maintenance contract
 # 目的：Study R2 前後量測探針。用真的 create_app、session 登入與真的教授／團隊邀請流程，記錄每條路徑「實際」回應。
 # 不做 assertion：同一支程式在改版前後各跑一次，輸出 JSON 給交付報告比較。所有資料在新 tmp，不碰 repo data/。
-# 執行：python test/integration_e2e/study_r2_probe.py > probe.json
+# 執行：python test/integration_e2e/study_r2_probe.py <輸出 JSON 路徑>
 import json
 import os
 from pathlib import Path
@@ -166,4 +166,8 @@ own['owner_text_replaced'] = any(s['text'] == 'EDITOR_OVERWRITE' for n in client
                                  for s in n['statements'])
 r = editor.post('/api/study/evidence_notes/review', json={'pid': PID, 'note_id': private_note, 'action': 'request'})
 own['editor_requests_review_on_owner_note_status'] = r.status_code
-print(json.dumps(out, ensure_ascii=False, indent=1))
+text = json.dumps(out, ensure_ascii=False, indent=1)
+if len(sys.argv) > 1:
+    Path(sys.argv[1]).write_text(text, encoding='utf-8')  # 日誌也會寫到 stdout，用檔案避免混雜
+else:
+    print(text)

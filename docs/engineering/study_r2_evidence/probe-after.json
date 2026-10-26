@@ -1,0 +1,201 @@
+{
+ "paths": {
+  "free_note": {
+   "prof": {
+    "status": 403,
+    "leaks_private": false
+   },
+   "teamviewer": {
+    "status": 200,
+    "leaks_private": true
+   },
+   "outsider": {
+    "status": 403,
+    "leaks_private": false
+   }
+  },
+  "conversation_list": {
+   "prof": {
+    "status": 403,
+    "leaks_private": false
+   },
+   "teamviewer": {
+    "status": 200,
+    "leaks_private": false
+   },
+   "outsider": {
+    "status": 403,
+    "leaks_private": false
+   }
+  },
+  "conversation_get": {
+   "prof": {
+    "status": 403,
+    "leaks_private": false
+   },
+   "teamviewer": {
+    "status": 200,
+    "leaks_private": true
+   },
+   "outsider": {
+    "status": 403,
+    "leaks_private": false
+   }
+  },
+  "matrix_latest": {
+   "prof": {
+    "status": 403,
+    "leaks_private": false
+   },
+   "teamviewer": {
+    "status": 200,
+    "leaks_private": true
+   },
+   "outsider": {
+    "status": 403,
+    "leaks_private": false
+   }
+  },
+  "matrix_history": {
+   "prof": {
+    "status": 403,
+    "leaks_private": false
+   },
+   "teamviewer": {
+    "status": 200,
+    "leaks_private": false
+   },
+   "outsider": {
+    "status": 403,
+    "leaks_private": false
+   }
+  },
+  "evidence_list": {
+   "prof": {
+    "status": 200,
+    "leaks_private": false,
+    "shows_shared": true
+   },
+   "teamviewer": {
+    "status": 200,
+    "leaks_private": true,
+    "shows_shared": true
+   },
+   "outsider": {
+    "status": 403,
+    "leaks_private": false,
+    "shows_shared": false
+   }
+  },
+  "evidence_export": {
+   "prof": {
+    "status": 200,
+    "leaks_private": false
+   },
+   "teamviewer": {
+    "status": 200,
+    "leaks_private": true
+   },
+   "outsider": {
+    "status": 403,
+    "leaks_private": false
+   }
+  },
+  "paper_list": {
+   "prof": {
+    "status": 200,
+    "leaks_private": false
+   },
+   "teamviewer": {
+    "status": 200,
+    "leaks_private": false
+   },
+   "outsider": {
+    "status": 403,
+    "leaks_private": false
+   }
+  },
+  "fulltext": {
+   "prof": {
+    "status": 200,
+    "leaks_private": false
+   },
+   "teamviewer": {
+    "status": 200,
+    "leaks_private": false
+   },
+   "outsider": {
+    "status": 403,
+    "leaks_private": false
+   }
+  },
+  "cross_project_fulltext": {
+   "prof": {
+    "status": 403,
+    "leaks_private": false
+   },
+   "teamviewer": {
+    "status": 403,
+    "leaks_private": false
+   },
+   "outsider": {
+    "status": 403,
+    "leaks_private": false
+   }
+  },
+  "mentor_detail_notes": {
+   "prof": {
+    "status": 200,
+    "leaks_private": false,
+    "leaks_conversation": false
+   },
+   "teamviewer": {
+    "status": 403,
+    "leaks_private": false,
+    "leaks_conversation": false
+   },
+   "outsider": {
+    "status": 403,
+    "leaks_private": false,
+    "leaks_conversation": false
+   }
+  },
+  "mentor_study_reviews": {
+   "prof": {
+    "status": 200,
+    "leaks_private": false,
+    "shows_shared": true
+   },
+   "teamviewer": {
+    "status": 403,
+    "leaks_private": false,
+    "shows_shared": false
+   },
+   "outsider": {
+    "status": 403,
+    "leaks_private": false,
+    "shows_shared": false
+   }
+  },
+  "after_revoke": {
+   "evidence_list": 403,
+   "fulltext": 403,
+   "mentor_study_reviews": 403
+  }
+ },
+ "semantics": {
+  "superscript_false_match": false,
+  "partial_word_match": false,
+  "same_block_duplicate_status": "ambiguous_in_block",
+  "same_block_duplicate_offset_claimed": false,
+  "verified_vocabulary": [],
+  "note_evidence_status_values": [
+   null
+  ]
+ },
+ "ownership": {
+  "editor_overwrites_owner_note_status": 403,
+  "owner_text_replaced": false,
+  "editor_requests_review_on_owner_note_status": 403
+ }
+}

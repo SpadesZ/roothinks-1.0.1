@@ -73,6 +73,7 @@ from app.models import (
 )
 from app.security import (
     get_workspace_role,
+    is_review_scoped,
     is_section_scoped_role,
     safe_join_under,
     validate_id,
@@ -315,6 +316,24 @@ def _study_notes(pid: str) -> dict:
     return result
 
 
+def _study_notes_for_reviewer(pid: str) -> dict:
+    """教授審閱身分不得經由導師 API 讀到研究者的自由筆記與對話；只回報已請求審閱的證據筆記數量。
+
+    非審閱身分（例如教授同時是該專案 editor）維持舊行為：那些內容他本來就能在 Study 讀到。
+    """
+    if not is_review_scoped(current_user.id, pid):
+        return _study_notes(pid)
+    from app.core_pro.study import study_evidence_notes
+    shared = 0
+    try:
+        path = study_evidence_notes.notes_path(_data_root(), pid)
+        shared = len(study_evidence_notes.review_shared(study_evidence_notes.load(path, pid)["notes"]))
+    except Exception:
+        logger.warning("讀取審閱請求數量失敗 pid=%s", pid, exc_info=True)
+    return {"pid": pid, "note": None, "conversations": [], "withheld": "review_scope",
+            "review_requested_evidence_notes": shared}
+
+
 # ---------------------------------------------------------------------------
 # HTML
 # ---------------------------------------------------------------------------
@@ -417,7 +436,7 @@ def mentee_detail(mentee_id):
         ]
 
     include_notes = request.args.get("notes", "1") not in {"0", "false", "no"}
-    notes = [_study_notes(p["pid"]) for p in projects] if include_notes else []
+    notes = [_study_notes_for_reviewer(p["pid"]) for p in projects] if include_notes else []
 
     return jsonify({
         "success": True,
@@ -811,7 +830,8 @@ def list_study_review_requests(mentee_id, pid):
         return guard
     _mentee, clean_pid = target
     _path, doc = _study_review_doc(clean_pid)
-    notes = [note for note in doc["notes"] if (note.get("review") or {}).get("state") == "requested"]
+    from app.core_pro.study import study_evidence_notes
+    notes = study_evidence_notes.review_shared(doc["notes"])
     return jsonify({"success": True, "pid": clean_pid, "notes": notes})
 
 

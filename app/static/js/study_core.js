@@ -56,15 +56,22 @@ class StudyCore {
         // 2. Load Sidebar List (From v1.0)
         this.loadPapers();
 
-        // 3. Init Notes (From v1.0)
-        this.initNotes();
+        // 教授審閱模式：自由筆記與矩陣是研究者的私人工作，伺服器會拒絕；不呼叫。
+        const reviewScope = !!window.STUDY_REVIEW_SCOPE;
+        if (reviewScope) {
+            const status = document.getElementById('study-notes-status');
+            if (status) status.textContent = '審閱模式：只顯示研究者請求審閱的證據筆記';
+        } else {
+            // 3. Init Notes (From v1.0)
+            this.initNotes();
 
-        // 3.1 Init matrix history list
-        this.initMatrixHistory();
+            // 3.1 Init matrix history list
+            this.initMatrixHistory();
+        }
 
         // 最新矩陣早已持久化在伺服器；舊版只填歷史清單，重新整理後主畫面仍空白。
         // 有指定 paper_id 時保留全文入口，不用矩陣把它蓋回去。
-        if (!this.currentPaperId) {
+        if (!reviewScope && !this.currentPaperId) {
             this.loadLatestMatrix(0, {switchMode: true, silentWhenMissing: true});
         }
 

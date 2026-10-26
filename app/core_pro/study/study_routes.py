@@ -24,6 +24,7 @@ from app.services.context_chain_service import ContextChainService
 from app.services.formal_project_sync import resolve_data_root
 from app.security import (
     enforce_project_ownership,
+    is_review_scoped,
     check_and_save_json,
     mutate_versioned_json,
     update_json_locked,
@@ -74,7 +75,28 @@ def _enforce_study_project_acl():
         return jsonify({"ok": False, "msg": "Forbidden"}), 403
     except Exception:
         return jsonify({"ok": False, "msg": "Unauthorized"}), 401
+    if _review_scope(pid) and request.endpoint not in _REVIEW_SCOPE_ENDPOINTS:
+        return jsonify({"ok": False, "review_scope": True,
+                        "msg": "教授審閱權限只包含研究者分享的審閱資料與論文本身"}), 403
     return None
+
+
+# 教授審閱身分（security.is_review_scoped）在 Study 只能用這些端點：論文本身與「已請求審閱」的證據筆記。
+# 自由筆記、對話、矩陣是研究者的私人工作，不在審閱範圍。白名單：新增端點預設不開放給審閱身分。
+_REVIEW_SCOPE_ENDPOINTS = frozenset({
+    'study_bp.check_data_readiness', 'study_bp.get_paper_list', 'study_bp.get_fulltext',
+    'study_bp.get_media_gallery', 'study_bp.get_media_asset',
+    'study_bp.list_evidence_notes', 'study_bp.export_evidence_notes',
+})
+
+
+def _review_scope(pid):
+    """目前登入者在此專案是否為教授審閱身分；未登入（token／開發模式）不適用。"""
+    from flask_login import current_user
+    try:
+        return bool(current_user.is_authenticated and is_review_scoped(current_user.id, pid))
+    except AttributeError:
+        return False
 
 
 def get_context_chain_service():
@@ -1293,7 +1315,12 @@ def study_page(pid):
         resolved = _resolve_active_pid(pid)
         if not resolved:
             return redirect('/')
-        return render_template('study.html', pid=resolved)
+        from flask_login import current_user
+        try:
+            scoped = bool(current_user.is_authenticated and is_review_scoped(current_user.id, resolved))
+        except AttributeError:
+            scoped = False
+        return render_template('study.html', pid=resolved, review_scope=scoped)
     except Exception as e:
         logger.error(f"Study page error: {e}")
         return f"<h1>Error loading Study page</h1><p>{e}</p>", 500
@@ -2166,7 +2193,7 @@ def _anchored_tutor_reply(pid, query, mode, data, conv_id):
         return jsonify({"ok": False, "msg": str(exc)}), 400
     except FileNotFoundError:
         return jsonify({"ok": False, "msg": "全文尚未就緒，無法定位選取文字"}), 404
-    if anchor["status"] not in study_anchors.VERIFIED:
+    if anchor["status"] not in study_anchors.TEXT_FOUND:
         return jsonify({"ok": False, "anchor": anchor,
                         "msg": "選取的文字在目前原文中找不到或出現多次；請重新選取（沒有呼叫模型）"}), 409
     window = study_anchors.evidence_window(pages, anchor)
@@ -2330,9 +2357,12 @@ def list_evidence_notes(pid):
         if not pid:
             return jsonify({"ok": False, "msg": "Invalid PID"}), 404
         doc = study_evidence_notes.load(_evidence_path(pid), pid)
+        scoped = _review_scope(pid)
+        if scoped:
+            doc["notes"] = study_evidence_notes.review_shared(doc["notes"])
         if request.args.get('verify') == '1':
             _attach_current_anchor_status(pid, doc["notes"])
-        return jsonify({"ok": True, "rev": doc.get("_rev", 0), "notes": doc["notes"]})
+        return jsonify({"ok": True, "rev": doc.get("_rev", 0), "notes": doc["notes"], "review_scope": scoped})
     except Exception as e:
         return _internal_error("list_evidence_notes", e)
 
@@ -2394,7 +2424,7 @@ def accept_evidence_note():
 
 @study_bp.route('/api/study/evidence_notes/update', methods=['POST'])
 def update_evidence_note():
-    """研究者改寫陳述；舊分頁送出得到 409，不覆蓋。錨點不可在此修改。"""
+    """作者改寫自己的陳述（非作者 403，請改用建議）；舊分頁送出得到 409，不覆蓋。錨點不可在此修改。"""
     try:
         data = request.get_json(silent=True) or {}
         pid = _normalize_study_pid(data.get('pid'))
@@ -2406,11 +2436,8 @@ def update_evidence_note():
         actor = _actor()
         def mutate(current):
             doc = study_evidence_notes.document(current, pid)
-            note = study_evidence_notes.find(doc, nid)
-            note["statements"] = study_evidence_notes.statements(data.get('statements'), note.get("anchors") or [])
-            if 'title' in data:
-                note["title"] = str(data.get('title') or '').strip()[:200]
-            note["edited_at"], note["edited_by"] = study_evidence_notes.now(), actor
+            study_evidence_notes.edit(study_evidence_notes.find(doc, nid), data.get('statements'), actor,
+                                      data.get('title') if 'title' in data else None)
             return doc
         result = _evidence_write(pid, mutate, data['base_rev'])
         return jsonify(result), (200 if result.get('ok') else 409)
@@ -2418,6 +2445,56 @@ def update_evidence_note():
         return _evidence_error(e)
     except Exception as e:
         return _internal_error("update_evidence_note", e)
+
+
+@study_bp.route('/api/study/evidence_notes/suggest', methods=['POST'])
+def suggest_evidence_note():
+    """非作者提出修改建議：只追加，作者的陳述不變。"""
+    try:
+        data = request.get_json(silent=True) or {}
+        pid = _normalize_study_pid(data.get('pid'))
+        if not pid:
+            return jsonify({"ok": False, "msg": "Invalid PID"}), 404
+        nid = study_evidence_notes.note_id(data.get('note_id'))
+        actor = _actor()
+        made = {}
+        def mutate(current):
+            doc = study_evidence_notes.document(current, pid)
+            made.update(study_evidence_notes.suggest(study_evidence_notes.find(doc, nid), data.get('statements'),
+                                                     data.get('reason'), actor))
+            return doc
+        result = _evidence_write(pid, mutate, None)
+        result['suggestion'] = made
+        return jsonify(result), 200
+    except (BadRequest, NotFound, Forbidden) as e:
+        return _evidence_error(e)
+    except Exception as e:
+        return _internal_error("suggest_evidence_note", e)
+
+
+@study_bp.route('/api/study/evidence_notes/suggestion', methods=['POST'])
+def resolve_evidence_suggestion():
+    """作者接受或不採用一則建議；接受會改陳述，因此需要 base_rev，舊分頁得到 409。"""
+    try:
+        data = request.get_json(silent=True) or {}
+        pid = _normalize_study_pid(data.get('pid'))
+        if not pid:
+            return jsonify({"ok": False, "msg": "Invalid PID"}), 404
+        if 'base_rev' not in data or data['base_rev'] is None:
+            return jsonify({"ok": False, "msg": "請重新載入證據筆記後再處理建議"}), 428
+        nid = study_evidence_notes.note_id(data.get('note_id'))
+        actor = _actor()
+        def mutate(current):
+            doc = study_evidence_notes.document(current, pid)
+            study_evidence_notes.resolve_suggestion(study_evidence_notes.find(doc, nid), data.get('suggestion_id'),
+                                                    data.get('decision'), actor, data.get('reason'))
+            return doc
+        result = _evidence_write(pid, mutate, data['base_rev'])
+        return jsonify(result), (200 if result.get('ok') else 409)
+    except (BadRequest, NotFound, Forbidden) as e:
+        return _evidence_error(e)
+    except Exception as e:
+        return _internal_error("resolve_evidence_suggestion", e)
 
 
 @study_bp.route('/api/study/evidence_notes/comment', methods=['POST'])
@@ -2444,7 +2521,7 @@ def comment_evidence_note():
 
 @study_bp.route('/api/study/evidence_notes/review', methods=['POST'])
 def review_evidence_note():
-    """請求或撤回審閱；只改審閱狀態與事件紀錄，不改陳述。"""
+    """作者請求或撤回審閱；只改審閱狀態與事件紀錄，不改陳述。"""
     try:
         data = request.get_json(silent=True) or {}
         pid = _normalize_study_pid(data.get('pid'))
@@ -2471,6 +2548,8 @@ def export_evidence_notes(pid):
         if not pid:
             return jsonify({"ok": False, "msg": "Invalid PID"}), 404
         doc = study_evidence_notes.load(_evidence_path(pid), pid)
+        if _review_scope(pid):
+            doc["notes"] = study_evidence_notes.review_shared(doc["notes"])
         body = study_evidence_notes.to_markdown(doc, pid)
         response = current_app.response_class(body, mimetype='text/markdown; charset=utf-8')
         response.headers['Content-Disposition'] = f"attachment; filename*=UTF-8''{quote(pid)}_evidence_notes.md"

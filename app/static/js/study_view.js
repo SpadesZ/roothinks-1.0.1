@@ -1805,11 +1805,30 @@ class StudyView {
         const side = startHost ? startHost.dataset.side : (startEl?.closest('.translation-content') ? 'translation' : 'original');
         let prefix = '';
         let suffix = '';
+        let occurrence = null;
+        let occurrencesTotal = null;
         if (startHost) {
             const before = document.createRange();
             before.selectNodeContents(startHost);
             before.setEnd(range.startContainer, range.startOffset);
             prefix = before.toString().slice(-32);
+            // 同段多處相同文字時，告訴伺服器這是第幾處；伺服器只在總數一致時採用，否則不給精確位置。
+            const norm = (t) => String(t || '').replace(/\s+/g, ' ').trim();
+            const q = norm(quote);
+            const whole = norm(startHost.textContent);
+            const head = norm(before.toString());
+            if (q) {
+                let at = whole.indexOf(q);
+                let total = 0;
+                let index = 0;
+                while (at >= 0) {
+                    if (at < head.length) index = total;
+                    total += 1;
+                    at = whole.indexOf(q, at + 1);
+                }
+                occurrencesTotal = total;
+                occurrence = Math.min(index, Math.max(0, total - 1));
+            }
             if (!crossBlock) {
                 const after = document.createRange();
                 after.selectNodeContents(startHost);
@@ -1827,6 +1846,8 @@ class StudyView {
             page: Number(startHost?.dataset.page || 0) || null,
             prefix,
             suffix,
+            occurrence,
+            occurrences_total: occurrencesTotal,
             source: payload.fulltext_source || '',
             source_sha256: payload.source_sha256 || '',
             paper_id: this.currentFulltextPaperId || '',
@@ -1925,16 +1946,44 @@ class StudyView {
         row.classList.remove('study-evidence-flash');
         void row.offsetWidth;
         row.classList.add('study-evidence-flash');
-        const range = this._rangeForQuote(host, target.quote);
+        // 同段多處且伺服器無法唯一決定：只標整段，不假裝知道是哪一處。
+        const range = target.status === 'ambiguous_in_block' ? null
+            : this._rangeForQuote(host, target.quote, this._occurrenceIndex(target));
+        if (window.CSS && CSS.highlights) CSS.highlights.delete('study-evidence');
         if (range && window.CSS && CSS.highlights && window.Highlight) {
             CSS.highlights.set('study-evidence', new Highlight(range));
+        }
+        if (target.status === 'ambiguous_in_block') {
+            window.studyCore?.showToast('這段文字在同一段出現多次，只標出段落', 'info');
         }
         content.querySelectorAll('[data-evidence-current]').forEach(el => el.removeAttribute('data-evidence-current'));
         host.setAttribute('data-evidence-current', range ? 'quote' : 'block');
         return true;
     }
 
-    _rangeForQuote(host, quote) {
+    _occurrenceIndex(anchor) {
+        // 伺服器給的 start 是原文字串中的位置；換算成「這段文字在該段是第幾處」，再到畫面上找同一處。
+        if (typeof anchor.start !== 'number') return 0;
+        const pages = this.currentFulltextPayload?.blocks || [];
+        const match = /^p(\d+)-b(\d+)$/.exec(anchor.ref || '');
+        if (!match) return 0;
+        const pageData = pages.find((p, i) => Number(p?.page || i + 1) === Number(match[1]));
+        const block = pageData?.blocks?.[Number(match[2]) - 1];
+        if (!block || typeof block !== 'object') return 0;
+        const raw = String((anchor.side === 'translation' ? (block.translation || block.content_zh) : block.content) || '');
+        const norm = (t) => String(t || '').replace(/\s+/g, ' ').trim();
+        const q = norm(anchor.quote);
+        const head = norm(raw.slice(0, anchor.start) + 'x').slice(0, -1);
+        let count = 0;
+        let at = norm(raw).indexOf(q);
+        while (at >= 0 && at < head.length) {
+            count += 1;
+            at = norm(raw).indexOf(q, at + 1);
+        }
+        return count;
+    }
+
+    _rangeForQuote(host, quote, nth = 0) {
         const wanted = String(quote || '').replace(/\s+/g, ' ').trim();
         if (!wanted) return null;
         const walker = document.createTreeWalker(host, NodeFilter.SHOW_TEXT);
@@ -1956,7 +2005,8 @@ class StudyView {
             // 段落 <p> 之間在 DOM 沒有空白，比對時當成一個空白。
             if (!lastSpace) { flat += ' '; marks.push([node, t.length]); lastSpace = true; }
         }
-        const at = flat.indexOf(wanted);
+        let at = flat.indexOf(wanted);
+        for (let skip = 0; skip < nth && at >= 0; skip++) at = flat.indexOf(wanted, at + 1);
         if (at < 0) return null;
         const [startNode, startOffset] = marks[at];
         const [endNode, endOffset] = marks[at + wanted.length - 1];

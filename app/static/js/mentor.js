@@ -319,8 +319,16 @@ class MentorDashboard {
                 card.appendChild(make('div', 'text-success fst-italic',
                     `證據 ${i + 1}（${anchor.paper_id || ''} p.${anchor.page || '?'}，${anchor.side === 'translation' ? '譯文' : '原文'}）：“${anchor.quote}”`));
             });
-            (note.statements || []).forEach(st => card.appendChild(make('div', '',
-                `【${labels[st.kind] || st.kind}】${st.text}${st.kind !== 'source_fact' && !(st.evidence || []).length ? '（無證據）' : ''}`)));
+            const support = {supports: '研究者判斷：支持', partial: '研究者判斷：部分支持', does_not_support: '研究者判斷：不支持'};
+            (note.statements || []).forEach(st => {
+                let tail = '';
+                if (st.kind !== 'source_fact') {
+                    tail = !(st.evidence || []).length ? '（無證據）' : `（${support[st.claim_support] || '引文是否支持未判定'}）`;
+                } else if (st.quote_scope === 'paragraph_from_translation') {
+                    tail = '（由譯文推定的整段原文）';
+                }
+                card.appendChild(make('div', '', `【${labels[st.kind] || st.kind}】${st.text}${tail}`));
+            });
             (note.comments || []).forEach(c => card.appendChild(make('div', 'border-start ps-2 mt-1 text-muted',
                 `${(c.author && c.author.username) || '未知'}（${c.author_role === 'mentor' ? '指導教授' : '成員'}）：${c.body}`)));
             const row = make('div', 'input-group input-group-sm mt-1');

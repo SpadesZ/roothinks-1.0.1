@@ -63,11 +63,11 @@ def test_wrong_hint_is_relocated_and_changed_version_is_never_exact():
     assert changed["status"] == "relocated" and changed["version_changed"] is True
 
 
-def test_ambiguous_and_missing_quotes_are_not_verified():
+def test_ambiguous_and_missing_quotes_are_not_located():
     amb = anchors.resolve(PAGES, {"quote": "Repeated phrase"}, META)
     assert amb["status"] == "ambiguous" and set(amb["candidates"]) == {"p2-b3", "p2-b4"}
     gone = anchors.resolve(PAGES, {"quote": "replicated in three laboratories", "ref": "p1-b2"}, META)
-    assert gone["status"] == "not_found" and gone["status"] not in anchors.VERIFIED and "start" not in gone
+    assert gone["status"] == "not_found" and gone["status"] not in anchors.TEXT_FOUND and "start" not in gone
 
 
 def test_repeated_text_inside_the_hinted_block_uses_prefix_to_pick_the_occurrence():
@@ -115,13 +115,14 @@ def test_fabricated_quotes_are_rejected_and_never_become_evidence():
         {"text": "捏造", "evidence": [{"ref": "E1", "quote": "replicated in three independent laboratories"}]},
         {"text": "轉述不是引文", "evidence": [{"ref": "E1", "quote": "improvement only seen at 300 K"}]},
     ], "uncertainty": {"level": "medium", "reasons": ["只有一個溫度"]}, "open_questions": ["其他溫度？"]})
-    assert [p["support"] for p in out["points"]] == ["source_quoted", "ai_inference", "ai_inference"]
+    assert [p["quote_match"] for p in out["points"]] == ["found", "none", "none"]
+    assert {p["claim_support"] for p in out["points"]} == {"not_assessed"}, "引文存在不等於支持論點"
     assert [p["rejected_evidence"] for p in out["points"]] == [0, 1, 1]
     assert out["points"][0]["evidence"][0]["quote"] == QUOTE
     assert [r["quote"] for r in out["rejected_quotes"]] == ["replicated in three independent laboratories",
                                                            "improvement only seen at 300 K"]
     assert out["system_check"] == {"selection_status": "exact", "selection_side": "original", "version_changed": False,
-                                   "translation_based": False, "format_ok": True, "verified_quotes": 1, "rejected_quotes": 2}
+                                   "translation_based": False, "format_ok": True, "quotes_found": 1, "rejected_quotes": 2}
     assert out["uncertainty"] == {"level": "medium", "reasons": ["只有一個溫度"], "source": "model_self_report"}
 
 
@@ -153,5 +154,6 @@ def test_plain_text_rendering_labels_ai_and_source():
         {"text": "沒原文", "evidence": [{"ref": "E1", "quote": "made up"}]}],
         "uncertainty": {"level": "high", "reasons": ["樣本少"]}})
     text = anchors.render_text(out, "critique")
-    assert text.startswith("【AI 批判】解讀") and "（有原文引文）" in text and "（AI 推論，無原文支持）" in text
-    assert "已排除" in text and "【不確定性・AI 自評】高：樣本少" in text and "已驗證引文 1、排除 1" in text
+    assert text.startswith("【AI 批判】解讀") and "（附原文引文，是否支持此論點未判定）" in text and "（沒有原文引文）" in text
+    assert "已排除" in text and "【不確定性・AI 自評】高：樣本少" in text and "原文中找到的引文 1、排除 1" in text
+    assert "驗證" not in text, "純文字輸出不得用「驗證」描述引文比對"
