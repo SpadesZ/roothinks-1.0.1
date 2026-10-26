@@ -28,7 +28,7 @@ import shutil
 import glob
 import logging
 from werkzeug.exceptions import BadRequest, Forbidden, Unauthorized
-from app.security import validate_id, enforce_project_ownership, describe_project_access
+from app.security import validate_id, enforce_project_ownership, describe_project_access, current_user_review_scoped
 
 bp = Blueprint('paq', __name__, url_prefix='/api/paq')
 logger = logging.getLogger("PaqRoutes")
@@ -212,6 +212,10 @@ def get_paq_chat_history(pid):
         project = Project.query.filter_by(project_id=safe_pid).first()
         if not project:
             return jsonify({'success': False, 'message': 'Project not found'}), 404
+        # 教授審閱身分（PA-01）：AI 對話是研究者的私人工作，不在審閱範圍。
+        if current_user_review_scoped(safe_pid):
+            return jsonify({'success': False, 'review_scope': True,
+                            'message': '教授審閱權限不包含研究者的 AI 對話'}), 403
 
         try:
             limit = int(request.args.get('limit', 40))

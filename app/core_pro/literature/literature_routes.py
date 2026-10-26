@@ -47,6 +47,7 @@ from app.system_runtime import cap_worker_count, get_cpu_limit_info
 from app.services.context_chain_service import ContextChainService
 from app.services.formal_project_sync import ensure_formal_project_records
 from app.security import (
+    current_user_review_scoped,
     enforce_project_ownership,
     get_acl_context,
     load_json_locked,
@@ -258,7 +259,14 @@ def _enforce_literature_project_acl():
         return jsonify({"status": "error", "message": "Forbidden"}), 403
     except Exception:
         return jsonify({"status": "error", "message": "Unauthorized"}), 401
+    # 教授審閱身分（PA-01）：研究者的 AI 對話是私人工作，不在審閱範圍；論文與文獻庫照常可讀。
+    if request.endpoint in _REVIEW_SCOPE_PRIVATE_ENDPOINTS and current_user_review_scoped(pid):
+        return jsonify({"status": "error", "review_scope": True,
+                        "message": "教授審閱權限不包含研究者的 AI 對話"}), 403
     return None
+
+
+_REVIEW_SCOPE_PRIVATE_ENDPOINTS = frozenset({"literature_bp.literature_chat_history"})
 
 
 def _to_bool(value, default=True):

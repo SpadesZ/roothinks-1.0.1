@@ -534,10 +534,27 @@
             });
         }
 
-        async _resolveSuggestion(note, sg, decision, msg) {
+        async _resolveSuggestion(note, sg, decision, msg, allowStale = false) {
+            const body = { pid: this.pid, base_rev: this.rev, note_id: note.note_id, suggestion_id: sg.suggestion_id, decision,
+                allow_stale: allowStale };
             try {
-                await this._post('/api/study/evidence_notes/suggestion', { pid: this.pid, base_rev: this.rev, note_id: note.note_id,
-                    suggestion_id: sg.suggestion_id, decision });
+                const res = await fetch('/api/study/evidence_notes/suggestion', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+                const data = await res.json().catch(() => ({}));
+                if (res.status === 409 && data.stale_suggestion && !allowStale) {
+                    // 建議是根據較舊的版本提出：讓作者明確決定，不默默覆蓋之後的改寫。
+                    if (window.confirm(`${data.msg}\n\n仍要用這則建議取代目前的內容嗎？目前內容會保留在協作紀錄。`)) {
+                        return this._resolveSuggestion(note, sg, decision, msg, true);
+                    }
+                    msg.textContent = '沒有接受：建議比目前版本舊。';
+                    return;
+                }
+                if (res.status === 409) {
+                    await this.load();
+                    msg.textContent = '筆記在別處更新過，已重新載入；請再處理一次。';
+                    return;
+                }
+                if (!res.ok || !data.ok) throw new Error(data.msg || `HTTP ${res.status}`);
                 await this.load();
                 this.setStatus(decision === 'accept' ? '已接受建議；原內容保留在協作紀錄' : '已不採用建議', 'success');
             } catch (err) {
@@ -584,6 +601,22 @@
                     await this.load();
                     this.setStatus(mode === 'edit' ? '已改寫' : '已送出建議；作者接受前筆記不變', 'success');
                 } catch (err) {
+                    if (/409/.test(err.message)) {
+                        // 舊分頁：保留編輯框內容，重新載入伺服器版本後讓研究者再送一次。
+                        const kept = work.map(st => st.text);
+                        await this.load();
+                        this.setStatus('筆記在別處更新過，已重新載入最新版本；你的修改還在編輯框，請確認後再送出。', 'warning');
+                        const card2 = this.listEl.querySelector(`[data-evidence-note="${note.note_id}"]`);
+                        const fresh = this.notes.find(n => n.note_id === note.note_id);
+                        if (card2 && fresh) {
+                            this._openEditor(card2, fresh, mode, msg);
+                            card2.querySelectorAll('[data-evidence-editor] textarea').forEach((ta, i) => {
+                                const pending = kept.filter((_, j) => work[j].kind !== 'source_fact')[i];
+                                if (pending !== undefined) { ta.value = pending; ta.dispatchEvent(new Event('input')); }
+                            });
+                        }
+                        return;
+                    }
                     msg.textContent = `沒有送出：${err.message}`;
                 }
             }, { 'data-evidence-editor-submit': mode }));

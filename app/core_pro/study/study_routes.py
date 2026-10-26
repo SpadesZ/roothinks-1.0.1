@@ -18,7 +18,7 @@ import logging
 import re
 from flask import Blueprint, request, jsonify, current_app, render_template, redirect, send_file
 from urllib.parse import quote
-from werkzeug.exceptions import BadRequest, Forbidden, NotFound
+from werkzeug.exceptions import BadRequest, Conflict, Forbidden, NotFound
 from app.models import db, Paper, Project
 from app.services.context_chain_service import ContextChainService
 from app.services.formal_project_sync import resolve_data_root
@@ -2322,8 +2322,11 @@ def _evidence_write(pid, mutate, base_rev):
 
 
 def _evidence_error(exc):
-    status = 404 if isinstance(exc, NotFound) else 403 if isinstance(exc, Forbidden) else 400
-    return jsonify({"ok": False, "msg": exc.description}), status
+    status = 404 if isinstance(exc, NotFound) else 403 if isinstance(exc, Forbidden) else 409 if isinstance(exc, Conflict) else 400
+    body = {"ok": False, "msg": exc.description}
+    if isinstance(exc, Conflict):
+        body["stale_suggestion"] = True
+    return jsonify(body), status
 
 
 def _resolve_note_anchors(pid, paper_id, selections):
@@ -2416,7 +2419,7 @@ def accept_evidence_note():
         if result.get('ok'):
             result['note'] = note
         return jsonify(result), (200 if result.get('ok') else 409)
-    except (BadRequest, NotFound, Forbidden) as e:
+    except (BadRequest, NotFound, Forbidden, Conflict) as e:
         return _evidence_error(e)
     except Exception as e:
         return _internal_error("accept_evidence_note", e)
@@ -2441,7 +2444,7 @@ def update_evidence_note():
             return doc
         result = _evidence_write(pid, mutate, data['base_rev'])
         return jsonify(result), (200 if result.get('ok') else 409)
-    except (BadRequest, NotFound, Forbidden) as e:
+    except (BadRequest, NotFound, Forbidden, Conflict) as e:
         return _evidence_error(e)
     except Exception as e:
         return _internal_error("update_evidence_note", e)
@@ -2466,7 +2469,7 @@ def suggest_evidence_note():
         result = _evidence_write(pid, mutate, None)
         result['suggestion'] = made
         return jsonify(result), 200
-    except (BadRequest, NotFound, Forbidden) as e:
+    except (BadRequest, NotFound, Forbidden, Conflict) as e:
         return _evidence_error(e)
     except Exception as e:
         return _internal_error("suggest_evidence_note", e)
@@ -2487,11 +2490,12 @@ def resolve_evidence_suggestion():
         def mutate(current):
             doc = study_evidence_notes.document(current, pid)
             study_evidence_notes.resolve_suggestion(study_evidence_notes.find(doc, nid), data.get('suggestion_id'),
-                                                    data.get('decision'), actor, data.get('reason'))
+                                                    data.get('decision'), actor, data.get('reason'),
+                                                    allow_stale=data.get('allow_stale') is True)
             return doc
         result = _evidence_write(pid, mutate, data['base_rev'])
         return jsonify(result), (200 if result.get('ok') else 409)
-    except (BadRequest, NotFound, Forbidden) as e:
+    except (BadRequest, NotFound, Forbidden, Conflict) as e:
         return _evidence_error(e)
     except Exception as e:
         return _internal_error("resolve_evidence_suggestion", e)
@@ -2513,7 +2517,7 @@ def comment_evidence_note():
         result = _evidence_write(pid, mutate, None)
         result['comment'] = entry
         return jsonify(result), 200
-    except (BadRequest, NotFound, Forbidden) as e:
+    except (BadRequest, NotFound, Forbidden, Conflict) as e:
         return _evidence_error(e)
     except Exception as e:
         return _internal_error("comment_evidence_note", e)
@@ -2535,7 +2539,7 @@ def review_evidence_note():
             return doc
         result = _evidence_write(pid, mutate, None)
         return jsonify(result), 200
-    except (BadRequest, NotFound, Forbidden) as e:
+    except (BadRequest, NotFound, Forbidden, Conflict) as e:
         return _evidence_error(e)
     except Exception as e:
         return _internal_error("review_evidence_note", e)

@@ -11,7 +11,7 @@ import re
 from datetime import datetime, timezone
 from uuid import uuid4
 
-from werkzeug.exceptions import BadRequest, Forbidden, NotFound
+from werkzeug.exceptions import BadRequest, Conflict, Forbidden, NotFound
 
 from app.core_pro.study import study_anchors
 from app.security import load_json_locked, safe_join_under
@@ -218,13 +218,15 @@ def suggest(note, raw_statements, reason, actor):
         raise BadRequest(f"待處理的建議已達上限 {MAX_OPEN_SUGGESTIONS} 則")
     entry = {"suggestion_id": f"sg_{uuid4().hex[:12]}", "by": actor, "at": now(),
              "reason": str(reason or "").strip()[:1000], "status": "open",
+             # 提出建議時筆記已有幾次修訂；作者之後若又改過，接受前必須明確確認，避免舊建議蓋掉新內容。
+             "based_on_revision": len(note["revisions"]),
              "statements": statements(raw_statements, note.get("anchors") or [], actor)}
     note["suggestions"].append(entry)
     return entry
 
 
-def resolve_suggestion(note, sid, decision, actor, reason=""):
-    """作者明確接受（套用並記錄出處）或不採用（附理由）。"""
+def resolve_suggestion(note, sid, decision, actor, reason="", allow_stale=False):
+    """作者明確接受（套用並記錄出處）或不採用（附理由）。建議比筆記舊時，接受需 allow_stale=True。"""
     require_author(note, actor, "處理建議")
     if not _SUGGESTION_ID.fullmatch(str(sid or "")):
         raise BadRequest("suggestion_id 格式錯誤")
@@ -235,6 +237,9 @@ def resolve_suggestion(note, sid, decision, actor, reason=""):
         raise BadRequest("這則建議已處理")
     if decision not in ("accept", "decline"):
         raise BadRequest("只能 accept 或 decline")
+    stale = entry.get("based_on_revision", len(note["revisions"])) != len(note["revisions"])
+    if decision == "accept" and stale and allow_stale is not True:
+        raise Conflict("這則建議是根據較舊的版本提出；你之後改過筆記。請先比對，確認後再接受。")
     stamp = now()
     entry.update(status="accepted" if decision == "accept" else "declined", resolved_by=actor, resolved_at=stamp,
                  resolution_reason=str(reason or "").strip()[:1000])
@@ -247,8 +252,20 @@ def resolve_suggestion(note, sid, decision, actor, reason=""):
 
 
 def review_shared(notes):
-    """研究者明確請求審閱的筆記；教授審閱身分只看得到這些。"""
-    return [note for note in notes if (note.get("review") or {}).get("state") == "requested"]
+    """研究者明確請求審閱的筆記；教授審閱身分只看得到這些，而且只看「目前版本」。
+
+    修訂紀錄裡被取代的舊陳述是研究者的草稿，未處理的成員建議也不是作者的立場：審閱版本只保留修訂的時間與作者，
+    不含舊內容與建議內容。
+    """
+    shared = []
+    for note in notes:
+        if (note.get("review") or {}).get("state") != "requested":
+            continue
+        copy = {k: v for k, v in note.items() if k not in ("revisions", "suggestions")}
+        copy["revisions"] = [{k: rev.get(k) for k in ("action", "by", "at")} for rev in note.get("revisions") or []]
+        copy["suggestions"] = []
+        shared.append(copy)
+    return shared
 
 
 def comment(body, actor, role):

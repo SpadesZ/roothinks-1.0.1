@@ -468,15 +468,63 @@ def is_review_scoped(user_id: int, pid: str) -> bool:
     try:
         from app.models import ProjectInvitation
 
-        return ProjectInvitation.query.filter(
-            ProjectInvitation.pid.in_(_normalize_pid_aliases(pid)),
+        aliases = _normalize_pid_aliases(pid)
+        accepted = ProjectInvitation.query.filter(
+            ProjectInvitation.pid.in_(aliases),
             ProjectInvitation.accepted_by == user_id,
-            ProjectInvitation.kind == "professor",
             ProjectInvitation.status == "accepted",
-        ).first() is not None
+        ).all()
+        if any(row.kind == "professor" for row in accepted):
+            return True
+        if any(row.kind == "team" for row in accepted):
+            return False  # 明確以團隊身分受邀的 viewer 永遠不收窄
+        return legacy_review_scope_policy() == "review_scope" and is_legacy_mentor_viewer(user_id, pid)
     except Exception:
         LOGGER.exception("is_review_scoped failed user_id=%s pid=%s", user_id, pid)
         return True
+
+
+LEGACY_REVIEW_SCOPE_POLICIES = ("keep", "review_scope")
+
+
+def legacy_review_scope_policy() -> str:
+    """舊導師關係（沒有教授邀請紀錄的 viewer＋MentorLink）的相容選項。
+
+    keep（預設）：維持舊的完整 viewer 讀取，不默默撤銷歷史授權。
+    review_scope：與教授邀請相同的審閱範圍。由 Owner 以設定 REVIEW_SCOPE_LEGACY_MENTORS 明確選擇；
+    切換前先用 scripts/review_scope_legacy_report.py 列出會受影響的成員。設定值不合法時視為 keep。
+    """
+    value = ""
+    try:
+        value = str(current_app.config.get("REVIEW_SCOPE_LEGACY_MENTORS") or "")
+    except RuntimeError:
+        pass
+    value = (value or os.environ.get("REVIEW_SCOPE_LEGACY_MENTORS", "keep")).strip().lower()
+    return value if value in LEGACY_REVIEW_SCOPE_POLICIES else "keep"
+
+
+def is_legacy_mentor_viewer(user_id: int, pid: str) -> bool:
+    """viewer 且是本專案某位 owner／editor／coauthor 的 mentor，並且沒有任何已接受的邀請紀錄。"""
+    from app.models import MentorLink, ProjectInvitation, WorkspaceMember
+
+    aliases = _normalize_pid_aliases(pid)
+    if ProjectInvitation.query.filter(ProjectInvitation.pid.in_(aliases), ProjectInvitation.accepted_by == user_id,
+                                      ProjectInvitation.status == "accepted").first() is not None:
+        return False
+    mentees = {link.mentee_id for link in MentorLink.query.filter_by(mentor_id=user_id).all()}
+    if not mentees:
+        return False
+    return WorkspaceMember.query.filter(WorkspaceMember.pid.in_(aliases), WorkspaceMember.user_id.in_(mentees),
+                                        WorkspaceMember.role != "viewer").first() is not None
+
+
+def current_user_review_scoped(pid: str) -> bool:
+    """目前登入者在 pid 是否為教授審閱身分；未登入（token／開發模式）不適用。各模組的私人 AI 對話等用它擋下。"""
+    try:
+        from flask_login import current_user
+        return bool(current_user.is_authenticated and is_review_scoped(current_user.id, pid))
+    except Exception:
+        return False
 
 
 def is_section_scoped_role(role: Optional[str], pid: Optional[str] = None) -> bool:

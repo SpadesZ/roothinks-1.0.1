@@ -1,0 +1,1355 @@
+{
+ "routes": 90,
+ "requests": 888,
+ "findings": [
+  {
+   "severity": "review-scope",
+   "role": "prof",
+   "url": "/api/literature/chat/history?pid=ACLP1-p&paper_id=paper1",
+   "leaks": [
+    "literature_chat"
+   ]
+  },
+  {
+   "severity": "cross-project",
+   "role": "owner",
+   "url": "/api/literature/debug/flowb_probe?pid=ACLP1-p&paper_id=paper1",
+   "leaks": [
+    "other_project_log"
+   ]
+  },
+  {
+   "severity": "cross-project",
+   "role": "editor",
+   "url": "/api/literature/debug/flowb_probe?pid=ACLP1-p&paper_id=paper1",
+   "leaks": [
+    "other_project_log"
+   ]
+  },
+  {
+   "severity": "cross-project",
+   "role": "prof",
+   "url": "/api/literature/debug/flowb_probe?pid=ACLP1-p&paper_id=paper1",
+   "leaks": [
+    "other_project_log"
+   ]
+  },
+  {
+   "severity": "cross-project",
+   "role": "legacymentor",
+   "url": "/api/literature/debug/flowb_probe?pid=ACLP1-p&paper_id=paper1",
+   "leaks": [
+    "other_project_log"
+   ]
+  },
+  {
+   "severity": "cross-project",
+   "role": "teamviewer",
+   "url": "/api/literature/debug/flowb_probe?pid=ACLP1-p&paper_id=paper1",
+   "leaks": [
+    "other_project_log"
+   ]
+  },
+  {
+   "severity": "cross-project",
+   "role": "owner",
+   "url": "/api/literature/debug/runtime_log_tail",
+   "leaks": [
+    "other_project_log",
+    "runtime_log"
+   ]
+  },
+  {
+   "severity": "cross-project",
+   "role": "editor",
+   "url": "/api/literature/debug/runtime_log_tail",
+   "leaks": [
+    "other_project_log",
+    "runtime_log"
+   ]
+  },
+  {
+   "severity": "cross-project",
+   "role": "prof",
+   "url": "/api/literature/debug/runtime_log_tail",
+   "leaks": [
+    "other_project_log",
+    "runtime_log"
+   ]
+  },
+  {
+   "severity": "cross-project",
+   "role": "legacymentor",
+   "url": "/api/literature/debug/runtime_log_tail",
+   "leaks": [
+    "other_project_log",
+    "runtime_log"
+   ]
+  },
+  {
+   "severity": "cross-project",
+   "role": "teamviewer",
+   "url": "/api/literature/debug/runtime_log_tail",
+   "leaks": [
+    "other_project_log",
+    "runtime_log"
+   ]
+  },
+  {
+   "severity": "cross-project",
+   "role": "outsider",
+   "url": "/api/literature/debug/runtime_log_tail",
+   "leaks": [
+    "other_project_log",
+    "runtime_log"
+   ]
+  },
+  {
+   "severity": "cross-project",
+   "role": "owner",
+   "url": "/api/literature/debug/runtime_log_tail?pid=ACLP1-p&paper_id=paper1",
+   "leaks": [
+    "other_project_log",
+    "runtime_log"
+   ]
+  },
+  {
+   "severity": "cross-project",
+   "role": "editor",
+   "url": "/api/literature/debug/runtime_log_tail?pid=ACLP1-p&paper_id=paper1",
+   "leaks": [
+    "other_project_log",
+    "runtime_log"
+   ]
+  },
+  {
+   "severity": "cross-project",
+   "role": "prof",
+   "url": "/api/literature/debug/runtime_log_tail?pid=ACLP1-p&paper_id=paper1",
+   "leaks": [
+    "other_project_log",
+    "runtime_log"
+   ]
+  },
+  {
+   "severity": "cross-project",
+   "role": "legacymentor",
+   "url": "/api/literature/debug/runtime_log_tail?pid=ACLP1-p&paper_id=paper1",
+   "leaks": [
+    "other_project_log",
+    "runtime_log"
+   ]
+  },
+  {
+   "severity": "cross-project",
+   "role": "teamviewer",
+   "url": "/api/literature/debug/runtime_log_tail?pid=ACLP1-p&paper_id=paper1",
+   "leaks": [
+    "other_project_log",
+    "runtime_log"
+   ]
+  },
+  {
+   "severity": "review-scope",
+   "role": "prof",
+   "url": "/api/literature/library?pid=ACLP1-p&paper_id=paper1",
+   "leaks": [
+    "literature_reading_note"
+   ]
+  },
+  {
+   "severity": "review-scope",
+   "role": "prof",
+   "url": "/api/paq/chat_history/ACLP1-p",
+   "leaks": [
+    "paq_chat"
+   ]
+  }
+ ],
+ "status_by_role": {
+  "/": {
+   "owner": 200,
+   "editor": 200,
+   "prof": 200,
+   "legacymentor": 200,
+   "teamviewer": 200,
+   "outsider": 200
+  },
+  "/?pid=ACLP1-p&paper_id=paper1": {
+   "owner": 200,
+   "editor": 200,
+   "prof": 200,
+   "legacymentor": 200,
+   "teamviewer": 200,
+   "outsider": 200
+  },
+  "/api/auth/me": {
+   "owner": 200,
+   "editor": 200,
+   "prof": 200,
+   "legacymentor": 200,
+   "teamviewer": 200,
+   "outsider": 200
+  },
+  "/api/auth/me?pid=ACLP1-p&paper_id=paper1": {
+   "owner": 200,
+   "editor": 200,
+   "prof": 200,
+   "legacymentor": 200,
+   "teamviewer": 200,
+   "outsider": 200
+  },
+  "/api/collaboration/invitations": {
+   "owner": 200,
+   "editor": 200,
+   "prof": 200,
+   "legacymentor": 200,
+   "teamviewer": 200,
+   "outsider": 200
+  },
+  "/api/collaboration/invitations?pid=ACLP1-p&paper_id=paper1": {
+   "owner": 200,
+   "editor": 200,
+   "prof": 200,
+   "legacymentor": 200,
+   "teamviewer": 200,
+   "outsider": 200
+  },
+  "/api/collaboration/profile": {
+   "owner": 200,
+   "editor": 200,
+   "prof": 200,
+   "legacymentor": 200,
+   "teamviewer": 200,
+   "outsider": 200
+  },
+  "/api/collaboration/profile?pid=ACLP1-p&paper_id=paper1": {
+   "owner": 200,
+   "editor": 200,
+   "prof": 200,
+   "legacymentor": 200,
+   "teamviewer": 200,
+   "outsider": 200
+  },
+  "/api/collaboration/project/ACLP1-p/invitations": {
+   "owner": 200,
+   "editor": 403,
+   "prof": 403,
+   "legacymentor": 403,
+   "teamviewer": 403,
+   "outsider": 403
+  },
+  "/api/literature/bootstrap": {
+   "owner": 200,
+   "editor": 200,
+   "prof": 200,
+   "legacymentor": 200,
+   "teamviewer": 200,
+   "outsider": 200
+  },
+  "/api/literature/bootstrap?pid=ACLP1-p&paper_id=paper1": {
+   "owner": 200,
+   "editor": 200,
+   "prof": 200,
+   "legacymentor": 200,
+   "teamviewer": 200,
+   "outsider": 403
+  },
+  "/api/literature/chat/history": {
+   "owner": 404,
+   "editor": 404,
+   "prof": 404,
+   "legacymentor": 404,
+   "teamviewer": 404,
+   "outsider": 404
+  },
+  "/api/literature/chat/history?pid=ACLP1-p&paper_id=paper1": {
+   "owner": 200,
+   "editor": 200,
+   "prof": 200,
+   "legacymentor": 200,
+   "teamviewer": 200,
+   "outsider": 403
+  },
+  "/api/literature/context_chain/brief": {
+   "owner": 404,
+   "editor": 404,
+   "prof": 404,
+   "legacymentor": 404,
+   "teamviewer": 404,
+   "outsider": 404
+  },
+  "/api/literature/context_chain/brief?pid=ACLP1-p&paper_id=paper1": {
+   "owner": 200,
+   "editor": 200,
+   "prof": 200,
+   "legacymentor": 200,
+   "teamviewer": 200,
+   "outsider": 403
+  },
+  "/api/literature/context_chain/hybrid_query": {
+   "owner": 404,
+   "editor": 404,
+   "prof": 404,
+   "legacymentor": 404,
+   "teamviewer": 404,
+   "outsider": 404
+  },
+  "/api/literature/context_chain/hybrid_query?pid=ACLP1-p&paper_id=paper1": {
+   "owner": 200,
+   "editor": 200,
+   "prof": 200,
+   "legacymentor": 200,
+   "teamviewer": 200,
+   "outsider": 403
+  },
+  "/api/literature/context_chain/topk": {
+   "owner": 404,
+   "editor": 404,
+   "prof": 404,
+   "legacymentor": 404,
+   "teamviewer": 404,
+   "outsider": 404
+  },
+  "/api/literature/context_chain/topk?pid=ACLP1-p&paper_id=paper1": {
+   "owner": 200,
+   "editor": 200,
+   "prof": 200,
+   "legacymentor": 200,
+   "teamviewer": 200,
+   "outsider": 403
+  },
+  "/api/literature/debug/flowb_probe": {
+   "owner": 400,
+   "editor": 400,
+   "prof": 400,
+   "legacymentor": 400,
+   "teamviewer": 400,
+   "outsider": 400
+  },
+  "/api/literature/debug/flowb_probe?pid=ACLP1-p&paper_id=paper1": {
+   "owner": 200,
+   "editor": 200,
+   "prof": 200,
+   "legacymentor": 200,
+   "teamviewer": 200,
+   "outsider": 403
+  },
+  "/api/literature/debug/runtime_log_tail": {
+   "owner": 200,
+   "editor": 200,
+   "prof": 200,
+   "legacymentor": 200,
+   "teamviewer": 200,
+   "outsider": 200
+  },
+  "/api/literature/debug/runtime_log_tail?pid=ACLP1-p&paper_id=paper1": {
+   "owner": 200,
+   "editor": 200,
+   "prof": 200,
+   "legacymentor": 200,
+   "teamviewer": 200,
+   "outsider": 403
+  },
+  "/api/literature/get_block_json": {
+   "owner": 400,
+   "editor": 400,
+   "prof": 400,
+   "legacymentor": 400,
+   "teamviewer": 400,
+   "outsider": 400
+  },
+  "/api/literature/get_block_json?pid=ACLP1-p&paper_id=paper1": {
+   "owner": 503,
+   "editor": 503,
+   "prof": 503,
+   "legacymentor": 503,
+   "teamviewer": 503,
+   "outsider": 403
+  },
+  "/api/literature/get_block_manifest": {
+   "owner": 400,
+   "editor": 400,
+   "prof": 400,
+   "legacymentor": 400,
+   "teamviewer": 400,
+   "outsider": 400
+  },
+  "/api/literature/get_block_manifest?pid=ACLP1-p&paper_id=paper1": {
+   "owner": 503,
+   "editor": 503,
+   "prof": 503,
+   "legacymentor": 503,
+   "teamviewer": 503,
+   "outsider": 403
+  },
+  "/api/literature/get_context_history": {
+   "owner": 200,
+   "editor": 200,
+   "prof": 200,
+   "legacymentor": 200,
+   "teamviewer": 200,
+   "outsider": 200
+  },
+  "/api/literature/get_context_history?pid=ACLP1-p&paper_id=paper1": {
+   "owner": 200,
+   "editor": 200,
+   "prof": 200,
+   "legacymentor": 200,
+   "teamviewer": 200,
+   "outsider": 403
+  },
+  "/api/literature/get_full_json": {
+   "owner": 400,
+   "editor": 400,
+   "prof": 400,
+   "legacymentor": 400,
+   "teamviewer": 400,
+   "outsider": 400
+  },
+  "/api/literature/get_full_json?pid=ACLP1-p&paper_id=paper1": {
+   "owner": 200,
+   "editor": 200,
+   "prof": 200,
+   "legacymentor": 200,
+   "teamviewer": 200,
+   "outsider": 403
+  },
+  "/api/literature/get_region_image": {
+   "owner": 400,
+   "editor": 400,
+   "prof": 400,
+   "legacymentor": 400,
+   "teamviewer": 400,
+   "outsider": 400
+  },
+  "/api/literature/get_region_image?pid=ACLP1-p&paper_id=paper1": {
+   "owner": 404,
+   "editor": 404,
+   "prof": 404,
+   "legacymentor": 404,
+   "teamviewer": 404,
+   "outsider": 403
+  },
+  "/api/literature/get_search_results": {
+   "owner": 404,
+   "editor": 404,
+   "prof": 404,
+   "legacymentor": 404,
+   "teamviewer": 404,
+   "outsider": 404
+  },
+  "/api/literature/get_search_results?pid=ACLP1-p&paper_id=paper1": {
+   "owner": 200,
+   "editor": 200,
+   "prof": 200,
+   "legacymentor": 200,
+   "teamviewer": 200,
+   "outsider": 403
+  },
+  "/api/literature/library": {
+   "owner": 404,
+   "editor": 404,
+   "prof": 404,
+   "legacymentor": 404,
+   "teamviewer": 404,
+   "outsider": 404
+  },
+  "/api/literature/library?pid=ACLP1-p&paper_id=paper1": {
+   "owner": 200,
+   "editor": 200,
+   "prof": 200,
+   "legacymentor": 200,
+   "teamviewer": 200,
+   "outsider": 403
+  },
+  "/api/literature/library/export": {
+   "owner": 404,
+   "editor": 404,
+   "prof": 404,
+   "legacymentor": 404,
+   "teamviewer": 404,
+   "outsider": 404
+  },
+  "/api/literature/library/export?pid=ACLP1-p&paper_id=paper1": {
+   "owner": 200,
+   "editor": 200,
+   "prof": 200,
+   "legacymentor": 200,
+   "teamviewer": 200,
+   "outsider": 403
+  },
+  "/api/literature/preload_translation_models": {
+   "owner": 200,
+   "editor": 200,
+   "prof": 200,
+   "legacymentor": 200,
+   "teamviewer": 200,
+   "outsider": 200
+  },
+  "/api/literature/preload_translation_models?pid=ACLP1-p&paper_id=paper1": {
+   "owner": 200,
+   "editor": 200,
+   "prof": 200,
+   "legacymentor": 200,
+   "teamviewer": 200,
+   "outsider": 403
+  },
+  "/api/literature/status/ACLP1-p": {
+   "owner": 200,
+   "editor": 200,
+   "prof": 200,
+   "legacymentor": 200,
+   "teamviewer": 200,
+   "outsider": 403
+  },
+  "/api/literature/system_profile": {
+   "owner": 200,
+   "editor": 200,
+   "prof": 200,
+   "legacymentor": 200,
+   "teamviewer": 200,
+   "outsider": 200
+  },
+  "/api/literature/system_profile?pid=ACLP1-p&paper_id=paper1": {
+   "owner": 200,
+   "editor": 200,
+   "prof": 200,
+   "legacymentor": 200,
+   "teamviewer": 200,
+   "outsider": 403
+  },
+  "/api/llm/binding/list": {
+   "owner": 403,
+   "editor": 403,
+   "prof": 403,
+   "legacymentor": 403,
+   "teamviewer": 403,
+   "outsider": 403
+  },
+  "/api/llm/binding/list?pid=ACLP1-p&paper_id=paper1": {
+   "owner": 403,
+   "editor": 403,
+   "prof": 403,
+   "legacymentor": 403,
+   "teamviewer": 403,
+   "outsider": 403
+  },
+  "/api/llm/connection/list": {
+   "owner": 403,
+   "editor": 403,
+   "prof": 403,
+   "legacymentor": 403,
+   "teamviewer": 403,
+   "outsider": 403
+  },
+  "/api/llm/connection/list?pid=ACLP1-p&paper_id=paper1": {
+   "owner": 403,
+   "editor": 403,
+   "prof": 403,
+   "legacymentor": 403,
+   "teamviewer": 403,
+   "outsider": 403
+  },
+  "/api/llm/runtime/cpu": {
+   "owner": 403,
+   "editor": 403,
+   "prof": 403,
+   "legacymentor": 403,
+   "teamviewer": 403,
+   "outsider": 403
+  },
+  "/api/llm/runtime/cpu?pid=ACLP1-p&paper_id=paper1": {
+   "owner": 403,
+   "editor": 403,
+   "prof": 403,
+   "legacymentor": 403,
+   "teamviewer": 403,
+   "outsider": 403
+  },
+  "/api/llm/runtime/flowa_workers": {
+   "owner": 403,
+   "editor": 403,
+   "prof": 403,
+   "legacymentor": 403,
+   "teamviewer": 403,
+   "outsider": 403
+  },
+  "/api/llm/runtime/flowa_workers?pid=ACLP1-p&paper_id=paper1": {
+   "owner": 403,
+   "editor": 403,
+   "prof": 403,
+   "legacymentor": 403,
+   "teamviewer": 403,
+   "outsider": 403
+  },
+  "/api/mentor/mentees": {
+   "owner": 403,
+   "editor": 403,
+   "prof": 200,
+   "legacymentor": 200,
+   "teamviewer": 403,
+   "outsider": 403
+  },
+  "/api/mentor/mentees?pid=ACLP1-p&paper_id=paper1": {
+   "owner": 403,
+   "editor": 403,
+   "prof": 200,
+   "legacymentor": 200,
+   "teamviewer": 403,
+   "outsider": 403
+  },
+  "/api/mentor/mentees/1": {
+   "owner": 403,
+   "editor": 403,
+   "prof": 200,
+   "legacymentor": 200,
+   "teamviewer": 403,
+   "outsider": 403
+  },
+  "/api/mentor/mentees/1?pid=ACLP1-p&paper_id=paper1": {
+   "owner": 403,
+   "editor": 403,
+   "prof": 200,
+   "legacymentor": 200,
+   "teamviewer": 403,
+   "outsider": 403
+  },
+  "/api/mentor/mentees/1/comments": {
+   "owner": 403,
+   "editor": 403,
+   "prof": 200,
+   "legacymentor": 200,
+   "teamviewer": 403,
+   "outsider": 403
+  },
+  "/api/mentor/mentees/1/comments?pid=ACLP1-p&paper_id=paper1": {
+   "owner": 403,
+   "editor": 403,
+   "prof": 200,
+   "legacymentor": 200,
+   "teamviewer": 403,
+   "outsider": 403
+  },
+  "/api/mentor/mentees/1/reviews/ACLP1-p": {
+   "owner": 403,
+   "editor": 403,
+   "prof": 200,
+   "legacymentor": 200,
+   "teamviewer": 403,
+   "outsider": 403
+  },
+  "/api/mentor/mentees/1/study-reviews/ACLP1-p": {
+   "owner": 403,
+   "editor": 403,
+   "prof": 200,
+   "legacymentor": 200,
+   "teamviewer": 403,
+   "outsider": 403
+  },
+  "/api/mentor/mentees/1/tasks": {
+   "owner": 403,
+   "editor": 403,
+   "prof": 200,
+   "legacymentor": 200,
+   "teamviewer": 403,
+   "outsider": 403
+  },
+  "/api/mentor/mentees/1/tasks?pid=ACLP1-p&paper_id=paper1": {
+   "owner": 403,
+   "editor": 403,
+   "prof": 200,
+   "legacymentor": 200,
+   "teamviewer": 403,
+   "outsider": 403
+  },
+  "/api/mentor/my-reviews/ACLP1-p": {
+   "owner": 200,
+   "editor": 200,
+   "prof": 200,
+   "legacymentor": 200,
+   "teamviewer": 200,
+   "outsider": 403
+  },
+  "/api/mentor/my-tasks": {
+   "owner": 200,
+   "editor": 200,
+   "prof": 200,
+   "legacymentor": 200,
+   "teamviewer": 200,
+   "outsider": 200
+  },
+  "/api/mentor/my-tasks?pid=ACLP1-p&paper_id=paper1": {
+   "owner": 200,
+   "editor": 200,
+   "prof": 200,
+   "legacymentor": 200,
+   "teamviewer": 200,
+   "outsider": 200
+  },
+  "/api/mentor/review-items/1/download": {
+   "owner": 404,
+   "editor": 404,
+   "prof": 404,
+   "legacymentor": 404,
+   "teamviewer": 404,
+   "outsider": 404
+  },
+  "/api/mentor/review-items/1/download?pid=ACLP1-p&paper_id=paper1": {
+   "owner": 404,
+   "editor": 404,
+   "prof": 404,
+   "legacymentor": 404,
+   "teamviewer": 404,
+   "outsider": 404
+  },
+  "/api/paq/chat_history/ACLP1-p": {
+   "owner": 200,
+   "editor": 200,
+   "prof": 200,
+   "legacymentor": 200,
+   "teamviewer": 200,
+   "outsider": 403
+  },
+  "/api/paq/status/ACLP1-p": {
+   "owner": 200,
+   "editor": 200,
+   "prof": 200,
+   "legacymentor": 200,
+   "teamviewer": 200,
+   "outsider": 403
+  },
+  "/api/project/ACLP1-p/members": {
+   "owner": 200,
+   "editor": 200,
+   "prof": 200,
+   "legacymentor": 200,
+   "teamviewer": 200,
+   "outsider": 403
+  },
+  "/api/project/list": {
+   "owner": 200,
+   "editor": 200,
+   "prof": 200,
+   "legacymentor": 200,
+   "teamviewer": 200,
+   "outsider": 200
+  },
+  "/api/project/list?pid=ACLP1-p&paper_id=paper1": {
+   "owner": 200,
+   "editor": 200,
+   "prof": 200,
+   "legacymentor": 200,
+   "teamviewer": 200,
+   "outsider": 200
+  },
+  "/api/project/workflow": {
+   "owner": 200,
+   "editor": 200,
+   "prof": 200,
+   "legacymentor": 200,
+   "teamviewer": 200,
+   "outsider": 200
+  },
+  "/api/project/workflow?pid=ACLP1-p&paper_id=paper1": {
+   "owner": 200,
+   "editor": 200,
+   "prof": 200,
+   "legacymentor": 200,
+   "teamviewer": 200,
+   "outsider": 200
+  },
+  "/api/project/workflow/ACLP1-p": {
+   "owner": 200,
+   "editor": 200,
+   "prof": 200,
+   "legacymentor": 200,
+   "teamviewer": 200,
+   "outsider": 403
+  },
+  "/api/study/ACLP1-p/conversations": {
+   "owner": 200,
+   "editor": 200,
+   "prof": 403,
+   "legacymentor": 200,
+   "teamviewer": 200,
+   "outsider": 403
+  },
+  "/api/study/ACLP1-p/matrix/m1": {
+   "owner": 404,
+   "editor": 404,
+   "prof": 403,
+   "legacymentor": 404,
+   "teamviewer": 404,
+   "outsider": 403
+  },
+  "/api/study/ACLP1-p/matrix/history": {
+   "owner": 200,
+   "editor": 200,
+   "prof": 403,
+   "legacymentor": 200,
+   "teamviewer": 200,
+   "outsider": 403
+  },
+  "/api/study/ACLP1-p/matrix/latest": {
+   "owner": 200,
+   "editor": 200,
+   "prof": 403,
+   "legacymentor": 200,
+   "teamviewer": 200,
+   "outsider": 403
+  },
+  "/api/study/check_gate/ACLP1-p/paper1": {
+   "owner": 200,
+   "editor": 200,
+   "prof": 200,
+   "legacymentor": 200,
+   "teamviewer": 200,
+   "outsider": 403
+  },
+  "/api/study/conversation/conv_1793008553_07c2c8f8": {
+   "owner": 404,
+   "editor": 404,
+   "prof": 404,
+   "legacymentor": 404,
+   "teamviewer": 404,
+   "outsider": 404
+  },
+  "/api/study/conversation/conv_1793008553_07c2c8f8?pid=ACLP1-p&paper_id=paper1": {
+   "owner": 200,
+   "editor": 200,
+   "prof": 403,
+   "legacymentor": 200,
+   "teamviewer": 200,
+   "outsider": 403
+  },
+  "/api/study/evidence_notes/ACLP1-p": {
+   "owner": 200,
+   "editor": 200,
+   "prof": 200,
+   "legacymentor": 200,
+   "teamviewer": 200,
+   "outsider": 403
+  },
+  "/api/study/evidence_notes/ACLP1-p/export": {
+   "owner": 200,
+   "editor": 200,
+   "prof": 200,
+   "legacymentor": 200,
+   "teamviewer": 200,
+   "outsider": 403
+  },
+  "/api/study/get_fulltext/ACLP1-p/paper1": {
+   "owner": 200,
+   "editor": 200,
+   "prof": 200,
+   "legacymentor": 200,
+   "teamviewer": 200,
+   "outsider": 403
+  },
+  "/api/study/media_asset/ACLP1-p/paper1/p1_body_1.png": {
+   "owner": 404,
+   "editor": 404,
+   "prof": 404,
+   "legacymentor": 404,
+   "teamviewer": 404,
+   "outsider": 403
+  },
+  "/api/study/media_gallery/ACLP1-p/paper1": {
+   "owner": 200,
+   "editor": 200,
+   "prof": 200,
+   "legacymentor": 200,
+   "teamviewer": 200,
+   "outsider": 403
+  },
+  "/api/study/notes/load/ACLP1-p": {
+   "owner": 200,
+   "editor": 200,
+   "prof": 403,
+   "legacymentor": 200,
+   "teamviewer": 200,
+   "outsider": 403
+  },
+  "/api/study/paper_list/ACLP1-p": {
+   "owner": 200,
+   "editor": 200,
+   "prof": 200,
+   "legacymentor": 200,
+   "teamviewer": 200,
+   "outsider": 403
+  },
+  "/auth/account": {
+   "owner": 200,
+   "editor": 200,
+   "prof": 200,
+   "legacymentor": 200,
+   "teamviewer": 200,
+   "outsider": 200
+  },
+  "/auth/account?pid=ACLP1-p&paper_id=paper1": {
+   "owner": 200,
+   "editor": 200,
+   "prof": 200,
+   "legacymentor": 200,
+   "teamviewer": 200,
+   "outsider": 200
+  },
+  "/auth/login": {
+   "owner": 302,
+   "editor": 302,
+   "prof": 302,
+   "legacymentor": 302,
+   "teamviewer": 302,
+   "outsider": 302
+  },
+  "/auth/login?pid=ACLP1-p&paper_id=paper1": {
+   "owner": 302,
+   "editor": 302,
+   "prof": 302,
+   "legacymentor": 302,
+   "teamviewer": 302,
+   "outsider": 302
+  },
+  "/auth/register": {
+   "owner": 302,
+   "editor": 302,
+   "prof": 302,
+   "legacymentor": 302,
+   "teamviewer": 302,
+   "outsider": 302
+  },
+  "/auth/register?pid=ACLP1-p&paper_id=paper1": {
+   "owner": 302,
+   "editor": 302,
+   "prof": 302,
+   "legacymentor": 302,
+   "teamviewer": 302,
+   "outsider": 302
+  },
+  "/collaboration": {
+   "owner": 200,
+   "editor": 200,
+   "prof": 200,
+   "legacymentor": 200,
+   "teamviewer": 200,
+   "outsider": 200
+  },
+  "/collaboration?pid=ACLP1-p&paper_id=paper1": {
+   "owner": 200,
+   "editor": 200,
+   "prof": 200,
+   "legacymentor": 200,
+   "teamviewer": 200,
+   "outsider": 200
+  },
+  "/lava_setup.html": {
+   "owner": 403,
+   "editor": 403,
+   "prof": 403,
+   "legacymentor": 403,
+   "teamviewer": 403,
+   "outsider": 403
+  },
+  "/lava_setup.html?pid=ACLP1-p&paper_id=paper1": {
+   "owner": 403,
+   "editor": 403,
+   "prof": 403,
+   "legacymentor": 403,
+   "teamviewer": 403,
+   "outsider": 403
+  },
+  "/literature": {
+   "owner": 200,
+   "editor": 200,
+   "prof": 200,
+   "legacymentor": 200,
+   "teamviewer": 200,
+   "outsider": 200
+  },
+  "/literature?pid=ACLP1-p&paper_id=paper1": {
+   "owner": 200,
+   "editor": 200,
+   "prof": 200,
+   "legacymentor": 200,
+   "teamviewer": 200,
+   "outsider": 403
+  },
+  "/literature/": {
+   "owner": 200,
+   "editor": 200,
+   "prof": 200,
+   "legacymentor": 200,
+   "teamviewer": 200,
+   "outsider": 200
+  },
+  "/literature/?pid=ACLP1-p&paper_id=paper1": {
+   "owner": 200,
+   "editor": 200,
+   "prof": 200,
+   "legacymentor": 200,
+   "teamviewer": 200,
+   "outsider": 403
+  },
+  "/manuscript/": {
+   "owner": 200,
+   "editor": 200,
+   "prof": 200,
+   "legacymentor": 200,
+   "teamviewer": 200,
+   "outsider": 200
+  },
+  "/manuscript/?pid=ACLP1-p&paper_id=paper1": {
+   "owner": 200,
+   "editor": 200,
+   "prof": 200,
+   "legacymentor": 200,
+   "teamviewer": 200,
+   "outsider": 403
+  },
+  "/manuscript/api/bootstrap/ACLP1-p": {
+   "owner": 200,
+   "editor": 200,
+   "prof": 200,
+   "legacymentor": 200,
+   "teamviewer": 200,
+   "outsider": 403
+  },
+  "/manuscript/api/change-impact": {
+   "owner": 404,
+   "editor": 404,
+   "prof": 404,
+   "legacymentor": 404,
+   "teamviewer": 404,
+   "outsider": 404
+  },
+  "/manuscript/api/change-impact?pid=ACLP1-p&paper_id=paper1": {
+   "owner": 200,
+   "editor": 200,
+   "prof": 200,
+   "legacymentor": 200,
+   "teamviewer": 200,
+   "outsider": 403
+  },
+  "/manuscript/api/chapter/ACLP1-p/assignments": {
+   "owner": 200,
+   "editor": 200,
+   "prof": 200,
+   "legacymentor": 200,
+   "teamviewer": 200,
+   "outsider": 403
+  },
+  "/manuscript/api/chapter/ACLP1-p/comments": {
+   "owner": 200,
+   "editor": 200,
+   "prof": 200,
+   "legacymentor": 200,
+   "teamviewer": 200,
+   "outsider": 403
+  },
+  "/manuscript/api/chapter/ACLP1-p/my-permissions": {
+   "owner": 200,
+   "editor": 200,
+   "prof": 200,
+   "legacymentor": 200,
+   "teamviewer": 200,
+   "outsider": 403
+  },
+  "/manuscript/api/chapter/ACLP1-p/settings": {
+   "owner": 200,
+   "editor": 200,
+   "prof": 200,
+   "legacymentor": 200,
+   "teamviewer": 200,
+   "outsider": 403
+  },
+  "/manuscript/api/citation/decisions": {
+   "owner": 404,
+   "editor": 404,
+   "prof": 404,
+   "legacymentor": 404,
+   "teamviewer": 404,
+   "outsider": 404
+  },
+  "/manuscript/api/citation/decisions?pid=ACLP1-p&paper_id=paper1": {
+   "owner": 200,
+   "editor": 200,
+   "prof": 200,
+   "legacymentor": 200,
+   "teamviewer": 200,
+   "outsider": 403
+  },
+  "/manuscript/api/formal_projects": {
+   "owner": 200,
+   "editor": 200,
+   "prof": 200,
+   "legacymentor": 200,
+   "teamviewer": 200,
+   "outsider": 200
+  },
+  "/manuscript/api/formal_projects?pid=ACLP1-p&paper_id=paper1": {
+   "owner": 200,
+   "editor": 200,
+   "prof": 200,
+   "legacymentor": 200,
+   "teamviewer": 200,
+   "outsider": 403
+  },
+  "/manuscript/api/paragraph/context": {
+   "owner": 404,
+   "editor": 404,
+   "prof": 404,
+   "legacymentor": 404,
+   "teamviewer": 404,
+   "outsider": 404
+  },
+  "/manuscript/api/paragraph/context?pid=ACLP1-p&paper_id=paper1": {
+   "owner": 200,
+   "editor": 200,
+   "prof": 200,
+   "legacymentor": 200,
+   "teamviewer": 200,
+   "outsider": 403
+  },
+  "/manuscript/api/progress/ACLP1-p": {
+   "owner": 200,
+   "editor": 200,
+   "prof": 200,
+   "legacymentor": 200,
+   "teamviewer": 200,
+   "outsider": 403
+  },
+  "/manuscript/api/progress_summary": {
+   "owner": 200,
+   "editor": 200,
+   "prof": 200,
+   "legacymentor": 200,
+   "teamviewer": 200,
+   "outsider": 200
+  },
+  "/manuscript/api/progress_summary?pid=ACLP1-p&paper_id=paper1": {
+   "owner": 200,
+   "editor": 200,
+   "prof": 200,
+   "legacymentor": 200,
+   "teamviewer": 200,
+   "outsider": 403
+  },
+  "/manuscript/api/revisions/ACLP1-p": {
+   "owner": 200,
+   "editor": 200,
+   "prof": 200,
+   "legacymentor": 200,
+   "teamviewer": 200,
+   "outsider": 403
+  },
+  "/manuscript/api/scientific/reports": {
+   "owner": 404,
+   "editor": 404,
+   "prof": 404,
+   "legacymentor": 404,
+   "teamviewer": 404,
+   "outsider": 404
+  },
+  "/manuscript/api/scientific/reports?pid=ACLP1-p&paper_id=paper1": {
+   "owner": 400,
+   "editor": 400,
+   "prof": 400,
+   "legacymentor": 400,
+   "teamviewer": 400,
+   "outsider": 403
+  },
+  "/manuscript/api/scientific/reports/1": {
+   "owner": 404,
+   "editor": 404,
+   "prof": 404,
+   "legacymentor": 404,
+   "teamviewer": 404,
+   "outsider": 404
+  },
+  "/manuscript/api/scientific/reports/1?pid=ACLP1-p&paper_id=paper1": {
+   "owner": 404,
+   "editor": 404,
+   "prof": 404,
+   "legacymentor": 404,
+   "teamviewer": 404,
+   "outsider": 403
+  },
+  "/manuscript/api/sections/ACLP1-p": {
+   "owner": 200,
+   "editor": 200,
+   "prof": 200,
+   "legacymentor": 200,
+   "teamviewer": 200,
+   "outsider": 403
+  },
+  "/manuscript/change-impact": {
+   "owner": 200,
+   "editor": 200,
+   "prof": 200,
+   "legacymentor": 200,
+   "teamviewer": 200,
+   "outsider": 200
+  },
+  "/manuscript/change-impact?pid=ACLP1-p&paper_id=paper1": {
+   "owner": 200,
+   "editor": 200,
+   "prof": 200,
+   "legacymentor": 200,
+   "teamviewer": 200,
+   "outsider": 403
+  },
+  "/manuscript/image/ACLP1-p/x.png": {
+   "owner": 404,
+   "editor": 404,
+   "prof": 404,
+   "legacymentor": 404,
+   "teamviewer": 404,
+   "outsider": 403
+  },
+  "/mentor/": {
+   "owner": 200,
+   "editor": 200,
+   "prof": 200,
+   "legacymentor": 200,
+   "teamviewer": 200,
+   "outsider": 200
+  },
+  "/mentor/?pid=ACLP1-p&paper_id=paper1": {
+   "owner": 200,
+   "editor": 200,
+   "prof": 200,
+   "legacymentor": 200,
+   "teamviewer": 200,
+   "outsider": 200
+  },
+  "/paq": {
+   "owner": 200,
+   "editor": 200,
+   "prof": 200,
+   "legacymentor": 200,
+   "teamviewer": 200,
+   "outsider": 200
+  },
+  "/paq?pid=ACLP1-p&paper_id=paper1": {
+   "owner": 200,
+   "editor": 200,
+   "prof": 200,
+   "legacymentor": 200,
+   "teamviewer": 200,
+   "outsider": 403
+  },
+  "/paq.html": {
+   "owner": 200,
+   "editor": 200,
+   "prof": 200,
+   "legacymentor": 200,
+   "teamviewer": 200,
+   "outsider": 200
+  },
+  "/paq.html?pid=ACLP1-p&paper_id=paper1": {
+   "owner": 200,
+   "editor": 200,
+   "prof": 200,
+   "legacymentor": 200,
+   "teamviewer": 200,
+   "outsider": 403
+  },
+  "/paq/ACLP1-p": {
+   "owner": 200,
+   "editor": 200,
+   "prof": 200,
+   "legacymentor": 200,
+   "teamviewer": 200,
+   "outsider": 403
+  },
+  "/setup": {
+   "owner": 403,
+   "editor": 403,
+   "prof": 403,
+   "legacymentor": 403,
+   "teamviewer": 403,
+   "outsider": 403
+  },
+  "/setup?pid=ACLP1-p&paper_id=paper1": {
+   "owner": 403,
+   "editor": 403,
+   "prof": 403,
+   "legacymentor": 403,
+   "teamviewer": 403,
+   "outsider": 403
+  },
+  "/study": {
+   "owner": 302,
+   "editor": 302,
+   "prof": 302,
+   "legacymentor": 302,
+   "teamviewer": 302,
+   "outsider": 302
+  },
+  "/study?pid=ACLP1-p&paper_id=paper1": {
+   "owner": 302,
+   "editor": 302,
+   "prof": 302,
+   "legacymentor": 302,
+   "teamviewer": 302,
+   "outsider": 403
+  },
+  "/study/": {
+   "owner": 302,
+   "editor": 302,
+   "prof": 302,
+   "legacymentor": 302,
+   "teamviewer": 302,
+   "outsider": 302
+  },
+  "/study/?pid=ACLP1-p&paper_id=paper1": {
+   "owner": 302,
+   "editor": 302,
+   "prof": 302,
+   "legacymentor": 302,
+   "teamviewer": 302,
+   "outsider": 403
+  },
+  "/study/project/ACLP1-p": {
+   "owner": 200,
+   "editor": 200,
+   "prof": 200,
+   "legacymentor": 200,
+   "teamviewer": 200,
+   "outsider": 403
+  },
+  "/submit": {
+   "owner": 200,
+   "editor": 200,
+   "prof": 200,
+   "legacymentor": 200,
+   "teamviewer": 200,
+   "outsider": 200
+  },
+  "/submit?pid=ACLP1-p&paper_id=paper1": {
+   "owner": 200,
+   "editor": 200,
+   "prof": 200,
+   "legacymentor": 200,
+   "teamviewer": 200,
+   "outsider": 403
+  },
+  "/submit/": {
+   "owner": 200,
+   "editor": 200,
+   "prof": 200,
+   "legacymentor": 200,
+   "teamviewer": 200,
+   "outsider": 200
+  },
+  "/submit/?pid=ACLP1-p&paper_id=paper1": {
+   "owner": 200,
+   "editor": 200,
+   "prof": 200,
+   "legacymentor": 200,
+   "teamviewer": 200,
+   "outsider": 403
+  }
+ }
+}
