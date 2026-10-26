@@ -82,6 +82,8 @@ Flow B debug 輸出在 `DATA_ROOT` 不可用時不再寫到 repo `data/`（`Flow
 - 評估：`python scripts/study_r2_eval.py --dry-run|--simulate faithful|adversarial --out x.json`；真模型需要產品憑證與 `--live --confirm-spend`（**未執行**）。
   `--live` 會用 `create_app()` 的正式設定，**不要在 repo 測試環境跑**。
 - 待 Owner：PA-01／02／03（`docs/SAI.md` §8）、模型憑證與預算、舊 MentorLink 教授是否收窄、Literature／PAQ 的教授範圍。
+- 最終狀態：程式凍結 `4fb65e9`（完整回歸 1,620／50／0）；瀏覽器 40／40 於 `c100ac3`；驗證結果文件 `b70599f` 已推送並核對遠端，
+  其後只有本接手文件的更新 commit。main、R1、py312 分支遠端 SHA 未變。
 
 ## 下一步（依 Owner 決定）
 
