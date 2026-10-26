@@ -1,6 +1,6 @@
 # Cloud primary 接手文件
 
-溝通及實作報告用繁體中文。**每完成一步就更新本文件。** 目前狀態：Study R1、R2、**R3** 都在隔離分支完成；R3 是 Owner 要求的「連續自主開發階段」（安全、共研 UX、翻譯、評估 v2），交付後停在 Owner 決定點。規格與整體狀態以 [`docs/SAI.md`](../SAI.md) 為唯一入口。
+溝通及實作報告用繁體中文。**每完成一步就更新本文件。** 目前狀態：**R4 交付兩個結果**：（A）從 `main` 開出的安全熱修候選、（B）R4 整合開發候選。都未合併、未部署，停在 Owner 決定點。規格與整體狀態以 [`docs/SAI.md`](../SAI.md) 為唯一入口。
 
 最後完整驗證點：Study R3 `8808665`，1,683 通過／50 略過／0 失敗（見下方 Study R3 段）；更早的 `aa8ff3e`（R2 資料防護）為 1,553 通過／50 略過／0 失敗。
 已推送個人倉庫（`7c905b5` 起）；推送前後核對，main、整合分支與其他所有分支的遠端 SHA 都沒變。
@@ -85,7 +85,25 @@ Flow B debug 輸出在 `DATA_ROOT` 不可用時不再寫到 repo `data/`（`Flow
 - 最終狀態：程式凍結 `4fb65e9`（完整回歸 1,620／50／0）；瀏覽器 40／40 於 `c100ac3`；驗證結果文件 `b70599f` 已推送並核對遠端，
   其後只有本接手文件的更新 commit。main、R1、py312 分支遠端 SHA 未變。
 
-## Study R3（2026-10-26，最新）
+## R4（2026-10-27，最新）
+
+- 交付：`STUDY_R4_DELIVERY_2026-10-27.md`；證據：`study_r4_evidence/`。
+- **A 熱修** `codex/security-hotfix-log-isolation-20261027`（從 `main`）：只含 H1／H2 修補、`test_security_log_isolation.py`、
+  `test_log_exposure_audit.py`、`scripts/security/log_exposure_audit.py`、熱修文件。**不要**把 R1–R4 的任何東西 cherry-pick 進去。
+  在 3.10 驗證：`uv python install 3.10`，venv 裝 `requirements.txt`（去掉 easyocr）＋`requirements-dev.txt`。
+  注意：main 沒有 R2-1 的資料防護，在 main 的工作樹跑測試會在工作樹寫入 `data/`（已被 gitignore）。
+- **B 整合** `codex/study-coresearch-r4-20261027`（從 R3 `69da559`）：
+  - 寫入矩陣 `python test/integration_e2e/acl_write_matrix.py <out.json>`（約 100 秒）。新寫入路由如果是設計上允許的寫入，
+    要加進 `EXPECTED` 並寫理由；否則測試會失敗。
+  - 日誌：`app/log_provenance.py`；新藍圖如果不經 `enforce_project_ownership`，要在授權成功後呼叫 `bind_request_pid`（Manuscript 已加）。
+  - 段落出處：`paragraph_provenance.py`、`provenance_routes.py`、`paragraph_provenance.js`。資料在 `data/<pid>/manuscript/provenance/`。
+  - 可重現：`scripts/repro/offline_evidence_bundle.py --out|--verify`；就緒檢查 `scripts/repro/data_readiness.py`（只在副本上跑）。
+  - fixture 新增 Introduction 章節與一段故意錯的機器翻譯；瀏覽器旅程 58 項。
+- 小心：直接 `create_app()` 跑一次性腳本會在 repo 建立 `data/`（llm_match.db、runtime.log），之後 pytest 的資料防護會拒跑。
+  一次性腳本要像 acl_route_matrix 一樣設 `LLMModel.get_db_path`、`LECTURE_SYSTEM_LOG_FILE`、`DATA_ROOT` 到暫存目錄。
+- 結束 fixture 用 `ps -eo pid,args | grep "[s]tudy_coresearch_fixture.py"` 找 PID 再 kill；不要用 `pgrep -f`（會殺到自己的 shell）。
+
+## Study R3（2026-10-26）
 
 - 分支 `codex/study-coresearch-r3-20261026`（從 R2 `ae8faa6` 開出）。交付：`STUDY_R3_DELIVERY_2026-10-26.md`；證據：`study_r3_evidence/`。
 - 權限矩陣：`python test/integration_e2e/acl_route_matrix.py <out.json>`（90 GET 路由 × 6 角色，埋哨兵）。新路由上線前先跑；

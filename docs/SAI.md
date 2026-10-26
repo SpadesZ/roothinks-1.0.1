@@ -1,6 +1,6 @@
 # Roothinks 現行規格與進度入口（唯一入口）
 
-更新日期：2026-10-26。本文件是 SAI 的**唯一維護入口**：說明產品願景、目前真實狀態、未完成事項、路線圖與發佈邊界。
+更新日期：2026-10-27。本文件是 SAI 的**唯一維護入口**：說明產品願景、目前真實狀態、未完成事項、路線圖與發佈邊界。
 不另立 SAI_v1.3、SAI_FINAL 等競爭文件。
 
 ## 0. 文件權威與版本關係（不變）
@@ -46,9 +46,12 @@ RootThinks 的目標是一個**整合的人機協作科學研究工作區**：AI
 | BLOCKED | 缺授權、憑證、網路或 Owner 決定 |
 | RELEASED | 已合併進 `main` **且**部署；分支測試通過不算 |
 
-## 3. 目前實作狀態（2026-10-26）
+## 3. 目前實作狀態（2026-10-27）
 
-全部位於一條線性的隔離分支堆疊上，**沒有任何一項是 RELEASED**。
+全部位於隔離分支上，**沒有任何一項是 RELEASED**。兩條交付線：
+
+- **安全熱修候選** `codex/security-hotfix-log-isolation-20261027`（`323ca0b`）：**直接從 `main` 開出**，只含兩個跨專案日誌外洩修補與測試，可以獨立審查與合併，不依賴任何提議修訂。見 [熱修文件](engineering/SECURITY_HOTFIX_LOG_ISOLATION_2026-10-27.md)（只在該分支）。
+- **整合開發候選** `codex/study-coresearch-r4-20261027`：I09 → Study R4 的線性堆疊（下表）。
 
 | 里程碑 | 狀態 | 證據與 commit |
 |---|---|---|
@@ -68,6 +71,10 @@ RootThinks 的目標是一個**整合的人機協作科學研究工作區**：AI
 | Study R3 安全：跨模組權限矩陣（90 路由 × 6 角色）；修補 2 個 P1 跨專案洩漏（runtime log、Flow B 探針）；Literature／PAQ AI 對話納入審閱範圍；R2 審閱副本洩漏與過期建議覆寫 | IMPLEMENTED、TESTED（`ff71c07`；矩陣 19 → 1 筆，剩下的是待決定項目；完整回歸 `8808665` 1,683／50／0） | [R3 交付](engineering/STUDY_R3_DELIVERY_2026-10-26.md)、[矩陣證據](engineering/study_r3_evidence/) |
 | Study R3 共研 UX：繁中用語、譯文標示機器翻譯、證據筆記帶出處寫入研究筆記、筆記卡顯示 AI 不確定性、修訂前內容、矩陣不再重複請求 | IMPLEMENTED、TESTED（`fba0c46`；瀏覽器 48／48） | 同上 |
 | 翻譯保護層原型（公式／URL／DOI 佔位符容錯還原、遺失補回並標示、數字變動回報） | IMPLEMENTED、TESTED（`994ee33`）；真引擎品質 **NOT MEASURED**（只有模擬） | [比較研究](engineering/TRANSLATION_RESEARCH_2026-10-26.md) |
+| Study R4 安全：寫入／匯出／間接存取權限矩陣（84 條寫入路由 × 對抗角色，434 次請求）；不可復原的刪除只限 owner（論文）或建立者／owner（Study 對話）；日誌每行帶結構化專案出處；教授審閱身分看不到文獻庫閱讀筆記（PA-01 擴充，提議中） | IMPLEMENTED、TESTED（`a31e271`、`f7fba36`；寫入矩陣修補前 2 個非設計寫入 → 0；間接 GET 0 洩漏） | [R4 交付](engineering/STUDY_R4_DELIVERY_2026-10-27.md)、[證據](engineering/study_r4_evidence/) |
+| Study R4 寫作出處：Manuscript 段落連到 Study 證據筆記或標成自由寫作；段落／筆記／原文改變時提示重新核對（不阻擋）；Markdown 出處匯出；Study 與教授工作台顯示「用在稿件哪一段」 | IMPLEMENTED、TESTED（`2683386`、`165a8a1`；瀏覽器 58／58） | 同上 |
+| Study R4 閱讀：機器翻譯數字不一致與遺失片段提示（只提示、不改寫）；翻譯保護層修正重複公式、改壞的佔位符與還原位置 | IMPLEMENTED、TESTED（`165a8a1`、`b9d9bc8`）；真引擎品質仍 **NOT MEASURED** | 同上 |
+| Study R4 可重現性：離線證據包（重跑比對雜湊）、正式資料副本的唯讀就緒檢查 | IMPLEMENTED、TESTED（`7c235b0`、`457d887`）；就緒檢查**未在正式資料上執行**（需要 Owner 提供副本） | 同上 |
 | Study 真模型回答品質 | **NOT MEASURED／BLOCKED**：協議 v2（`34ab1df`）、資料集（`e4ef1759…`）、工具與成本估計已登記；負向控制 6／6 只是**工具自我檢查**，不是模型驗證；環境沒有產品模型憑證 | [協議 v2](engineering/STUDY_EVAL_PROTOCOL_V2_2026-10-26.md)、[v1](engineering/STUDY_R2_EVAL_PROTOCOL_2026-10-26.md) |
 
 科學引擎 `advisory-rules-4`（`4c2034bf…`）自 I09 起未改；產品 SUPPORT TP 1、CONTRADICT TP 0、UNKNOWN 299／300（I13 記錄）。
@@ -82,16 +89,22 @@ RootThinks 的目標是一個**整合的人機協作科學研究工作區**：AI
 - **線上 Google 翻譯與 Google OAuth 未驗證**（雲端請求 403）。
 - **Python 3.12 正式環境遷移 NO-GO**：需要可重現的正式映像建置、真 Google OAuth、獨立稽核、相依檢查與回滾驗證。開發可用 ≠ 正式可遷移。
 - **隔離分支不等於已合併或已部署**；本文件第 3 節沒有任何 RELEASED。
-- **審閱範圍仍有一個待決定項目**：教授可讀 Literature 文獻庫的閱讀筆記（§8 PA-01 擴充）。舊 MentorLink 導師預設維持現有存取（`REVIEW_SCOPE_LEGACY_MENTORS=keep`）。
+- **歷史暴露未知**：兩個日誌外洩從 main 初始 commit（2026-06-30）就存在。工程端沒有、也不應取得正式日誌，所以**不能宣稱沒有發生過**。
+  Owner／維運需要在正式日誌副本上執行 `scripts/security/log_exposure_audit.py`（熱修分支）。
+- **相關但未修**：Manuscript 前端把 token 放在網址參數，gunicorn 存取日誌會記到 token 原文（見熱修文件 §6）。
+- 審閱範圍：依 Owner 建議，R4 起教授審閱身分看不到文獻庫閱讀筆記；**仍屬 PA-01 提議**，未核准前不是規範。舊 MentorLink 導師預設維持現有存取（`keep`）。
+- R4 改變了 editor 的權限：不能再刪除論文（會刪原始 PDF）或別人的 Study 對話（§8 PA-04 提議）。
 - 其他：Study 的 `localStorage` 標記尚未遷移到伺服器錨點；Reflow 與圖／表／公式錨點不完整；
-  證據筆記已能帶出處寫入**研究筆記**，但還沒有接到 Manuscript 的段落出處（寫作時仍要手動引用）。
+  段落出處是輕量紀錄，與既有嚴格段落契約（文獻已納入＋證據已索引＋PDF 指紋）尚未合併成一個流程；
+  翻譯數字提示只比對有小數點或兩位數以上的數字（避免中文數字誤報），單位數字的錯誤不會提示。
 
 ## 5. 路線圖與發佈邊界（依相依順序）
 
 | 階段 | 內容 | 前置條件 | 現況 |
 |---|---|---|---|
-| 0 獨立審查 | 對隔離堆疊（I09 → Study R3）做獨立稽核；Owner 核准 §8 提議修訂 | — | 等待 Owner／稽核 |
-| 1 合併候選 | 選定要進 `main` 的範圍（例如資料防護、3.12 開發環境、Study R1–R3）；**R3 的兩個 P1 跨專案修補不依賴 PA 核准，建議優先**；在乾淨環境重跑完整回歸與瀏覽器 | 階段 0 | 未開始；**不得自行 merge** |
+| H 安全熱修 | 審查並合併 `codex/security-hotfix-log-isolation-20261027`；部署前確認有 `system_role=admin` 帳號；部署後在正式日誌副本跑暴露調查工具 | Owner 審查 | **候選已備妥**；不得自行 merge／部署 |
+| 0 獨立審查 | 對隔離堆疊（I09 → Study R4）做獨立稽核；Owner 核准 §8 提議修訂 | — | 等待 Owner／稽核 |
+| 1 合併候選 | 選定要進 `main` 的範圍（例如資料防護、3.12 開發環境、Study R1–R4）；合併前在正式資料副本跑 `scripts/repro/data_readiness.py`；在乾淨環境重跑完整回歸與瀏覽器 | 階段 0、H | 未開始；**不得自行 merge** |
 | 2 品質量測 | Study 真模型評估（協議 v2 已登記）＋人類評分；翻譯保護層在真 NLLB 上量測佔位符損壞率 | 產品憑證與預算；評分者；可執行 NLLB 的環境 | BLOCKED（憑證、環境） |
 | 3 正式遷移 | 3.12 正式映像、真 OAuth、回滾演練、相依稽核 | 階段 1；可連網環境 | NO-GO |
 | 4 科學能力 | Gate D 或其他方法，先預先登記；真專家 gold 與 holdout | Owner 授權新模型／相依；專家 | DEFERRED／BLOCKED |
@@ -110,10 +123,11 @@ RootThinks 的目標是一個**整合的人機協作科學研究工作區**：AI
 
 ## 8. 提議修訂（待 Owner 核准；未核准前不是規範）
 
-Study R2 實作時發現下列契約需要明確化或修改。程式已在隔離分支實作與測試，**只有 Owner 核准後才成為規範並可合併**。
+Study R2–R4 實作時發現下列契約需要明確化或修改。程式已在隔離分支實作與測試，**只有 Owner 核准後才成為規範並可合併**。
 
 | 編號 | 影響條款 | 提議內容 | 理由 |
 |---|---|---|---|
-| PA-01 | v1.1.1 P0-AUT「教授邀請只給全專案 viewer／審閱權」 | 教授邀請的審閱權包含：稿件審閱（不變）、論文本身、研究者**明確請求審閱**的 Study 證據筆記。**不包含**研究者的 Study 自由筆記、AI 對話、研究矩陣與未分享的證據筆記。一般團隊 viewer、被 owner 改成 editor 的教授不受影響。**R3 擴充（同樣待核准）**：AI 對話的排除也適用於 Literature 與 PAQ；待決定：是否也排除 Literature 文獻庫閱讀筆記；舊 MentorLink 導師預設不變，由 `REVIEW_SCOPE_LEGACY_MENTORS` 選擇是否收窄 | 改版前探針：教授可讀私人筆記、對話與所有筆記；導師 API 也回傳筆記與整段對話（P1）；R3 權限矩陣另發現 Literature／PAQ 對話可讀 |
+| PA-01 | v1.1.1 P0-AUT「教授邀請只給全專案 viewer／審閱權」 | 教授邀請的審閱權包含：稿件審閱（不變）、論文本身、研究者**明確請求審閱**的 Study 證據筆記。**不包含**研究者的 Study 自由筆記、AI 對話、研究矩陣與未分享的證據筆記。一般團隊 viewer、被 owner 改成 editor 的教授不受影響。**R3／R4 擴充（同樣待核准）**：AI 對話的排除也適用於 Literature 與 PAQ；依 Owner 建議也排除 Literature 文獻庫閱讀筆記（書目與篩選決定仍可見）；段落出處中未請求審閱的證據筆記只顯示「有連結」；舊 MentorLink 導師預設不變，由 `REVIEW_SCOPE_LEGACY_MENTORS` 選擇是否收窄 | 改版前探針：教授可讀私人筆記、對話與所有筆記；導師 API 也回傳筆記與整段對話（P1）；R3 權限矩陣另發現 Literature／PAQ 對話可讀 |
 | PA-02 | v1.1.2 SCI-ADV §2（文字對齊不是科學證明） | 把「引文在原文中找到」（`quote_match`／`text_match`）與「引文支持陳述」（`claim_support`）定為兩個欄位；後者只能由研究者設定並記錄設定者；禁止用「verified／已驗證」描述引文比對；比對不得改變科學記號（不用 NFKC）；同段多處無法唯一定位時不得給精確位置 | 落實既有原則的資料契約 |
 | PA-03 | v1.1.0 COL-03（可分辨誰的意見、誰可確認） | Study 證據筆記只有作者能直接改寫與請求審閱；其他成員提出只追加的建議，由作者接受或不採用；被取代的內容保留在修訂紀錄 | 改版前 editor 可覆寫 owner 已接受的解讀 |
+| PA-04 | P0-AUT（HTTP DELETE → owner） | 無法復原的刪除不論用哪個 HTTP 方法都比照 DELETE：刪除論文（含原始 PDF）只限 owner；Study 對話只限建立者或 owner，沒有建立者紀錄的舊對話只限 owner | R4 寫入矩陣：editor 可用 POST 刪除論文與 owner 的對話，繞過 DELETE → owner 的規則 |

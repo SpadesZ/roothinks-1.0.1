@@ -348,3 +348,14 @@ Owner 已改採本機主導；新隔離分支 `codex/py312-local-first-integrati
 | UX：繁中、機器翻譯標示、證據寫入研究筆記、不確定性、修訂內容 | TESTED（真瀏覽器 48／48） | `fba0c46`；`study_r3_evidence/browser/` | 尚未接到 Manuscript 段落出處 |
 | 翻譯保護層 | IMPLEMENTED、TESTED（模擬） | `994ee33`；`translation-guard-benchmark.json` | 真引擎 NOT MEASURED；NLLB CC-BY-NC-4.0 |
 | Study Tutor 品質 | **NOT MEASURED** | 協議 v2 `34ab1df`；負向控制 6／6（工具自我檢查） | 憑證、預算、評分者 |
+
+## R4（2026-10-27；兩條隔離分支，未合併）
+
+| 需求／面向 | 判定 | 證據 | 仍開放 |
+|---|---|---|---|
+| 安全熱修候選（H1 全站日誌、H2 跨專案 Flow B 日誌），從 `main` 開出 | 紅測試後修補，TESTED（3.10 與 3.12） | `codex/security-hotfix-log-isolation-20261027`（`323ca0b`）；13 測試，修補前 9 失敗 | 歷史暴露需 Owner 在正式日誌副本調查；合併／部署待 Owner |
+| P0-AUT 寫入／匯出／間接存取 | 修補 2 個非設計寫入，TESTED | `acl_write_matrix.py`：84 路由、434 請求；`test_acl_write_matrix.py` | 只測合理請求內容；PA-04 待核准 |
+| 日誌專案隔離 | 結構化出處，TESTED | `test_log_provenance.py`、更新的矩陣 | 舊行一律排除 |
+| COL／寫作出處（段落 ↔ 證據筆記／自由寫作） | IMPLEMENTED、TESTED（瀏覽器 58／58） | `test_paragraph_provenance.py`；`study_r4_evidence/browser/` | 與嚴格段落契約尚未合流 |
+| 翻譯保護層邊界、閱讀數字提示 | TESTED（模擬＋瀏覽器） | `translation-guard-benchmark-r4.json` | 真引擎 NOT MEASURED |
+| 可重現評估、遷移就緒 | IMPLEMENTED、TESTED | `offline_bundle/`（verify ok）；`test_repro_readiness.py` | 就緒檢查未在正式副本執行 |
