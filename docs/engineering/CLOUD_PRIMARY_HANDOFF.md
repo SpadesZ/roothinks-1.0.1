@@ -1,8 +1,8 @@
 # Cloud primary 接手文件
 
-溝通及實作報告用繁體中文。**每完成一步就更新本文件。** 目前狀態：R1 已交付，停在 Owner Gate。
+溝通及實作報告用繁體中文。**每完成一步就更新本文件。** 目前狀態：R1 已交付；R2 只完成資料防護（R2-1、R2-2），其餘 R2 項目與翻譯研究被 Owner 中斷，改做 Study 共研升級。
 
-最後完整驗證點：`10fd56f`，1,525 通過／50 略過／0 失敗；之後只有證據與文件 commit。
+最後完整驗證點：`aa8ff3e`（R2 資料防護），1,553 通過／50 略過／0 失敗，且執行後 repo 沒有 `data/`。
 已推送個人倉庫（`7c905b5` 起）；推送前後核對，main、整合分支與其他所有分支的遠端 SHA 都沒變。
 
 ## 角色與邊界
@@ -34,7 +34,9 @@ env -u DATABASE_URL -u SECRET_KEY -u FERNET_KEY -u NLTK_DATA APP_ENV=test \
 ```
 
 預期：0 失敗、50 略過（34 NLTK、13 WordNet、2 Windows、1 正式 DB）。`pip check` 只會報 easyocr 缺 torch／torchvision。
-**根目錄 `conftest.py` 會在測試寫入 repo `data/` 時讓整次執行失敗**；看到這個訊息要找出寫入來源，不要繞過。
+**根目錄 `conftest.py` 三層防護**：`data/` 有檔案、是 symlink、或 `DATABASE_URL`／`DATA_ROOT` 指向非暫存真實資料時拒跑（exit 4）；
+寫入 `data/` 的動作在發生前丟 `PermissionError`；事後比對仍在。看到這些訊息要找出寫入來源，不要繞過。
+Flow B debug 輸出在 `DATA_ROOT` 不可用時不再寫到 repo `data/`（`FlowBDataRootUnavailable`，只記 warning）。
 
 ## 不可誤讀
 
@@ -42,6 +44,16 @@ env -u DATABASE_URL -u SECRET_KEY -u FERNET_KEY -u NLTK_DATA APP_ENV=test \
 - 天花板分析是**診斷**：149／188 的瓶頸在語意比對。它不代表 Gate D 會成功。
 - Gate D **尚未核准**。不要下載 spaCy 或模型；協議草案已寫好，核准後照協議執行，不事後調參。
 - 本輪沒有重建 Docker 映像；正式映像需要在可連網環境重建一次（鎖定檔少了 3 個套件）。
+
+## R2 進度（2026-10-26）
+
+| 項目 | 狀態 |
+|---|---|
+| R2-1 事前阻擋＋執行前拒跑 | 完成，`aa8ff3e`；負向測試 `test/unit/test_data_safety_guard.py`（24） |
+| R2-2 Flow B debug fail closed | 完成，`aa8ff3e`；`test/unit/test_flowb_debug_data_root.py`（5） |
+| R2-3 Gate D spaCy 隔離實驗 | **暫停**（Owner 中斷）；尚未下載任何東西 |
+| R2-4 Google 失敗行為＋證據矩陣 | **暫停** |
+| 翻譯逆向研究（Immersive／BabelDOC／REA） | **暫停**；沒有安裝 REA、沒有改 agent 設定 |
 
 ## 下一步（依 Owner 決定）
 
