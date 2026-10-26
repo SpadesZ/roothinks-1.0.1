@@ -1,6 +1,6 @@
 # Cloud primary 接手文件
 
-溝通及實作報告用繁體中文。**每完成一步就更新本文件。** 目前狀態：R1 已交付；R2 只完成資料防護（R2-1、R2-2），其餘 R2 項目與翻譯研究被 Owner 中斷，改做 **Study 共研升級（進行中）**。
+溝通及實作報告用繁體中文。**每完成一步就更新本文件。** 目前狀態：R1 已交付；R2 只完成資料防護（R2-1、R2-2），其餘 R2 項目與翻譯研究被 Owner 中斷，改做 **Study 共研升級（已交付，停在 Owner Gate）**。
 
 最後完整驗證點：`aa8ff3e`（R2 資料防護），1,553 通過／50 略過／0 失敗，且執行後 repo 沒有 `data/`。
 已推送個人倉庫（`7c905b5` 起）；推送前後核對，main、整合分支與其他所有分支的遠端 SHA 都沒變。
@@ -55,16 +55,19 @@ Flow B debug 輸出在 `DATA_ROOT` 不可用時不再寫到 repo `data/`（`Flow
 | R2-4 Google 失敗行為＋證據矩陣 | **暫停** |
 | 翻譯逆向研究（Immersive／BabelDOC／REA） | **暫停**；沒有安裝 REA、沒有改 agent 設定 |
 
-## Study 共研升級（進行中，2026-10-26）
+## Study 共研升級（2026-10-26，停在 Owner Gate）
 
-- 分支 `codex/study-coresearch-20261026`（從 `27f5862` 開出）。設計與驗收標準：`STUDY_CORESEARCH_DESIGN_2026-10-26.md`（先於程式碼 commit）。
-- 已完成：後端錨點契約（`app/core_pro/study/study_anchors.py`）、證據筆記（`study_evidence_notes.py`、`/api/study/evidence_notes/*`）、
-  Tutor 選段模式（`/api/study/chat` 帶 `mode`＋`selection`）、教授審閱請求 API（`/api/mentor/mentees/<id>/study-reviews/<pid>`）、
-  `security.mutate_versioned_json`（`check_and_save_json` 改為它的薄包裝，語意不變）。測試：`test_study_anchors.py`（20）、`test_study_evidence_notes.py`（15），紅色檢查 6 失敗。
-- 進行中：前端（閱讀器錨點屬性、頁碼順序、選字動作列、結構化回答卡、筆記草稿與接受、證據筆記清單、導師工作台區塊）。
-- 合成瀏覽器站：`python test/integration_e2e/study_coresearch_fixture.py`（port 8894）；旅程：
+- 分支 `codex/study-coresearch-20261026`（從 `27f5862` 開出）。交付報告：`STUDY_CORESEARCH_DELIVERY_2026-10-26.md`；
+  設計與驗收標準：`STUDY_CORESEARCH_DESIGN_2026-10-26.md`（先於程式碼 commit）。證據截圖：`study_coresearch_evidence/before|after/`。
+- 後端：`app/core_pro/study/study_anchors.py`（錨點與引文核對）、`study_evidence_notes.py`、`/api/study/evidence_notes/*`、
+  `/api/study/chat` 的 `mode`＋`selection`、`/api/mentor/mentees/<id>/study-reviews/<pid>`、`security.mutate_versioned_json`。
+- 前端：`study_view.js`（錨點屬性、頁碼順序、選字動作列、`revealAnchor`）、`study_chat.js`（`askAboutSelection`、`appendStructured`）、
+  `study_evidence.js`（草稿、接受、清單、留言、審閱、匯出）、`mentor.js`（Study 審閱請求區塊）。
+- 測試：`test_study_anchors.py`、`test_study_evidence_notes.py`；瀏覽器：`study_coresearch_fixture.py`（port 8894）＋
   `STUDY_PHASE=before|after NODE_PATH=/opt/node-tools/node_modules I12_VENDOR_DIR=<vendor> node --require ./test/integration_e2e/vendor-route.cjs test/integration_e2e/study_coresearch_browser.cjs`。
-  vendor 目錄是 npm 發佈的 bootstrap／katex 等真品（I12 下載）；`vendor-route.cjs` 現在放在 `test/integration_e2e/`（舊文件寫的 `docs/engineering/py312_verification/` 不存在）。
+  每次跑 after 前要重啟 fixture（after 預設伺服器上沒有證據筆記）。vendor 目錄是 npm 發佈的 bootstrap／katex 等真品（I12 下載，不在 repo）。
+- 重要限制：教授是 viewer，既有 Study ACL 讓 viewer 讀整個 Study；「只看已請求審閱」是導師介面範圍，不是存取控制（要改需 Owner 核准）。
+  沒有用真模型量測品質（只用模型替身證明假引文會被擋）。
 
 ## 下一步（依 Owner 決定）
 
