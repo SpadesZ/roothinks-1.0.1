@@ -14,7 +14,7 @@ for key in ('DATABASE_URL','SECRET_KEY','FERNET_KEY','APP_ENV','AUTH_MODE','SOCK
     os.environ.pop(key,None)
 root = Path(tempfile.mkdtemp(prefix='roothinks-sai-browser-'))
 os.environ.update(FLASK_ENV='development',PYTHON_DOTENV_DISABLED='1',SOCKETIO_ASYNC_MODE='threading',
-    API_AUTH_ENABLED='0',LOCK_ROOT=str(root/'locks'),HF_HUB_OFFLINE='1',TRANSFORMERS_OFFLINE='1',
+    API_AUTH_ENABLED='0',LOCK_ROOT=str(root/'locks'),LECTURE_SYSTEM_LOG_FILE=str(root/'runtime.log'),HF_HUB_OFFLINE='1',TRANSFORMERS_OFFLINE='1',
     CORS_ALLOWED_ORIGINS='http://127.0.0.1:8893')
 
 from app import create_app,db,socketio
