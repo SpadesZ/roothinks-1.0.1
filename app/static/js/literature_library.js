@@ -87,6 +87,8 @@
                 // 已連結的仍顯示 paper_id——那是資訊（這篇已進 pipeline），不是操作。
                 const paperTag = e.paper_id
                     ? `<span class="badge bg-success-subtle text-success border border-success" title="已連結 PDF pipeline">PDF: ${esc(e.paper_id)}</span>`
+                      // R5：從文獻庫直接到 Study 的雙語閱讀器（選文、解釋／批判、證據筆記）。
+                      + ` <a class="small" data-open-in-study="${esc(e.paper_id)}" href="/study/project/${encodeURIComponent(pid())}?pid=${encodeURIComponent(pid())}&read=${encodeURIComponent(e.paper_id)}">在 Study 閱讀</a>`
                     : '<span class="text-muted small">—</span>';
                 const revision = Number(e._rev || 0);
                 const details = `

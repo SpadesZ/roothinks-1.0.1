@@ -134,6 +134,12 @@ with app.app_context():
     db.session.add(Paper(paper_id=PAPER, pid=PID, title=PAGES[0][1][0][1], interpretation_status=Paper.STATUS_GOLD_READY))
     db.session.commit()
     _write_paper()
+    # R5：文獻庫條目已連結到這篇 PDF，供「在 Study 閱讀」旅程使用。
+    from app.services.literature_library import LiteratureLibrary
+    _lib = LiteratureLibrary(str(root))
+    _lib.merge_candidates(PID, [{'title': PAGES[0][1][0][1], 'doi': '10.0000/synthetic'}])
+    _eid = next(iter(_lib.load(PID)['entries']))
+    _lib.update_entry(PID, _eid, {'paper_id': PAPER}, actor='researcher', base_rev=0)
     # R4 段落出處：已保存一版的 Introduction（兩段），供 Manuscript「段落出處」旅程使用。
     from app.core_pro.manuscript.manuscript_io import ManuscriptIO
     ManuscriptIO.save_block_version(PID, 'introduction', 'Introduction',

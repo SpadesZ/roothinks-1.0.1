@@ -343,6 +343,15 @@ module.exports=async function after(ctx){
     check('R5 證據筆記可依文字、稿件使用、研究者判斷篩選',total>=1&&none===0&&hit===total&&unused===0&&used===total&&partial===total&&
         (await page.locator('[data-evidence-filter-count]').innerText()).includes(`${total}／${total}`),{total,none,hit,unused,used,partial});
     await snapshot(page,'17-evidence-filter');
+    // R5：Literature 文獻庫 → 「在 Study 閱讀」→ 直接打開雙語閱讀器
+    await page.goto(`${base}/literature?pid=${pid}`);
+    const openLink=page.locator(`[data-open-in-study="${ctx.paper}"]`).first();
+    await openLink.waitFor({state:'attached',timeout:15000});
+    const href=await openLink.getAttribute('href');
+    await page.goto(new URL(href,base).toString());
+    await page.locator('#fulltext-content .original-content').first().waitFor({timeout:15000});
+    check('R5 從文獻庫「在 Study 閱讀」直接打開該論文的雙語閱讀器',href.includes(`read=${ctx.paper}`)&&
+        await page.locator('#fulltext-content .original-content').count()>0,href);
     await page.context().close();
 
     // ---------- R2-A：教授審閱模式 ----------

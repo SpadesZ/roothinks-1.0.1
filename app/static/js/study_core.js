@@ -230,6 +230,22 @@ class StudyCore {
     }
 
     // --- Sidebar List (v1.0 Preserved) ---
+    /**
+     * R5：從 Literature 文獻庫「在 Study 閱讀」帶 ?read=<paper_id> 進來時，直接打開雙語閱讀器。
+     * 只開已完成處理的論文；找不到或還在處理時留在清單並說明，不改變其他行為。
+     */
+    _openRequestedPaper(pid, papers) {
+        const wanted = new URLSearchParams(window.location.search).get('read');
+        if (!wanted || this._openedRequestedPaper) return;
+        this._openedRequestedPaper = true;
+        const paper = (papers || []).find(p => p.paper_id === wanted);
+        if (paper && paper.is_ready && window.studyView && typeof window.studyView.loadFulltext === 'function') {
+            window.studyView.loadFulltext(pid, wanted);
+        } else {
+            this.showToast(paper ? '這篇論文還在處理中，完成後才能閱讀。' : '這個專案找不到指定的論文。', 'warning');
+        }
+    }
+
     loadPapers() {
         const container = document.getElementById('paperListContainer');
         if (!container) return;
@@ -246,6 +262,7 @@ class StudyCore {
             .then(res => {
                 if (res.ok) {
                     this.renderPaperList(res.papers, container);
+                    this._openRequestedPaper(pid, res.papers);
                 } else {
                     container.innerHTML = `<div class="text-danger small p-2">Error: ${this.escapeHtml(res.msg)}</div>`;
                 }
