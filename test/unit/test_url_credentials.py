@@ -58,9 +58,11 @@ def _app(monkeypatch, tmp_path, **config):
             db.session.add(WorkspaceMember(user_id=u.id, pid=PID if name == "member" else OTHER, role="viewer"))
         db.session.commit()
     for pid in (PID, OTHER):
-        d = tmp_path / "data" / pid / "manuscript" / "image"
-        d.mkdir(parents=True)
-        (d / "fig.png").write_bytes(b"\x89PNG\r\n\x1a\nfake")
+        # main 的圖片路由讀 cwd/data，整合分支讀 DB 所在目錄；兩處都放，同一份測試兩條分支通用。
+        for base_dir in (tmp_path / "data", tmp_path):
+            d = base_dir / pid / "manuscript" / "image"
+            d.mkdir(parents=True, exist_ok=True)
+            (d / "fig.png").write_bytes(b"\x89PNG\r\n\x1a\nfake")
     return app
 
 

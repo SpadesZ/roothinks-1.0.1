@@ -1214,7 +1214,8 @@ def serve_image(pid, filename):
     formal_pid = _formal_pid(pid)
     if not formal_pid:
         return jsonify({'ok': False, 'message': 'Invalid pid'}), 404
-    # [hotfix H7] session 模式：登入者必須是專案成員（原本只要登入就能讀任何專案的圖）。
+    # [hotfix H7] session 模式：登入者必須是專案成員（全域模組守衛本來就擋非成員；這裡明確再檢查一次，
+    # 因為下面的 token 分支會因 session_member 而略過）。
     # 成員用 cookie 讀圖，網址不需要也不應該帶 token。
     session_member = False
     if str(current_app.config.get("AUTH_MODE", "none")).strip().lower() == "session":

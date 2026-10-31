@@ -139,7 +139,7 @@
 
 ### 第二輪回歸（H6＋H7）
 
-- Python 3.10：1,123 通過、1 失敗。失敗清單與未修補的 `main` **逐行相同**（同一個既有 user journey 失敗）。
+- Python 3.10 與 3.12：都是 1,123 通過、1 失敗。失敗清單與未修補的 `main` **逐行相同**（同一個既有 user journey 失敗）。
 - 新增測試：`test_log_exposure_audit.py`（4）、`test_url_credentials.py`（9）。
 - 真瀏覽器：token 與 session 兩種模式都通過，舊程式的負向控制失敗。
 
