@@ -46,13 +46,31 @@ RootThinks 的目標是一個**整合的人機協作科學研究工作區**：AI
 | BLOCKED | 缺授權、憑證、網路或 Owner 決定 |
 | RELEASED | 已合併進 `main` **且**部署；分支測試通過不算 |
 
-## 3. 目前實作狀態（2026-10-27）
+## 3. 目前實作狀態（2026-10-31）
 
 全部位於隔離分支上，**沒有任何一項是 RELEASED**。兩條交付線：
 
 - **安全熱修候選** `codex/security-hotfix-log-isolation-20261027`（`b80b94e`）：**直接從 `main` 開出**，只含安全修補與測試（H1／H2 日誌外洩；第二輪 H6 調查工具不含日誌原文、H7 Manuscript token 不再進網址），可以獨立審查與合併，不依賴任何提議修訂。見 [熱修文件](engineering/SECURITY_HOTFIX_LOG_ISOLATION_2026-10-27.md)（只在該分支）。
 - **整合開發候選** `codex/study-coresearch-r4-20261027`：I09 → Study R4 的線性堆疊（下表）。
 - **R4 後續候選** `codex/study-r4-followup-20261028`：R4 ＋ H6／H7 移植 ＋ F1（限定編輯不能經段落出處讀 Study 私人筆記）；完整回歸 1,719／50／0，瀏覽器 58／58。見 [第二輪交付](engineering/SECURITY_ROUND2_DELIVERY_2026-10-31.md)。
+
+### 3.1 安全發佈就緒（2026-10-31，第三輪）
+
+獨立稽核**有條件接受** H6、H7、F1。第三輪處理發佈前的條件；兩條分支的修補內容相同，彼此隔離：
+
+| 條件 | 狀態 | 證據 |
+|---|---|---|
+| 票證 cookie 在正式 HTTPS／反向代理下是 `Secure` | **缺口已確認並修補**：沒有 ProxyFix，`request.is_secure` 在代理後面是 False；現在跟隨 `SESSION_COOKIE_SECURE`（正式預設 1）。`deploy_preflight.py` 在 token 認證＋`SESSION_COOKIE_SECURE=0` 時 FAIL | 紅測試（舊程式在代理情境失敗）；真瀏覽器 `browser-token-secure.json` |
+| `API_QUERY_TOKEN_ALLOWED=0` 的相容遷移 | 環境變數原本沒有接上（**缺口已修**），Socket 網址 token 也受控；runbook：盤點 → 重疊輪替 → 切換 → 金絲雀驗證上游日誌 → 回滾；驗證腳本切換前與切換後都測過 | `RUNBOOK_QUERY_TOKEN_SHUTOFF.md`、`query_token_shutoff_check.py` |
+| 歷史稿件 token 清理 | 可逆、以版本檔為單位、預設演練、先備份後改、可還原；**只在合成資料上執行過** | `RUNBOOK_MANUSCRIPT_CREDENTIAL_CLEANUP.md`、`test_manuscript_credential_cleanup.py` |
+| 暴露調查只給涵蓋範圍與計數 | 新增 `coverage` 段（涵蓋範圍、能否下結論、缺少的輸入）；對抗測試 0 洩漏 | `test_log_exposure_audit.py`（5） |
+
+**發佈前仍需 Owner 完成**（工程端不能代做）：
+1. 核准合併並部署熱修候選；
+2. 部署環境走 HTTPS，`SESSION_COOKIE_SECURE=1`，`deploy_preflight.py` 通過，並至少有一個 `system_role=admin` 帳號；
+3. 在授權的日誌與稿件副本上跑 `log_exposure_audit.py`，依結果決定 token 輪替；
+4. 依 runbook 輪替 token，並切到 `API_QUERY_TOKEN_ALLOWED=0`，同時記錄上游日誌的金絲雀結果；
+5. 是否在維護窗口清理舊稿件檔。
 
 | 里程碑 | 狀態 | 證據與 commit |
 |---|---|---|
@@ -104,7 +122,7 @@ RootThinks 的目標是一個**整合的人機協作科學研究工作區**：AI
 
 | 階段 | 內容 | 前置條件 | 現況 |
 |---|---|---|---|
-| H 安全熱修 | 審查並合併 `codex/security-hotfix-log-isolation-20261027`；部署前確認有 `system_role=admin` 帳號；部署後在授權的日誌與稿件副本跑暴露調查工具，再決定 token 輪替 | Owner 審查 | **候選已備妥（第二輪）**；不得自行 merge／部署／輪替 |
+| H 安全熱修 | 審查並合併 `codex/security-hotfix-log-isolation-20261027`；部署前確認有 `system_role=admin` 帳號；部署後在授權的日誌與稿件副本跑暴露調查工具，再決定 token 輪替 | Owner 審查 | **候選已備妥（第三輪，發佈條件見 §3.1）**；不得自行 merge／部署／輪替 |
 | 0 獨立審查 | 對隔離堆疊（I09 → Study R4）做獨立稽核；Owner 核准 §8 提議修訂 | — | 等待 Owner／稽核 |
 | 1 合併候選 | 選定要進 `main` 的範圍（例如資料防護、3.12 開發環境、Study R1–R4）；合併前在正式資料副本跑 `scripts/repro/data_readiness.py`；在乾淨環境重跑完整回歸與瀏覽器 | 階段 0、H | 未開始；**不得自行 merge** |
 | 2 品質量測 | Study 真模型評估（協議 v2 已登記）＋人類評分；翻譯保護層在真 NLLB 上量測佔位符損壞率 | 產品憑證與預算；評分者；可執行 NLLB 的環境 | BLOCKED（憑證、環境） |

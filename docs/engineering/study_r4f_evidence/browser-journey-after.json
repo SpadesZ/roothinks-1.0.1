@@ -1,8 +1,8 @@
 {
-  "run": "study-after-2026-10-31T12-55-00-865Z",
+  "run": "study-after-2026-10-31T19-12-57-674Z",
   "phase": "after",
-  "sha": "62ac74c95203658685b9d0fe71bc3fb1c1f472d7",
-  "dirty": 2,
+  "sha": "eeb74d029d877c63e746d666a32a8fb0c9e28349",
+  "dirty": 20,
   "checks": [
     {
       "name": "R3 介面沒有殘留英文狀態字",
@@ -360,7 +360,7 @@
     {
       "name": "R3 插入研究筆記帶出處與判斷狀態",
       "ok": true,
-      "detail": "【證據筆記】未命名（作者：researcher，2026/10/31 12:55:04）\n- 證據 1（synthetic_calibration 原文 p.1，原文中找到）：「The improvement was observed only at 300 K under one calibration protocol.」\n- 原文事實：The improvement was observed only at 300 K under one calibration protocol.\n- AI 解讀：這段只支持樣本 A、300 K、單一校正流程下的改善；不能外推到其他樣本或溫度。（無證據）"
+      "detail": "【證據筆記】未命名（作者：researcher，2026/10/31 19:13:01）\n- 證據 1（synthetic_calibration 原文 p.1，原文中找到）：「The improvement was observed only at 300 K under one calibration protocol.」\n- 原文事實：The improvement was observed only at 300 K under one calibration protocol.\n- AI 解讀：這段只支持樣本 A、300 K、單一校正流程下的改善；不能外推到其他樣本或溫度。（無證據）"
     },
     {
       "name": "R3 插入的內容經既有存檔路徑寫入伺服器",
@@ -377,7 +377,7 @@
     {
       "name": "R4 段落連到證據筆記，分開顯示原文引文、AI 解讀、研究者判斷",
       "ok": true,
-      "detail": "證據筆記\nS.Ver 0.1\n本研究只在 300 K 觀察到樣本 A 的改善，結論不能外推到其他溫度或樣本。\nen_bd5109a8a665 · synthetic_calibration（連結時修訂 2 次）\n證據 1：原文 p.1「The improvement was observed only at 300 K under one calibration protocol.」（引文找到，不代表支持）\n【原文事實】The improvement was observed only at 300 K under one calibration protocol.\n【AI 解讀】這段只支持樣"
+      "detail": "證據筆記\nS.Ver 0.1\n本研究只在 300 K 觀察到樣本 A 的改善，結論不能外推到其他溫度或樣本。\nen_f96d296ac063 · synthetic_calibration（連結時修訂 2 次）\n證據 1：原文 p.1「The improvement was observed only at 300 K under one calibration protocol.」（引文找到，不代表支持）\n【原文事實】The improvement was observed only at 300 K under one calibration protocol.\n【AI 解讀】這段只支持樣"
     },
     {
       "name": "R4 沒有證據的段落可以標為自由寫作",

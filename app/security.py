@@ -232,11 +232,10 @@ def require_socket_auth(auth_payload: Optional[Dict[str, Any]]) -> str:
             token = bearer.split(" ", 1)[1].strip()
 
     if not token:
-        token = (
-            request.args.get("token", "").strip()
-            or request.args.get("access_token", "").strip()
-            or _extract_bearer_from_header()
-        )
+        query = request.args.get("token", "").strip() or request.args.get("access_token", "").strip()
+        if query and not current_app.config.get("API_QUERY_TOKEN_ALLOWED", True):
+            query = ""
+        token = query or _extract_bearer_from_header()
 
     if not _token_matches_configured(token, _configured_tokens()):
         raise Forbidden("Unauthorized socket connection")
@@ -863,6 +862,16 @@ def strip_html_url_credentials(html: str) -> str:
 
 
 IMAGE_TICKET_TTL = 12 * 3600
+
+
+def image_ticket_cookie_secure() -> bool:
+    """票證 cookie 的 Secure 旗標與 session cookie 同一政策。
+
+    正式環境在反向代理後面（TLS 在代理終止）時 request.is_secure 是 False——本專案沒有 ProxyFix，
+    只看 is_secure 會讓票證 cookie 少了 Secure。所以以 SESSION_COOKIE_SECURE（正式環境預設 True）為準，
+    直接 HTTPS 連線時也一定加上。
+    """
+    return bool(current_app.config.get("SESSION_COOKIE_SECURE")) or bool(request.is_secure)
 
 
 def image_ticket_cookie_name(pid: str) -> str:

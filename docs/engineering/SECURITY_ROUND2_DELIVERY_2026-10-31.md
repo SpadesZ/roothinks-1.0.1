@@ -76,3 +76,12 @@
 
 - 程式 `62ac74c`（之後只有文件 commit）：**1,719 通過、50 略過、0 失敗**（Python 3.12，`APP_ENV=test`，資料防護開啟）。
 - R4 是 1,705 通過；這次新增 14 個（移植的調查工具測試 4 個、網址憑證測試 9 個、coauthor 測試 1 個）。
+
+## 7. 第三輪：發佈準備
+
+- 票證 cookie 的 `Secure`：缺口已確認並修補，跟隨 `SESSION_COOKIE_SECURE`。部署前檢查會擋不安全的設定。
+- `API_QUERY_TOKEN_ALLOWED`：環境變數原本沒有接上，已修；Socket 網址 token 也受控。
+- 遷移 runbook 與驗證腳本：`RUNBOOK_QUERY_TOKEN_SHUTOFF.md`、`query_token_shutoff_check.py`。
+- 舊稿件清理 runbook 與工具：`RUNBOOK_MANUSCRIPT_CREDENTIAL_CLEANUP.md`、`manuscript_credential_cleanup.py`。只在合成資料上執行過。
+- 調查工具新增 `coverage` 段。
+- 細節見 `docs/SAI.md` §3.1。

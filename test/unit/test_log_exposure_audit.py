@@ -86,3 +86,25 @@ def test_manuscript_token_scan_counts_without_values(tmp_path):
     report = audit.main(["--manuscript-data", str(tmp_path / "data"), "--out", str(out)])
     assert report["manuscript"]["token_params_found"] == 1 and report["manuscript"]["projects_affected"] == 1
     assert secret not in out.read_text(encoding="utf-8") and "P1-p" not in out.read_text(encoding="utf-8")
+
+
+def test_coverage_section_and_manuscript_counts_without_content(tmp_path):
+    s = _secrets()
+    access, runtime = _write(tmp_path, s)
+    with open(runtime, "a", encoding="utf-8") as fh:
+        fh.write("2026-07-02 10:00:00,000 [WARNING] 1/Main security: [auth] token sent in URL query for /manuscript/image/P/x.png; use the Authorization header\n")
+    data = tmp_path / "data"
+    block = data / "SECRETPID-p" / "manuscript" / "block" / s["title"]
+    block.mkdir(parents=True)
+    (block / "V0.1.json").write_text(json.dumps({s["prompt"]: f'<img src="/x.png?token={s["url_token"]}">'}), encoding="utf-8")
+    out = tmp_path / "r.json"
+    report = audit.main(["--access", str(access), "--runtime", str(runtime), "--manuscript-data", str(data), "--out", str(out)])
+    text = out.read_text(encoding="utf-8")
+    assert [k for k, v in s.items() if v in text] == [] and "SECRETPID" not in text
+    cov = report["coverage"]
+    assert cov["missing_inputs"] == [] and cov["access_log"]["conclusion_possible"] is True
+    assert cov["manuscript_data"]["provided"] and report["manuscript"]["files_with_token_params"] == 1
+    assert report["runtime"]["category_lines"]["query_token_warning"] == 1
+    partial = audit.main(["--runtime", str(runtime), "--out", str(tmp_path / "p.json")])
+    assert partial["coverage"]["missing_inputs"] == ["access_log", "manuscript_data"]
+    assert partial["coverage"]["access_log"]["conclusion_possible"] is False

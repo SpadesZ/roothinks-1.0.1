@@ -27,6 +27,10 @@ const fs=require('fs');
     check(`${mode}: 圖片載入（網址不帶 token）`,loaded>0,{loaded});
     const cookies=await page.context().cookies();
     if(mode==='token'){
+        if(process.env.HOTFIX_SECURE==='1'){
+            check('token: 反向代理情境（應用程式看到 HTTP、SESSION_COOKIE_SECURE=1）票證 cookie 仍是 Secure',
+                cookies.some(c=>c.name.startsWith('rt_img_')&&c.secure),cookies.map(c=>({name:c.name,secure:c.secure})));
+        }
         check('token: 取得限定專案路徑的 HttpOnly 圖片票證',cookies.some(c=>c.name.startsWith('rt_img_')&&c.httpOnly&&c.path===`/manuscript/image/${pid}/`&&!c.value.includes(TOKEN)),cookies.map(c=>({name:c.name,path:c.path,httpOnly:c.httpOnly})));
     }
     const leaking=urls.filter(u=>u.includes(TOKEN)||/[?&](access_token|token)=/.test(u));

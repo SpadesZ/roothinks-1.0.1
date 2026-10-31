@@ -392,6 +392,8 @@ def create_app(test_config=None):
         # 直連 IP 的 demo)必須設 SESSION_COOKIE_SECURE=0,否則 cookie 送不出去,
         # 會導致「CSRF token missing」且完全無法登入。可用 env 覆寫。
         SESSION_COOKIE_SECURE=_to_bool(os.environ.get("SESSION_COOKIE_SECURE"), not is_dev),
+        # 網址參數 token（?access_token=／?token=）。預設 1 相容舊用戶端；遷移完成後設 0（見 RUNBOOK_QUERY_TOKEN_SHUTOFF）。
+        API_QUERY_TOKEN_ALLOWED=_to_bool(os.environ.get("API_QUERY_TOKEN_ALLOWED"), True),
         SESSION_COOKIE_HTTPONLY=True,
         SESSION_COOKIE_SAMESITE="Lax",
         PERMANENT_SESSION_LIFETIME=timedelta(hours=12),

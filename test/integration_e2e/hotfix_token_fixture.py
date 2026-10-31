@@ -27,6 +27,9 @@ PID = "HOTFIX-p"
 config = {"TESTING": True, "WTF_CSRF_ENABLED": False, "RATELIMIT_ENABLED": False, "SECRET_KEY": "synthetic",
           "SQLALCHEMY_DATABASE_URI": f"sqlite:///{root / 'data' / 'app.db'}",
           "SQLALCHEMY_BINDS": {"manuscript": f"sqlite:///{root / 'data' / 'manu.db'}"}}
+if os.environ.get("HOTFIX_SECURE") == "1":
+    # 模擬正式環境：TLS 在反向代理終止，應用程式看到的是 HTTP，但 SESSION_COOKIE_SECURE=1。
+    config["SESSION_COOKIE_SECURE"] = True
 if MODE == "token":
     config.update(AUTH_MODE="none", API_AUTH_ENABLED=True, API_BEARER_TOKENS=[TOKEN], TOKEN_ACL_MAP={TOKEN: {"allowed_pids": [PID]}})
 else:

@@ -367,3 +367,12 @@ Owner 已改採本機主導；新隔離分支 `codex/py312-local-first-integrati
 | 暴露調查工具不得再外洩（H6） | 修補，對抗測試 TESTED | 熱修分支 `test_log_exposure_audit.py`；v1 負向控制洩漏 4／10，v2 洩漏 0 | 需 Owner 在授權副本執行 |
 | 認證 token 不得出現在網址（H7） | 修補，TESTED（單元＋兩種模式真瀏覽器，3.10／3.12） | `test_url_credentials.py`（舊程式 7 失敗）；`security_hotfix_evidence/browser-*.json`；`study_r4f_evidence/browser-*.json` | 已暴露 token 的輪替、舊稿件清理、關閉網址 token |
 | 限定編輯不得經段落出處讀 Study 筆記（F1） | 修補，TESTED | GET 矩陣加 coauthor：前 1 → 後 0（92 路由 × 7 角色）；`study_r4f_evidence/` | — |
+
+## 安全第三輪：發佈準備（2026-10-31）
+
+| 條件 | 判定 | 證據 | 仍開放 |
+|---|---|---|---|
+| 票證 cookie 在反向代理後面是 Secure | 缺口修補，TESTED（紅測試＋真瀏覽器） | `test_url_credentials.py`、`browser-token-secure.json` | 正式環境需走 HTTPS |
+| 網址 token 可關閉（環境變數＋Socket） | 修補，TESTED | `test_url_credentials.py`；`query_token_shutoff_check.py`（切換前後都測過） | Owner 執行輪替與切換 |
+| 舊稿件 token 清理 | 工具＋runbook，合成資料 TESTED | `test_manuscript_credential_cleanup.py` | 正式資料未執行（需授權） |
+| 調查報告只含涵蓋範圍與計數 | TESTED（對抗） | `test_log_exposure_audit.py` | Owner 在授權副本執行 |

@@ -85,7 +85,15 @@ Flow B debug 輸出在 `DATA_ROOT` 不可用時不再寫到 repo `data/`（`Flow
 - 最終狀態：程式凍結 `4fb65e9`（完整回歸 1,620／50／0）；瀏覽器 40／40 於 `c100ac3`；驗證結果文件 `b70599f` 已推送並核對遠端，
   其後只有本接手文件的更新 commit。main、R1、py312 分支遠端 SHA 未變。
 
-## 安全第二輪（2026-10-31，最新）
+## 安全第三輪：發佈準備（2026-10-31，最新）
+
+- 兩條分支都加了：票證 cookie 的 `Secure` 跟隨 `SESSION_COOKIE_SECURE`、`API_QUERY_TOKEN_ALLOWED` 接上環境變數（含 Socket）、
+  `deploy_preflight.py` 新檢查、`query_token_shutoff_check.py`、`manuscript_credential_cleanup.py`、兩份 runbook、調查工具 `coverage`。
+- 本專案**沒有 ProxyFix**：任何依賴 `request.is_secure` 或 `request.scheme` 的新程式碼，在正式環境的反向代理後面都會看到 HTTP。
+- 真瀏覽器的正式環境 cookie 模式：fixture 加 `HOTFIX_SECURE=1`。
+- 清理工具只能在 Owner 授權後、維護窗口中對正式資料執行；備份目錄含 token 原文。
+
+## 安全第二輪（2026-10-31）
 
 - 交付：`SECURITY_ROUND2_DELIVERY_2026-10-31.md`。熱修分支 `b80b94e`（從 main）；後續分支 `codex/study-r4-followup-20261028`（從 R4）。
 - 熱修第二輪改了 `app/security.py`（網址憑證去除、圖片票證）、`manuscript_io.py`（存取時去除 token）、`manuscript_routes.py`

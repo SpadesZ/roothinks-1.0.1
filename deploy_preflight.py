@@ -260,6 +260,20 @@ def _check_security_env(reporter: Reporter, file_env: Dict[str, str]) -> None:
         except Exception as exc:
             reporter.fail("FERNET_KEY", f"invalid Fernet key format: {exc}")
 
+    # 只用 token 的瀏覽器用戶端會拿到圖片票證 cookie；session cookie 也一樣：正式環境必須只走 HTTPS。
+    cookie_secure_raw = _effective_env("SESSION_COOKIE_SECURE", file_env)
+    if cookie_secure_raw and not _to_bool(cookie_secure_raw):
+        reporter.fail("SESSION_COOKIE_SECURE", "is 0: session and image-ticket cookies would be sent over plain HTTP; "
+                      "serve over HTTPS and set 1 (default)")
+    else:
+        reporter.pass_("SESSION_COOKIE_SECURE", f"secure cookies ({cookie_secure_raw or 'default 1'})")
+    query_raw = _effective_env("API_QUERY_TOKEN_ALLOWED", file_env)
+    if query_raw and not _to_bool(query_raw):
+        reporter.pass_("API_QUERY_TOKEN_ALLOWED", "0: URL query tokens rejected")
+    else:
+        reporter.warn("API_QUERY_TOKEN_ALLOWED", f"'{query_raw or 'default 1'}': URL query tokens still accepted; "
+                      "set 0 after the client migration (RUNBOOK_QUERY_TOKEN_SHUTOFF)")
+
     tokens = _effective_env("API_BEARER_TOKENS", file_env)
     if not tokens:
         reporter.fail("API_BEARER_TOKENS", "empty while API auth is enabled")

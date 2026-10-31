@@ -89,6 +89,7 @@ from app.security import (
     get_request_token,
     get_workspace_role,
     image_ticket_cookie_name,
+    image_ticket_cookie_secure,
     issue_image_ticket,
     verify_image_ticket,
     load_json_locked,
@@ -1325,7 +1326,7 @@ def issue_image_session():
     resp = jsonify({'ok': True, 'ticket': True})
     resp.set_cookie(image_ticket_cookie_name(formal_pid), issue_image_ticket(token, formal_pid),
                     max_age=IMAGE_TICKET_TTL, path=f"/manuscript/image/{formal_pid}/", httponly=True,
-                    secure=request.is_secure, samesite="Strict")
+                    secure=image_ticket_cookie_secure(), samesite="Strict")
     return resp
 
 

@@ -33,6 +33,8 @@ CATEGORIES = {
     "prompt_or_user_text": re.compile(r"(?i)(semantic router|prompt|query|user_notes|content)"),
     "paper_title_or_file": re.compile(r"(?i)(title|filename|\.pdf)"),
     "traceback": re.compile(r"Traceback \(most recent call last\)|^\s+File \""),
+    # hotfix H7 之後，舊用戶端仍用網址傳 token 時會記一行不含 token 的警告；遷移到 API_QUERY_TOKEN_ALLOWED=0 前要看這個數字。
+    "query_token_warning": re.compile(r"\[auth\] token sent in URL query"),
 }
 
 
@@ -109,21 +111,47 @@ def scan_runtime(paths):
 def scan_manuscript(data_root):
     """已存稿件（章節版本、草稿、主論文版本）中帶 token 參數的網址：只計數，不輸出值、路徑也只給專案數。"""
     from pathlib import Path
-    files = hits = 0
+    import datetime as _dt
+    files = hits = unreadable = with_hits = 0
     projects = set()
+    mtimes = []
     for path in Path(data_root).glob("*/manuscript/**/*.json"):
         files += 1
         try:
             text = path.read_text(encoding="utf-8", errors="replace")
+            mtimes.append(path.stat().st_mtime)
         except OSError:
+            unreadable += 1
             continue
         n = len(URL_TOKEN.findall(text))
         if n:
             hits += n
+            with_hits += 1
             projects.add(path.relative_to(data_root).parts[0])
-    return {"json_files_scanned": files, "token_params_found": hits, "projects_affected": len(projects),
+    day = lambda t: _dt.datetime.fromtimestamp(t, _dt.timezone.utc).date().isoformat()  # noqa: E731
+    return {"json_files_scanned": files, "unreadable_files": unreadable, "files_with_token_params": with_hits,
+            "files_modified_from": day(min(mtimes)) if mtimes else None,
+            "files_modified_to": day(max(mtimes)) if mtimes else None,
+            "token_params_found": hits, "projects_affected": len(projects),
             "note": "token_params_found > 0：舊前端把 token 寫進了稿件 HTML（<img src>），版本檔、匯出與協作者都可能看過；"
                     "應視為已暴露並考慮輪替。修補後新存檔會去除，讀取舊版時也會去除，但舊檔本身未改寫（需 Owner 授權才清理）。"}
+
+
+def coverage(report):
+    """一眼看出這份報告涵蓋了什麼、缺了什麼；缺的部分一律不能解讀為「沒事」。"""
+    def span(section, start, end):
+        part = report.get(section)
+        if not isinstance(part, dict):
+            return {"provided": False, "conclusion_possible": False}
+        return {"provided": True, "from": part.get(start), "to": part.get(end),
+                "conclusion_possible": bool(part.get(start) and part.get(end))}
+    gaps = [name for name, key in (("access_log", "access"), ("runtime_log", "runtime"), ("manuscript_data", "manuscript"))
+            if not isinstance(report.get(key), dict)]
+    return {"access_log": span("access", "covers_from", "covers_to"),
+            "runtime_log": span("runtime", "covers_from", "covers_to"),
+            "manuscript_data": span("manuscript", "files_modified_from", "files_modified_to"),
+            "missing_inputs": gaps,
+            "note": "涵蓋範圍以外、或沒有提供的輸入，都只能說「無法判斷」，不能說「沒有暴露」。"}
 
 
 def main(argv=None):
@@ -139,6 +167,7 @@ def main(argv=None):
               "access": scan_access(args.access) if args.access else "NOT PROVIDED — 無法判斷是否被呼叫",
               "runtime": scan_runtime(args.runtime) if args.runtime else "NOT PROVIDED — 無法判斷暴露內容",
               "manuscript": scan_manuscript(args.manuscript_data) if args.manuscript_data else "NOT PROVIDED"}
+    report["coverage"] = coverage(report)
     with open(args.out, "w", encoding="utf-8") as fh:
         json.dump(report, fh, ensure_ascii=False, indent=1)
     return report
