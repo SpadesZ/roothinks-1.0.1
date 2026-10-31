@@ -154,3 +154,8 @@
 | 關閉網址 token 的遷移 | [`RUNBOOK_QUERY_TOKEN_SHUTOFF.md`](RUNBOOK_QUERY_TOKEN_SHUTOFF.md)：盤點用戶端 → 重疊輪替 → 切換 → 金絲雀驗證上游日誌 → 回滾。驗證腳本 `query_token_shutoff_check.py` 在切換前（1）與切換後（0）都測過；預期與實際不符時會失敗 |
 | 舊稿件清理 | [`RUNBOOK_MANUSCRIPT_CREDENTIAL_CLEANUP.md`](RUNBOOK_MANUSCRIPT_CREDENTIAL_CLEANUP.md)＋`manuscript_credential_cleanup.py`：預設只演練；套用時先備份再改；以檔案為單位、可還原。**只在合成資料上執行過** |
 | 調查工具涵蓋範圍 | 報告新增 `coverage` 段：每種輸入是否提供、時間範圍、是否能下結論、缺少哪些輸入。新增 `query_token_warning` 計數，以及稿件檔的檔數、時間範圍、無法讀取的檔數。對抗測試仍是 0 洩漏 |
+
+### 第三輪回歸
+
+- Python 3.10 與 3.12：都是 1,137 通過、1 失敗。失敗清單與未修補的 `main` **逐行相同**。
+- 真瀏覽器全部通過：token、session、正式 cookie 模式（`HOTFIX_SECURE=1`）。
