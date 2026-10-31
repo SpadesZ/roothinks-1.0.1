@@ -376,3 +376,12 @@ Owner 已改採本機主導；新隔離分支 `codex/py312-local-first-integrati
 | 網址 token 可關閉（環境變數＋Socket） | 修補，TESTED | `test_url_credentials.py`；`query_token_shutoff_check.py`（切換前後都測過） | Owner 執行輪替與切換 |
 | 舊稿件 token 清理 | 工具＋runbook，合成資料 TESTED | `test_manuscript_credential_cleanup.py` | 正式資料未執行（需授權） |
 | 調查報告只含涵蓋範圍與計數 | TESTED（對抗） | `test_log_exposure_audit.py` | Owner 在授權副本執行 |
+
+## R5（2026-11-01；`codex/study-r5-20261101`，未合併）
+
+| 面向 | 判定 | 證據 | 仍開放 |
+|---|---|---|---|
+| 寫作出處覆蓋（每段狀態、選這段、匯出統計） | TESTED | `test_paragraph_provenance.py`；瀏覽器 | 覆蓋只看文字包含關係，改寫幅度大時需人工重連 |
+| 證據筆記搜尋篩選 | TESTED（瀏覽器） | `study_r5_evidence/browser-journey-after.json` | — |
+| 文獻庫 → Study 直達閱讀 | TESTED（瀏覽器） | 同上 | — |
+| 科學建議報告需要寫入權 | 缺陷修補，TESTED（紅測試） | `test_scientific_review_workflow.py`；`acl-write-matrix-*.json` | PA 無關：與既有「回應報告需寫入權」一致 |
