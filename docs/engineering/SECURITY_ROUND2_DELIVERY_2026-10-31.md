@@ -85,3 +85,7 @@
 - 舊稿件清理 runbook 與工具：`RUNBOOK_MANUSCRIPT_CREDENTIAL_CLEANUP.md`、`manuscript_credential_cleanup.py`。只在合成資料上執行過。
 - 調查工具新增 `coverage` 段。
 - 細節見 `docs/SAI.md` §3.1。
+
+- 第三輪回歸：
+  - R4 後續分支 1,733／50／0；瀏覽器旅程 58／58；token／session／正式 cookie 三種模式全過。
+  - 熱修分支（`73873d0`）在 3.10 與 3.12 都是 1,137 通過，只有 1 個失敗，與 `main` 相同。
