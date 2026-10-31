@@ -1,6 +1,6 @@
 # Roothinks 現行規格與進度入口（唯一入口）
 
-更新日期：2026-10-27。本文件是 SAI 的**唯一維護入口**：說明產品願景、目前真實狀態、未完成事項、路線圖與發佈邊界。
+更新日期：2026-10-31。本文件是 SAI 的**唯一維護入口**：說明產品願景、目前真實狀態、未完成事項、路線圖與發佈邊界。
 不另立 SAI_v1.3、SAI_FINAL 等競爭文件。
 
 ## 0. 文件權威與版本關係（不變）
@@ -50,8 +50,9 @@ RootThinks 的目標是一個**整合的人機協作科學研究工作區**：AI
 
 全部位於隔離分支上，**沒有任何一項是 RELEASED**。兩條交付線：
 
-- **安全熱修候選** `codex/security-hotfix-log-isolation-20261027`（`323ca0b`）：**直接從 `main` 開出**，只含兩個跨專案日誌外洩修補與測試，可以獨立審查與合併，不依賴任何提議修訂。見 [熱修文件](engineering/SECURITY_HOTFIX_LOG_ISOLATION_2026-10-27.md)（只在該分支）。
+- **安全熱修候選** `codex/security-hotfix-log-isolation-20261027`（`b80b94e`）：**直接從 `main` 開出**，只含安全修補與測試（H1／H2 日誌外洩；第二輪 H6 調查工具不含日誌原文、H7 Manuscript token 不再進網址），可以獨立審查與合併，不依賴任何提議修訂。見 [熱修文件](engineering/SECURITY_HOTFIX_LOG_ISOLATION_2026-10-27.md)（只在該分支）。
 - **整合開發候選** `codex/study-coresearch-r4-20261027`：I09 → Study R4 的線性堆疊（下表）。
+- **R4 後續候選** `codex/study-r4-followup-20261028`：R4 ＋ H6／H7 移植 ＋ F1（限定編輯不能經段落出處讀 Study 私人筆記）。見 [第二輪交付](engineering/SECURITY_ROUND2_DELIVERY_2026-10-31.md)。
 
 | 里程碑 | 狀態 | 證據與 commit |
 |---|---|---|
@@ -91,7 +92,8 @@ RootThinks 的目標是一個**整合的人機協作科學研究工作區**：AI
 - **隔離分支不等於已合併或已部署**；本文件第 3 節沒有任何 RELEASED。
 - **歷史暴露未知**：兩個日誌外洩從 main 初始 commit（2026-06-30）就存在。工程端沒有、也不應取得正式日誌，所以**不能宣稱沒有發生過**。
   Owner／維運需要在正式日誌副本上執行 `scripts/security/log_exposure_audit.py`（熱修分支）。
-- **相關但未修**：Manuscript 前端把 token 放在網址參數，gunicorn 存取日誌會記到 token 原文（見熱修文件 §6）。
+- **網址 token 已修，但過去的暴露未知**：舊前端把 token 寫進圖片網址與稿件 HTML。修補後不再產生，存檔／讀取會去除，存取日誌會遮罩；
+  但已存的舊稿件檔與過去的存取日誌仍可能有 token 原文。**應視為已暴露**，是否輪替、是否清理舊檔要 Owner 決定。
 - 審閱範圍：依 Owner 建議，R4 起教授審閱身分看不到文獻庫閱讀筆記；**仍屬 PA-01 提議**，未核准前不是規範。舊 MentorLink 導師預設維持現有存取（`keep`）。
 - R4 改變了 editor 的權限：不能再刪除論文（會刪原始 PDF）或別人的 Study 對話（§8 PA-04 提議）。
 - 其他：Study 的 `localStorage` 標記尚未遷移到伺服器錨點；Reflow 與圖／表／公式錨點不完整；
@@ -102,7 +104,7 @@ RootThinks 的目標是一個**整合的人機協作科學研究工作區**：AI
 
 | 階段 | 內容 | 前置條件 | 現況 |
 |---|---|---|---|
-| H 安全熱修 | 審查並合併 `codex/security-hotfix-log-isolation-20261027`；部署前確認有 `system_role=admin` 帳號；部署後在正式日誌副本跑暴露調查工具 | Owner 審查 | **候選已備妥**；不得自行 merge／部署 |
+| H 安全熱修 | 審查並合併 `codex/security-hotfix-log-isolation-20261027`；部署前確認有 `system_role=admin` 帳號；部署後在授權的日誌與稿件副本跑暴露調查工具，再決定 token 輪替 | Owner 審查 | **候選已備妥（第二輪）**；不得自行 merge／部署／輪替 |
 | 0 獨立審查 | 對隔離堆疊（I09 → Study R4）做獨立稽核；Owner 核准 §8 提議修訂 | — | 等待 Owner／稽核 |
 | 1 合併候選 | 選定要進 `main` 的範圍（例如資料防護、3.12 開發環境、Study R1–R4）；合併前在正式資料副本跑 `scripts/repro/data_readiness.py`；在乾淨環境重跑完整回歸與瀏覽器 | 階段 0、H | 未開始；**不得自行 merge** |
 | 2 品質量測 | Study 真模型評估（協議 v2 已登記）＋人類評分；翻譯保護層在真 NLLB 上量測佔位符損壞率 | 產品憑證與預算；評分者；可執行 NLLB 的環境 | BLOCKED（憑證、環境） |

@@ -1,6 +1,6 @@
 # Cloud primary 接手文件
 
-溝通及實作報告用繁體中文。**每完成一步就更新本文件。** 目前狀態：**R4 交付兩個結果**：（A）從 `main` 開出的安全熱修候選、（B）R4 整合開發候選。都未合併、未部署，停在 Owner 決定點。規格與整體狀態以 [`docs/SAI.md`](../SAI.md) 為唯一入口。
+溝通及實作報告用繁體中文。**每完成一步就更新本文件。** 目前狀態：**安全第二輪完成**：熱修候選（從 `main`，`b80b94e`）與 R4 後續候選（`codex/study-r4-followup-20261028`）。都未合併、未部署、未輪替憑證，停在 Owner 決定點。規格與整體狀態以 [`docs/SAI.md`](../SAI.md) 為唯一入口。
 
 最後完整驗證點：R4 `457d887`，1,705 通過／50 略過／0 失敗（見下方 R4 段）；更早的 `aa8ff3e`（R2 資料防護）為 1,553 通過／50 略過／0 失敗。
 已推送個人倉庫（`7c905b5` 起）；推送前後核對，main、整合分支與其他所有分支的遠端 SHA 都沒變。
@@ -85,7 +85,17 @@ Flow B debug 輸出在 `DATA_ROOT` 不可用時不再寫到 repo `data/`（`Flow
 - 最終狀態：程式凍結 `4fb65e9`（完整回歸 1,620／50／0）；瀏覽器 40／40 於 `c100ac3`；驗證結果文件 `b70599f` 已推送並核對遠端，
   其後只有本接手文件的更新 commit。main、R1、py312 分支遠端 SHA 未變。
 
-## R4（2026-10-27，最新）
+## 安全第二輪（2026-10-31，最新）
+
+- 交付：`SECURITY_ROUND2_DELIVERY_2026-10-31.md`。熱修分支 `b80b94e`（從 main）；後續分支 `codex/study-r4-followup-20261028`（從 R4）。
+- 熱修第二輪改了 `app/security.py`（網址憑證去除、圖片票證）、`manuscript_io.py`（存取時去除 token）、`manuscript_routes.py`
+  （`/manuscript/api/image_session`、圖片路由）、三個 Manuscript JS、`app/gunicorn_logging.py`、Dockerfile CMD。
+- 移植到 R4 時 `security.py` 會有衝突：R4 已有 `require_system_admin`，**只保留一份**；`check_and_save_json` 路徑要先去除 token。
+- 真瀏覽器 token 測試：`HOTFIX_MODE=token|session python test/integration_e2e/hotfix_token_fixture.py`，再跑 `hotfix_token_browser.cjs`（兩條分支都可跑）。
+- GET 矩陣現在有 7 個角色（加 coauthor），探測網址帶 `section=introduction`；新的稿件端點如果回傳 Study 內容，要用 `can_access_module(uid, pid, "study")` 擋。
+- 背景跑 pytest 時要給絕對路徑；`cd && …` 在背景指令裡曾經沒有生效（找不到 test/unit，exit 4）。
+
+## R4（2026-10-27）
 
 - 交付：`STUDY_R4_DELIVERY_2026-10-27.md`；證據：`study_r4_evidence/`。
 - 最終狀態：R4 完整回歸 `457d887` **1,705／50／0**；瀏覽器 58／58；熱修 `323ca0b`（3.10 與 3.12 都只有 main 既有的 1 個失敗）。兩條分支都已推送並核對；main `9655546` 未變。

@@ -359,3 +359,11 @@ Owner 已改採本機主導；新隔離分支 `codex/py312-local-first-integrati
 | COL／寫作出處（段落 ↔ 證據筆記／自由寫作） | IMPLEMENTED、TESTED（瀏覽器 58／58） | `test_paragraph_provenance.py`；`study_r4_evidence/browser/` | 與嚴格段落契約尚未合流 |
 | 翻譯保護層邊界、閱讀數字提示 | TESTED（模擬＋瀏覽器） | `translation-guard-benchmark-r4.json` | 真引擎 NOT MEASURED |
 | 可重現評估、遷移就緒 | IMPLEMENTED、TESTED | `offline_bundle/`（verify ok）；`test_repro_readiness.py` | 就緒檢查未在正式副本執行 |
+
+## 安全第二輪（2026-10-31）
+
+| 需求／面向 | 判定 | 證據 | 仍開放 |
+|---|---|---|---|
+| 暴露調查工具不得再外洩（H6） | 修補，對抗測試 TESTED | 熱修分支 `test_log_exposure_audit.py`；v1 負向控制洩漏 4／10，v2 洩漏 0 | 需 Owner 在授權副本執行 |
+| 認證 token 不得出現在網址（H7） | 修補，TESTED（單元＋兩種模式真瀏覽器，3.10／3.12） | `test_url_credentials.py`（舊程式 7 失敗）；`security_hotfix_evidence/browser-*.json`；`study_r4f_evidence/browser-*.json` | 已暴露 token 的輪替、舊稿件清理、關閉網址 token |
+| 限定編輯不得經段落出處讀 Study 筆記（F1） | 修補，TESTED | GET 矩陣加 coauthor：前 1 → 後 0（92 路由 × 7 角色）；`study_r4f_evidence/` | — |
