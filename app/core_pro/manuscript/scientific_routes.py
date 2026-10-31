@@ -78,7 +78,8 @@ def save_advisory(pid,section,text,sources,actor_id,*,required_conditions='',ori
 
 @bp.route('/api/scientific/assess',methods=['POST'])
 def scientific_assess():
-    data=_json();pid=_project(data.get('pid'));section=_section(pid,data.get('section'))
+    # R5：建議報告會存進研究歷史（RevisionLog），屬於寫入；與回應報告同樣要求本章寫入權。審閱者仍可讀報告。
+    data=_json();pid=_project(data.get('pid'));section=_section(pid,data.get('section'),write=True)
     choices=data.get('evidence',[])
     if not isinstance(choices,list) or len(choices)>8:raise BadRequest('最多選八份證據。')
     sources=[]

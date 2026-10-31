@@ -157,3 +157,11 @@ def test_revocation_during_comparison_prevents_new_advisory_persistence(workflow
     finally:
         with app.app_context():
             db.session.add(WorkspaceMember(pid=PID,user_id=ids['editor'],role='editor'));db.session.commit()
+
+
+def test_viewer_cannot_create_advisory_reports_but_can_read_them(workflow):
+    """R5 寫入矩陣發現：建議報告會存進研究歷史，原本只檢查讀取權，viewer 也能新增。現在與回應同樣需要本章寫入權。"""
+    assert assess(workflow,actor='viewer').status_code==403
+    report=assess(workflow).json
+    viewer=client(workflow[0],'viewer')
+    assert viewer.get(f'/manuscript/api/scientific/reports/{report["report_id"]}?pid={PID}').status_code==200

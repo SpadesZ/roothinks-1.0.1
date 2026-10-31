@@ -97,9 +97,9 @@ def fingerprint():
     return h.hexdigest()
 
 
-def payload(ids, conv, note_id, pid):
+def payload(ids, conv, note_id, pid, section="introduction"):
     return {"pid": pid, "project_id": pid, "paper_id": base.PAPER, "paper_ids": [base.PAPER], "conv_id": conv,
-            "note_id": note_id, "suggestion_id": "s1", "section_key": "introduction", "block_key": "introduction",
+            "note_id": note_id, "suggestion_id": "s1", "section_key": section, "block_key": section, "section": section,
             "content": "MUTATION_PROBE", "text": "MUTATION_PROBE", "notes": "MUTATION_PROBE", "title": "MUTATION_PROBE",
             "name": "MUTATION_PROBE", "html": "<p>MUTATION_PROBE</p>", "body": "MUTATION_PROBE", "message": "MUTATION_PROBE",
             "role": "owner", "username": "legacymentor", "email": "outsider@acl.local", "kind": "team",
@@ -135,11 +135,15 @@ def run():
             attempts.append(("editor", url, base.PID))
         # 間接存取：外人以自己的 ACLP2 為 pid，其他 id 指向 ACLP1 的物件。
         attempts.append(("outsider-indirect", url.replace(base.PID, base.OTHER), base.OTHER))
+        # 限定編輯（R5）：只被指派 introduction；對沒被指派的 discussion 動手，任何改變都是發現。
+        attempts.append(("coauthor", url.replace("/introduction", "/discussion"), base.PID))
         for name, target, pid in attempts:
             client = base.login(app, name.split("-")[0])
             before = fingerprint()
             try:
-                resp = send(client, method, target + ("" if "?" in target else "?") + f"&pid={pid}", payload(ids, conv, note_id, pid))
+                section = "discussion" if name == "coauthor" else "introduction"
+                resp = send(client, method, target + ("" if "?" in target else "?") + f"&pid={pid}",
+                            payload(ids, conv, note_id, pid, section))
                 status, leaked = resp.status_code, leaks(resp)
             except Exception as exc:  # 在探測參數下崩潰也記錄
                 status, leaked = "exception", []
@@ -148,7 +152,7 @@ def run():
             rows.append({"rule": rule, "method": method, "endpoint": endpoint, "role": name, "status": status,
                          "mutated_aclp1": mutated, "leaks": leaked})
             if mutated or leaked:
-                severity = ("cross-project" if name.startswith("outsider") else
+                severity = ("cross-project" if name.startswith("outsider") else "section-scope" if name == "coauthor" else
                             "privilege" if name == "editor" else "viewer-write")
                 expected = (not leaked) and name in EXPECTED.get((rule, method), ())
                 findings.append({"severity": "expected-by-design" if expected else severity, "role": name, "method": method,
