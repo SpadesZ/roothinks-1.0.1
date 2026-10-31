@@ -181,8 +181,13 @@ def link_issues(pid, link, notes_by_id, latest_text, anchor_status):
     return issues
 
 
-def describe(pid, links, notes, anchor_status, redact_unshared=False):
-    """把連結加上目前狀態；redact_unshared=True（教授審閱身分）時，未請求審閱的筆記只顯示「有連結」。"""
+def describe(pid, links, notes, anchor_status, redact_unshared=False, redact_all=False):
+    """把連結加上目前狀態。
+
+    redact_unshared=True（教授審閱身分）：未請求審閱的筆記只顯示「有連結」。
+    redact_all=True（進不了 Study 的人，例如限定編輯 coauthor）：所有筆記內容都只顯示「有連結」，
+    段落出處不能變成讀 Study 筆記的側門。段落文字、類型、需要重新核對的提示照常顯示。
+    """
     notes_by_id = {n.get("note_id"): n for n in notes}
     latest = {}
     out = []
@@ -194,7 +199,9 @@ def describe(pid, links, notes, anchor_status, redact_unshared=False):
         item["latest_s_ver"] = latest[section][0]
         item["issues"] = [] if link.get("retracted") else link_issues(pid, link, notes_by_id, latest[section][1], anchor_status)
         item["issue_labels"] = [ISSUE_LABELS[i] for i in item["issues"]]
-        if link.get("kind") == "evidence_note" and redact_unshared:
+        if link.get("kind") == "evidence_note" and redact_all:
+            item["note"] = {"hidden": True}
+        elif link.get("kind") == "evidence_note" and redact_unshared:
             current = notes_by_id.get((link.get("note") or {}).get("note_id"))
             if not current or (current.get("review") or {}).get("state") != "requested":
                 item["note"] = {"hidden": True}

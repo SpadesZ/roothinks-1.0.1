@@ -26,7 +26,7 @@ SENTINELS = {
     'paq_chat': 'SENT_PAQ_CHAT', 'manuscript_section': 'SENT_MANUSCRIPT_SECTION', 'runtime_log': 'SENT_RUNTIME_LOG',
     'other_project_log': 'SENT_OTHER_PROJECT_LOG',
 }
-ROLES = ('owner', 'editor', 'prof', 'legacymentor', 'teamviewer', 'outsider')
+ROLES = ('owner', 'editor', 'prof', 'legacymentor', 'teamviewer', 'outsider', 'coauthor')
 
 
 def build_app():
@@ -72,6 +72,10 @@ def seed(app):
             db.session.add(u)
             db.session.flush()
             ids[name] = u.id
+        from app.models import ChapterAssignment
+        # 限定編輯：只被指派 introduction；進不了 Study／Literature／PAQ（F1）。
+        db.session.add_all([WorkspaceMember(user_id=ids['coauthor'], pid=PID, role='coauthor'),
+                            ChapterAssignment(pid=PID, section_key='introduction', user_id=ids['coauthor'])])
         db.session.add_all([WorkspaceMember(user_id=ids['owner'], pid=PID, role='owner'),
                             WorkspaceMember(user_id=ids['editor'], pid=PID, role='editor'),
                             WorkspaceMember(user_id=ids['legacymentor'], pid=PID, role='viewer'),
@@ -117,6 +121,11 @@ def seed(app):
         fh.write(f"2026-10-26 10:00:00,000 [INFO] 1/MainThread x [pid=aclp2]: [Flow B] run_translation mentions {PID} {SENTINELS['other_project_log']}\n")
         # 未標記的舊格式行：不論內容都不給專案成員。
         fh.write(f"[2026-10-26] INFO [Flow B] run_translation pid={PID} legacy {SENTINELS['other_project_log']}\n")
+    # R4 段落出處：introduction 的段落連到含未分享哨兵的證據筆記（coauthor 讀得到這一章，但不得藉此讀到 Study 筆記）。
+    linked = owner.post('/manuscript/api/provenance/link', json={'pid': PID, 'section': 'introduction', 'base_rev': 0,
+                                                                  'kind': 'evidence_note', 'note_id': r.json['note']['note_id'],
+                                                                  'paragraph_text': SENTINELS['manuscript_section']})
+    assert linked.status_code == 201, linked.get_data(as_text=True)
     return ids, conv
 
 
@@ -138,7 +147,7 @@ def run():
     rows = []
     for rule in rules:
         base = fill(rule, ids, conv)
-        variants = [base] if '<pid>' in rule else [base, base + ('&' if '?' in base else '?') + f'pid={PID}&paper_id={PAPER}']
+        variants = [base] if '<pid>' in rule else [base, base + ('&' if '?' in base else '?') + f'pid={PID}&paper_id={PAPER}&section=introduction']
         for url in variants:
             row = {'rule': rule, 'url': url, 'roles': {}}
             for name, client in clients.items():
@@ -159,6 +168,9 @@ def run():
                 findings.append({'severity': 'cross-project', 'role': name, 'url': row['url'], 'leaks': res['leaks']})
             elif name == 'outsider':
                 findings.append({'severity': 'cross-project', 'role': name, 'url': row['url'], 'leaks': res['leaks']})
+            elif name == 'coauthor' and set(res['leaks']) - {'manuscript_section'}:
+                # 限定編輯只該讀到被指派章節的稿件
+                findings.append({'severity': 'section-scope', 'role': name, 'url': row['url'], 'leaks': res['leaks']})
             elif name == 'prof' and set(res['leaks']) - {'manuscript_section'}:
                 findings.append({'severity': 'review-scope', 'role': name, 'url': row['url'], 'leaks': res['leaks']})
             elif name in ('teamviewer', 'legacymentor') and 'runtime_log' in res['leaks']:

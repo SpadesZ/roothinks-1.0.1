@@ -1,0 +1,5279 @@
+{
+ "routes": 92,
+ "requests": 1064,
+ "findings": [],
+ "rows": [
+  {
+   "rule": "/",
+   "url": "/",
+   "roles": {
+    "owner": {
+     "status": 200,
+     "leaks": []
+    },
+    "editor": {
+     "status": 200,
+     "leaks": []
+    },
+    "prof": {
+     "status": 200,
+     "leaks": []
+    },
+    "legacymentor": {
+     "status": 200,
+     "leaks": []
+    },
+    "teamviewer": {
+     "status": 200,
+     "leaks": []
+    },
+    "outsider": {
+     "status": 200,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 200,
+     "leaks": []
+    }
+   }
+  },
+  {
+   "rule": "/",
+   "url": "/?pid=ACLP1-p&paper_id=paper1&section=introduction",
+   "roles": {
+    "owner": {
+     "status": 200,
+     "leaks": []
+    },
+    "editor": {
+     "status": 200,
+     "leaks": []
+    },
+    "prof": {
+     "status": 200,
+     "leaks": []
+    },
+    "legacymentor": {
+     "status": 200,
+     "leaks": []
+    },
+    "teamviewer": {
+     "status": 200,
+     "leaks": []
+    },
+    "outsider": {
+     "status": 200,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 200,
+     "leaks": []
+    }
+   }
+  },
+  {
+   "rule": "/api/auth/me",
+   "url": "/api/auth/me",
+   "roles": {
+    "owner": {
+     "status": 200,
+     "leaks": []
+    },
+    "editor": {
+     "status": 200,
+     "leaks": []
+    },
+    "prof": {
+     "status": 200,
+     "leaks": []
+    },
+    "legacymentor": {
+     "status": 200,
+     "leaks": []
+    },
+    "teamviewer": {
+     "status": 200,
+     "leaks": []
+    },
+    "outsider": {
+     "status": 200,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 200,
+     "leaks": []
+    }
+   }
+  },
+  {
+   "rule": "/api/auth/me",
+   "url": "/api/auth/me?pid=ACLP1-p&paper_id=paper1&section=introduction",
+   "roles": {
+    "owner": {
+     "status": 200,
+     "leaks": []
+    },
+    "editor": {
+     "status": 200,
+     "leaks": []
+    },
+    "prof": {
+     "status": 200,
+     "leaks": []
+    },
+    "legacymentor": {
+     "status": 200,
+     "leaks": []
+    },
+    "teamviewer": {
+     "status": 200,
+     "leaks": []
+    },
+    "outsider": {
+     "status": 200,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 200,
+     "leaks": []
+    }
+   }
+  },
+  {
+   "rule": "/api/collaboration/invitations",
+   "url": "/api/collaboration/invitations",
+   "roles": {
+    "owner": {
+     "status": 200,
+     "leaks": []
+    },
+    "editor": {
+     "status": 200,
+     "leaks": []
+    },
+    "prof": {
+     "status": 200,
+     "leaks": []
+    },
+    "legacymentor": {
+     "status": 200,
+     "leaks": []
+    },
+    "teamviewer": {
+     "status": 200,
+     "leaks": []
+    },
+    "outsider": {
+     "status": 200,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 200,
+     "leaks": []
+    }
+   }
+  },
+  {
+   "rule": "/api/collaboration/invitations",
+   "url": "/api/collaboration/invitations?pid=ACLP1-p&paper_id=paper1&section=introduction",
+   "roles": {
+    "owner": {
+     "status": 200,
+     "leaks": []
+    },
+    "editor": {
+     "status": 200,
+     "leaks": []
+    },
+    "prof": {
+     "status": 200,
+     "leaks": []
+    },
+    "legacymentor": {
+     "status": 200,
+     "leaks": []
+    },
+    "teamviewer": {
+     "status": 200,
+     "leaks": []
+    },
+    "outsider": {
+     "status": 200,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 200,
+     "leaks": []
+    }
+   }
+  },
+  {
+   "rule": "/api/collaboration/profile",
+   "url": "/api/collaboration/profile",
+   "roles": {
+    "owner": {
+     "status": 200,
+     "leaks": []
+    },
+    "editor": {
+     "status": 200,
+     "leaks": []
+    },
+    "prof": {
+     "status": 200,
+     "leaks": []
+    },
+    "legacymentor": {
+     "status": 200,
+     "leaks": []
+    },
+    "teamviewer": {
+     "status": 200,
+     "leaks": []
+    },
+    "outsider": {
+     "status": 200,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 200,
+     "leaks": []
+    }
+   }
+  },
+  {
+   "rule": "/api/collaboration/profile",
+   "url": "/api/collaboration/profile?pid=ACLP1-p&paper_id=paper1&section=introduction",
+   "roles": {
+    "owner": {
+     "status": 200,
+     "leaks": []
+    },
+    "editor": {
+     "status": 200,
+     "leaks": []
+    },
+    "prof": {
+     "status": 200,
+     "leaks": []
+    },
+    "legacymentor": {
+     "status": 200,
+     "leaks": []
+    },
+    "teamviewer": {
+     "status": 200,
+     "leaks": []
+    },
+    "outsider": {
+     "status": 200,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 200,
+     "leaks": []
+    }
+   }
+  },
+  {
+   "rule": "/api/collaboration/project/<pid>/invitations",
+   "url": "/api/collaboration/project/ACLP1-p/invitations",
+   "roles": {
+    "owner": {
+     "status": 200,
+     "leaks": []
+    },
+    "editor": {
+     "status": 403,
+     "leaks": []
+    },
+    "prof": {
+     "status": 403,
+     "leaks": []
+    },
+    "legacymentor": {
+     "status": 403,
+     "leaks": []
+    },
+    "teamviewer": {
+     "status": 403,
+     "leaks": []
+    },
+    "outsider": {
+     "status": 403,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 403,
+     "leaks": []
+    }
+   }
+  },
+  {
+   "rule": "/api/literature/bootstrap",
+   "url": "/api/literature/bootstrap",
+   "roles": {
+    "owner": {
+     "status": 200,
+     "leaks": []
+    },
+    "editor": {
+     "status": 200,
+     "leaks": []
+    },
+    "prof": {
+     "status": 200,
+     "leaks": []
+    },
+    "legacymentor": {
+     "status": 200,
+     "leaks": []
+    },
+    "teamviewer": {
+     "status": 200,
+     "leaks": []
+    },
+    "outsider": {
+     "status": 200,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 403,
+     "leaks": []
+    }
+   }
+  },
+  {
+   "rule": "/api/literature/bootstrap",
+   "url": "/api/literature/bootstrap?pid=ACLP1-p&paper_id=paper1&section=introduction",
+   "roles": {
+    "owner": {
+     "status": 200,
+     "leaks": []
+    },
+    "editor": {
+     "status": 200,
+     "leaks": []
+    },
+    "prof": {
+     "status": 200,
+     "leaks": []
+    },
+    "legacymentor": {
+     "status": 200,
+     "leaks": []
+    },
+    "teamviewer": {
+     "status": 200,
+     "leaks": []
+    },
+    "outsider": {
+     "status": 403,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 403,
+     "leaks": []
+    }
+   }
+  },
+  {
+   "rule": "/api/literature/chat/history",
+   "url": "/api/literature/chat/history",
+   "roles": {
+    "owner": {
+     "status": 404,
+     "leaks": []
+    },
+    "editor": {
+     "status": 404,
+     "leaks": []
+    },
+    "prof": {
+     "status": 404,
+     "leaks": []
+    },
+    "legacymentor": {
+     "status": 404,
+     "leaks": []
+    },
+    "teamviewer": {
+     "status": 404,
+     "leaks": []
+    },
+    "outsider": {
+     "status": 404,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 403,
+     "leaks": []
+    }
+   }
+  },
+  {
+   "rule": "/api/literature/chat/history",
+   "url": "/api/literature/chat/history?pid=ACLP1-p&paper_id=paper1&section=introduction",
+   "roles": {
+    "owner": {
+     "status": 200,
+     "leaks": [
+      "literature_chat"
+     ]
+    },
+    "editor": {
+     "status": 200,
+     "leaks": [
+      "literature_chat"
+     ]
+    },
+    "prof": {
+     "status": 403,
+     "leaks": []
+    },
+    "legacymentor": {
+     "status": 200,
+     "leaks": [
+      "literature_chat"
+     ]
+    },
+    "teamviewer": {
+     "status": 200,
+     "leaks": [
+      "literature_chat"
+     ]
+    },
+    "outsider": {
+     "status": 403,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 403,
+     "leaks": []
+    }
+   }
+  },
+  {
+   "rule": "/api/literature/context_chain/brief",
+   "url": "/api/literature/context_chain/brief",
+   "roles": {
+    "owner": {
+     "status": 404,
+     "leaks": []
+    },
+    "editor": {
+     "status": 404,
+     "leaks": []
+    },
+    "prof": {
+     "status": 404,
+     "leaks": []
+    },
+    "legacymentor": {
+     "status": 404,
+     "leaks": []
+    },
+    "teamviewer": {
+     "status": 404,
+     "leaks": []
+    },
+    "outsider": {
+     "status": 404,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 403,
+     "leaks": []
+    }
+   }
+  },
+  {
+   "rule": "/api/literature/context_chain/brief",
+   "url": "/api/literature/context_chain/brief?pid=ACLP1-p&paper_id=paper1&section=introduction",
+   "roles": {
+    "owner": {
+     "status": 200,
+     "leaks": []
+    },
+    "editor": {
+     "status": 200,
+     "leaks": []
+    },
+    "prof": {
+     "status": 200,
+     "leaks": []
+    },
+    "legacymentor": {
+     "status": 200,
+     "leaks": []
+    },
+    "teamviewer": {
+     "status": 200,
+     "leaks": []
+    },
+    "outsider": {
+     "status": 403,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 403,
+     "leaks": []
+    }
+   }
+  },
+  {
+   "rule": "/api/literature/context_chain/hybrid_query",
+   "url": "/api/literature/context_chain/hybrid_query",
+   "roles": {
+    "owner": {
+     "status": 404,
+     "leaks": []
+    },
+    "editor": {
+     "status": 404,
+     "leaks": []
+    },
+    "prof": {
+     "status": 404,
+     "leaks": []
+    },
+    "legacymentor": {
+     "status": 404,
+     "leaks": []
+    },
+    "teamviewer": {
+     "status": 404,
+     "leaks": []
+    },
+    "outsider": {
+     "status": 404,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 403,
+     "leaks": []
+    }
+   }
+  },
+  {
+   "rule": "/api/literature/context_chain/hybrid_query",
+   "url": "/api/literature/context_chain/hybrid_query?pid=ACLP1-p&paper_id=paper1&section=introduction",
+   "roles": {
+    "owner": {
+     "status": 200,
+     "leaks": []
+    },
+    "editor": {
+     "status": 200,
+     "leaks": []
+    },
+    "prof": {
+     "status": 200,
+     "leaks": []
+    },
+    "legacymentor": {
+     "status": 200,
+     "leaks": []
+    },
+    "teamviewer": {
+     "status": 200,
+     "leaks": []
+    },
+    "outsider": {
+     "status": 403,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 403,
+     "leaks": []
+    }
+   }
+  },
+  {
+   "rule": "/api/literature/context_chain/topk",
+   "url": "/api/literature/context_chain/topk",
+   "roles": {
+    "owner": {
+     "status": 404,
+     "leaks": []
+    },
+    "editor": {
+     "status": 404,
+     "leaks": []
+    },
+    "prof": {
+     "status": 404,
+     "leaks": []
+    },
+    "legacymentor": {
+     "status": 404,
+     "leaks": []
+    },
+    "teamviewer": {
+     "status": 404,
+     "leaks": []
+    },
+    "outsider": {
+     "status": 404,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 403,
+     "leaks": []
+    }
+   }
+  },
+  {
+   "rule": "/api/literature/context_chain/topk",
+   "url": "/api/literature/context_chain/topk?pid=ACLP1-p&paper_id=paper1&section=introduction",
+   "roles": {
+    "owner": {
+     "status": 200,
+     "leaks": []
+    },
+    "editor": {
+     "status": 200,
+     "leaks": []
+    },
+    "prof": {
+     "status": 200,
+     "leaks": []
+    },
+    "legacymentor": {
+     "status": 200,
+     "leaks": []
+    },
+    "teamviewer": {
+     "status": 200,
+     "leaks": []
+    },
+    "outsider": {
+     "status": 403,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 403,
+     "leaks": []
+    }
+   }
+  },
+  {
+   "rule": "/api/literature/debug/flowb_probe",
+   "url": "/api/literature/debug/flowb_probe",
+   "roles": {
+    "owner": {
+     "status": 400,
+     "leaks": []
+    },
+    "editor": {
+     "status": 400,
+     "leaks": []
+    },
+    "prof": {
+     "status": 400,
+     "leaks": []
+    },
+    "legacymentor": {
+     "status": 400,
+     "leaks": []
+    },
+    "teamviewer": {
+     "status": 400,
+     "leaks": []
+    },
+    "outsider": {
+     "status": 400,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 403,
+     "leaks": []
+    }
+   }
+  },
+  {
+   "rule": "/api/literature/debug/flowb_probe",
+   "url": "/api/literature/debug/flowb_probe?pid=ACLP1-p&paper_id=paper1&section=introduction",
+   "roles": {
+    "owner": {
+     "status": 200,
+     "leaks": []
+    },
+    "editor": {
+     "status": 200,
+     "leaks": []
+    },
+    "prof": {
+     "status": 200,
+     "leaks": []
+    },
+    "legacymentor": {
+     "status": 200,
+     "leaks": []
+    },
+    "teamviewer": {
+     "status": 200,
+     "leaks": []
+    },
+    "outsider": {
+     "status": 403,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 403,
+     "leaks": []
+    }
+   }
+  },
+  {
+   "rule": "/api/literature/debug/runtime_log_tail",
+   "url": "/api/literature/debug/runtime_log_tail",
+   "roles": {
+    "owner": {
+     "status": 403,
+     "leaks": []
+    },
+    "editor": {
+     "status": 403,
+     "leaks": []
+    },
+    "prof": {
+     "status": 403,
+     "leaks": []
+    },
+    "legacymentor": {
+     "status": 403,
+     "leaks": []
+    },
+    "teamviewer": {
+     "status": 403,
+     "leaks": []
+    },
+    "outsider": {
+     "status": 403,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 403,
+     "leaks": []
+    }
+   }
+  },
+  {
+   "rule": "/api/literature/debug/runtime_log_tail",
+   "url": "/api/literature/debug/runtime_log_tail?pid=ACLP1-p&paper_id=paper1&section=introduction",
+   "roles": {
+    "owner": {
+     "status": 403,
+     "leaks": []
+    },
+    "editor": {
+     "status": 403,
+     "leaks": []
+    },
+    "prof": {
+     "status": 403,
+     "leaks": []
+    },
+    "legacymentor": {
+     "status": 403,
+     "leaks": []
+    },
+    "teamviewer": {
+     "status": 403,
+     "leaks": []
+    },
+    "outsider": {
+     "status": 403,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 403,
+     "leaks": []
+    }
+   }
+  },
+  {
+   "rule": "/api/literature/get_block_json",
+   "url": "/api/literature/get_block_json",
+   "roles": {
+    "owner": {
+     "status": 400,
+     "leaks": []
+    },
+    "editor": {
+     "status": 400,
+     "leaks": []
+    },
+    "prof": {
+     "status": 400,
+     "leaks": []
+    },
+    "legacymentor": {
+     "status": 400,
+     "leaks": []
+    },
+    "teamviewer": {
+     "status": 400,
+     "leaks": []
+    },
+    "outsider": {
+     "status": 400,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 403,
+     "leaks": []
+    }
+   }
+  },
+  {
+   "rule": "/api/literature/get_block_json",
+   "url": "/api/literature/get_block_json?pid=ACLP1-p&paper_id=paper1&section=introduction",
+   "roles": {
+    "owner": {
+     "status": 503,
+     "leaks": []
+    },
+    "editor": {
+     "status": 503,
+     "leaks": []
+    },
+    "prof": {
+     "status": 503,
+     "leaks": []
+    },
+    "legacymentor": {
+     "status": 503,
+     "leaks": []
+    },
+    "teamviewer": {
+     "status": 503,
+     "leaks": []
+    },
+    "outsider": {
+     "status": 403,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 403,
+     "leaks": []
+    }
+   }
+  },
+  {
+   "rule": "/api/literature/get_block_manifest",
+   "url": "/api/literature/get_block_manifest",
+   "roles": {
+    "owner": {
+     "status": 400,
+     "leaks": []
+    },
+    "editor": {
+     "status": 400,
+     "leaks": []
+    },
+    "prof": {
+     "status": 400,
+     "leaks": []
+    },
+    "legacymentor": {
+     "status": 400,
+     "leaks": []
+    },
+    "teamviewer": {
+     "status": 400,
+     "leaks": []
+    },
+    "outsider": {
+     "status": 400,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 403,
+     "leaks": []
+    }
+   }
+  },
+  {
+   "rule": "/api/literature/get_block_manifest",
+   "url": "/api/literature/get_block_manifest?pid=ACLP1-p&paper_id=paper1&section=introduction",
+   "roles": {
+    "owner": {
+     "status": 503,
+     "leaks": []
+    },
+    "editor": {
+     "status": 503,
+     "leaks": []
+    },
+    "prof": {
+     "status": 503,
+     "leaks": []
+    },
+    "legacymentor": {
+     "status": 503,
+     "leaks": []
+    },
+    "teamviewer": {
+     "status": 503,
+     "leaks": []
+    },
+    "outsider": {
+     "status": 403,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 403,
+     "leaks": []
+    }
+   }
+  },
+  {
+   "rule": "/api/literature/get_context_history",
+   "url": "/api/literature/get_context_history",
+   "roles": {
+    "owner": {
+     "status": 200,
+     "leaks": []
+    },
+    "editor": {
+     "status": 200,
+     "leaks": []
+    },
+    "prof": {
+     "status": 200,
+     "leaks": []
+    },
+    "legacymentor": {
+     "status": 200,
+     "leaks": []
+    },
+    "teamviewer": {
+     "status": 200,
+     "leaks": []
+    },
+    "outsider": {
+     "status": 200,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 403,
+     "leaks": []
+    }
+   }
+  },
+  {
+   "rule": "/api/literature/get_context_history",
+   "url": "/api/literature/get_context_history?pid=ACLP1-p&paper_id=paper1&section=introduction",
+   "roles": {
+    "owner": {
+     "status": 200,
+     "leaks": []
+    },
+    "editor": {
+     "status": 200,
+     "leaks": []
+    },
+    "prof": {
+     "status": 200,
+     "leaks": []
+    },
+    "legacymentor": {
+     "status": 200,
+     "leaks": []
+    },
+    "teamviewer": {
+     "status": 200,
+     "leaks": []
+    },
+    "outsider": {
+     "status": 403,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 403,
+     "leaks": []
+    }
+   }
+  },
+  {
+   "rule": "/api/literature/get_full_json",
+   "url": "/api/literature/get_full_json",
+   "roles": {
+    "owner": {
+     "status": 400,
+     "leaks": []
+    },
+    "editor": {
+     "status": 400,
+     "leaks": []
+    },
+    "prof": {
+     "status": 400,
+     "leaks": []
+    },
+    "legacymentor": {
+     "status": 400,
+     "leaks": []
+    },
+    "teamviewer": {
+     "status": 400,
+     "leaks": []
+    },
+    "outsider": {
+     "status": 400,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 403,
+     "leaks": []
+    }
+   }
+  },
+  {
+   "rule": "/api/literature/get_full_json",
+   "url": "/api/literature/get_full_json?pid=ACLP1-p&paper_id=paper1&section=introduction",
+   "roles": {
+    "owner": {
+     "status": 200,
+     "leaks": []
+    },
+    "editor": {
+     "status": 200,
+     "leaks": []
+    },
+    "prof": {
+     "status": 200,
+     "leaks": []
+    },
+    "legacymentor": {
+     "status": 200,
+     "leaks": []
+    },
+    "teamviewer": {
+     "status": 200,
+     "leaks": []
+    },
+    "outsider": {
+     "status": 403,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 403,
+     "leaks": []
+    }
+   }
+  },
+  {
+   "rule": "/api/literature/get_region_image",
+   "url": "/api/literature/get_region_image",
+   "roles": {
+    "owner": {
+     "status": 400,
+     "leaks": []
+    },
+    "editor": {
+     "status": 400,
+     "leaks": []
+    },
+    "prof": {
+     "status": 400,
+     "leaks": []
+    },
+    "legacymentor": {
+     "status": 400,
+     "leaks": []
+    },
+    "teamviewer": {
+     "status": 400,
+     "leaks": []
+    },
+    "outsider": {
+     "status": 400,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 403,
+     "leaks": []
+    }
+   }
+  },
+  {
+   "rule": "/api/literature/get_region_image",
+   "url": "/api/literature/get_region_image?pid=ACLP1-p&paper_id=paper1&section=introduction",
+   "roles": {
+    "owner": {
+     "status": 404,
+     "leaks": []
+    },
+    "editor": {
+     "status": 404,
+     "leaks": []
+    },
+    "prof": {
+     "status": 404,
+     "leaks": []
+    },
+    "legacymentor": {
+     "status": 404,
+     "leaks": []
+    },
+    "teamviewer": {
+     "status": 404,
+     "leaks": []
+    },
+    "outsider": {
+     "status": 403,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 403,
+     "leaks": []
+    }
+   }
+  },
+  {
+   "rule": "/api/literature/get_search_results",
+   "url": "/api/literature/get_search_results",
+   "roles": {
+    "owner": {
+     "status": 404,
+     "leaks": []
+    },
+    "editor": {
+     "status": 404,
+     "leaks": []
+    },
+    "prof": {
+     "status": 404,
+     "leaks": []
+    },
+    "legacymentor": {
+     "status": 404,
+     "leaks": []
+    },
+    "teamviewer": {
+     "status": 404,
+     "leaks": []
+    },
+    "outsider": {
+     "status": 404,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 403,
+     "leaks": []
+    }
+   }
+  },
+  {
+   "rule": "/api/literature/get_search_results",
+   "url": "/api/literature/get_search_results?pid=ACLP1-p&paper_id=paper1&section=introduction",
+   "roles": {
+    "owner": {
+     "status": 200,
+     "leaks": []
+    },
+    "editor": {
+     "status": 200,
+     "leaks": []
+    },
+    "prof": {
+     "status": 200,
+     "leaks": []
+    },
+    "legacymentor": {
+     "status": 200,
+     "leaks": []
+    },
+    "teamviewer": {
+     "status": 200,
+     "leaks": []
+    },
+    "outsider": {
+     "status": 403,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 403,
+     "leaks": []
+    }
+   }
+  },
+  {
+   "rule": "/api/literature/library",
+   "url": "/api/literature/library",
+   "roles": {
+    "owner": {
+     "status": 404,
+     "leaks": []
+    },
+    "editor": {
+     "status": 404,
+     "leaks": []
+    },
+    "prof": {
+     "status": 404,
+     "leaks": []
+    },
+    "legacymentor": {
+     "status": 404,
+     "leaks": []
+    },
+    "teamviewer": {
+     "status": 404,
+     "leaks": []
+    },
+    "outsider": {
+     "status": 404,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 403,
+     "leaks": []
+    }
+   }
+  },
+  {
+   "rule": "/api/literature/library",
+   "url": "/api/literature/library?pid=ACLP1-p&paper_id=paper1&section=introduction",
+   "roles": {
+    "owner": {
+     "status": 200,
+     "leaks": [
+      "literature_reading_note"
+     ]
+    },
+    "editor": {
+     "status": 200,
+     "leaks": [
+      "literature_reading_note"
+     ]
+    },
+    "prof": {
+     "status": 200,
+     "leaks": []
+    },
+    "legacymentor": {
+     "status": 200,
+     "leaks": [
+      "literature_reading_note"
+     ]
+    },
+    "teamviewer": {
+     "status": 200,
+     "leaks": [
+      "literature_reading_note"
+     ]
+    },
+    "outsider": {
+     "status": 403,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 403,
+     "leaks": []
+    }
+   }
+  },
+  {
+   "rule": "/api/literature/library/export",
+   "url": "/api/literature/library/export",
+   "roles": {
+    "owner": {
+     "status": 404,
+     "leaks": []
+    },
+    "editor": {
+     "status": 404,
+     "leaks": []
+    },
+    "prof": {
+     "status": 404,
+     "leaks": []
+    },
+    "legacymentor": {
+     "status": 404,
+     "leaks": []
+    },
+    "teamviewer": {
+     "status": 404,
+     "leaks": []
+    },
+    "outsider": {
+     "status": 404,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 403,
+     "leaks": []
+    }
+   }
+  },
+  {
+   "rule": "/api/literature/library/export",
+   "url": "/api/literature/library/export?pid=ACLP1-p&paper_id=paper1&section=introduction",
+   "roles": {
+    "owner": {
+     "status": 200,
+     "leaks": []
+    },
+    "editor": {
+     "status": 200,
+     "leaks": []
+    },
+    "prof": {
+     "status": 200,
+     "leaks": []
+    },
+    "legacymentor": {
+     "status": 200,
+     "leaks": []
+    },
+    "teamviewer": {
+     "status": 200,
+     "leaks": []
+    },
+    "outsider": {
+     "status": 403,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 403,
+     "leaks": []
+    }
+   }
+  },
+  {
+   "rule": "/api/literature/preload_translation_models",
+   "url": "/api/literature/preload_translation_models",
+   "roles": {
+    "owner": {
+     "status": 200,
+     "leaks": []
+    },
+    "editor": {
+     "status": 200,
+     "leaks": []
+    },
+    "prof": {
+     "status": 200,
+     "leaks": []
+    },
+    "legacymentor": {
+     "status": 200,
+     "leaks": []
+    },
+    "teamviewer": {
+     "status": 200,
+     "leaks": []
+    },
+    "outsider": {
+     "status": 200,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 403,
+     "leaks": []
+    }
+   }
+  },
+  {
+   "rule": "/api/literature/preload_translation_models",
+   "url": "/api/literature/preload_translation_models?pid=ACLP1-p&paper_id=paper1&section=introduction",
+   "roles": {
+    "owner": {
+     "status": 200,
+     "leaks": []
+    },
+    "editor": {
+     "status": 200,
+     "leaks": []
+    },
+    "prof": {
+     "status": 200,
+     "leaks": []
+    },
+    "legacymentor": {
+     "status": 200,
+     "leaks": []
+    },
+    "teamviewer": {
+     "status": 200,
+     "leaks": []
+    },
+    "outsider": {
+     "status": 403,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 403,
+     "leaks": []
+    }
+   }
+  },
+  {
+   "rule": "/api/literature/status/<pid>",
+   "url": "/api/literature/status/ACLP1-p",
+   "roles": {
+    "owner": {
+     "status": 200,
+     "leaks": []
+    },
+    "editor": {
+     "status": 200,
+     "leaks": []
+    },
+    "prof": {
+     "status": 200,
+     "leaks": []
+    },
+    "legacymentor": {
+     "status": 200,
+     "leaks": []
+    },
+    "teamviewer": {
+     "status": 200,
+     "leaks": []
+    },
+    "outsider": {
+     "status": 403,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 403,
+     "leaks": []
+    }
+   }
+  },
+  {
+   "rule": "/api/literature/system_profile",
+   "url": "/api/literature/system_profile",
+   "roles": {
+    "owner": {
+     "status": 200,
+     "leaks": []
+    },
+    "editor": {
+     "status": 200,
+     "leaks": []
+    },
+    "prof": {
+     "status": 200,
+     "leaks": []
+    },
+    "legacymentor": {
+     "status": 200,
+     "leaks": []
+    },
+    "teamviewer": {
+     "status": 200,
+     "leaks": []
+    },
+    "outsider": {
+     "status": 200,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 403,
+     "leaks": []
+    }
+   }
+  },
+  {
+   "rule": "/api/literature/system_profile",
+   "url": "/api/literature/system_profile?pid=ACLP1-p&paper_id=paper1&section=introduction",
+   "roles": {
+    "owner": {
+     "status": 200,
+     "leaks": []
+    },
+    "editor": {
+     "status": 200,
+     "leaks": []
+    },
+    "prof": {
+     "status": 200,
+     "leaks": []
+    },
+    "legacymentor": {
+     "status": 200,
+     "leaks": []
+    },
+    "teamviewer": {
+     "status": 200,
+     "leaks": []
+    },
+    "outsider": {
+     "status": 403,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 403,
+     "leaks": []
+    }
+   }
+  },
+  {
+   "rule": "/api/llm/binding/list",
+   "url": "/api/llm/binding/list",
+   "roles": {
+    "owner": {
+     "status": 403,
+     "leaks": []
+    },
+    "editor": {
+     "status": 403,
+     "leaks": []
+    },
+    "prof": {
+     "status": 403,
+     "leaks": []
+    },
+    "legacymentor": {
+     "status": 403,
+     "leaks": []
+    },
+    "teamviewer": {
+     "status": 403,
+     "leaks": []
+    },
+    "outsider": {
+     "status": 403,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 403,
+     "leaks": []
+    }
+   }
+  },
+  {
+   "rule": "/api/llm/binding/list",
+   "url": "/api/llm/binding/list?pid=ACLP1-p&paper_id=paper1&section=introduction",
+   "roles": {
+    "owner": {
+     "status": 403,
+     "leaks": []
+    },
+    "editor": {
+     "status": 403,
+     "leaks": []
+    },
+    "prof": {
+     "status": 403,
+     "leaks": []
+    },
+    "legacymentor": {
+     "status": 403,
+     "leaks": []
+    },
+    "teamviewer": {
+     "status": 403,
+     "leaks": []
+    },
+    "outsider": {
+     "status": 403,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 403,
+     "leaks": []
+    }
+   }
+  },
+  {
+   "rule": "/api/llm/connection/list",
+   "url": "/api/llm/connection/list",
+   "roles": {
+    "owner": {
+     "status": 403,
+     "leaks": []
+    },
+    "editor": {
+     "status": 403,
+     "leaks": []
+    },
+    "prof": {
+     "status": 403,
+     "leaks": []
+    },
+    "legacymentor": {
+     "status": 403,
+     "leaks": []
+    },
+    "teamviewer": {
+     "status": 403,
+     "leaks": []
+    },
+    "outsider": {
+     "status": 403,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 403,
+     "leaks": []
+    }
+   }
+  },
+  {
+   "rule": "/api/llm/connection/list",
+   "url": "/api/llm/connection/list?pid=ACLP1-p&paper_id=paper1&section=introduction",
+   "roles": {
+    "owner": {
+     "status": 403,
+     "leaks": []
+    },
+    "editor": {
+     "status": 403,
+     "leaks": []
+    },
+    "prof": {
+     "status": 403,
+     "leaks": []
+    },
+    "legacymentor": {
+     "status": 403,
+     "leaks": []
+    },
+    "teamviewer": {
+     "status": 403,
+     "leaks": []
+    },
+    "outsider": {
+     "status": 403,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 403,
+     "leaks": []
+    }
+   }
+  },
+  {
+   "rule": "/api/llm/runtime/cpu",
+   "url": "/api/llm/runtime/cpu",
+   "roles": {
+    "owner": {
+     "status": 403,
+     "leaks": []
+    },
+    "editor": {
+     "status": 403,
+     "leaks": []
+    },
+    "prof": {
+     "status": 403,
+     "leaks": []
+    },
+    "legacymentor": {
+     "status": 403,
+     "leaks": []
+    },
+    "teamviewer": {
+     "status": 403,
+     "leaks": []
+    },
+    "outsider": {
+     "status": 403,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 403,
+     "leaks": []
+    }
+   }
+  },
+  {
+   "rule": "/api/llm/runtime/cpu",
+   "url": "/api/llm/runtime/cpu?pid=ACLP1-p&paper_id=paper1&section=introduction",
+   "roles": {
+    "owner": {
+     "status": 403,
+     "leaks": []
+    },
+    "editor": {
+     "status": 403,
+     "leaks": []
+    },
+    "prof": {
+     "status": 403,
+     "leaks": []
+    },
+    "legacymentor": {
+     "status": 403,
+     "leaks": []
+    },
+    "teamviewer": {
+     "status": 403,
+     "leaks": []
+    },
+    "outsider": {
+     "status": 403,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 403,
+     "leaks": []
+    }
+   }
+  },
+  {
+   "rule": "/api/llm/runtime/flowa_workers",
+   "url": "/api/llm/runtime/flowa_workers",
+   "roles": {
+    "owner": {
+     "status": 403,
+     "leaks": []
+    },
+    "editor": {
+     "status": 403,
+     "leaks": []
+    },
+    "prof": {
+     "status": 403,
+     "leaks": []
+    },
+    "legacymentor": {
+     "status": 403,
+     "leaks": []
+    },
+    "teamviewer": {
+     "status": 403,
+     "leaks": []
+    },
+    "outsider": {
+     "status": 403,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 403,
+     "leaks": []
+    }
+   }
+  },
+  {
+   "rule": "/api/llm/runtime/flowa_workers",
+   "url": "/api/llm/runtime/flowa_workers?pid=ACLP1-p&paper_id=paper1&section=introduction",
+   "roles": {
+    "owner": {
+     "status": 403,
+     "leaks": []
+    },
+    "editor": {
+     "status": 403,
+     "leaks": []
+    },
+    "prof": {
+     "status": 403,
+     "leaks": []
+    },
+    "legacymentor": {
+     "status": 403,
+     "leaks": []
+    },
+    "teamviewer": {
+     "status": 403,
+     "leaks": []
+    },
+    "outsider": {
+     "status": 403,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 403,
+     "leaks": []
+    }
+   }
+  },
+  {
+   "rule": "/api/mentor/mentees",
+   "url": "/api/mentor/mentees",
+   "roles": {
+    "owner": {
+     "status": 403,
+     "leaks": []
+    },
+    "editor": {
+     "status": 403,
+     "leaks": []
+    },
+    "prof": {
+     "status": 200,
+     "leaks": []
+    },
+    "legacymentor": {
+     "status": 200,
+     "leaks": []
+    },
+    "teamviewer": {
+     "status": 403,
+     "leaks": []
+    },
+    "outsider": {
+     "status": 403,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 403,
+     "leaks": []
+    }
+   }
+  },
+  {
+   "rule": "/api/mentor/mentees",
+   "url": "/api/mentor/mentees?pid=ACLP1-p&paper_id=paper1&section=introduction",
+   "roles": {
+    "owner": {
+     "status": 403,
+     "leaks": []
+    },
+    "editor": {
+     "status": 403,
+     "leaks": []
+    },
+    "prof": {
+     "status": 200,
+     "leaks": []
+    },
+    "legacymentor": {
+     "status": 200,
+     "leaks": []
+    },
+    "teamviewer": {
+     "status": 403,
+     "leaks": []
+    },
+    "outsider": {
+     "status": 403,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 403,
+     "leaks": []
+    }
+   }
+  },
+  {
+   "rule": "/api/mentor/mentees/<int:mentee_id>",
+   "url": "/api/mentor/mentees/1",
+   "roles": {
+    "owner": {
+     "status": 403,
+     "leaks": []
+    },
+    "editor": {
+     "status": 403,
+     "leaks": []
+    },
+    "prof": {
+     "status": 200,
+     "leaks": []
+    },
+    "legacymentor": {
+     "status": 200,
+     "leaks": [
+      "study_conversation",
+      "study_free_note"
+     ]
+    },
+    "teamviewer": {
+     "status": 403,
+     "leaks": []
+    },
+    "outsider": {
+     "status": 403,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 403,
+     "leaks": []
+    }
+   }
+  },
+  {
+   "rule": "/api/mentor/mentees/<int:mentee_id>",
+   "url": "/api/mentor/mentees/1?pid=ACLP1-p&paper_id=paper1&section=introduction",
+   "roles": {
+    "owner": {
+     "status": 403,
+     "leaks": []
+    },
+    "editor": {
+     "status": 403,
+     "leaks": []
+    },
+    "prof": {
+     "status": 200,
+     "leaks": []
+    },
+    "legacymentor": {
+     "status": 200,
+     "leaks": [
+      "study_conversation",
+      "study_free_note"
+     ]
+    },
+    "teamviewer": {
+     "status": 403,
+     "leaks": []
+    },
+    "outsider": {
+     "status": 403,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 403,
+     "leaks": []
+    }
+   }
+  },
+  {
+   "rule": "/api/mentor/mentees/<int:mentee_id>/comments",
+   "url": "/api/mentor/mentees/1/comments",
+   "roles": {
+    "owner": {
+     "status": 403,
+     "leaks": []
+    },
+    "editor": {
+     "status": 403,
+     "leaks": []
+    },
+    "prof": {
+     "status": 200,
+     "leaks": []
+    },
+    "legacymentor": {
+     "status": 200,
+     "leaks": []
+    },
+    "teamviewer": {
+     "status": 403,
+     "leaks": []
+    },
+    "outsider": {
+     "status": 403,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 403,
+     "leaks": []
+    }
+   }
+  },
+  {
+   "rule": "/api/mentor/mentees/<int:mentee_id>/comments",
+   "url": "/api/mentor/mentees/1/comments?pid=ACLP1-p&paper_id=paper1&section=introduction",
+   "roles": {
+    "owner": {
+     "status": 403,
+     "leaks": []
+    },
+    "editor": {
+     "status": 403,
+     "leaks": []
+    },
+    "prof": {
+     "status": 200,
+     "leaks": []
+    },
+    "legacymentor": {
+     "status": 200,
+     "leaks": []
+    },
+    "teamviewer": {
+     "status": 403,
+     "leaks": []
+    },
+    "outsider": {
+     "status": 403,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 403,
+     "leaks": []
+    }
+   }
+  },
+  {
+   "rule": "/api/mentor/mentees/<int:mentee_id>/reviews/<pid>",
+   "url": "/api/mentor/mentees/1/reviews/ACLP1-p",
+   "roles": {
+    "owner": {
+     "status": 403,
+     "leaks": []
+    },
+    "editor": {
+     "status": 403,
+     "leaks": []
+    },
+    "prof": {
+     "status": 200,
+     "leaks": []
+    },
+    "legacymentor": {
+     "status": 200,
+     "leaks": []
+    },
+    "teamviewer": {
+     "status": 403,
+     "leaks": []
+    },
+    "outsider": {
+     "status": 403,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 403,
+     "leaks": []
+    }
+   }
+  },
+  {
+   "rule": "/api/mentor/mentees/<int:mentee_id>/study-reviews/<pid>",
+   "url": "/api/mentor/mentees/1/study-reviews/ACLP1-p",
+   "roles": {
+    "owner": {
+     "status": 403,
+     "leaks": []
+    },
+    "editor": {
+     "status": 403,
+     "leaks": []
+    },
+    "prof": {
+     "status": 200,
+     "leaks": []
+    },
+    "legacymentor": {
+     "status": 200,
+     "leaks": []
+    },
+    "teamviewer": {
+     "status": 403,
+     "leaks": []
+    },
+    "outsider": {
+     "status": 403,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 403,
+     "leaks": []
+    }
+   }
+  },
+  {
+   "rule": "/api/mentor/mentees/<int:mentee_id>/tasks",
+   "url": "/api/mentor/mentees/1/tasks",
+   "roles": {
+    "owner": {
+     "status": 403,
+     "leaks": []
+    },
+    "editor": {
+     "status": 403,
+     "leaks": []
+    },
+    "prof": {
+     "status": 200,
+     "leaks": []
+    },
+    "legacymentor": {
+     "status": 200,
+     "leaks": []
+    },
+    "teamviewer": {
+     "status": 403,
+     "leaks": []
+    },
+    "outsider": {
+     "status": 403,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 403,
+     "leaks": []
+    }
+   }
+  },
+  {
+   "rule": "/api/mentor/mentees/<int:mentee_id>/tasks",
+   "url": "/api/mentor/mentees/1/tasks?pid=ACLP1-p&paper_id=paper1&section=introduction",
+   "roles": {
+    "owner": {
+     "status": 403,
+     "leaks": []
+    },
+    "editor": {
+     "status": 403,
+     "leaks": []
+    },
+    "prof": {
+     "status": 200,
+     "leaks": []
+    },
+    "legacymentor": {
+     "status": 200,
+     "leaks": []
+    },
+    "teamviewer": {
+     "status": 403,
+     "leaks": []
+    },
+    "outsider": {
+     "status": 403,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 403,
+     "leaks": []
+    }
+   }
+  },
+  {
+   "rule": "/api/mentor/my-reviews/<pid>",
+   "url": "/api/mentor/my-reviews/ACLP1-p",
+   "roles": {
+    "owner": {
+     "status": 200,
+     "leaks": []
+    },
+    "editor": {
+     "status": 200,
+     "leaks": []
+    },
+    "prof": {
+     "status": 200,
+     "leaks": []
+    },
+    "legacymentor": {
+     "status": 200,
+     "leaks": []
+    },
+    "teamviewer": {
+     "status": 200,
+     "leaks": []
+    },
+    "outsider": {
+     "status": 403,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 403,
+     "leaks": []
+    }
+   }
+  },
+  {
+   "rule": "/api/mentor/my-tasks",
+   "url": "/api/mentor/my-tasks",
+   "roles": {
+    "owner": {
+     "status": 200,
+     "leaks": []
+    },
+    "editor": {
+     "status": 200,
+     "leaks": []
+    },
+    "prof": {
+     "status": 200,
+     "leaks": []
+    },
+    "legacymentor": {
+     "status": 200,
+     "leaks": []
+    },
+    "teamviewer": {
+     "status": 200,
+     "leaks": []
+    },
+    "outsider": {
+     "status": 200,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 200,
+     "leaks": []
+    }
+   }
+  },
+  {
+   "rule": "/api/mentor/my-tasks",
+   "url": "/api/mentor/my-tasks?pid=ACLP1-p&paper_id=paper1&section=introduction",
+   "roles": {
+    "owner": {
+     "status": 200,
+     "leaks": []
+    },
+    "editor": {
+     "status": 200,
+     "leaks": []
+    },
+    "prof": {
+     "status": 200,
+     "leaks": []
+    },
+    "legacymentor": {
+     "status": 200,
+     "leaks": []
+    },
+    "teamviewer": {
+     "status": 200,
+     "leaks": []
+    },
+    "outsider": {
+     "status": 200,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 200,
+     "leaks": []
+    }
+   }
+  },
+  {
+   "rule": "/api/mentor/review-items/<int:item_id>/download",
+   "url": "/api/mentor/review-items/1/download",
+   "roles": {
+    "owner": {
+     "status": 404,
+     "leaks": []
+    },
+    "editor": {
+     "status": 404,
+     "leaks": []
+    },
+    "prof": {
+     "status": 404,
+     "leaks": []
+    },
+    "legacymentor": {
+     "status": 404,
+     "leaks": []
+    },
+    "teamviewer": {
+     "status": 404,
+     "leaks": []
+    },
+    "outsider": {
+     "status": 404,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 404,
+     "leaks": []
+    }
+   }
+  },
+  {
+   "rule": "/api/mentor/review-items/<int:item_id>/download",
+   "url": "/api/mentor/review-items/1/download?pid=ACLP1-p&paper_id=paper1&section=introduction",
+   "roles": {
+    "owner": {
+     "status": 404,
+     "leaks": []
+    },
+    "editor": {
+     "status": 404,
+     "leaks": []
+    },
+    "prof": {
+     "status": 404,
+     "leaks": []
+    },
+    "legacymentor": {
+     "status": 404,
+     "leaks": []
+    },
+    "teamviewer": {
+     "status": 404,
+     "leaks": []
+    },
+    "outsider": {
+     "status": 404,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 404,
+     "leaks": []
+    }
+   }
+  },
+  {
+   "rule": "/api/paq/chat_history/<pid>",
+   "url": "/api/paq/chat_history/ACLP1-p",
+   "roles": {
+    "owner": {
+     "status": 200,
+     "leaks": [
+      "paq_chat"
+     ]
+    },
+    "editor": {
+     "status": 200,
+     "leaks": [
+      "paq_chat"
+     ]
+    },
+    "prof": {
+     "status": 403,
+     "leaks": []
+    },
+    "legacymentor": {
+     "status": 200,
+     "leaks": [
+      "paq_chat"
+     ]
+    },
+    "teamviewer": {
+     "status": 200,
+     "leaks": [
+      "paq_chat"
+     ]
+    },
+    "outsider": {
+     "status": 403,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 403,
+     "leaks": []
+    }
+   }
+  },
+  {
+   "rule": "/api/paq/status/<pid>",
+   "url": "/api/paq/status/ACLP1-p",
+   "roles": {
+    "owner": {
+     "status": 200,
+     "leaks": []
+    },
+    "editor": {
+     "status": 200,
+     "leaks": []
+    },
+    "prof": {
+     "status": 200,
+     "leaks": []
+    },
+    "legacymentor": {
+     "status": 200,
+     "leaks": []
+    },
+    "teamviewer": {
+     "status": 200,
+     "leaks": []
+    },
+    "outsider": {
+     "status": 403,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 403,
+     "leaks": []
+    }
+   }
+  },
+  {
+   "rule": "/api/project/<pid>/members",
+   "url": "/api/project/ACLP1-p/members",
+   "roles": {
+    "owner": {
+     "status": 200,
+     "leaks": []
+    },
+    "editor": {
+     "status": 200,
+     "leaks": []
+    },
+    "prof": {
+     "status": 200,
+     "leaks": []
+    },
+    "legacymentor": {
+     "status": 200,
+     "leaks": []
+    },
+    "teamviewer": {
+     "status": 200,
+     "leaks": []
+    },
+    "outsider": {
+     "status": 403,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 200,
+     "leaks": []
+    }
+   }
+  },
+  {
+   "rule": "/api/project/list",
+   "url": "/api/project/list",
+   "roles": {
+    "owner": {
+     "status": 200,
+     "leaks": []
+    },
+    "editor": {
+     "status": 200,
+     "leaks": []
+    },
+    "prof": {
+     "status": 200,
+     "leaks": []
+    },
+    "legacymentor": {
+     "status": 200,
+     "leaks": []
+    },
+    "teamviewer": {
+     "status": 200,
+     "leaks": []
+    },
+    "outsider": {
+     "status": 200,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 200,
+     "leaks": []
+    }
+   }
+  },
+  {
+   "rule": "/api/project/list",
+   "url": "/api/project/list?pid=ACLP1-p&paper_id=paper1&section=introduction",
+   "roles": {
+    "owner": {
+     "status": 200,
+     "leaks": []
+    },
+    "editor": {
+     "status": 200,
+     "leaks": []
+    },
+    "prof": {
+     "status": 200,
+     "leaks": []
+    },
+    "legacymentor": {
+     "status": 200,
+     "leaks": []
+    },
+    "teamviewer": {
+     "status": 200,
+     "leaks": []
+    },
+    "outsider": {
+     "status": 200,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 200,
+     "leaks": []
+    }
+   }
+  },
+  {
+   "rule": "/api/project/workflow",
+   "url": "/api/project/workflow",
+   "roles": {
+    "owner": {
+     "status": 200,
+     "leaks": []
+    },
+    "editor": {
+     "status": 200,
+     "leaks": []
+    },
+    "prof": {
+     "status": 200,
+     "leaks": []
+    },
+    "legacymentor": {
+     "status": 200,
+     "leaks": []
+    },
+    "teamviewer": {
+     "status": 200,
+     "leaks": []
+    },
+    "outsider": {
+     "status": 200,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 200,
+     "leaks": []
+    }
+   }
+  },
+  {
+   "rule": "/api/project/workflow",
+   "url": "/api/project/workflow?pid=ACLP1-p&paper_id=paper1&section=introduction",
+   "roles": {
+    "owner": {
+     "status": 200,
+     "leaks": []
+    },
+    "editor": {
+     "status": 200,
+     "leaks": []
+    },
+    "prof": {
+     "status": 200,
+     "leaks": []
+    },
+    "legacymentor": {
+     "status": 200,
+     "leaks": []
+    },
+    "teamviewer": {
+     "status": 200,
+     "leaks": []
+    },
+    "outsider": {
+     "status": 200,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 200,
+     "leaks": []
+    }
+   }
+  },
+  {
+   "rule": "/api/project/workflow/<pid>",
+   "url": "/api/project/workflow/ACLP1-p",
+   "roles": {
+    "owner": {
+     "status": 200,
+     "leaks": []
+    },
+    "editor": {
+     "status": 200,
+     "leaks": []
+    },
+    "prof": {
+     "status": 200,
+     "leaks": []
+    },
+    "legacymentor": {
+     "status": 200,
+     "leaks": []
+    },
+    "teamviewer": {
+     "status": 200,
+     "leaks": []
+    },
+    "outsider": {
+     "status": 403,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 200,
+     "leaks": []
+    }
+   }
+  },
+  {
+   "rule": "/api/study/<pid>/conversations",
+   "url": "/api/study/ACLP1-p/conversations",
+   "roles": {
+    "owner": {
+     "status": 200,
+     "leaks": []
+    },
+    "editor": {
+     "status": 200,
+     "leaks": []
+    },
+    "prof": {
+     "status": 403,
+     "leaks": []
+    },
+    "legacymentor": {
+     "status": 200,
+     "leaks": []
+    },
+    "teamviewer": {
+     "status": 200,
+     "leaks": []
+    },
+    "outsider": {
+     "status": 403,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 403,
+     "leaks": []
+    }
+   }
+  },
+  {
+   "rule": "/api/study/<pid>/matrix/<matrix_id>",
+   "url": "/api/study/ACLP1-p/matrix/m1",
+   "roles": {
+    "owner": {
+     "status": 404,
+     "leaks": []
+    },
+    "editor": {
+     "status": 404,
+     "leaks": []
+    },
+    "prof": {
+     "status": 403,
+     "leaks": []
+    },
+    "legacymentor": {
+     "status": 404,
+     "leaks": []
+    },
+    "teamviewer": {
+     "status": 404,
+     "leaks": []
+    },
+    "outsider": {
+     "status": 403,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 403,
+     "leaks": []
+    }
+   }
+  },
+  {
+   "rule": "/api/study/<pid>/matrix/history",
+   "url": "/api/study/ACLP1-p/matrix/history",
+   "roles": {
+    "owner": {
+     "status": 200,
+     "leaks": []
+    },
+    "editor": {
+     "status": 200,
+     "leaks": []
+    },
+    "prof": {
+     "status": 403,
+     "leaks": []
+    },
+    "legacymentor": {
+     "status": 200,
+     "leaks": []
+    },
+    "teamviewer": {
+     "status": 200,
+     "leaks": []
+    },
+    "outsider": {
+     "status": 403,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 403,
+     "leaks": []
+    }
+   }
+  },
+  {
+   "rule": "/api/study/<pid>/matrix/latest",
+   "url": "/api/study/ACLP1-p/matrix/latest",
+   "roles": {
+    "owner": {
+     "status": 200,
+     "leaks": [
+      "study_matrix"
+     ]
+    },
+    "editor": {
+     "status": 200,
+     "leaks": [
+      "study_matrix"
+     ]
+    },
+    "prof": {
+     "status": 403,
+     "leaks": []
+    },
+    "legacymentor": {
+     "status": 200,
+     "leaks": [
+      "study_matrix"
+     ]
+    },
+    "teamviewer": {
+     "status": 200,
+     "leaks": [
+      "study_matrix"
+     ]
+    },
+    "outsider": {
+     "status": 403,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 403,
+     "leaks": []
+    }
+   }
+  },
+  {
+   "rule": "/api/study/check_gate/<pid>/<paper_id>",
+   "url": "/api/study/check_gate/ACLP1-p/paper1",
+   "roles": {
+    "owner": {
+     "status": 200,
+     "leaks": []
+    },
+    "editor": {
+     "status": 200,
+     "leaks": []
+    },
+    "prof": {
+     "status": 200,
+     "leaks": []
+    },
+    "legacymentor": {
+     "status": 200,
+     "leaks": []
+    },
+    "teamviewer": {
+     "status": 200,
+     "leaks": []
+    },
+    "outsider": {
+     "status": 403,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 403,
+     "leaks": []
+    }
+   }
+  },
+  {
+   "rule": "/api/study/conversation/<conv_id>",
+   "url": "/api/study/conversation/conv_1793451195_0c3a8a3e",
+   "roles": {
+    "owner": {
+     "status": 404,
+     "leaks": []
+    },
+    "editor": {
+     "status": 404,
+     "leaks": []
+    },
+    "prof": {
+     "status": 404,
+     "leaks": []
+    },
+    "legacymentor": {
+     "status": 404,
+     "leaks": []
+    },
+    "teamviewer": {
+     "status": 404,
+     "leaks": []
+    },
+    "outsider": {
+     "status": 404,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 403,
+     "leaks": []
+    }
+   }
+  },
+  {
+   "rule": "/api/study/conversation/<conv_id>",
+   "url": "/api/study/conversation/conv_1793451195_0c3a8a3e?pid=ACLP1-p&paper_id=paper1&section=introduction",
+   "roles": {
+    "owner": {
+     "status": 200,
+     "leaks": [
+      "study_conversation"
+     ]
+    },
+    "editor": {
+     "status": 200,
+     "leaks": [
+      "study_conversation"
+     ]
+    },
+    "prof": {
+     "status": 403,
+     "leaks": []
+    },
+    "legacymentor": {
+     "status": 200,
+     "leaks": [
+      "study_conversation"
+     ]
+    },
+    "teamviewer": {
+     "status": 200,
+     "leaks": [
+      "study_conversation"
+     ]
+    },
+    "outsider": {
+     "status": 403,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 403,
+     "leaks": []
+    }
+   }
+  },
+  {
+   "rule": "/api/study/evidence_notes/<pid>",
+   "url": "/api/study/evidence_notes/ACLP1-p",
+   "roles": {
+    "owner": {
+     "status": 200,
+     "leaks": [
+      "manuscript_section",
+      "study_unshared_evidence"
+     ]
+    },
+    "editor": {
+     "status": 200,
+     "leaks": [
+      "manuscript_section",
+      "study_unshared_evidence"
+     ]
+    },
+    "prof": {
+     "status": 200,
+     "leaks": []
+    },
+    "legacymentor": {
+     "status": 200,
+     "leaks": [
+      "manuscript_section",
+      "study_unshared_evidence"
+     ]
+    },
+    "teamviewer": {
+     "status": 200,
+     "leaks": [
+      "manuscript_section",
+      "study_unshared_evidence"
+     ]
+    },
+    "outsider": {
+     "status": 403,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 403,
+     "leaks": []
+    }
+   }
+  },
+  {
+   "rule": "/api/study/evidence_notes/<pid>/export",
+   "url": "/api/study/evidence_notes/ACLP1-p/export",
+   "roles": {
+    "owner": {
+     "status": 200,
+     "leaks": [
+      "study_unshared_evidence"
+     ]
+    },
+    "editor": {
+     "status": 200,
+     "leaks": [
+      "study_unshared_evidence"
+     ]
+    },
+    "prof": {
+     "status": 200,
+     "leaks": []
+    },
+    "legacymentor": {
+     "status": 200,
+     "leaks": [
+      "study_unshared_evidence"
+     ]
+    },
+    "teamviewer": {
+     "status": 200,
+     "leaks": [
+      "study_unshared_evidence"
+     ]
+    },
+    "outsider": {
+     "status": 403,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 403,
+     "leaks": []
+    }
+   }
+  },
+  {
+   "rule": "/api/study/get_fulltext/<pid>/<paper_id>",
+   "url": "/api/study/get_fulltext/ACLP1-p/paper1",
+   "roles": {
+    "owner": {
+     "status": 200,
+     "leaks": []
+    },
+    "editor": {
+     "status": 200,
+     "leaks": []
+    },
+    "prof": {
+     "status": 200,
+     "leaks": []
+    },
+    "legacymentor": {
+     "status": 200,
+     "leaks": []
+    },
+    "teamviewer": {
+     "status": 200,
+     "leaks": []
+    },
+    "outsider": {
+     "status": 403,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 403,
+     "leaks": []
+    }
+   }
+  },
+  {
+   "rule": "/api/study/media_asset/<pid>/<paper_id>/<seq_id>.png",
+   "url": "/api/study/media_asset/ACLP1-p/paper1/p1_body_1.png",
+   "roles": {
+    "owner": {
+     "status": 404,
+     "leaks": []
+    },
+    "editor": {
+     "status": 404,
+     "leaks": []
+    },
+    "prof": {
+     "status": 404,
+     "leaks": []
+    },
+    "legacymentor": {
+     "status": 404,
+     "leaks": []
+    },
+    "teamviewer": {
+     "status": 404,
+     "leaks": []
+    },
+    "outsider": {
+     "status": 403,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 403,
+     "leaks": []
+    }
+   }
+  },
+  {
+   "rule": "/api/study/media_gallery/<pid>/<paper_id>",
+   "url": "/api/study/media_gallery/ACLP1-p/paper1",
+   "roles": {
+    "owner": {
+     "status": 200,
+     "leaks": []
+    },
+    "editor": {
+     "status": 200,
+     "leaks": []
+    },
+    "prof": {
+     "status": 200,
+     "leaks": []
+    },
+    "legacymentor": {
+     "status": 200,
+     "leaks": []
+    },
+    "teamviewer": {
+     "status": 200,
+     "leaks": []
+    },
+    "outsider": {
+     "status": 403,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 403,
+     "leaks": []
+    }
+   }
+  },
+  {
+   "rule": "/api/study/notes/load/<pid>",
+   "url": "/api/study/notes/load/ACLP1-p",
+   "roles": {
+    "owner": {
+     "status": 200,
+     "leaks": [
+      "study_free_note"
+     ]
+    },
+    "editor": {
+     "status": 200,
+     "leaks": [
+      "study_free_note"
+     ]
+    },
+    "prof": {
+     "status": 403,
+     "leaks": []
+    },
+    "legacymentor": {
+     "status": 200,
+     "leaks": [
+      "study_free_note"
+     ]
+    },
+    "teamviewer": {
+     "status": 200,
+     "leaks": [
+      "study_free_note"
+     ]
+    },
+    "outsider": {
+     "status": 403,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 403,
+     "leaks": []
+    }
+   }
+  },
+  {
+   "rule": "/api/study/paper_list/<pid>",
+   "url": "/api/study/paper_list/ACLP1-p",
+   "roles": {
+    "owner": {
+     "status": 200,
+     "leaks": []
+    },
+    "editor": {
+     "status": 200,
+     "leaks": []
+    },
+    "prof": {
+     "status": 200,
+     "leaks": []
+    },
+    "legacymentor": {
+     "status": 200,
+     "leaks": []
+    },
+    "teamviewer": {
+     "status": 200,
+     "leaks": []
+    },
+    "outsider": {
+     "status": 403,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 403,
+     "leaks": []
+    }
+   }
+  },
+  {
+   "rule": "/auth/account",
+   "url": "/auth/account",
+   "roles": {
+    "owner": {
+     "status": 200,
+     "leaks": []
+    },
+    "editor": {
+     "status": 200,
+     "leaks": []
+    },
+    "prof": {
+     "status": 200,
+     "leaks": []
+    },
+    "legacymentor": {
+     "status": 200,
+     "leaks": []
+    },
+    "teamviewer": {
+     "status": 200,
+     "leaks": []
+    },
+    "outsider": {
+     "status": 200,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 200,
+     "leaks": []
+    }
+   }
+  },
+  {
+   "rule": "/auth/account",
+   "url": "/auth/account?pid=ACLP1-p&paper_id=paper1&section=introduction",
+   "roles": {
+    "owner": {
+     "status": 200,
+     "leaks": []
+    },
+    "editor": {
+     "status": 200,
+     "leaks": []
+    },
+    "prof": {
+     "status": 200,
+     "leaks": []
+    },
+    "legacymentor": {
+     "status": 200,
+     "leaks": []
+    },
+    "teamviewer": {
+     "status": 200,
+     "leaks": []
+    },
+    "outsider": {
+     "status": 200,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 200,
+     "leaks": []
+    }
+   }
+  },
+  {
+   "rule": "/auth/login",
+   "url": "/auth/login",
+   "roles": {
+    "owner": {
+     "status": 302,
+     "leaks": []
+    },
+    "editor": {
+     "status": 302,
+     "leaks": []
+    },
+    "prof": {
+     "status": 302,
+     "leaks": []
+    },
+    "legacymentor": {
+     "status": 302,
+     "leaks": []
+    },
+    "teamviewer": {
+     "status": 302,
+     "leaks": []
+    },
+    "outsider": {
+     "status": 302,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 302,
+     "leaks": []
+    }
+   }
+  },
+  {
+   "rule": "/auth/login",
+   "url": "/auth/login?pid=ACLP1-p&paper_id=paper1&section=introduction",
+   "roles": {
+    "owner": {
+     "status": 302,
+     "leaks": []
+    },
+    "editor": {
+     "status": 302,
+     "leaks": []
+    },
+    "prof": {
+     "status": 302,
+     "leaks": []
+    },
+    "legacymentor": {
+     "status": 302,
+     "leaks": []
+    },
+    "teamviewer": {
+     "status": 302,
+     "leaks": []
+    },
+    "outsider": {
+     "status": 302,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 302,
+     "leaks": []
+    }
+   }
+  },
+  {
+   "rule": "/auth/register",
+   "url": "/auth/register",
+   "roles": {
+    "owner": {
+     "status": 302,
+     "leaks": []
+    },
+    "editor": {
+     "status": 302,
+     "leaks": []
+    },
+    "prof": {
+     "status": 302,
+     "leaks": []
+    },
+    "legacymentor": {
+     "status": 302,
+     "leaks": []
+    },
+    "teamviewer": {
+     "status": 302,
+     "leaks": []
+    },
+    "outsider": {
+     "status": 302,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 302,
+     "leaks": []
+    }
+   }
+  },
+  {
+   "rule": "/auth/register",
+   "url": "/auth/register?pid=ACLP1-p&paper_id=paper1&section=introduction",
+   "roles": {
+    "owner": {
+     "status": 302,
+     "leaks": []
+    },
+    "editor": {
+     "status": 302,
+     "leaks": []
+    },
+    "prof": {
+     "status": 302,
+     "leaks": []
+    },
+    "legacymentor": {
+     "status": 302,
+     "leaks": []
+    },
+    "teamviewer": {
+     "status": 302,
+     "leaks": []
+    },
+    "outsider": {
+     "status": 302,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 302,
+     "leaks": []
+    }
+   }
+  },
+  {
+   "rule": "/collaboration",
+   "url": "/collaboration",
+   "roles": {
+    "owner": {
+     "status": 200,
+     "leaks": []
+    },
+    "editor": {
+     "status": 200,
+     "leaks": []
+    },
+    "prof": {
+     "status": 200,
+     "leaks": []
+    },
+    "legacymentor": {
+     "status": 200,
+     "leaks": []
+    },
+    "teamviewer": {
+     "status": 200,
+     "leaks": []
+    },
+    "outsider": {
+     "status": 200,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 200,
+     "leaks": []
+    }
+   }
+  },
+  {
+   "rule": "/collaboration",
+   "url": "/collaboration?pid=ACLP1-p&paper_id=paper1&section=introduction",
+   "roles": {
+    "owner": {
+     "status": 200,
+     "leaks": []
+    },
+    "editor": {
+     "status": 200,
+     "leaks": []
+    },
+    "prof": {
+     "status": 200,
+     "leaks": []
+    },
+    "legacymentor": {
+     "status": 200,
+     "leaks": []
+    },
+    "teamviewer": {
+     "status": 200,
+     "leaks": []
+    },
+    "outsider": {
+     "status": 200,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 200,
+     "leaks": []
+    }
+   }
+  },
+  {
+   "rule": "/lava_setup.html",
+   "url": "/lava_setup.html",
+   "roles": {
+    "owner": {
+     "status": 403,
+     "leaks": []
+    },
+    "editor": {
+     "status": 403,
+     "leaks": []
+    },
+    "prof": {
+     "status": 403,
+     "leaks": []
+    },
+    "legacymentor": {
+     "status": 403,
+     "leaks": []
+    },
+    "teamviewer": {
+     "status": 403,
+     "leaks": []
+    },
+    "outsider": {
+     "status": 403,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 403,
+     "leaks": []
+    }
+   }
+  },
+  {
+   "rule": "/lava_setup.html",
+   "url": "/lava_setup.html?pid=ACLP1-p&paper_id=paper1&section=introduction",
+   "roles": {
+    "owner": {
+     "status": 403,
+     "leaks": []
+    },
+    "editor": {
+     "status": 403,
+     "leaks": []
+    },
+    "prof": {
+     "status": 403,
+     "leaks": []
+    },
+    "legacymentor": {
+     "status": 403,
+     "leaks": []
+    },
+    "teamviewer": {
+     "status": 403,
+     "leaks": []
+    },
+    "outsider": {
+     "status": 403,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 403,
+     "leaks": []
+    }
+   }
+  },
+  {
+   "rule": "/literature",
+   "url": "/literature",
+   "roles": {
+    "owner": {
+     "status": 200,
+     "leaks": []
+    },
+    "editor": {
+     "status": 200,
+     "leaks": []
+    },
+    "prof": {
+     "status": 200,
+     "leaks": []
+    },
+    "legacymentor": {
+     "status": 200,
+     "leaks": []
+    },
+    "teamviewer": {
+     "status": 200,
+     "leaks": []
+    },
+    "outsider": {
+     "status": 200,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 403,
+     "leaks": []
+    }
+   }
+  },
+  {
+   "rule": "/literature",
+   "url": "/literature?pid=ACLP1-p&paper_id=paper1&section=introduction",
+   "roles": {
+    "owner": {
+     "status": 200,
+     "leaks": []
+    },
+    "editor": {
+     "status": 200,
+     "leaks": []
+    },
+    "prof": {
+     "status": 200,
+     "leaks": []
+    },
+    "legacymentor": {
+     "status": 200,
+     "leaks": []
+    },
+    "teamviewer": {
+     "status": 200,
+     "leaks": []
+    },
+    "outsider": {
+     "status": 403,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 403,
+     "leaks": []
+    }
+   }
+  },
+  {
+   "rule": "/literature/",
+   "url": "/literature/",
+   "roles": {
+    "owner": {
+     "status": 200,
+     "leaks": []
+    },
+    "editor": {
+     "status": 200,
+     "leaks": []
+    },
+    "prof": {
+     "status": 200,
+     "leaks": []
+    },
+    "legacymentor": {
+     "status": 200,
+     "leaks": []
+    },
+    "teamviewer": {
+     "status": 200,
+     "leaks": []
+    },
+    "outsider": {
+     "status": 200,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 403,
+     "leaks": []
+    }
+   }
+  },
+  {
+   "rule": "/literature/",
+   "url": "/literature/?pid=ACLP1-p&paper_id=paper1&section=introduction",
+   "roles": {
+    "owner": {
+     "status": 200,
+     "leaks": []
+    },
+    "editor": {
+     "status": 200,
+     "leaks": []
+    },
+    "prof": {
+     "status": 200,
+     "leaks": []
+    },
+    "legacymentor": {
+     "status": 200,
+     "leaks": []
+    },
+    "teamviewer": {
+     "status": 200,
+     "leaks": []
+    },
+    "outsider": {
+     "status": 403,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 403,
+     "leaks": []
+    }
+   }
+  },
+  {
+   "rule": "/manuscript/",
+   "url": "/manuscript/",
+   "roles": {
+    "owner": {
+     "status": 200,
+     "leaks": []
+    },
+    "editor": {
+     "status": 200,
+     "leaks": []
+    },
+    "prof": {
+     "status": 200,
+     "leaks": []
+    },
+    "legacymentor": {
+     "status": 200,
+     "leaks": []
+    },
+    "teamviewer": {
+     "status": 200,
+     "leaks": []
+    },
+    "outsider": {
+     "status": 200,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 200,
+     "leaks": []
+    }
+   }
+  },
+  {
+   "rule": "/manuscript/",
+   "url": "/manuscript/?pid=ACLP1-p&paper_id=paper1&section=introduction",
+   "roles": {
+    "owner": {
+     "status": 200,
+     "leaks": []
+    },
+    "editor": {
+     "status": 200,
+     "leaks": []
+    },
+    "prof": {
+     "status": 200,
+     "leaks": []
+    },
+    "legacymentor": {
+     "status": 200,
+     "leaks": []
+    },
+    "teamviewer": {
+     "status": 200,
+     "leaks": []
+    },
+    "outsider": {
+     "status": 403,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 200,
+     "leaks": []
+    }
+   }
+  },
+  {
+   "rule": "/manuscript/api/bootstrap/<pid>",
+   "url": "/manuscript/api/bootstrap/ACLP1-p",
+   "roles": {
+    "owner": {
+     "status": 200,
+     "leaks": []
+    },
+    "editor": {
+     "status": 200,
+     "leaks": []
+    },
+    "prof": {
+     "status": 200,
+     "leaks": []
+    },
+    "legacymentor": {
+     "status": 200,
+     "leaks": []
+    },
+    "teamviewer": {
+     "status": 200,
+     "leaks": []
+    },
+    "outsider": {
+     "status": 403,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 200,
+     "leaks": []
+    }
+   }
+  },
+  {
+   "rule": "/manuscript/api/change-impact",
+   "url": "/manuscript/api/change-impact",
+   "roles": {
+    "owner": {
+     "status": 404,
+     "leaks": []
+    },
+    "editor": {
+     "status": 404,
+     "leaks": []
+    },
+    "prof": {
+     "status": 404,
+     "leaks": []
+    },
+    "legacymentor": {
+     "status": 404,
+     "leaks": []
+    },
+    "teamviewer": {
+     "status": 404,
+     "leaks": []
+    },
+    "outsider": {
+     "status": 404,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 404,
+     "leaks": []
+    }
+   }
+  },
+  {
+   "rule": "/manuscript/api/change-impact",
+   "url": "/manuscript/api/change-impact?pid=ACLP1-p&paper_id=paper1&section=introduction",
+   "roles": {
+    "owner": {
+     "status": 200,
+     "leaks": []
+    },
+    "editor": {
+     "status": 200,
+     "leaks": []
+    },
+    "prof": {
+     "status": 200,
+     "leaks": []
+    },
+    "legacymentor": {
+     "status": 200,
+     "leaks": []
+    },
+    "teamviewer": {
+     "status": 200,
+     "leaks": []
+    },
+    "outsider": {
+     "status": 403,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 200,
+     "leaks": []
+    }
+   }
+  },
+  {
+   "rule": "/manuscript/api/chapter/<pid>/assignments",
+   "url": "/manuscript/api/chapter/ACLP1-p/assignments",
+   "roles": {
+    "owner": {
+     "status": 200,
+     "leaks": []
+    },
+    "editor": {
+     "status": 200,
+     "leaks": []
+    },
+    "prof": {
+     "status": 200,
+     "leaks": []
+    },
+    "legacymentor": {
+     "status": 200,
+     "leaks": []
+    },
+    "teamviewer": {
+     "status": 200,
+     "leaks": []
+    },
+    "outsider": {
+     "status": 403,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 200,
+     "leaks": []
+    }
+   }
+  },
+  {
+   "rule": "/manuscript/api/chapter/<pid>/comments",
+   "url": "/manuscript/api/chapter/ACLP1-p/comments",
+   "roles": {
+    "owner": {
+     "status": 200,
+     "leaks": []
+    },
+    "editor": {
+     "status": 200,
+     "leaks": []
+    },
+    "prof": {
+     "status": 200,
+     "leaks": []
+    },
+    "legacymentor": {
+     "status": 200,
+     "leaks": []
+    },
+    "teamviewer": {
+     "status": 200,
+     "leaks": []
+    },
+    "outsider": {
+     "status": 403,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 200,
+     "leaks": []
+    }
+   }
+  },
+  {
+   "rule": "/manuscript/api/chapter/<pid>/my-permissions",
+   "url": "/manuscript/api/chapter/ACLP1-p/my-permissions",
+   "roles": {
+    "owner": {
+     "status": 200,
+     "leaks": []
+    },
+    "editor": {
+     "status": 200,
+     "leaks": []
+    },
+    "prof": {
+     "status": 200,
+     "leaks": []
+    },
+    "legacymentor": {
+     "status": 200,
+     "leaks": []
+    },
+    "teamviewer": {
+     "status": 200,
+     "leaks": []
+    },
+    "outsider": {
+     "status": 403,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 200,
+     "leaks": []
+    }
+   }
+  },
+  {
+   "rule": "/manuscript/api/chapter/<pid>/settings",
+   "url": "/manuscript/api/chapter/ACLP1-p/settings",
+   "roles": {
+    "owner": {
+     "status": 200,
+     "leaks": []
+    },
+    "editor": {
+     "status": 200,
+     "leaks": []
+    },
+    "prof": {
+     "status": 200,
+     "leaks": []
+    },
+    "legacymentor": {
+     "status": 200,
+     "leaks": []
+    },
+    "teamviewer": {
+     "status": 200,
+     "leaks": []
+    },
+    "outsider": {
+     "status": 403,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 200,
+     "leaks": []
+    }
+   }
+  },
+  {
+   "rule": "/manuscript/api/citation/decisions",
+   "url": "/manuscript/api/citation/decisions",
+   "roles": {
+    "owner": {
+     "status": 404,
+     "leaks": []
+    },
+    "editor": {
+     "status": 404,
+     "leaks": []
+    },
+    "prof": {
+     "status": 404,
+     "leaks": []
+    },
+    "legacymentor": {
+     "status": 404,
+     "leaks": []
+    },
+    "teamviewer": {
+     "status": 404,
+     "leaks": []
+    },
+    "outsider": {
+     "status": 404,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 404,
+     "leaks": []
+    }
+   }
+  },
+  {
+   "rule": "/manuscript/api/citation/decisions",
+   "url": "/manuscript/api/citation/decisions?pid=ACLP1-p&paper_id=paper1&section=introduction",
+   "roles": {
+    "owner": {
+     "status": 200,
+     "leaks": []
+    },
+    "editor": {
+     "status": 200,
+     "leaks": []
+    },
+    "prof": {
+     "status": 200,
+     "leaks": []
+    },
+    "legacymentor": {
+     "status": 200,
+     "leaks": []
+    },
+    "teamviewer": {
+     "status": 200,
+     "leaks": []
+    },
+    "outsider": {
+     "status": 403,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 200,
+     "leaks": []
+    }
+   }
+  },
+  {
+   "rule": "/manuscript/api/formal_projects",
+   "url": "/manuscript/api/formal_projects",
+   "roles": {
+    "owner": {
+     "status": 200,
+     "leaks": []
+    },
+    "editor": {
+     "status": 200,
+     "leaks": []
+    },
+    "prof": {
+     "status": 200,
+     "leaks": []
+    },
+    "legacymentor": {
+     "status": 200,
+     "leaks": []
+    },
+    "teamviewer": {
+     "status": 200,
+     "leaks": []
+    },
+    "outsider": {
+     "status": 200,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 200,
+     "leaks": []
+    }
+   }
+  },
+  {
+   "rule": "/manuscript/api/formal_projects",
+   "url": "/manuscript/api/formal_projects?pid=ACLP1-p&paper_id=paper1&section=introduction",
+   "roles": {
+    "owner": {
+     "status": 200,
+     "leaks": []
+    },
+    "editor": {
+     "status": 200,
+     "leaks": []
+    },
+    "prof": {
+     "status": 200,
+     "leaks": []
+    },
+    "legacymentor": {
+     "status": 200,
+     "leaks": []
+    },
+    "teamviewer": {
+     "status": 200,
+     "leaks": []
+    },
+    "outsider": {
+     "status": 403,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 200,
+     "leaks": []
+    }
+   }
+  },
+  {
+   "rule": "/manuscript/api/paragraph/context",
+   "url": "/manuscript/api/paragraph/context",
+   "roles": {
+    "owner": {
+     "status": 404,
+     "leaks": []
+    },
+    "editor": {
+     "status": 404,
+     "leaks": []
+    },
+    "prof": {
+     "status": 404,
+     "leaks": []
+    },
+    "legacymentor": {
+     "status": 404,
+     "leaks": []
+    },
+    "teamviewer": {
+     "status": 404,
+     "leaks": []
+    },
+    "outsider": {
+     "status": 404,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 404,
+     "leaks": []
+    }
+   }
+  },
+  {
+   "rule": "/manuscript/api/paragraph/context",
+   "url": "/manuscript/api/paragraph/context?pid=ACLP1-p&paper_id=paper1&section=introduction",
+   "roles": {
+    "owner": {
+     "status": 200,
+     "leaks": []
+    },
+    "editor": {
+     "status": 200,
+     "leaks": []
+    },
+    "prof": {
+     "status": 200,
+     "leaks": []
+    },
+    "legacymentor": {
+     "status": 200,
+     "leaks": []
+    },
+    "teamviewer": {
+     "status": 200,
+     "leaks": []
+    },
+    "outsider": {
+     "status": 403,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 200,
+     "leaks": []
+    }
+   }
+  },
+  {
+   "rule": "/manuscript/api/progress/<pid>",
+   "url": "/manuscript/api/progress/ACLP1-p",
+   "roles": {
+    "owner": {
+     "status": 200,
+     "leaks": []
+    },
+    "editor": {
+     "status": 200,
+     "leaks": []
+    },
+    "prof": {
+     "status": 200,
+     "leaks": []
+    },
+    "legacymentor": {
+     "status": 200,
+     "leaks": []
+    },
+    "teamviewer": {
+     "status": 200,
+     "leaks": []
+    },
+    "outsider": {
+     "status": 403,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 200,
+     "leaks": []
+    }
+   }
+  },
+  {
+   "rule": "/manuscript/api/progress_summary",
+   "url": "/manuscript/api/progress_summary",
+   "roles": {
+    "owner": {
+     "status": 200,
+     "leaks": []
+    },
+    "editor": {
+     "status": 200,
+     "leaks": []
+    },
+    "prof": {
+     "status": 200,
+     "leaks": []
+    },
+    "legacymentor": {
+     "status": 200,
+     "leaks": []
+    },
+    "teamviewer": {
+     "status": 200,
+     "leaks": []
+    },
+    "outsider": {
+     "status": 200,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 200,
+     "leaks": []
+    }
+   }
+  },
+  {
+   "rule": "/manuscript/api/progress_summary",
+   "url": "/manuscript/api/progress_summary?pid=ACLP1-p&paper_id=paper1&section=introduction",
+   "roles": {
+    "owner": {
+     "status": 200,
+     "leaks": []
+    },
+    "editor": {
+     "status": 200,
+     "leaks": []
+    },
+    "prof": {
+     "status": 200,
+     "leaks": []
+    },
+    "legacymentor": {
+     "status": 200,
+     "leaks": []
+    },
+    "teamviewer": {
+     "status": 200,
+     "leaks": []
+    },
+    "outsider": {
+     "status": 403,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 200,
+     "leaks": []
+    }
+   }
+  },
+  {
+   "rule": "/manuscript/api/provenance",
+   "url": "/manuscript/api/provenance",
+   "roles": {
+    "owner": {
+     "status": 404,
+     "leaks": []
+    },
+    "editor": {
+     "status": 404,
+     "leaks": []
+    },
+    "prof": {
+     "status": 404,
+     "leaks": []
+    },
+    "legacymentor": {
+     "status": 404,
+     "leaks": []
+    },
+    "teamviewer": {
+     "status": 404,
+     "leaks": []
+    },
+    "outsider": {
+     "status": 404,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 404,
+     "leaks": []
+    }
+   }
+  },
+  {
+   "rule": "/manuscript/api/provenance",
+   "url": "/manuscript/api/provenance?pid=ACLP1-p&paper_id=paper1&section=introduction",
+   "roles": {
+    "owner": {
+     "status": 200,
+     "leaks": [
+      "manuscript_section",
+      "study_unshared_evidence"
+     ]
+    },
+    "editor": {
+     "status": 200,
+     "leaks": [
+      "manuscript_section",
+      "study_unshared_evidence"
+     ]
+    },
+    "prof": {
+     "status": 200,
+     "leaks": [
+      "manuscript_section"
+     ]
+    },
+    "legacymentor": {
+     "status": 200,
+     "leaks": [
+      "manuscript_section",
+      "study_unshared_evidence"
+     ]
+    },
+    "teamviewer": {
+     "status": 200,
+     "leaks": [
+      "manuscript_section",
+      "study_unshared_evidence"
+     ]
+    },
+    "outsider": {
+     "status": 403,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 200,
+     "leaks": [
+      "manuscript_section"
+     ]
+    }
+   }
+  },
+  {
+   "rule": "/manuscript/api/provenance/export",
+   "url": "/manuscript/api/provenance/export",
+   "roles": {
+    "owner": {
+     "status": 404,
+     "leaks": []
+    },
+    "editor": {
+     "status": 404,
+     "leaks": []
+    },
+    "prof": {
+     "status": 404,
+     "leaks": []
+    },
+    "legacymentor": {
+     "status": 404,
+     "leaks": []
+    },
+    "teamviewer": {
+     "status": 404,
+     "leaks": []
+    },
+    "outsider": {
+     "status": 404,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 404,
+     "leaks": []
+    }
+   }
+  },
+  {
+   "rule": "/manuscript/api/provenance/export",
+   "url": "/manuscript/api/provenance/export?pid=ACLP1-p&paper_id=paper1&section=introduction",
+   "roles": {
+    "owner": {
+     "status": 200,
+     "leaks": [
+      "manuscript_section",
+      "study_unshared_evidence"
+     ]
+    },
+    "editor": {
+     "status": 200,
+     "leaks": [
+      "manuscript_section",
+      "study_unshared_evidence"
+     ]
+    },
+    "prof": {
+     "status": 200,
+     "leaks": [
+      "manuscript_section"
+     ]
+    },
+    "legacymentor": {
+     "status": 200,
+     "leaks": [
+      "manuscript_section",
+      "study_unshared_evidence"
+     ]
+    },
+    "teamviewer": {
+     "status": 200,
+     "leaks": [
+      "manuscript_section",
+      "study_unshared_evidence"
+     ]
+    },
+    "outsider": {
+     "status": 403,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 403,
+     "leaks": []
+    }
+   }
+  },
+  {
+   "rule": "/manuscript/api/revisions/<pid>",
+   "url": "/manuscript/api/revisions/ACLP1-p",
+   "roles": {
+    "owner": {
+     "status": 200,
+     "leaks": []
+    },
+    "editor": {
+     "status": 200,
+     "leaks": []
+    },
+    "prof": {
+     "status": 200,
+     "leaks": []
+    },
+    "legacymentor": {
+     "status": 200,
+     "leaks": []
+    },
+    "teamviewer": {
+     "status": 200,
+     "leaks": []
+    },
+    "outsider": {
+     "status": 403,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 200,
+     "leaks": []
+    }
+   }
+  },
+  {
+   "rule": "/manuscript/api/scientific/reports",
+   "url": "/manuscript/api/scientific/reports",
+   "roles": {
+    "owner": {
+     "status": 404,
+     "leaks": []
+    },
+    "editor": {
+     "status": 404,
+     "leaks": []
+    },
+    "prof": {
+     "status": 404,
+     "leaks": []
+    },
+    "legacymentor": {
+     "status": 404,
+     "leaks": []
+    },
+    "teamviewer": {
+     "status": 404,
+     "leaks": []
+    },
+    "outsider": {
+     "status": 404,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 404,
+     "leaks": []
+    }
+   }
+  },
+  {
+   "rule": "/manuscript/api/scientific/reports",
+   "url": "/manuscript/api/scientific/reports?pid=ACLP1-p&paper_id=paper1&section=introduction",
+   "roles": {
+    "owner": {
+     "status": 200,
+     "leaks": []
+    },
+    "editor": {
+     "status": 200,
+     "leaks": []
+    },
+    "prof": {
+     "status": 200,
+     "leaks": []
+    },
+    "legacymentor": {
+     "status": 200,
+     "leaks": []
+    },
+    "teamviewer": {
+     "status": 200,
+     "leaks": []
+    },
+    "outsider": {
+     "status": 403,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 200,
+     "leaks": []
+    }
+   }
+  },
+  {
+   "rule": "/manuscript/api/scientific/reports/<rid>",
+   "url": "/manuscript/api/scientific/reports/1",
+   "roles": {
+    "owner": {
+     "status": 404,
+     "leaks": []
+    },
+    "editor": {
+     "status": 404,
+     "leaks": []
+    },
+    "prof": {
+     "status": 404,
+     "leaks": []
+    },
+    "legacymentor": {
+     "status": 404,
+     "leaks": []
+    },
+    "teamviewer": {
+     "status": 404,
+     "leaks": []
+    },
+    "outsider": {
+     "status": 404,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 404,
+     "leaks": []
+    }
+   }
+  },
+  {
+   "rule": "/manuscript/api/scientific/reports/<rid>",
+   "url": "/manuscript/api/scientific/reports/1?pid=ACLP1-p&paper_id=paper1&section=introduction",
+   "roles": {
+    "owner": {
+     "status": 404,
+     "leaks": []
+    },
+    "editor": {
+     "status": 404,
+     "leaks": []
+    },
+    "prof": {
+     "status": 404,
+     "leaks": []
+    },
+    "legacymentor": {
+     "status": 404,
+     "leaks": []
+    },
+    "teamviewer": {
+     "status": 404,
+     "leaks": []
+    },
+    "outsider": {
+     "status": 403,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 404,
+     "leaks": []
+    }
+   }
+  },
+  {
+   "rule": "/manuscript/api/sections/<pid>",
+   "url": "/manuscript/api/sections/ACLP1-p",
+   "roles": {
+    "owner": {
+     "status": 200,
+     "leaks": []
+    },
+    "editor": {
+     "status": 200,
+     "leaks": []
+    },
+    "prof": {
+     "status": 200,
+     "leaks": []
+    },
+    "legacymentor": {
+     "status": 200,
+     "leaks": []
+    },
+    "teamviewer": {
+     "status": 200,
+     "leaks": []
+    },
+    "outsider": {
+     "status": 403,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 200,
+     "leaks": []
+    }
+   }
+  },
+  {
+   "rule": "/manuscript/change-impact",
+   "url": "/manuscript/change-impact",
+   "roles": {
+    "owner": {
+     "status": 200,
+     "leaks": []
+    },
+    "editor": {
+     "status": 200,
+     "leaks": []
+    },
+    "prof": {
+     "status": 200,
+     "leaks": []
+    },
+    "legacymentor": {
+     "status": 200,
+     "leaks": []
+    },
+    "teamviewer": {
+     "status": 200,
+     "leaks": []
+    },
+    "outsider": {
+     "status": 200,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 200,
+     "leaks": []
+    }
+   }
+  },
+  {
+   "rule": "/manuscript/change-impact",
+   "url": "/manuscript/change-impact?pid=ACLP1-p&paper_id=paper1&section=introduction",
+   "roles": {
+    "owner": {
+     "status": 200,
+     "leaks": []
+    },
+    "editor": {
+     "status": 200,
+     "leaks": []
+    },
+    "prof": {
+     "status": 200,
+     "leaks": []
+    },
+    "legacymentor": {
+     "status": 200,
+     "leaks": []
+    },
+    "teamviewer": {
+     "status": 200,
+     "leaks": []
+    },
+    "outsider": {
+     "status": 403,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 200,
+     "leaks": []
+    }
+   }
+  },
+  {
+   "rule": "/manuscript/image/<pid>/<filename>",
+   "url": "/manuscript/image/ACLP1-p/x.png",
+   "roles": {
+    "owner": {
+     "status": 404,
+     "leaks": []
+    },
+    "editor": {
+     "status": 404,
+     "leaks": []
+    },
+    "prof": {
+     "status": 404,
+     "leaks": []
+    },
+    "legacymentor": {
+     "status": 404,
+     "leaks": []
+    },
+    "teamviewer": {
+     "status": 404,
+     "leaks": []
+    },
+    "outsider": {
+     "status": 403,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 403,
+     "leaks": []
+    }
+   }
+  },
+  {
+   "rule": "/mentor/",
+   "url": "/mentor/",
+   "roles": {
+    "owner": {
+     "status": 200,
+     "leaks": []
+    },
+    "editor": {
+     "status": 200,
+     "leaks": []
+    },
+    "prof": {
+     "status": 200,
+     "leaks": []
+    },
+    "legacymentor": {
+     "status": 200,
+     "leaks": []
+    },
+    "teamviewer": {
+     "status": 200,
+     "leaks": []
+    },
+    "outsider": {
+     "status": 200,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 200,
+     "leaks": []
+    }
+   }
+  },
+  {
+   "rule": "/mentor/",
+   "url": "/mentor/?pid=ACLP1-p&paper_id=paper1&section=introduction",
+   "roles": {
+    "owner": {
+     "status": 200,
+     "leaks": []
+    },
+    "editor": {
+     "status": 200,
+     "leaks": []
+    },
+    "prof": {
+     "status": 200,
+     "leaks": []
+    },
+    "legacymentor": {
+     "status": 200,
+     "leaks": []
+    },
+    "teamviewer": {
+     "status": 200,
+     "leaks": []
+    },
+    "outsider": {
+     "status": 200,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 200,
+     "leaks": []
+    }
+   }
+  },
+  {
+   "rule": "/paq",
+   "url": "/paq",
+   "roles": {
+    "owner": {
+     "status": 200,
+     "leaks": []
+    },
+    "editor": {
+     "status": 200,
+     "leaks": []
+    },
+    "prof": {
+     "status": 200,
+     "leaks": []
+    },
+    "legacymentor": {
+     "status": 200,
+     "leaks": []
+    },
+    "teamviewer": {
+     "status": 200,
+     "leaks": []
+    },
+    "outsider": {
+     "status": 200,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 403,
+     "leaks": []
+    }
+   }
+  },
+  {
+   "rule": "/paq",
+   "url": "/paq?pid=ACLP1-p&paper_id=paper1&section=introduction",
+   "roles": {
+    "owner": {
+     "status": 200,
+     "leaks": []
+    },
+    "editor": {
+     "status": 200,
+     "leaks": []
+    },
+    "prof": {
+     "status": 200,
+     "leaks": []
+    },
+    "legacymentor": {
+     "status": 200,
+     "leaks": []
+    },
+    "teamviewer": {
+     "status": 200,
+     "leaks": []
+    },
+    "outsider": {
+     "status": 403,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 403,
+     "leaks": []
+    }
+   }
+  },
+  {
+   "rule": "/paq.html",
+   "url": "/paq.html",
+   "roles": {
+    "owner": {
+     "status": 200,
+     "leaks": []
+    },
+    "editor": {
+     "status": 200,
+     "leaks": []
+    },
+    "prof": {
+     "status": 200,
+     "leaks": []
+    },
+    "legacymentor": {
+     "status": 200,
+     "leaks": []
+    },
+    "teamviewer": {
+     "status": 200,
+     "leaks": []
+    },
+    "outsider": {
+     "status": 200,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 403,
+     "leaks": []
+    }
+   }
+  },
+  {
+   "rule": "/paq.html",
+   "url": "/paq.html?pid=ACLP1-p&paper_id=paper1&section=introduction",
+   "roles": {
+    "owner": {
+     "status": 200,
+     "leaks": []
+    },
+    "editor": {
+     "status": 200,
+     "leaks": []
+    },
+    "prof": {
+     "status": 200,
+     "leaks": []
+    },
+    "legacymentor": {
+     "status": 200,
+     "leaks": []
+    },
+    "teamviewer": {
+     "status": 200,
+     "leaks": []
+    },
+    "outsider": {
+     "status": 403,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 403,
+     "leaks": []
+    }
+   }
+  },
+  {
+   "rule": "/paq/<pid>",
+   "url": "/paq/ACLP1-p",
+   "roles": {
+    "owner": {
+     "status": 200,
+     "leaks": []
+    },
+    "editor": {
+     "status": 200,
+     "leaks": []
+    },
+    "prof": {
+     "status": 200,
+     "leaks": []
+    },
+    "legacymentor": {
+     "status": 200,
+     "leaks": []
+    },
+    "teamviewer": {
+     "status": 200,
+     "leaks": []
+    },
+    "outsider": {
+     "status": 403,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 403,
+     "leaks": []
+    }
+   }
+  },
+  {
+   "rule": "/setup",
+   "url": "/setup",
+   "roles": {
+    "owner": {
+     "status": 403,
+     "leaks": []
+    },
+    "editor": {
+     "status": 403,
+     "leaks": []
+    },
+    "prof": {
+     "status": 403,
+     "leaks": []
+    },
+    "legacymentor": {
+     "status": 403,
+     "leaks": []
+    },
+    "teamviewer": {
+     "status": 403,
+     "leaks": []
+    },
+    "outsider": {
+     "status": 403,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 403,
+     "leaks": []
+    }
+   }
+  },
+  {
+   "rule": "/setup",
+   "url": "/setup?pid=ACLP1-p&paper_id=paper1&section=introduction",
+   "roles": {
+    "owner": {
+     "status": 403,
+     "leaks": []
+    },
+    "editor": {
+     "status": 403,
+     "leaks": []
+    },
+    "prof": {
+     "status": 403,
+     "leaks": []
+    },
+    "legacymentor": {
+     "status": 403,
+     "leaks": []
+    },
+    "teamviewer": {
+     "status": 403,
+     "leaks": []
+    },
+    "outsider": {
+     "status": 403,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 403,
+     "leaks": []
+    }
+   }
+  },
+  {
+   "rule": "/study",
+   "url": "/study",
+   "roles": {
+    "owner": {
+     "status": 302,
+     "leaks": []
+    },
+    "editor": {
+     "status": 302,
+     "leaks": []
+    },
+    "prof": {
+     "status": 302,
+     "leaks": []
+    },
+    "legacymentor": {
+     "status": 302,
+     "leaks": []
+    },
+    "teamviewer": {
+     "status": 302,
+     "leaks": []
+    },
+    "outsider": {
+     "status": 302,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 403,
+     "leaks": []
+    }
+   }
+  },
+  {
+   "rule": "/study",
+   "url": "/study?pid=ACLP1-p&paper_id=paper1&section=introduction",
+   "roles": {
+    "owner": {
+     "status": 302,
+     "leaks": []
+    },
+    "editor": {
+     "status": 302,
+     "leaks": []
+    },
+    "prof": {
+     "status": 302,
+     "leaks": []
+    },
+    "legacymentor": {
+     "status": 302,
+     "leaks": []
+    },
+    "teamviewer": {
+     "status": 302,
+     "leaks": []
+    },
+    "outsider": {
+     "status": 403,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 403,
+     "leaks": []
+    }
+   }
+  },
+  {
+   "rule": "/study/",
+   "url": "/study/",
+   "roles": {
+    "owner": {
+     "status": 302,
+     "leaks": []
+    },
+    "editor": {
+     "status": 302,
+     "leaks": []
+    },
+    "prof": {
+     "status": 302,
+     "leaks": []
+    },
+    "legacymentor": {
+     "status": 302,
+     "leaks": []
+    },
+    "teamviewer": {
+     "status": 302,
+     "leaks": []
+    },
+    "outsider": {
+     "status": 302,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 403,
+     "leaks": []
+    }
+   }
+  },
+  {
+   "rule": "/study/",
+   "url": "/study/?pid=ACLP1-p&paper_id=paper1&section=introduction",
+   "roles": {
+    "owner": {
+     "status": 302,
+     "leaks": []
+    },
+    "editor": {
+     "status": 302,
+     "leaks": []
+    },
+    "prof": {
+     "status": 302,
+     "leaks": []
+    },
+    "legacymentor": {
+     "status": 302,
+     "leaks": []
+    },
+    "teamviewer": {
+     "status": 302,
+     "leaks": []
+    },
+    "outsider": {
+     "status": 403,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 403,
+     "leaks": []
+    }
+   }
+  },
+  {
+   "rule": "/study/project/<pid>",
+   "url": "/study/project/ACLP1-p",
+   "roles": {
+    "owner": {
+     "status": 200,
+     "leaks": []
+    },
+    "editor": {
+     "status": 200,
+     "leaks": []
+    },
+    "prof": {
+     "status": 200,
+     "leaks": []
+    },
+    "legacymentor": {
+     "status": 200,
+     "leaks": []
+    },
+    "teamviewer": {
+     "status": 200,
+     "leaks": []
+    },
+    "outsider": {
+     "status": 403,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 403,
+     "leaks": []
+    }
+   }
+  },
+  {
+   "rule": "/submit",
+   "url": "/submit",
+   "roles": {
+    "owner": {
+     "status": 200,
+     "leaks": []
+    },
+    "editor": {
+     "status": 200,
+     "leaks": []
+    },
+    "prof": {
+     "status": 200,
+     "leaks": []
+    },
+    "legacymentor": {
+     "status": 200,
+     "leaks": []
+    },
+    "teamviewer": {
+     "status": 200,
+     "leaks": []
+    },
+    "outsider": {
+     "status": 200,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 403,
+     "leaks": []
+    }
+   }
+  },
+  {
+   "rule": "/submit",
+   "url": "/submit?pid=ACLP1-p&paper_id=paper1&section=introduction",
+   "roles": {
+    "owner": {
+     "status": 200,
+     "leaks": []
+    },
+    "editor": {
+     "status": 200,
+     "leaks": []
+    },
+    "prof": {
+     "status": 200,
+     "leaks": []
+    },
+    "legacymentor": {
+     "status": 200,
+     "leaks": []
+    },
+    "teamviewer": {
+     "status": 200,
+     "leaks": []
+    },
+    "outsider": {
+     "status": 403,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 403,
+     "leaks": []
+    }
+   }
+  },
+  {
+   "rule": "/submit/",
+   "url": "/submit/",
+   "roles": {
+    "owner": {
+     "status": 200,
+     "leaks": []
+    },
+    "editor": {
+     "status": 200,
+     "leaks": []
+    },
+    "prof": {
+     "status": 200,
+     "leaks": []
+    },
+    "legacymentor": {
+     "status": 200,
+     "leaks": []
+    },
+    "teamviewer": {
+     "status": 200,
+     "leaks": []
+    },
+    "outsider": {
+     "status": 200,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 403,
+     "leaks": []
+    }
+   }
+  },
+  {
+   "rule": "/submit/",
+   "url": "/submit/?pid=ACLP1-p&paper_id=paper1&section=introduction",
+   "roles": {
+    "owner": {
+     "status": 200,
+     "leaks": []
+    },
+    "editor": {
+     "status": 200,
+     "leaks": []
+    },
+    "prof": {
+     "status": 200,
+     "leaks": []
+    },
+    "legacymentor": {
+     "status": 200,
+     "leaks": []
+    },
+    "teamviewer": {
+     "status": 200,
+     "leaks": []
+    },
+    "outsider": {
+     "status": 403,
+     "leaks": []
+    },
+    "coauthor": {
+     "status": 403,
+     "leaks": []
+    }
+   }
+  }
+ ]
+}

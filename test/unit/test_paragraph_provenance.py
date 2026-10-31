@@ -167,3 +167,34 @@ def test_permissions_and_review_scope(env):
     owner.post("/api/study/evidence_notes/review", json={"pid": PID, "note_id": nid, "action": "request"})
     shown = listed(prof)["links"][0]["note"]
     assert shown.get("note_id") == nid and not shown.get("hidden")
+
+
+def _add_coauthor(app, section):
+    from app import db
+    from app.models import ChapterAssignment, User, WorkspaceMember
+    with app.app_context():
+        u = User(username="coauthor", email="coauthor@p.local", system_role="user")
+        u.set_password("password123")
+        db.session.add(u)
+        db.session.flush()
+        db.session.add(WorkspaceMember(user_id=u.id, pid=PID, role="coauthor"))
+        db.session.add(ChapterAssignment(pid=PID, section_key=section, user_id=u.id))
+        db.session.commit()
+
+
+def test_section_scoped_coauthor_cannot_read_study_note_snapshots(env):
+    """F1：限定編輯（coauthor）進不了 Study；段落出處不得變成讀 Study 筆記的側門。寫作與自由寫作照常。"""
+    app, _, owner, nid = env
+    assert link(owner, 0, kind="evidence_note", note_id=nid, paragraph_text=PARA).status_code == 201
+    _add_coauthor(app, SECTION)
+    co = login(app, "coauthor")
+    assert co.get(f"/api/study/evidence_notes/{PID}").status_code == 403, "前提：coauthor 本來就不能進 Study"
+    resp = co.get(f"/manuscript/api/provenance?pid={PID}&section={SECTION}")
+    body = resp.get_data(as_text=True)
+    assert resp.status_code == 200
+    assert "退火時間" not in body and "只支持 300 K" not in body and "improvement was observed" not in body
+    item = resp.json["links"][0]
+    assert item["note"] == {"hidden": True} and item["paragraph_text"] == PARA and resp.json["notes"] == []
+    assert link(co, 1, kind="free_writing", paragraph_text=OTHER_PARA).status_code == 201, "仍可在自己的章節寫作與標記"
+    assert link(co, 2, kind="evidence_note", note_id=nid, paragraph_text=OTHER_PARA).status_code == 403
+    assert co.get(f"/manuscript/api/provenance/export?pid={PID}").status_code == 403

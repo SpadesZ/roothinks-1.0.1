@@ -57,6 +57,23 @@ document.addEventListener('DOMContentLoaded', () => {
                 connectPid ? { pid: connectPid } : {}
             ),
         });
+        // [hotfix H7] 只有 token 的用戶端：用標頭換一張限定本專案圖片路徑的 HttpOnly 票證 cookie，
+        // <img> 因此不必在網址帶 token。session 使用者會直接拿到 {ticket:false}，不影響。
+        window.rtImageTicket = (bearerToken && connectPid)
+            ? fetch('/manuscript/api/image_session', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${bearerToken}` },
+                body: JSON.stringify({ pid: connectPid }),
+            }).catch(() => null)
+            : Promise.resolve(null);
+        // 票證還沒拿到前就載入的圖片會失敗一次；拿到後重試一次（不改 src 內容，存檔不受影響）。
+        document.addEventListener('error', (event) => {
+            const img = event.target;
+            if (!(img instanceof HTMLImageElement) || img.dataset.rtRetried) return;
+            if (!String(img.getAttribute('src') || '').startsWith('/manuscript/image/')) return;
+            img.dataset.rtRetried = '1';
+            window.rtImageTicket.then(() => { const src = img.getAttribute('src'); img.removeAttribute('src'); img.setAttribute('src', src); });
+        }, true);
         window.wsApp = new ManuscriptWorkspace(socket);
         console.log("[ManuscriptWS] Core Engine v4.3 Online. Modular Architecture (WS + UI + SOED + IMG) Active.");
     } catch (error) {

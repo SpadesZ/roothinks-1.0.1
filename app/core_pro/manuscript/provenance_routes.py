@@ -3,7 +3,8 @@
 # 模組定位: Manuscript 段落出處 API（R4）；資料與語意在 paragraph_provenance.py。
 # 權限: 藍圖層 _enforce_manuscript_acl 先要求專案成員；這裡再做章節層：讀 = _socket_can_read_section，
 #       寫 = _socket_can_write_section，整份匯出 = _socket_can_read_paper。教授審閱身分只看到已請求審閱的筆記內容。
-#       證據筆記選單只給 owner／editor（限定編輯 coauthor 進不了 Study，不能藉這裡讀 Study 筆記）。
+#       證據筆記選單只給 owner／editor；進不了 Study 的人（限定編輯 coauthor）看不到任何筆記內容，
+#       只看到「這段連到一則證據筆記」（F1：段落出處不得變成讀 Study 筆記的側門）。
 # 不阻擋: 出處狀態（段落改了、筆記改了、原文改了）只是提示；寫作、保存、匯出照常。
 # 驗證: python -m pytest test/unit/test_paragraph_provenance.py -q
 from flask import Response, jsonify, request
@@ -44,6 +45,14 @@ def _review_scoped(pid):
     return current_user_review_scoped(pid)
 
 
+def _no_study_access(uid, pid):
+    """進不了 Study 的成員（限定編輯 coauthor）看不到任何 Study 筆記內容（F1）。"""
+    if uid is None:
+        return False
+    from app.security import can_access_module
+    return not can_access_module(uid, pid, "study")
+
+
 def _can_pick_notes(uid, pid):
     if uid is None:
         return True
@@ -68,7 +77,8 @@ def list_paragraph_provenance():
     doc = prov.load(_citation_data_root(), pid)
     links = [l for l in doc["links"] if not section or l.get("section") == section]
     notes = _notes(pid)
-    described = prov.describe(pid, links, notes, _anchor_status(pid, notes), redact_unshared=_review_scoped(pid))
+    described = prov.describe(pid, links, notes, _anchor_status(pid, notes), redact_unshared=_review_scoped(pid),
+                              redact_all=_no_study_access(uid, pid))
     choices = []
     if _can_pick_notes(uid, pid) and not _review_scoped(pid):
         choices = [{"note_id": n["note_id"], "title": n.get("title") or "", "paper_id": n.get("paper_id") or "",
@@ -130,6 +140,7 @@ def export_paragraph_provenance():
         return jsonify(success=False, message='Forbidden'), 403
     doc = prov.load(_citation_data_root(), pid)
     notes = _notes(pid)
-    described = prov.describe(pid, doc["links"], notes, _anchor_status(pid, notes), redact_unshared=_review_scoped(pid))
+    described = prov.describe(pid, doc["links"], notes, _anchor_status(pid, notes), redact_unshared=_review_scoped(pid),
+                              redact_all=_no_study_access(uid, pid))
     return Response(prov.to_markdown(pid, described), mimetype="text/markdown; charset=utf-8",
                     headers={"Content-Disposition": f"attachment; filename={pid}_paragraph_provenance.md"})
