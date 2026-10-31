@@ -190,3 +190,78 @@ def test_frontend_no_longer_builds_token_urls():
         if re.search(r"(access_token|[?&$}]token)=\$\{", text):
             offenders.append(path.name)
     assert offenders == []
+
+
+@pytest.mark.parametrize("cookie_secure,https,expected", [(True, False, True), (False, True, True), (False, False, False)])
+def test_ticket_cookie_secure_follows_session_cookie_policy(monkeypatch, tmp_path, cookie_secure, https, expected):
+    """正式環境 TLS 在反向代理終止、本專案沒有 ProxyFix：request.is_secure 為 False，仍必須加 Secure（以 SESSION_COOKIE_SECURE 為準）。"""
+    app = _app(monkeypatch, tmp_path, AUTH_MODE="none", API_AUTH_ENABLED=True, API_BEARER_TOKENS=[GOOD],
+               TOKEN_ACL_MAP={GOOD: {"allowed_pids": [PID]}}, SESSION_COOKIE_SECURE=cookie_secure)
+    try:
+        c = app.test_client()
+        resp = c.post("/manuscript/api/image_session", json={"pid": PID}, headers={"Authorization": f"Bearer {GOOD}"},
+                      base_url="https://rt.example" if https else "http://rt.example")
+        assert resp.status_code == 200
+        assert ("; Secure" in resp.headers["Set-Cookie"]) is expected
+    finally:
+        _dispose(app)
+
+
+def test_query_token_switch_is_read_from_environment_and_covers_socket(monkeypatch, tmp_path):
+    monkeypatch.setenv("API_QUERY_TOKEN_ALLOWED", "0")
+    app = _app(monkeypatch, tmp_path, AUTH_MODE="none", API_AUTH_ENABLED=True, API_BEARER_TOKENS=[GOOD],
+               TOKEN_ACL_MAP={GOOD: {"allowed_pids": [PID]}})
+    try:
+        assert app.config["API_QUERY_TOKEN_ALLOWED"] is False
+        c = app.test_client()
+        img = f"/manuscript/image/{PID}/fig.png"
+        assert c.get(f"{img}?access_token={GOOD}").status_code == 401
+        assert c.get(img, headers={"Authorization": f"Bearer {GOOD}"}).status_code == 200
+        from werkzeug.exceptions import Forbidden
+        from app.security import require_socket_auth
+        with app.test_request_context(f"/socket.io/?token={GOOD}"):
+            with pytest.raises(Forbidden):
+                require_socket_auth({})
+        with app.test_request_context("/socket.io/"):
+            assert require_socket_auth({"token": GOOD}) == GOOD, "socket 的 auth 封包（非網址）不受影響"
+    finally:
+        _dispose(app)
+
+
+def _client_fetch(client):
+    def fetch(method, path, headers=None, body=None):
+        resp = client.open(path, method=method, json=body, headers=headers or {}, base_url="http://rt.example")
+        return resp.status_code, {"Set-Cookie": "; ".join(resp.headers.getlist("Set-Cookie"))}
+    return fetch
+
+
+@pytest.mark.parametrize("allowed", [True, False])
+def test_shutoff_check_script_before_and_after(monkeypatch, tmp_path, allowed):
+    """遷移前（1）與遷移後（0）各跑一次驗證腳本；報告不含 token，只含假的金絲雀。"""
+    from scripts.security import query_token_shutoff_check as chk
+    app = _app(monkeypatch, tmp_path, AUTH_MODE="none", API_AUTH_ENABLED=True, API_BEARER_TOKENS=[GOOD],
+               TOKEN_ACL_MAP={GOOD: {"allowed_pids": [PID]}}, SESSION_COOKIE_SECURE=True, API_QUERY_TOKEN_ALLOWED=allowed)
+    try:
+        # 腳本用 urllib，沒有 cookie jar；測試用不保存 cookie 的 client，否則票證 cookie 會讓「網址 token」探針被誤判為通過。
+        report = chk.run_checks(_client_fetch(app.test_client(use_cookies=False)), PID, GOOD, allowed)
+        assert report["ok"], report
+        assert GOOD not in json.dumps(report) and report["canary"].startswith("RTCANARY-")
+        wrong = chk.run_checks(_client_fetch(app.test_client(use_cookies=False)), PID, GOOD, not allowed)
+        assert wrong["ok"] is False, "預期與實際設定不符時要失敗"
+    finally:
+        _dispose(app)
+
+
+@pytest.mark.parametrize("env,levels", [
+    ({}, {"SESSION_COOKIE_SECURE": "PASS", "API_QUERY_TOKEN_ALLOWED": "WARN"}),
+    ({"SESSION_COOKIE_SECURE": "0", "API_QUERY_TOKEN_ALLOWED": "1"}, {"SESSION_COOKIE_SECURE": "FAIL", "API_QUERY_TOKEN_ALLOWED": "WARN"}),
+    ({"SESSION_COOKIE_SECURE": "1", "API_QUERY_TOKEN_ALLOWED": "0"}, {"SESSION_COOKIE_SECURE": "PASS", "API_QUERY_TOKEN_ALLOWED": "PASS"}),
+])
+def test_deploy_preflight_cookie_and_query_token_checks(monkeypatch, env, levels):
+    import deploy_preflight as dp
+    for key in ("SESSION_COOKIE_SECURE", "API_QUERY_TOKEN_ALLOWED"):
+        monkeypatch.delenv(key, raising=False)
+    reporter = dp.Reporter()
+    dp._check_security_env(reporter, dict(env, API_AUTH_ENABLED="1"))
+    got = {it.name: it.level for it in reporter.items if it.name in levels}
+    assert got == levels

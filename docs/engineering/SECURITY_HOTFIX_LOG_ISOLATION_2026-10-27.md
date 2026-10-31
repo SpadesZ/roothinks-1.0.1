@@ -143,3 +143,14 @@
 - 新增測試：`test_log_exposure_audit.py`（4）、`test_url_credentials.py`（9）。
 - 真瀏覽器：token 與 session 兩種模式都通過，舊程式的負向控制失敗。
 
+
+## 8. 第三輪：發佈準備（2026-10-31）
+
+| 項目 | 結果 |
+|---|---|
+| 票證 cookie 的 `Secure` | **確認有缺口並已修**。本專案沒有 ProxyFix，TLS 在反向代理終止時 `request.is_secure` 是 False，所以舊版票證 cookie 少了 `Secure`。現在跟隨 `SESSION_COOKIE_SECURE`（正式環境預設 1），直接 HTTPS 時也一定加。紅測試：代理情境在舊程式失敗。真瀏覽器：應用程式看到 HTTP、`SESSION_COOKIE_SECURE=1` 時，cookie 是 `Secure`，圖片仍正常載入（`browser-token-secure.json`） |
+| `API_QUERY_TOKEN_ALLOWED` | **確認有缺口並已修**：上一輪只讀 app.config，正式環境的環境變數沒有接上。現在由 `create_app` 讀取環境變數；Socket 連線網址上的 token 也受同一開關控制 |
+| 部署前檢查 | `deploy_preflight.py`：token 認證開著但 `SESSION_COOKIE_SECURE=0` → FAIL；`API_QUERY_TOKEN_ALLOWED` 不是 0 → WARN |
+| 關閉網址 token 的遷移 | [`RUNBOOK_QUERY_TOKEN_SHUTOFF.md`](RUNBOOK_QUERY_TOKEN_SHUTOFF.md)：盤點用戶端 → 重疊輪替 → 切換 → 金絲雀驗證上游日誌 → 回滾。驗證腳本 `query_token_shutoff_check.py` 在切換前（1）與切換後（0）都測過；預期與實際不符時會失敗 |
+| 舊稿件清理 | [`RUNBOOK_MANUSCRIPT_CREDENTIAL_CLEANUP.md`](RUNBOOK_MANUSCRIPT_CREDENTIAL_CLEANUP.md)＋`manuscript_credential_cleanup.py`：預設只演練；套用時先備份再改；以檔案為單位、可還原。**只在合成資料上執行過** |
+| 調查工具涵蓋範圍 | 報告新增 `coverage` 段：每種輸入是否提供、時間範圍、是否能下結論、缺少哪些輸入。新增 `query_token_warning` 計數，以及稿件檔的檔數、時間範圍、無法讀取的檔數。對抗測試仍是 0 洩漏 |
