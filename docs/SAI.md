@@ -52,7 +52,7 @@ RootThinks 的目標是一個**整合的人機協作科學研究工作區**：AI
 
 - **安全熱修候選** `codex/security-hotfix-log-isolation-20261027`（`b80b94e`）：**直接從 `main` 開出**，只含安全修補與測試（H1／H2 日誌外洩；第二輪 H6 調查工具不含日誌原文、H7 Manuscript token 不再進網址），可以獨立審查與合併，不依賴任何提議修訂。見 [熱修文件](engineering/SECURITY_HOTFIX_LOG_ISOLATION_2026-10-27.md)（只在該分支）。
 - **整合開發候選** `codex/study-coresearch-r4-20261027`：I09 → Study R4 的線性堆疊（下表）。
-- **R4 後續候選** `codex/study-r4-followup-20261028`：R4 ＋ H6／H7 移植 ＋ F1（限定編輯不能經段落出處讀 Study 私人筆記）。見 [第二輪交付](engineering/SECURITY_ROUND2_DELIVERY_2026-10-31.md)。
+- **R4 後續候選** `codex/study-r4-followup-20261028`：R4 ＋ H6／H7 移植 ＋ F1（限定編輯不能經段落出處讀 Study 私人筆記）；完整回歸 1,719／50／0，瀏覽器 58／58。見 [第二輪交付](engineering/SECURITY_ROUND2_DELIVERY_2026-10-31.md)。
 
 | 里程碑 | 狀態 | 證據與 commit |
 |---|---|---|
