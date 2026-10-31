@@ -86,8 +86,10 @@ def list_paragraph_provenance():
                     "summary": [{"kind": st.get("kind"), "text": (st.get("text") or "")[:160],
                                  "claim_support": st.get("claim_support")} for st in n.get("statements") or []]}
                    for n in notes]
-    latest_ver, _ = prov.section_text(pid, section) if section else (None, None)
-    return jsonify(success=True, rev=doc.get("_rev", 0), links=described, notes=choices, latest_s_ver=latest_ver)
+    latest_ver, latest_text = prov.section_text(pid, section) if section else (None, None)
+    cov = prov.coverage(latest_text, described) if section and latest_text is not None else None
+    return jsonify(success=True, rev=doc.get("_rev", 0), links=described, notes=choices, latest_s_ver=latest_ver,
+                   coverage=cov)
 
 
 @bp.route('/api/provenance/link', methods=['POST'])
@@ -142,5 +144,10 @@ def export_paragraph_provenance():
     notes = _notes(pid)
     described = prov.describe(pid, doc["links"], notes, _anchor_status(pid, notes), redact_unshared=_review_scoped(pid),
                               redact_all=_no_study_access(uid, pid))
-    return Response(prov.to_markdown(pid, described), mimetype="text/markdown; charset=utf-8",
+    cov = {}
+    for section in sorted({d.get("section") for d in described if d.get("section")}):
+        _, text = prov.section_text(pid, section)
+        if text is not None:
+            cov[section] = prov.coverage(text, [d for d in described if d.get("section") == section])
+    return Response(prov.to_markdown(pid, described, cov), mimetype="text/markdown; charset=utf-8",
                     headers={"Content-Disposition": f"attachment; filename={pid}_paragraph_provenance.md"})

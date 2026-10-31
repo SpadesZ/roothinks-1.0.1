@@ -402,7 +402,70 @@
                 this.listEl.appendChild(el('div', 'small text-muted', '還沒有證據筆記。在全文選一段文字，按「解釋」或「批判」，再從回答建立草稿。'));
                 return;
             }
-            [...this.notes].reverse().forEach(note => this.listEl.appendChild(this._noteCard(note)));
+            this.listEl.appendChild(this._filterBar());
+            this.cardsEl = el('div');
+            this.listEl.appendChild(this.cardsEl);
+            this._renderCards();
+        }
+
+        // R5：筆記多了以後要找得到。只在瀏覽器端篩選，不改任何資料；重新整理後回到全部。
+        _filterBar() {
+            this.filter = this.filter || { q: '', support: '', usage: '', paper: '' };
+            const bar = el('div', 'd-flex flex-wrap gap-1 mb-2');
+            bar.setAttribute('data-evidence-filter', '1');
+            const q = el('input', 'form-control form-control-sm flex-grow-1');
+            q.placeholder = '搜尋陳述、引文、留言';
+            q.setAttribute('aria-label', '搜尋證據筆記');
+            q.setAttribute('data-evidence-filter-q', '1');
+            q.value = this.filter.q;
+            q.addEventListener('input', () => { this.filter.q = q.value; this._renderCards(); });
+            bar.appendChild(q);
+            const select = (key, label, options) => {
+                const sel = el('select', 'form-select form-select-sm w-auto');
+                sel.setAttribute('aria-label', label);
+                sel.setAttribute(`data-evidence-filter-${key}`, '1');
+                options.forEach(([value, text]) => {
+                    const opt = el('option', '', text);
+                    opt.value = value;
+                    opt.selected = this.filter[key] === value;
+                    sel.appendChild(opt);
+                });
+                sel.addEventListener('change', () => { this.filter[key] = sel.value; this._renderCards(); });
+                bar.appendChild(sel);
+            };
+            select('support', '依研究者判斷篩選', [['', '全部判斷'], ...Object.entries(SUPPORT_SHORT)]);
+            if (!this.reviewScope) {
+                select('usage', '依是否用在稿件篩選', [['', '稿件使用：全部'], ['used', '已用在稿件'], ['unused', '尚未用在稿件']]);
+            }
+            const papers = [...new Set(this.notes.map(n => n.paper_id).filter(Boolean))];
+            if (papers.length > 1) select('paper', '依論文篩選', [['', '全部論文'], ...papers.map(p => [p, p])]);
+            this.filterCountEl = el('span', 'small text-muted align-self-center');
+            this.filterCountEl.setAttribute('data-evidence-filter-count', '1');
+            bar.appendChild(this.filterCountEl);
+            return bar;
+        }
+
+        _matches(note) {
+            const f = this.filter || {};
+            if (f.paper && note.paper_id !== f.paper) return false;
+            if (f.usage === 'used' && !(note.used_in || []).length) return false;
+            if (f.usage === 'unused' && (note.used_in || []).length) return false;
+            const judged = (note.statements || []).filter(st => st.kind !== 'source_fact');
+            if (f.support && !judged.some(st => (st.claim_support || 'not_assessed') === f.support)) return false;
+            const q = String(f.q || '').trim().toLowerCase();
+            if (!q) return true;
+            const hay = [note.title, ...(note.statements || []).map(st => st.text), ...(note.anchors || []).map(a => a.quote),
+                ...(note.comments || []).map(c => c.body)].join('\n').toLowerCase();
+            return hay.includes(q);
+        }
+
+        _renderCards() {
+            if (!this.cardsEl) return;
+            this.cardsEl.replaceChildren();
+            const shown = [...this.notes].reverse().filter(note => this._matches(note));
+            shown.forEach(note => this.cardsEl.appendChild(this._noteCard(note)));
+            if (this.filterCountEl) this.filterCountEl.textContent = `顯示 ${shown.length}／${this.notes.length}`;
+            if (!shown.length) this.cardsEl.appendChild(el('div', 'small text-muted', '沒有符合條件的筆記。'));
         }
 
         _noteCard(note) {

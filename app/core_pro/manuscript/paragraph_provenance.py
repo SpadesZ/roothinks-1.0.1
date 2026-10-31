@@ -209,6 +209,42 @@ def describe(pid, links, notes, anchor_status, redact_unshared=False, redact_all
     return out
 
 
+def split_paragraphs(text):
+    """已保存版本的純文字 → 段落（html_to_text 以換行分段）；空白行與只有標點的行略過。"""
+    out = []
+    for line in str(text or "").split("\n"):
+        clean = normalize(line)
+        if len(clean) >= 2 and any(ch.isalnum() for ch in clean):
+            out.append(clean)
+    return out
+
+
+def coverage(latest_text, described):
+    """每一段目前的出處狀態（R5）。只描述、不阻擋。
+
+    evidence_note：有未撤回的證據筆記連結（連結文字在本段中）；free_writing：研究者標為自由寫作；
+    unmarked：還沒有標記；needs_recheck：有連結但筆記或原文已改變。連結文字已不在最新版本的，算在 orphaned。
+    """
+    paragraphs = split_paragraphs(latest_text)
+    active = [d for d in described if not d.get("retracted")]
+    rows, matched = [], set()
+    for idx, para in enumerate(paragraphs):
+        hits = [d for d in active if normalize(d.get("paragraph_text")) and normalize(d.get("paragraph_text")) in para]
+        matched.update(d["link_id"] for d in hits)
+        kinds = {d["kind"] for d in hits}
+        issues = sorted({i for d in hits for i in d.get("issues") or [] if i != "paragraph_changed"})
+        if "evidence_note" in kinds:
+            state = "needs_recheck" if issues else "evidence_note"
+        elif "free_writing" in kinds:
+            state = "free_writing"
+        else:
+            state = "unmarked"
+        rows.append({"index": idx, "text": para, "state": state, "link_ids": [d["link_id"] for d in hits], "issues": issues})
+    counts = {k: sum(1 for r in rows if r["state"] == k) for k in ("evidence_note", "needs_recheck", "free_writing", "unmarked")}
+    return {"paragraphs": rows, "counts": counts, "total": len(rows),
+            "orphaned_links": sum(1 for d in active if d["link_id"] not in matched)}
+
+
 def used_in(links, note_id):
     """Study 端的反向連結：這則證據筆記被用在哪些段落（未撤回）。"""
     return [{"section": l["section"], "s_ver": l["s_ver"], "excerpt": normalize(l["paragraph_text"])[:80], "link_id": l["link_id"]}
@@ -216,9 +252,15 @@ def used_in(links, note_id):
             and (l.get("note") or {}).get("note_id") == note_id]
 
 
-def to_markdown(pid, described):
+def to_markdown(pid, described, coverage_by_section=None):
     """研究紀錄匯出：逐段列出出處，清楚分開原文、AI 解讀、研究者判斷與自由寫作。"""
-    lines = [f"# 段落出處紀錄：{pid}", "",
+    lines = [f"# 段落出處紀錄：{pid}", ""]
+    labels = {"evidence_note": "連到證據筆記", "needs_recheck": "需要重新核對", "free_writing": "自由寫作", "unmarked": "尚未標記"}
+    for section, cov in (coverage_by_section or {}).items():
+        lines.append(f"- 覆蓋（{section}，最新版本共 {cov['total']} 段）：" +
+                     "、".join(f"{labels[k]} {v}" for k, v in cov["counts"].items()) +
+                     (f"；已不在最新版本的連結 {cov['orphaned_links']}" if cov["orphaned_links"] else ""))
+    lines += ["",
              "> 「引文在原文中找到」只代表引文存在，不代表支持該段落；支持與否只記錄研究者的判斷。",
              "> 自由寫作是研究者自己的文字，沒有連結已核對的證據；這不影響保存或匯出。", ""]
     for item in described:

@@ -198,3 +198,23 @@ def test_section_scoped_coauthor_cannot_read_study_note_snapshots(env):
     assert link(co, 1, kind="free_writing", paragraph_text=OTHER_PARA).status_code == 201, "仍可在自己的章節寫作與標記"
     assert link(co, 2, kind="evidence_note", note_id=nid, paragraph_text=OTHER_PARA).status_code == 403
     assert co.get(f"/manuscript/api/provenance/export?pid={PID}").status_code == 403
+
+
+def test_coverage_shows_each_paragraph_state_without_blocking(env):
+    """R5：本章每一段的出處狀態；改寫後舊連結算 orphaned，新段落是尚未標記。"""
+    app, root, owner, nid = env
+    cov = listed(owner)["coverage"]
+    assert cov["total"] == 2 and cov["counts"] == {"evidence_note": 0, "needs_recheck": 0, "free_writing": 0, "unmarked": 2}
+    assert link(owner, 0, kind="evidence_note", note_id=nid, paragraph_text="只在 300 K 觀察到改善").status_code == 201, "選取一句也算該段"
+    assert link(owner, 1, kind="free_writing", paragraph_text=OTHER_PARA).status_code == 201
+    cov = listed(owner)["coverage"]
+    assert [p["state"] for p in cov["paragraphs"]] == ["evidence_note", "free_writing"] and cov["orphaned_links"] == 0
+    owner.post("/api/study/evidence_notes/update", json={"pid": PID, "base_rev": 1, "note_id": nid,
+                                                         "statements": [{"kind": "human_hypothesis", "text": "改過"}]})
+    assert listed(owner)["coverage"]["paragraphs"][0]["state"] == "needs_recheck"
+    with app.app_context():
+        _save_section(f"<p>全新的第一段。</p><p>{OTHER_PARA}</p>")
+    cov = listed(owner)["coverage"]
+    assert [p["state"] for p in cov["paragraphs"]] == ["unmarked", "free_writing"] and cov["orphaned_links"] == 1
+    text = owner.get(f"/manuscript/api/provenance/export?pid={PID}").get_data(as_text=True)
+    assert "覆蓋（introduction，最新版本共 2 段）" in text and "尚未標記 1" in text

@@ -55,6 +55,8 @@
             <button type="button" id="ppFree" class="btn btn-sm btn-outline-secondary" data-provenance-free="1">標為自由寫作</button>
           </div>
           <div id="ppStatus" role="status" aria-live="polite" class="small text-primary mb-2"></div>
+          <details id="ppCoverageBox" class="mb-2" open><summary class="fw-bold small">本章每一段的出處（最新保存版本）</summary>
+            <div id="ppCoverageSummary" class="small text-muted my-1"></div><div id="ppCoverage"></div></details>
           <div class="d-flex justify-content-between align-items-center"><h6 class="mb-1">這一章的出處</h6>
             <a id="ppExport" class="small">匯出出處紀錄（Markdown）</a></div>
           <div id="ppList"></div>
@@ -120,10 +122,40 @@
         return box;
     }
 
+    const STATE = {
+        evidence_note: ['bg-primary', '連到證據筆記'], needs_recheck: ['bg-warning text-dark', '需要重新核對'],
+        free_writing: ['bg-secondary', '自由寫作'], unmarked: ['bg-light text-dark border', '尚未標記'],
+    };
+
+    function renderCoverage(cov) {
+        const box = byId('ppCoverage');
+        box.textContent = '';
+        if (!cov) { byId('ppCoverageSummary').textContent = '這一章還沒有保存的版本。'; return; }
+        const c = cov.counts;
+        byId('ppCoverageSummary').textContent = `共 ${cov.total} 段：連到證據筆記 ${c.evidence_note}、需要重新核對 ${c.needs_recheck}、`
+            + `自由寫作 ${c.free_writing}、尚未標記 ${c.unmarked}`
+            + (cov.orphaned_links ? `；另有 ${cov.orphaned_links} 筆出處的文字已不在最新版本` : '')
+            + '。只是提示，不影響保存與匯出。';
+        cov.paragraphs.forEach(p => {
+            const row = el('div', 'd-flex align-items-start gap-2 border-bottom py-1 small');
+            row.setAttribute('data-coverage-state', p.state);
+            const [cls, label] = STATE[p.state] || STATE.unmarked;
+            row.appendChild(el('span', `badge ${cls} flex-shrink-0`, label));
+            row.appendChild(el('span', 'flex-grow-1', p.text.length > 140 ? p.text.slice(0, 140) + '…' : p.text));
+            const pick = el('button', 'btn btn-sm btn-link p-0 flex-shrink-0', '選這段');
+            pick.type = 'button';
+            pick.setAttribute('data-coverage-pick', String(p.index));
+            pick.onclick = () => { byId('ppParagraph').value = p.text; status('已帶入這一段；選一則證據筆記或標為自由寫作。'); };
+            row.appendChild(pick);
+            box.appendChild(row);
+        });
+    }
+
     async function load() {
         const data = await api(`/manuscript/api/provenance?pid=${encodeURIComponent(pid)}&section=${encodeURIComponent(section)}`);
         rev = data.rev;
         notes = data.notes || [];
+        renderCoverage(data.coverage);
         const select = byId('ppNote');
         select.textContent = '';
         notes.forEach(n => {

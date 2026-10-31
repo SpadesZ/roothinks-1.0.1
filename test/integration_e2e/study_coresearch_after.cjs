@@ -276,11 +276,18 @@ module.exports=async function after(ctx){
     const linkedText=await linkedCard.innerText();
     check('R4 段落連到證據筆記，分開顯示原文引文、AI 解讀、研究者判斷',linkedText.includes('不代表支持')&&linkedText.includes('AI 解讀')&&
         linkedText.includes('研究者判斷')&&await linkedCard.locator('[data-provenance-issues]').count()===0,linkedText.slice(0,300));
-    await page.locator('#ppParagraph').fill('我們推測退火時間可能影響結果，這是研究者自己的推論。');
+    // R5：用本章段落清單的「選這段」帶入，不必手動選取或複製
+    check('R5 本章段落清單：第一段已連到證據、第二段尚未標記',
+        await page.locator('[data-coverage-state]').nth(0).getAttribute('data-coverage-state')==='evidence_note'&&
+        await page.locator('[data-coverage-state]').nth(1).getAttribute('data-coverage-state')==='unmarked');
+    await page.locator('[data-coverage-pick="1"]').click();
+    check('R5「選這段」帶入第二段全文',(await page.locator('#ppParagraph').inputValue()).includes('退火時間可能影響結果'));
     await page.locator('#ppReason').fill('研究者推論，尚無文獻');
     await page.locator('[data-provenance-free]').click();
     await page.locator('[data-provenance-kind="free_writing"]').first().waitFor({timeout:10000});
     check('R4 沒有證據的段落可以標為自由寫作',await page.locator('[data-provenance-kind="free_writing"]').count()===1);
+    await page.waitForFunction(()=>document.querySelectorAll('[data-coverage-state]')[1]?.getAttribute('data-coverage-state')==='free_writing');
+    check('R5 覆蓋摘要顯示 2 段都已標記',(await page.locator('#ppCoverageSummary').innerText()).includes('尚未標記 0'));
     await snapshot(page,'14-manuscript-provenance-linked');
     // 改寫已連結的段落並保存：保存成功（不被出處擋住），出處標示需要重新核對
     await page.keyboard.press('Escape');
@@ -301,6 +308,10 @@ module.exports=async function after(ctx){
     await page.waitForFunction(()=>document.querySelector('[data-provenance-kind="evidence_note"] [data-provenance-issues]'),null,{timeout:10000});
     const issues=await page.locator('[data-provenance-kind="evidence_note"] [data-provenance-issues]').first().getAttribute('data-provenance-issues');
     check('R4 段落改寫後出處標示需要重新核對',issues.split(',').includes('paragraph_changed'),issues);
+    await page.waitForFunction(()=>document.querySelectorAll('[data-coverage-state]').length===2);
+    check('R5 改寫後第一段變成尚未標記，並提示有出處已不在最新版本',
+        await page.locator('[data-coverage-state]').nth(0).getAttribute('data-coverage-state')==='unmarked'&&
+        (await page.locator('#ppCoverageSummary').innerText()).includes('已不在最新版本'));
     await page.locator('#paragraphProvenancePanel.show').waitFor();
     await page.waitForTimeout(500);  // offcanvas 滑入動畫
     await snapshot(page,'15-manuscript-provenance-recheck');
@@ -314,6 +325,24 @@ module.exports=async function after(ctx){
     await page.locator('[data-notes-tab="evidence"]').click();
     await page.locator('[data-evidence-used-in]').first().waitFor({timeout:10000});
     check('R4 Study 證據筆記顯示被用在稿件哪一段',(await page.locator('[data-evidence-used-in]').first().innerText()).includes('introduction'));
+    // R5：證據筆記搜尋與篩選（只在瀏覽器端，不改資料）
+    const shownCount=async()=>page.locator('#evidence-notes-list [data-evidence-note]').count();
+    const total=await shownCount();
+    await page.locator('[data-evidence-filter-q]').fill('不存在的字串xyz');
+    const none=await shownCount();
+    await page.locator('[data-evidence-filter-q]').fill('混淆因素');
+    const hit=await shownCount();
+    await page.locator('[data-evidence-filter-q]').fill('');
+    await page.locator('[data-evidence-filter-usage]').selectOption('unused');
+    const unused=await shownCount();
+    await page.locator('[data-evidence-filter-usage]').selectOption('used');
+    const used=await shownCount();
+    await page.locator('[data-evidence-filter-usage]').selectOption('');
+    await page.locator('[data-evidence-filter-support]').selectOption('partial');
+    const partial=await shownCount();
+    check('R5 證據筆記可依文字、稿件使用、研究者判斷篩選',total>=1&&none===0&&hit===total&&unused===0&&used===total&&partial===total&&
+        (await page.locator('[data-evidence-filter-count]').innerText()).includes(`${total}／${total}`),{total,none,hit,unused,used,partial});
+    await snapshot(page,'17-evidence-filter');
     await page.context().close();
 
     // ---------- R2-A：教授審閱模式 ----------
