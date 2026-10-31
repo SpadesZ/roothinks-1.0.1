@@ -1,0 +1,34 @@
+{
+ "mode": "token",
+ "checks": [
+  {
+   "name": "token: 圖片載入（網址不帶 token）",
+   "ok": true,
+   "detail": {
+    "loaded": 4
+   }
+  },
+  {
+   "name": "token: 取得限定專案路徑的 HttpOnly 圖片票證",
+   "ok": true,
+   "detail": [
+    {
+     "name": "rt_img_b05684afa607",
+     "path": "/manuscript/image/HOTFIX-p/",
+     "httpOnly": true
+    }
+   ]
+  },
+  {
+   "name": "token: 沒有任何請求網址帶 token",
+   "ok": true,
+   "detail": []
+  },
+  {
+   "name": "token: 確實發出過圖片請求",
+   "ok": true,
+   "detail": 54
+  }
+ ],
+ "requests": 54
+}

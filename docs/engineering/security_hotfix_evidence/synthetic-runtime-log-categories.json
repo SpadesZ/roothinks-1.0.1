@@ -1,4 +1,6 @@
 {
+ "schema": "roothinks.log_exposure_audit/2",
+ "contains_log_text": false,
  "endpoints": [
   "/api/literature/debug/runtime_log_tail",
   "/api/literature/debug/flowb_probe",
@@ -11,21 +13,10 @@
   "covers_to": "2026-10-26 13:38:32",
   "category_lines": {
    "server_path": 256,
-   "pid": 15
+   "project_id": 15
   },
   "distinct_projects_mentioned": 1,
-  "masked_samples": {
-   "server_path": [
-    "2026-10-26 13:22:47,819 [INFO] 1347/MainThread SystemRuntime: [SYSTEM_PROFILE] {\"event\": \"system_profile\", \"ts\": \"2026-10-26 13:22:47\", \"host\": \"vm\", \"cwd\": \"/h",
-    "2026-10-26 13:22:47,820 [INFO] 1347/system-monitor SystemRuntime: [SYSTEM_MONITOR] started interval_sec=15 root_dir=/home/user/roothinks-1.0.1",
-    "2026-10-26 13:22:47,820 [INFO] 1347/MainThread roothinks.app: [Runtime] system_log=/tmp/roothinks-study-browser-9lvhy76j/runtime.log cpu_limit={'requested': 0, "
-   ],
-   "pid": [
-    "2026-10-26 13:22:53,091 [INFO] 1347/Thread-13 (process_request_thread) werkzeug: 127.0.0.1 - - [26/Oct/2026 13:22:53] \"GET /study/project/STUDYCO-p?pid=STUDYCO-",
-    "2026-10-26 13:22:56,095 [INFO] 1347/Thread-37 (process_request_thread) werkzeug: 127.0.0.1 - - [26/Oct/2026 13:22:56] \"GET /study/project/STUDYCO-p?pid=STUDYCO-",
-    "2026-10-26 13:22:56,444 [INFO] 1347/Thread-54 (process_request_thread) werkzeug: 127.0.0.1 - - [26/Oct/2026 13:22:56] \"GET /api/study/conversation/conv_17930209"
-   ]
-  },
-  "note": "runtime_log_tail 每次最多回傳尾端 400 行；被讀到的是呼叫當時的尾端，不是整份檔案。"
- }
+  "note": "只有類別計數，沒有任何原文樣本。runtime_log_tail 每次最多回傳尾端 400 行；被讀到的是呼叫當時的尾端。"
+ },
+ "manuscript": "NOT PROVIDED"
 }

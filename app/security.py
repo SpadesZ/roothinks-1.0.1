@@ -164,11 +164,17 @@ def _extract_bearer_from_header() -> str:
 
 
 def _extract_bearer_fallback() -> str:
-    return (
-        request.headers.get("X-API-Token", "").strip()
-        or request.args.get("access_token", "").strip()
-        or request.args.get("token", "").strip()
-    )
+    header = request.headers.get("X-API-Token", "").strip()
+    if header:
+        return header
+    # 網址參數 token 會被存取日誌、代理與瀏覽器紀錄保存。前端已不再這樣送；
+    # 為了相容舊用戶端預設仍接受，Owner 可設 API_QUERY_TOKEN_ALLOWED=0 關閉。
+    query = request.args.get("access_token", "").strip() or request.args.get("token", "").strip()
+    if query:
+        if not current_app.config.get("API_QUERY_TOKEN_ALLOWED", True):
+            return ""
+        LOGGER.warning("[auth] token sent in URL query for %s; use the Authorization header", request.path)
+    return query
 
 
 def get_request_token() -> str:
@@ -691,6 +697,68 @@ def get_acl_context(default_access: str = "internal") -> Tuple[Optional[str], st
 
 def client_error(message: str, status: int = 400):
     return jsonify({"success": False, "message": message}), status
+
+
+# ---------------------------------------------------------------------------
+# 網址中的憑證（hotfix H7）
+# ---------------------------------------------------------------------------
+CREDENTIAL_PARAMS = ("access_token", "token", "api_key", "apikey")
+_URL_ATTR = re.compile(r"""(?i)\b(src|href)(\s*=\s*)(["'])(.*?)\3""", re.S)
+_CRED_PARAM = re.compile(r"(?i)(\?|&amp;|&)(?:access_token|token|api_key|apikey)=[^&\s#\"'<>]*")
+
+
+def strip_url_credentials(url: str) -> str:
+    """移除單一網址中的憑證參數（access_token、token、api_key）；其他參數保留。"""
+    if not url or "=" not in url:
+        return url
+    out = _CRED_PARAM.sub(lambda m: "?" if m.group(1) == "?" else "", url)
+    out = re.sub(r"\?(?:&amp;|&)", "?", out)
+    return re.sub(r"\?(?=#|$)", "", out)
+
+
+def strip_html_url_credentials(html: str) -> str:
+    """只處理 HTML 的 src／href 屬性值；正文文字不改。用於稿件存檔與讀取，避免 token 被存進版本檔再擴散。"""
+    if not html or "=" not in html:
+        return html
+    return _URL_ATTR.sub(lambda m: f"{m.group(1)}{m.group(2)}{m.group(3)}{strip_url_credentials(m.group(4))}{m.group(3)}", html)
+
+
+IMAGE_TICKET_TTL = 12 * 3600
+
+
+def image_ticket_cookie_name(pid: str) -> str:
+    return "rt_img_" + hashlib.sha256(str(pid).encode()).hexdigest()[:12]
+
+
+def _ticket_sig(payload: str) -> str:
+    key = str(current_app.config.get("SECRET_KEY") or "").encode()
+    return hmac.new(key, payload.encode(), hashlib.sha256).hexdigest()
+
+
+def issue_image_ticket(token: str, pid: str, now: Optional[int] = None) -> str:
+    """圖片專用、限定專案、會過期的票證；裡面沒有 token，只有 token 的指紋。"""
+    import time
+    exp = int(now if now is not None else time.time()) + IMAGE_TICKET_TTL
+    payload = f"{pid}|{exp}|{hashlib.sha256(token.encode()).hexdigest()[:32]}"
+    return payload + "|" + _ticket_sig(payload)
+
+
+def verify_image_ticket(raw: str, pid: str, now: Optional[int] = None) -> str:
+    """有效時回傳對應的 token（之後仍要 check_ownership）；無效回空字串。token 被移除後票證立即失效。"""
+    import time
+    parts = str(raw or "").split("|")
+    if len(parts) != 4:
+        return ""
+    payload, sig = "|".join(parts[:3]), parts[3]
+    if not hmac.compare_digest(sig, _ticket_sig(payload)):
+        return ""
+    ticket_pid, exp, fingerprint = parts[0], parts[1], parts[2]
+    if ticket_pid != pid or not exp.isdigit() or int(exp) < int(now if now is not None else time.time()):
+        return ""
+    for candidate in _configured_tokens():
+        if hmac.compare_digest(hashlib.sha256(candidate.encode()).hexdigest()[:32], fingerprint):
+            return candidate
+    return ""
 
 
 def require_system_admin():

@@ -43,12 +43,9 @@ class ManuImage {
     }
 
     _withAuthToken(url) {
-        const u = String(url || '').trim();
-        if (!u) return '';
-        const token = this._getApiToken();
-        if (!token) return u;
-        const sep = u.includes('?') ? '&' : '?';
-        return `${u}${sep}access_token=${encodeURIComponent(token)}`;
+        // [hotfix H7] 不再把 token 放進網址：網址會進存取日誌、代理紀錄，<img src> 還會被存進稿件 HTML。
+        // session 使用者靠登入 cookie 讀圖；只有 token 的用戶端由 manuscript_ws.js 先取得圖片票證 cookie。
+        return String(url || '').trim();
     }
 
     _escapeHtml(value) {

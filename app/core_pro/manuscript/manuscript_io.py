@@ -63,11 +63,18 @@ import hashlib
 import re
 from datetime import datetime, timezone
 from typing import Optional, List, Dict, Any, Union
-from app.security import validate_id, load_json_locked, write_json_locked, safe_join_under
+from app.security import validate_id, load_json_locked, write_json_locked, safe_join_under, strip_html_url_credentials
 
 import logging
 
 logger = logging.getLogger("app.core_pro.manuscript.manuscript_io")
+
+
+def _without_url_credentials(data):
+    """[hotfix H7] 讀取時也去除舊版本裡的 ?access_token=：舊檔不改寫（不動既有資料），但畫面與匯出不再帶出 token。"""
+    if isinstance(data, dict) and isinstance(data.get("content"), str):
+        data["content"] = strip_html_url_credentials(data["content"])
+    return data
 
 
 # ---------------------------------------------------------------------------
@@ -132,6 +139,10 @@ def check_and_save_block(
             "updated_by": conflict_by,
             "updated_at": conflict_at,
         }
+
+    # [hotfix H7] 圖片網址裡的 token 不得落盤。
+    if isinstance(payload.get("content"), str):
+        payload["content"] = strip_html_url_credentials(payload["content"])
 
     # 存檔：rev +1
     new_rev = current_rev + 1
@@ -430,7 +441,8 @@ class ManuscriptIO:
             # 保留原始 section_key：權限層（can_write_section）與 ChapterAssignment
             # 都以原始值為索引，這裡若寫清洗後的值會對不上。
             'section': str(section or 'general').strip(),
-            'content': content,
+            # [hotfix H7] 圖片網址裡的 token 不得存進版本檔（舊前端會把 ?access_token= 寫進 <img src>）。
+            'content': strip_html_url_credentials(content),
             'ver': ver,
             'from_ver': from_ver,
             'version': f"V{ver}",          # 舊前端讀 version 欄位，保留
@@ -519,7 +531,7 @@ class ManuscriptIO:
             # 保留原始 section_key：權限層（can_write_section）與 ChapterAssignment
             # 都以原始值為索引，這裡若寫清洗後的值會對不上。
             'section': str(section or 'general').strip(),
-            'content': content,
+            'content': strip_html_url_credentials(content),
             'is_draft': True,
             '_updated_at': now_iso,
             '_updated_by': updated_by,
@@ -533,7 +545,7 @@ class ManuscriptIO:
             return None
         try:
             data = load_json_locked(path, None)
-            return data if isinstance(data, dict) else None
+            return _without_url_credentials(data) if isinstance(data, dict) else None
         except Exception as e:
             logger.error(f"[ManuscriptIO] Draft load failed for {path}: {e}")
             return None
@@ -696,7 +708,7 @@ class ManuscriptIO:
 
         payload = {
             'title': title,
-            'content': content,
+            'content': strip_html_url_credentials(content),
             'g_ver': f"V{number}",
             'from_ver': from_ver,
             'sections': dict(sections or {}),
@@ -742,7 +754,7 @@ class ManuscriptIO:
             return None
         try:
             data = load_json_locked(path, None)
-            return data if isinstance(data, dict) else None
+            return _without_url_credentials(data) if isinstance(data, dict) else None
         except Exception as e:
             logger.error(f"[ManuscriptIO] Paper version load failed for {path}: {e}")
             return None
@@ -776,7 +788,7 @@ class ManuscriptIO:
         path = safe_join_under(dir_path, safe_filename)
         if os.path.exists(path):
             try:
-                return load_json_locked(path, None)
+                return _without_url_credentials(load_json_locked(path, None))
             except Exception as e:
                 logger.error(f"[ManuscriptIO] Failed to load paper JSON {filename}: {e}")
         return None
@@ -819,7 +831,7 @@ class ManuscriptIO:
                     data.setdefault("_rev", 0)
                     data.setdefault("_updated_at", None)
                     data.setdefault("_updated_by", None)
-                return data
+                return _without_url_credentials(data)
             except Exception as e:
                 logger.error(f"[ManuscriptIO] Failed to load block JSON {filename}: {e}")
         return None

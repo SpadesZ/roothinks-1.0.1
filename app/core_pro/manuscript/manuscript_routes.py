@@ -81,9 +81,14 @@ from app.core_pro.manuscript.manuscript_docx import (
 )
 from app.models import Project
 from app.security import (
+    IMAGE_TICKET_TTL,
+    _extract_bearer_from_header,
     check_ownership,
     get_request_token,
     get_workspace_role,
+    image_ticket_cookie_name,
+    issue_image_ticket,
+    verify_image_ticket,
     load_json_locked,
     require_socket_auth,
     safe_join_under,
@@ -1209,8 +1214,22 @@ def serve_image(pid, filename):
     formal_pid = _formal_pid(pid)
     if not formal_pid:
         return jsonify({'ok': False, 'message': 'Invalid pid'}), 404
-    if current_app.config.get("API_AUTH_ENABLED", False):
-        token = get_request_token()
+    # [hotfix H7] session 模式：登入者必須是專案成員（原本只要登入就能讀任何專案的圖）。
+    # 成員用 cookie 讀圖，網址不需要也不應該帶 token。
+    session_member = False
+    if str(current_app.config.get("AUTH_MODE", "none")).strip().lower() == "session":
+        try:
+            from flask_login import current_user
+            if current_user.is_authenticated:
+                if get_workspace_role(current_user.id, formal_pid) is None:
+                    return jsonify({'ok': False, 'message': 'Forbidden'}), 403
+                session_member = True
+        except ImportError:
+            pass
+    if current_app.config.get("API_AUTH_ENABLED", False) and not session_member:
+        # 只有 token 的用戶端：標頭 token，或 /manuscript/api/image_session 設的圖片票證 cookie。
+        token = get_request_token() or verify_image_ticket(
+            request.cookies.get(image_ticket_cookie_name(formal_pid), ""), formal_pid)
         if not token:
             return jsonify({'ok': False, 'message': 'Unauthorized'}), 401
         if not check_ownership(token, formal_pid):
@@ -1218,6 +1237,29 @@ def serve_image(pid, filename):
     data_root = os.path.join(os.getcwd(), 'data')
     img_dir = safe_join_under(data_root, formal_pid, 'manuscript', 'image')
     return send_from_directory(img_dir, filename, as_attachment=False)
+
+@bp.route('/api/image_session', methods=['POST'])
+def issue_image_session():
+    """[hotfix H7] 只有 token 的用戶端用標頭驗證後，取得限定本專案圖片路徑的 HttpOnly 票證 cookie。
+
+    <img> 不能帶 Authorization 標頭；舊作法把 token 放進圖片網址，token 因此進了存取日誌、代理紀錄，
+    甚至被存進稿件 HTML。票證不含 token，只對 /manuscript/image/<pid>/ 有效，12 小時過期，token 被移除即失效。
+    """
+    data = request.get_json(silent=True) or {}
+    formal_pid = _formal_pid(data.get('pid'))
+    if not formal_pid:
+        return jsonify({'ok': False, 'message': 'Invalid pid'}), 404
+    if not current_app.config.get("API_AUTH_ENABLED", False):
+        return jsonify({'ok': True, 'ticket': False}), 200
+    token = _extract_bearer_from_header() or request.headers.get("X-API-Token", "").strip()
+    if not token or not check_ownership(token, formal_pid):
+        return jsonify({'ok': False, 'message': 'Forbidden'}), 403
+    resp = jsonify({'ok': True, 'ticket': True})
+    resp.set_cookie(image_ticket_cookie_name(formal_pid), issue_image_ticket(token, formal_pid),
+                    max_age=IMAGE_TICKET_TTL, path=f"/manuscript/image/{formal_pid}/", httponly=True,
+                    secure=request.is_secure, samesite="Strict")
+    return resp
+
 
 @socketio.on('connect', namespace='/manu_ws')
 def handle_connect(auth=None):
