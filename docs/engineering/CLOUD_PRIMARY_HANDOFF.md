@@ -1,8 +1,8 @@
 # Cloud primary 接手文件
 
-溝通及實作報告用繁體中文。**每完成一步就更新本文件。** 目前狀態：**R5 開發候選完成**（研究流程整合＋授權補強）；安全熱修第三輪 `73873d0` 待 Owner。前一狀態：**安全第二輪完成**：熱修候選（從 `main`，`b80b94e`）與 R4 後續候選（`codex/study-r4-followup-20261028`）。都未合併、未部署、未輪替憑證，停在 Owner 決定點。規格與整體狀態以 [`docs/SAI.md`](../SAI.md) 為唯一入口。
+溝通及實作報告用繁體中文。**每完成一步就更新本文件。** 目前狀態：**R5 開發候選完成**（研究流程整合＋授權補強，`codex/study-r5-20261101`）；安全熱修最新 `2c99ce2`（含 H8）待 Owner。前一狀態：**安全第二輪完成**：熱修候選（從 `main`，`b80b94e`）與 R4 後續候選（`codex/study-r4-followup-20261028`）。都未合併、未部署、未輪替憑證，停在 Owner 決定點。規格與整體狀態以 [`docs/SAI.md`](../SAI.md) 為唯一入口。
 
-最後完整驗證點：R4 `457d887`，1,705 通過／50 略過／0 失敗（見下方 R4 段）；更早的 `aa8ff3e`（R2 資料防護）為 1,553 通過／50 略過／0 失敗。
+最後完整驗證點：R5 `bf5716e`，1,736 通過／50 略過／0 失敗；熱修 `2c99ce2` 在 3.10 與 3.12 各 1,140 通過＋1 個 main 既有失敗。之前：R4 `457d887`，1,705 通過／50 略過／0 失敗（見下方 R4 段）；更早的 `aa8ff3e`（R2 資料防護）為 1,553 通過／50 略過／0 失敗。
 已推送個人倉庫（`7c905b5` 起）；推送前後核對，main、整合分支與其他所有分支的遠端 SHA 都沒變。
 
 ## 角色與邊界
@@ -92,7 +92,15 @@ Flow B debug 輸出在 `DATA_ROOT` 不可用時不再寫到 repo `data/`（`Flow
 - Study 篩選：`study_evidence.js` 的 `_filterBar`／`_matches`／`_renderCards`（重新渲染只換卡片區，搜尋框不失焦）。
 - 文獻庫直達：`?read=<paper_id>`（`study_core._openRequestedPaper`）；舊的 `?paper_id=` 行為不變。
 - 寫入矩陣：攻擊角色加 coauthor（目標是未指派的 discussion 章），payload 帶 `section`。新的寫入路由請確認是讀權還是寫權。
-- fixture 新增文獻庫條目；旅程 64 項。
+- fixture 新增文獻庫條目。
+- Socket 矩陣：`python test/integration_e2e/socket_acl_matrix.py <out.json>`（14 個指令 × 7 個角色；owner／editor 是正向控制）。
+  修了 `cmd_load_chat`：coauthor 讀未指派章節、教授審閱身分讀寫作 AI 對話。熱修分支只帶章節檢查（H8）。
+  刻意不送 `chat_message`（會啟動模型，不得花費）。
+- 引文插入：`paragraph_provenance.js` 的 `insertQuote` → 保存後 `save_ack` 觸發 `completePending` 自動建立連結。
+  只給伺服器在原文找得到的引文（`TEXT_FOUND`）。
+- 寫入修補：`scientific_assess` 改用 `_section(..., write=True)`（viewer 不可建立科學建議報告）。
+- 最終：瀏覽器旅程 66／66；完整回歸 `bf5716e` 1,736／50／0；分支頭 `68a7cf1` 之後只改文件。
+- 未做（需要 Owner）：合併、部署、token 輪替、`API_QUERY_TOKEN_ALLOWED=0`、正式資料清理、PA-01–04、真實模型評估、Gate D。
 
 ## 安全第三輪：發佈準備（2026-10-31）
 
