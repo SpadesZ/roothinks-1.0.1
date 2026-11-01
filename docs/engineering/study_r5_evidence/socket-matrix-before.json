@@ -1,0 +1,1133 @@
+{
+ "events": 14,
+ "requests": 98,
+ "findings": [
+  {
+   "severity": "review-scope-read",
+   "role": "prof",
+   "event": "cmd_load_chat",
+   "leaks": [
+    "chat_discussion"
+   ],
+   "mutated": false
+  },
+  {
+   "severity": "section-scope-read",
+   "role": "coauthor",
+   "event": "cmd_load_chat",
+   "leaks": [
+    "chat_discussion"
+   ],
+   "mutated": false
+  }
+ ],
+ "controls": {
+  "cmd_load_chat": {
+   "editor": {
+    "leaks": [
+     "chat_discussion"
+    ],
+    "mutated": false
+   },
+   "owner": {
+    "leaks": [
+     "chat_discussion"
+    ],
+    "mutated": false
+   }
+  },
+  "cmd_load_draft": {
+   "editor": {
+    "leaks": [],
+    "mutated": false
+   },
+   "owner": {
+    "leaks": [
+     "owner_draft"
+    ],
+    "mutated": false
+   }
+  },
+  "cmd_list_blocks": {
+   "editor": {
+    "leaks": [],
+    "mutated": false
+   },
+   "owner": {
+    "leaks": [
+     "owner_draft"
+    ],
+    "mutated": false
+   }
+  },
+  "cmd_load_block": {
+   "editor": {
+    "leaks": [
+     "discussion_section"
+    ],
+    "mutated": false
+   },
+   "owner": {
+    "leaks": [
+     "discussion_section"
+    ],
+    "mutated": false
+   }
+  },
+  "cmd_list_papers": {
+   "editor": {
+    "leaks": [],
+    "mutated": false
+   },
+   "owner": {
+    "leaks": [],
+    "mutated": false
+   }
+  },
+  "cmd_load_paper": {
+   "editor": {
+    "leaks": [
+     "full_paper"
+    ],
+    "mutated": false
+   },
+   "owner": {
+    "leaks": [
+     "full_paper"
+    ],
+    "mutated": false
+   }
+  },
+  "cmd_get_image_registry": {
+   "editor": {
+    "leaks": [],
+    "mutated": false
+   },
+   "owner": {
+    "leaks": [],
+    "mutated": false
+   }
+  },
+  "cmd_cancel_job": {
+   "editor": {
+    "leaks": [],
+    "mutated": false
+   },
+   "owner": {
+    "leaks": [],
+    "mutated": false
+   }
+  },
+  "cmd_save_block": {
+   "editor": {
+    "leaks": [],
+    "mutated": true
+   },
+   "owner": {
+    "leaks": [],
+    "mutated": true
+   }
+  },
+  "cmd_autosave_block": {
+   "editor": {
+    "leaks": [],
+    "mutated": false
+   },
+   "owner": {
+    "leaks": [],
+    "mutated": true
+   }
+  },
+  "cmd_delete_block_version": {
+   "editor": {
+    "leaks": [],
+    "mutated": true
+   },
+   "owner": {
+    "leaks": [],
+    "mutated": true
+   }
+  },
+  "cmd_save_paper": {
+   "editor": {
+    "leaks": [],
+    "mutated": true
+   },
+   "owner": {
+    "leaks": [],
+    "mutated": true
+   }
+  },
+  "cmd_restore_paper_version": {
+   "editor": {
+    "leaks": [
+     "discussion_section",
+     "full_paper",
+     "manuscript_section"
+    ],
+    "mutated": false
+   },
+   "owner": {
+    "leaks": [
+     "discussion_section",
+     "full_paper",
+     "manuscript_section"
+    ],
+    "mutated": false
+   }
+  },
+  "cmd_save_image": {
+   "editor": {
+    "leaks": [],
+    "mutated": true
+   },
+   "owner": {
+    "leaks": [],
+    "mutated": true
+   }
+  }
+ },
+ "rows": [
+  {
+   "event": "cmd_load_chat",
+   "role": "prof",
+   "events": [
+    "chat_history"
+   ],
+   "leaks": [
+    "chat_discussion"
+   ],
+   "mutated": false
+  },
+  {
+   "event": "cmd_load_chat",
+   "role": "legacymentor",
+   "events": [
+    "chat_history"
+   ],
+   "leaks": [
+    "chat_discussion"
+   ],
+   "mutated": false
+  },
+  {
+   "event": "cmd_load_chat",
+   "role": "teamviewer",
+   "events": [
+    "chat_history"
+   ],
+   "leaks": [
+    "chat_discussion"
+   ],
+   "mutated": false
+  },
+  {
+   "event": "cmd_load_chat",
+   "role": "coauthor",
+   "events": [
+    "chat_history"
+   ],
+   "leaks": [
+    "chat_discussion"
+   ],
+   "mutated": false
+  },
+  {
+   "event": "cmd_load_chat",
+   "role": "outsider",
+   "events": [
+    "connect_refused"
+   ],
+   "leaks": [],
+   "mutated": false
+  },
+  {
+   "event": "cmd_load_chat",
+   "role": "editor",
+   "events": [
+    "chat_history"
+   ],
+   "leaks": [
+    "chat_discussion"
+   ],
+   "mutated": false
+  },
+  {
+   "event": "cmd_load_chat",
+   "role": "owner",
+   "events": [
+    "chat_history"
+   ],
+   "leaks": [
+    "chat_discussion"
+   ],
+   "mutated": false
+  },
+  {
+   "event": "cmd_load_draft",
+   "role": "prof",
+   "events": [
+    "draft_loaded"
+   ],
+   "leaks": [],
+   "mutated": false
+  },
+  {
+   "event": "cmd_load_draft",
+   "role": "legacymentor",
+   "events": [
+    "draft_loaded"
+   ],
+   "leaks": [],
+   "mutated": false
+  },
+  {
+   "event": "cmd_load_draft",
+   "role": "teamviewer",
+   "events": [
+    "draft_loaded"
+   ],
+   "leaks": [],
+   "mutated": false
+  },
+  {
+   "event": "cmd_load_draft",
+   "role": "coauthor",
+   "events": [
+    "draft_loaded"
+   ],
+   "leaks": [],
+   "mutated": false
+  },
+  {
+   "event": "cmd_load_draft",
+   "role": "outsider",
+   "events": [
+    "connect_refused"
+   ],
+   "leaks": [],
+   "mutated": false
+  },
+  {
+   "event": "cmd_load_draft",
+   "role": "editor",
+   "events": [
+    "draft_loaded"
+   ],
+   "leaks": [],
+   "mutated": false
+  },
+  {
+   "event": "cmd_load_draft",
+   "role": "owner",
+   "events": [
+    "draft_loaded"
+   ],
+   "leaks": [
+    "owner_draft"
+   ],
+   "mutated": false
+  },
+  {
+   "event": "cmd_list_blocks",
+   "role": "prof",
+   "events": [
+    "block_list"
+   ],
+   "leaks": [],
+   "mutated": false
+  },
+  {
+   "event": "cmd_list_blocks",
+   "role": "legacymentor",
+   "events": [
+    "block_list"
+   ],
+   "leaks": [],
+   "mutated": false
+  },
+  {
+   "event": "cmd_list_blocks",
+   "role": "teamviewer",
+   "events": [
+    "block_list"
+   ],
+   "leaks": [],
+   "mutated": false
+  },
+  {
+   "event": "cmd_list_blocks",
+   "role": "coauthor",
+   "events": [
+    "block_list"
+   ],
+   "leaks": [],
+   "mutated": false
+  },
+  {
+   "event": "cmd_list_blocks",
+   "role": "outsider",
+   "events": [
+    "connect_refused"
+   ],
+   "leaks": [],
+   "mutated": false
+  },
+  {
+   "event": "cmd_list_blocks",
+   "role": "editor",
+   "events": [
+    "block_list"
+   ],
+   "leaks": [],
+   "mutated": false
+  },
+  {
+   "event": "cmd_list_blocks",
+   "role": "owner",
+   "events": [
+    "block_list"
+   ],
+   "leaks": [
+    "owner_draft"
+   ],
+   "mutated": false
+  },
+  {
+   "event": "cmd_load_block",
+   "role": "prof",
+   "events": [
+    "block_loaded"
+   ],
+   "leaks": [
+    "discussion_section"
+   ],
+   "mutated": false
+  },
+  {
+   "event": "cmd_load_block",
+   "role": "legacymentor",
+   "events": [
+    "block_loaded"
+   ],
+   "leaks": [
+    "discussion_section"
+   ],
+   "mutated": false
+  },
+  {
+   "event": "cmd_load_block",
+   "role": "teamviewer",
+   "events": [
+    "block_loaded"
+   ],
+   "leaks": [
+    "discussion_section"
+   ],
+   "mutated": false
+  },
+  {
+   "event": "cmd_load_block",
+   "role": "coauthor",
+   "events": [
+    "sys_msg",
+    "block_loaded"
+   ],
+   "leaks": [],
+   "mutated": false
+  },
+  {
+   "event": "cmd_load_block",
+   "role": "outsider",
+   "events": [
+    "connect_refused"
+   ],
+   "leaks": [],
+   "mutated": false
+  },
+  {
+   "event": "cmd_load_block",
+   "role": "editor",
+   "events": [
+    "block_loaded"
+   ],
+   "leaks": [
+    "discussion_section"
+   ],
+   "mutated": false
+  },
+  {
+   "event": "cmd_load_block",
+   "role": "owner",
+   "events": [
+    "block_loaded"
+   ],
+   "leaks": [
+    "discussion_section"
+   ],
+   "mutated": false
+  },
+  {
+   "event": "cmd_list_papers",
+   "role": "prof",
+   "events": [
+    "paper_list"
+   ],
+   "leaks": [],
+   "mutated": false
+  },
+  {
+   "event": "cmd_list_papers",
+   "role": "legacymentor",
+   "events": [
+    "paper_list"
+   ],
+   "leaks": [],
+   "mutated": false
+  },
+  {
+   "event": "cmd_list_papers",
+   "role": "teamviewer",
+   "events": [
+    "paper_list"
+   ],
+   "leaks": [],
+   "mutated": false
+  },
+  {
+   "event": "cmd_list_papers",
+   "role": "coauthor",
+   "events": [
+    "paper_list"
+   ],
+   "leaks": [],
+   "mutated": false
+  },
+  {
+   "event": "cmd_list_papers",
+   "role": "outsider",
+   "events": [
+    "connect_refused"
+   ],
+   "leaks": [],
+   "mutated": false
+  },
+  {
+   "event": "cmd_list_papers",
+   "role": "editor",
+   "events": [
+    "paper_list"
+   ],
+   "leaks": [],
+   "mutated": false
+  },
+  {
+   "event": "cmd_list_papers",
+   "role": "owner",
+   "events": [
+    "paper_list"
+   ],
+   "leaks": [],
+   "mutated": false
+  },
+  {
+   "event": "cmd_load_paper",
+   "role": "prof",
+   "events": [
+    "paper_loaded"
+   ],
+   "leaks": [
+    "full_paper"
+   ],
+   "mutated": false
+  },
+  {
+   "event": "cmd_load_paper",
+   "role": "legacymentor",
+   "events": [
+    "paper_loaded"
+   ],
+   "leaks": [
+    "full_paper"
+   ],
+   "mutated": false
+  },
+  {
+   "event": "cmd_load_paper",
+   "role": "teamviewer",
+   "events": [
+    "paper_loaded"
+   ],
+   "leaks": [
+    "full_paper"
+   ],
+   "mutated": false
+  },
+  {
+   "event": "cmd_load_paper",
+   "role": "coauthor",
+   "events": [
+    "sys_msg"
+   ],
+   "leaks": [],
+   "mutated": false
+  },
+  {
+   "event": "cmd_load_paper",
+   "role": "outsider",
+   "events": [
+    "connect_refused"
+   ],
+   "leaks": [],
+   "mutated": false
+  },
+  {
+   "event": "cmd_load_paper",
+   "role": "editor",
+   "events": [
+    "paper_loaded"
+   ],
+   "leaks": [
+    "full_paper"
+   ],
+   "mutated": false
+  },
+  {
+   "event": "cmd_load_paper",
+   "role": "owner",
+   "events": [
+    "paper_loaded"
+   ],
+   "leaks": [
+    "full_paper"
+   ],
+   "mutated": false
+  },
+  {
+   "event": "cmd_get_image_registry",
+   "role": "prof",
+   "events": [
+    "image_registry_data"
+   ],
+   "leaks": [],
+   "mutated": false
+  },
+  {
+   "event": "cmd_get_image_registry",
+   "role": "legacymentor",
+   "events": [
+    "image_registry_data"
+   ],
+   "leaks": [],
+   "mutated": false
+  },
+  {
+   "event": "cmd_get_image_registry",
+   "role": "teamviewer",
+   "events": [
+    "image_registry_data"
+   ],
+   "leaks": [],
+   "mutated": false
+  },
+  {
+   "event": "cmd_get_image_registry",
+   "role": "coauthor",
+   "events": [
+    "image_registry_data"
+   ],
+   "leaks": [],
+   "mutated": false
+  },
+  {
+   "event": "cmd_get_image_registry",
+   "role": "outsider",
+   "events": [
+    "connect_refused"
+   ],
+   "leaks": [],
+   "mutated": false
+  },
+  {
+   "event": "cmd_get_image_registry",
+   "role": "editor",
+   "events": [
+    "image_registry_data"
+   ],
+   "leaks": [],
+   "mutated": false
+  },
+  {
+   "event": "cmd_get_image_registry",
+   "role": "owner",
+   "events": [
+    "image_registry_data"
+   ],
+   "leaks": [],
+   "mutated": false
+  },
+  {
+   "event": "cmd_cancel_job",
+   "role": "prof",
+   "events": [
+    "job_cancelled"
+   ],
+   "leaks": [],
+   "mutated": false
+  },
+  {
+   "event": "cmd_cancel_job",
+   "role": "legacymentor",
+   "events": [
+    "job_cancelled"
+   ],
+   "leaks": [],
+   "mutated": false
+  },
+  {
+   "event": "cmd_cancel_job",
+   "role": "teamviewer",
+   "events": [
+    "job_cancelled"
+   ],
+   "leaks": [],
+   "mutated": false
+  },
+  {
+   "event": "cmd_cancel_job",
+   "role": "coauthor",
+   "events": [
+    "job_cancelled"
+   ],
+   "leaks": [],
+   "mutated": false
+  },
+  {
+   "event": "cmd_cancel_job",
+   "role": "outsider",
+   "events": [
+    "connect_refused"
+   ],
+   "leaks": [],
+   "mutated": false
+  },
+  {
+   "event": "cmd_cancel_job",
+   "role": "editor",
+   "events": [
+    "job_cancelled"
+   ],
+   "leaks": [],
+   "mutated": false
+  },
+  {
+   "event": "cmd_cancel_job",
+   "role": "owner",
+   "events": [
+    "job_cancelled"
+   ],
+   "leaks": [],
+   "mutated": false
+  },
+  {
+   "event": "cmd_save_block",
+   "role": "prof",
+   "events": [
+    "sys_msg"
+   ],
+   "leaks": [],
+   "mutated": false
+  },
+  {
+   "event": "cmd_save_block",
+   "role": "legacymentor",
+   "events": [
+    "sys_msg"
+   ],
+   "leaks": [],
+   "mutated": false
+  },
+  {
+   "event": "cmd_save_block",
+   "role": "teamviewer",
+   "events": [
+    "sys_msg"
+   ],
+   "leaks": [],
+   "mutated": false
+  },
+  {
+   "event": "cmd_save_block",
+   "role": "coauthor",
+   "events": [
+    "sys_msg"
+   ],
+   "leaks": [],
+   "mutated": false
+  },
+  {
+   "event": "cmd_save_block",
+   "role": "outsider",
+   "events": [
+    "connect_refused"
+   ],
+   "leaks": [],
+   "mutated": false
+  },
+  {
+   "event": "cmd_save_block",
+   "role": "editor",
+   "events": [
+    "save_ack",
+    "peer_update"
+   ],
+   "leaks": [],
+   "mutated": true
+  },
+  {
+   "event": "cmd_save_block",
+   "role": "owner",
+   "events": [
+    "save_ack",
+    "peer_update"
+   ],
+   "leaks": [],
+   "mutated": true
+  },
+  {
+   "event": "cmd_autosave_block",
+   "role": "prof",
+   "events": [],
+   "leaks": [],
+   "mutated": false
+  },
+  {
+   "event": "cmd_autosave_block",
+   "role": "legacymentor",
+   "events": [],
+   "leaks": [],
+   "mutated": false
+  },
+  {
+   "event": "cmd_autosave_block",
+   "role": "teamviewer",
+   "events": [],
+   "leaks": [],
+   "mutated": false
+  },
+  {
+   "event": "cmd_autosave_block",
+   "role": "coauthor",
+   "events": [],
+   "leaks": [],
+   "mutated": false
+  },
+  {
+   "event": "cmd_autosave_block",
+   "role": "outsider",
+   "events": [
+    "connect_refused"
+   ],
+   "leaks": [],
+   "mutated": false
+  },
+  {
+   "event": "cmd_autosave_block",
+   "role": "editor",
+   "events": [
+    "autosave_ack"
+   ],
+   "leaks": [],
+   "mutated": false
+  },
+  {
+   "event": "cmd_autosave_block",
+   "role": "owner",
+   "events": [
+    "autosave_ack"
+   ],
+   "leaks": [],
+   "mutated": true
+  },
+  {
+   "event": "cmd_delete_block_version",
+   "role": "prof",
+   "events": [
+    "sys_msg"
+   ],
+   "leaks": [],
+   "mutated": false
+  },
+  {
+   "event": "cmd_delete_block_version",
+   "role": "legacymentor",
+   "events": [
+    "sys_msg"
+   ],
+   "leaks": [],
+   "mutated": false
+  },
+  {
+   "event": "cmd_delete_block_version",
+   "role": "teamviewer",
+   "events": [
+    "sys_msg"
+   ],
+   "leaks": [],
+   "mutated": false
+  },
+  {
+   "event": "cmd_delete_block_version",
+   "role": "coauthor",
+   "events": [
+    "sys_msg"
+   ],
+   "leaks": [],
+   "mutated": false
+  },
+  {
+   "event": "cmd_delete_block_version",
+   "role": "outsider",
+   "events": [
+    "connect_refused"
+   ],
+   "leaks": [],
+   "mutated": false
+  },
+  {
+   "event": "cmd_delete_block_version",
+   "role": "editor",
+   "events": [
+    "block_version_deleted"
+   ],
+   "leaks": [],
+   "mutated": true
+  },
+  {
+   "event": "cmd_delete_block_version",
+   "role": "owner",
+   "events": [
+    "block_version_deleted"
+   ],
+   "leaks": [],
+   "mutated": true
+  },
+  {
+   "event": "cmd_save_paper",
+   "role": "prof",
+   "events": [
+    "sys_msg"
+   ],
+   "leaks": [],
+   "mutated": false
+  },
+  {
+   "event": "cmd_save_paper",
+   "role": "legacymentor",
+   "events": [
+    "sys_msg"
+   ],
+   "leaks": [],
+   "mutated": false
+  },
+  {
+   "event": "cmd_save_paper",
+   "role": "teamviewer",
+   "events": [
+    "sys_msg"
+   ],
+   "leaks": [],
+   "mutated": false
+  },
+  {
+   "event": "cmd_save_paper",
+   "role": "coauthor",
+   "events": [
+    "sys_msg"
+   ],
+   "leaks": [],
+   "mutated": false
+  },
+  {
+   "event": "cmd_save_paper",
+   "role": "outsider",
+   "events": [
+    "connect_refused"
+   ],
+   "leaks": [],
+   "mutated": false
+  },
+  {
+   "event": "cmd_save_paper",
+   "role": "editor",
+   "events": [
+    "save_ack",
+    "peer_update"
+   ],
+   "leaks": [],
+   "mutated": true
+  },
+  {
+   "event": "cmd_save_paper",
+   "role": "owner",
+   "events": [
+    "save_ack",
+    "peer_update"
+   ],
+   "leaks": [],
+   "mutated": true
+  },
+  {
+   "event": "cmd_restore_paper_version",
+   "role": "prof",
+   "events": [
+    "paper_restored"
+   ],
+   "leaks": [
+    "discussion_section",
+    "full_paper",
+    "manuscript_section"
+   ],
+   "mutated": false
+  },
+  {
+   "event": "cmd_restore_paper_version",
+   "role": "legacymentor",
+   "events": [
+    "paper_restored"
+   ],
+   "leaks": [
+    "discussion_section",
+    "full_paper",
+    "manuscript_section"
+   ],
+   "mutated": false
+  },
+  {
+   "event": "cmd_restore_paper_version",
+   "role": "teamviewer",
+   "events": [
+    "paper_restored"
+   ],
+   "leaks": [
+    "discussion_section",
+    "full_paper",
+    "manuscript_section"
+   ],
+   "mutated": false
+  },
+  {
+   "event": "cmd_restore_paper_version",
+   "role": "coauthor",
+   "events": [
+    "paper_restored"
+   ],
+   "leaks": [],
+   "mutated": false
+  },
+  {
+   "event": "cmd_restore_paper_version",
+   "role": "outsider",
+   "events": [
+    "connect_refused"
+   ],
+   "leaks": [],
+   "mutated": false
+  },
+  {
+   "event": "cmd_restore_paper_version",
+   "role": "editor",
+   "events": [
+    "paper_restored"
+   ],
+   "leaks": [
+    "discussion_section",
+    "full_paper",
+    "manuscript_section"
+   ],
+   "mutated": false
+  },
+  {
+   "event": "cmd_restore_paper_version",
+   "role": "owner",
+   "events": [
+    "paper_restored"
+   ],
+   "leaks": [
+    "discussion_section",
+    "full_paper",
+    "manuscript_section"
+   ],
+   "mutated": false
+  },
+  {
+   "event": "cmd_save_image",
+   "role": "prof",
+   "events": [
+    "image_saved",
+    "sys_msg"
+   ],
+   "leaks": [],
+   "mutated": false
+  },
+  {
+   "event": "cmd_save_image",
+   "role": "legacymentor",
+   "events": [
+    "image_saved",
+    "sys_msg"
+   ],
+   "leaks": [],
+   "mutated": false
+  },
+  {
+   "event": "cmd_save_image",
+   "role": "teamviewer",
+   "events": [
+    "image_saved",
+    "sys_msg"
+   ],
+   "leaks": [],
+   "mutated": false
+  },
+  {
+   "event": "cmd_save_image",
+   "role": "coauthor",
+   "events": [
+    "image_saved",
+    "sys_msg"
+   ],
+   "leaks": [],
+   "mutated": false
+  },
+  {
+   "event": "cmd_save_image",
+   "role": "outsider",
+   "events": [
+    "connect_refused"
+   ],
+   "leaks": [],
+   "mutated": false
+  },
+  {
+   "event": "cmd_save_image",
+   "role": "editor",
+   "events": [
+    "image_saved",
+    "sys_msg"
+   ],
+   "leaks": [],
+   "mutated": true
+  },
+  {
+   "event": "cmd_save_image",
+   "role": "owner",
+   "events": [
+    "image_saved",
+    "sys_msg"
+   ],
+   "leaks": [],
+   "mutated": true
+  }
+ ]
+}

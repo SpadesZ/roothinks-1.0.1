@@ -84,3 +84,19 @@ def test_irreversible_deletes_need_owner_or_creator(matrix):
     assert editor.post(f"/api/study/conversation/{conv}/delete", json={"pid": pid}).status_code == 403
     assert owner.post(f"/api/study/conversation/{conv}/delete", json={"pid": pid}).json["ok"] is True
     assert owner.post("/api/literature/delete_paper", json={"pid": pid, "paper_id": base.PAPER}).status_code == 200
+
+
+def test_socket_matrix_no_findings_and_controls_fire(matrix, monkeypatch):
+    """R5：Manuscript Socket 指令（14 個 × 7 個角色）。修補前 coauthor 與教授審閱身分可讀別章／寫作 AI 對話。
+    正向控制必須觸發：owner 存檔會寫入、owner 讀得到自己的草稿、editor 讀不到 owner 的草稿。"""
+    sys.modules.pop("socket_acl_matrix", None)
+    import socket_acl_matrix
+    result = socket_acl_matrix.run()
+    assert result["events"] == 14 and result["requests"] == 98
+    assert result["findings"] == [], json.dumps(result["findings"], ensure_ascii=False)
+    ctrl = result["controls"]
+    assert ctrl["cmd_save_block"]["owner"]["mutated"] and ctrl["cmd_autosave_block"]["owner"]["mutated"]
+    assert ctrl["cmd_load_chat"]["owner"]["leaks"] == ["chat_discussion"]
+    assert "owner_draft" in ctrl["cmd_load_draft"]["owner"]["leaks"] and not ctrl["cmd_load_draft"]["editor"]["leaks"]
+    refused = {r["role"] for r in result["rows"] if r["events"] == ["connect_refused"]}
+    assert refused == {"outsider"}

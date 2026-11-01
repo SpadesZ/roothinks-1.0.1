@@ -1394,6 +1394,16 @@ def handle_load_chat(data):
         forbidden_payload={'section': section, 'history': []},
     ):
         return
+    # [R5 Socket 矩陣] 章節層讀取：限定編輯只讀得到被指派章節的寫作 AI 對話（與 cmd_load_block 同一條線；
+    # 送訊息本來就要求該章寫入權）。教授審閱身分不讀寫作 AI 對話（與 PA-01 對 Study／Literature／PAQ 對話一致，提議中）。
+    chat_uid = _session_uid()
+    if chat_uid is not None and not _socket_can_read_section(chat_uid, formal_pid, section_raw if section_raw else section):
+        emit('chat_history', {'section': section, 'history': [], 'forbidden': True})
+        return
+    from app.security import current_user_review_scoped
+    if current_user_review_scoped(formal_pid):
+        emit('chat_history', {'section': section, 'history': [], 'review_scope': True})
+        return
 
     # [Batch C] 使用 safe_join_under + DATA_ROOT 防相對路徑繞過
     data_root = _get_data_root()
