@@ -170,3 +170,16 @@
 - **驗證**：
   - `test_manuscript_chat_section_scope.py`（3 個）：拿掉修補後 1 個失敗。
   - Python 3.10 完整回歸：1,140 通過、1 失敗，失敗清單與未修補的 `main` 逐行相同。
+
+## 10. 第五輪：章節結構只有 editor 以上能改（H9，2026-11-01）
+
+- **發現**：R6 的流程稽核發現 `POST /manuscript/api/sections/<pid>`（`save_sections`）只檢查專案成員資格。
+  - viewer、限定編輯（coauthor）、教授審閱身分都能送出新的章節清單。
+  - 伺服器會先刪掉全部章節設定再重建。所以這些角色能刪除或改名整份稿件的章節，包括別人被指派的章節。
+  - 章節檔案還留在磁碟上，但會從介面、全篇總裝和 AI 脈絡中消失。
+  - `main` 也有這個問題。R4／R5 的寫入矩陣沒發現它，因為通用探測內容沒有 `sections` 欄位，請求在格式檢查就被拒絕了。
+- **修補**：在任何資料庫變更之前先檢查 `_socket_can_write`（editor 以上）。讀取章節清單（GET）的行為不變。
+  - 這是既有角色政策（viewer 唯讀、coauthor 只寫被指派的章節）的漏洞，**不是新政策**。
+- **驗證**：
+  - `test_manuscript_sections_acl.py`（3 個）：修補前 viewer 與 coauthor 兩個測試失敗，修補後全過（3.12 與 3.10）。
+  - 整合分支的寫入矩陣已補上真實的 `sections` 探測內容。

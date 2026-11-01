@@ -863,6 +863,11 @@ def save_sections(pid):
     pid = _resolve_formal_project_pid(pid)
     if not pid:
         return jsonify({'ok': False, 'message': 'Invalid pid'}), 404
+    # H9：章節結構是整份稿件的設定（刪除、改名、排序會影響所有人的章節）；只有 editor 以上可以改。
+    # 藍圖層只檢查專案成員，viewer 與限定編輯（coauthor）原本都能刪掉別人的章節。
+    uid = _session_uid()
+    if uid is not None and not _socket_can_write(uid, pid):
+        return jsonify({'ok': False, 'message': 'Forbidden'}), 403
 
     data = request.get_json(silent=True) or {}
     sections = data.get('sections', [])
