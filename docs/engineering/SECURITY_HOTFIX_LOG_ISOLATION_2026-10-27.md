@@ -159,3 +159,14 @@
 
 - Python 3.10 與 3.12：都是 1,137 通過、1 失敗。失敗清單與未修補的 `main` **逐行相同**。
 - 真瀏覽器全部通過：token、session、正式 cookie 模式（`HOTFIX_SECURE=1`）。
+
+## 9. 第四輪：寫作 AI 對話的章節隔離（H8，2026-11-01）
+
+- **發現**：R5 的 Socket 權限矩陣（整合分支）發現 `cmd_load_chat` 只檢查專案成員資格。限定編輯（coauthor）只要指定別章的 section，就能讀到別章的寫作 AI 對話。
+  - 同一個讀取路徑上，`cmd_load_block` 早就有章節檢查，這裡漏了。
+  - `main` 也有同樣問題，屬於既有章節隔離政策的漏洞，**不是新政策**。
+- **修補**：在讀取之前加上章節讀取檢查（`_socket_can_read_section`）。editor 與 viewer 可以讀全部章節，行為不變。
+  - 教授審閱身分的部分依賴 PA-01（提議中），**不放進熱修**。
+- **驗證**：
+  - `test_manuscript_chat_section_scope.py`（3 個）：拿掉修補後 1 個失敗。
+  - Python 3.10 完整回歸：1,140 通過、1 失敗，失敗清單與未修補的 `main` 逐行相同。

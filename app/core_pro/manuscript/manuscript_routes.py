@@ -1327,6 +1327,12 @@ def handle_load_chat(data):
         forbidden_payload={'section': section, 'history': []},
     ):
         return
+    # [hotfix H8] 章節層讀取：限定編輯（coauthor）只讀得到被指派章節的寫作 AI 對話。
+    # 原本只檢查專案成員，coauthor 指定別章的 section 就能讀到別章的對話（cmd_load_block 早有章節檢查，這裡漏了）。
+    chat_uid = _session_uid()
+    if chat_uid is not None and not _socket_can_read_section(chat_uid, formal_pid, section_raw if section_raw else section):
+        emit('chat_history', {'section': section, 'history': [], 'forbidden': True})
+        return
 
     # [Batch C] 使用 safe_join_under + DATA_ROOT 防相對路徑繞過
     data_root = _get_data_root()
