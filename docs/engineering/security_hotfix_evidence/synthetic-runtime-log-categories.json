@@ -1,0 +1,22 @@
+{
+ "schema": "roothinks.log_exposure_audit/2",
+ "contains_log_text": false,
+ "endpoints": [
+  "/api/literature/debug/runtime_log_tail",
+  "/api/literature/debug/flowb_probe",
+  "/api/literature/debug/recover_flowb"
+ ],
+ "access": "NOT PROVIDED — 無法判斷是否被呼叫",
+ "runtime": {
+  "lines": 365,
+  "covers_from": "2026-10-26 13:22:47",
+  "covers_to": "2026-10-26 13:38:32",
+  "category_lines": {
+   "server_path": 256,
+   "project_id": 15
+  },
+  "distinct_projects_mentioned": 1,
+  "note": "只有類別計數，沒有任何原文樣本。runtime_log_tail 每次最多回傳尾端 400 行；被讀到的是呼叫當時的尾端。"
+ },
+ "manuscript": "NOT PROVIDED"
+}
