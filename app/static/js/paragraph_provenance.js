@@ -3,6 +3,9 @@
 // 模組定位: Manuscript「段落出處」面板（R4）。把已保存的一段寫作連到 Study 證據筆記，或標成自由寫作。
 // 主要責任: 顯示每段的出處與「需要重新核對」提示（段落、筆記、原文改變）；撤回只追加紀錄；匯出 Markdown 研究紀錄。
 // 邊界: 出處狀態只是提示，不擋寫作、保存、匯出。引文找到不代表支持；支持與否只顯示研究者的判斷。
+// 位置（R6）: 同一段文字可能出現多次。「選這段」送段落編號、編輯器選取送前後文，讓伺服器確定是哪一處；
+//       無法確定時伺服器拒絕連結（不猜），覆蓋清單把位置不明確的連結另外列出，不算有出處。
+// 引文（R6）: 只有用目前原文重新核對仍找得到的引文可以插入；譯文一律標「機器翻譯，非原文」，頁碼寫成 PDF 第 N 頁。
 //       所有使用者與模型文字一律 textContent。伺服器重新驗證章節權限、版本與段落文字。
 // 驗證: node --check app/static/js/paragraph_provenance.js；test/integration_e2e/study_coresearch_after.cjs
 (function () {
@@ -11,7 +14,8 @@
     const KIND = { source_fact: '原文事實', ai_interpretation: 'AI 解讀', human_hypothesis: '研究者假說' };
     const SUPPORT = { not_assessed: '未判定是否支持', supports: '研究者判斷：支持', partial: '研究者判斷：部分支持',
         does_not_support: '研究者判斷：不支持' };
-    let pid = '', section = '', rev = 0, notes = [];
+    let pid = '', section = '', rev = 0, notes = [], latestSVer = null;
+    let hint = null;  // 帶入文字時的位置提示：{text, paragraph_index, s_ver} 或 {text, context_before, context_after}
 
     function el(tag, cls, text) {
         const node = document.createElement(tag);
@@ -79,11 +83,26 @@
         (note.summary || []).forEach(st => box.appendChild(el('div', '',
             `【${KIND[st.kind] || st.kind}】${st.text}${st.kind !== 'source_fact' ? '（' + (SUPPORT[st.claim_support || 'not_assessed']) + '）' : ''}`)));
         (note.quotes || []).forEach((q, i) => {
-            const btn = el('button', 'btn btn-sm btn-outline-primary mt-1 me-1', `插入原文引文 ${i + 1} 到 2B（保存後自動連結）`);
-            btn.type = 'button';
-            btn.setAttribute('data-provenance-insert-quote', String(i));
-            btn.onclick = () => insertQuote(note, q);
-            box.appendChild(btn);
+            const row = el('div', 'border-top pt-1 mt-1');
+            row.setAttribute('data-provenance-quote', String(q.anchor_index));
+            row.setAttribute('data-quote-side', q.machine_translation ? 'machine_translation' : 'original');
+            const side = q.machine_translation ? '機器翻譯（非原文）' : (q.match_kind === 'paragraph_from_translation' ? '整段原文（由譯文選取推得）' : '原文');
+            row.appendChild(el('span', `badge ${q.machine_translation ? 'bg-warning text-dark' : 'bg-success'} me-1`, side));
+            row.appendChild(el('span', 'text-muted', `PDF 第 ${q.page || '?'} 頁 · 目前原文核對：${q.status_label}`));
+            row.appendChild(el('div', '', q.quote.length > 160 ? q.quote.slice(0, 160) + '…' : q.quote));
+            if (q.insertable) {
+                const btn = el('button', 'btn btn-sm btn-outline-primary mt-1 me-1',
+                    q.machine_translation ? `插入機器翻譯 ${i + 1} 到 2B（標示非原文；保存後自動連結）` : `插入原文引文 ${i + 1} 到 2B（保存後自動連結）`);
+                btn.type = 'button';
+                btn.setAttribute('data-provenance-insert-quote', String(i));
+                btn.onclick = () => insertQuote(note, q);
+                row.appendChild(btn);
+            } else {
+                const blocked = el('div', 'text-danger', `不能插入：${q.blocked_reason || q.status_label}`);
+                blocked.setAttribute('data-provenance-quote-blocked', q.current_status);
+                row.appendChild(blocked);
+            }
+            box.appendChild(row);
         });
     }
 
@@ -92,19 +111,25 @@
     let pending = null;
 
     function quoteText(note, q) {
-        const where = [q.paper_id || note.paper_id, q.page ? `p.${q.page}` : '', q.side === 'translation' ? '譯文' : ''].filter(Boolean).join('，');
-        return `「${q.quote}」（${where}）`;
+        const page = q.page ? `PDF 第 ${q.page} 頁` : 'PDF 頁碼未知';
+        const paper = q.paper_id || note.paper_id || '';
+        // 機器翻譯不加引號、明確標示非原文；原文才用「」引用。
+        if (q.machine_translation) return `［機器翻譯，非原文引文］${q.quote}（${paper}，${page}，譯文）`;
+        const kind = q.match_kind === 'paragraph_from_translation' ? '整段原文' : '原文';
+        return `「${q.quote}」（${paper}，${page}，${kind}）`;
     }
 
     function insertQuote(note, q) {
         const content = document.querySelector(`.editor-card[data-section="${CSS.escape(section)}"] .card-content`);
         if (!content) return status('找不到 2B 目前章節的編輯區；請先在 2B 開啟這一章。');
+        const before = (content.textContent || '').slice(-80);
         const p = document.createElement('p');
         p.textContent = quoteText(note, q);
         content.appendChild(p);
         content.dispatchEvent(new Event('input', { bubbles: true }));
-        pending = { section, note_id: note.note_id, text: p.textContent };
-        status('已在 2B 末尾插入原文引文。按 Save 保存後，會自動把這段連到證據筆記。');
+        pending = { section, note_id: note.note_id, text: p.textContent, anchor_index: q.anchor_index, context_before: before };
+        status(q.machine_translation ? '已在 2B 末尾插入機器翻譯（已標示非原文）。按 Save 保存後，會自動把這段連到證據筆記。'
+            : '已在 2B 末尾插入原文引文。按 Save 保存後，會自動把這段連到證據筆記。');
     }
 
     async function completePending(ack) {
@@ -114,7 +139,8 @@
         try {
             const data = await api(`/manuscript/api/provenance?pid=${encodeURIComponent(pid)}&section=${encodeURIComponent(job.section)}`);
             await api('/manuscript/api/provenance/link', { pid, section: job.section, base_rev: data.rev, kind: 'evidence_note',
-                note_id: job.note_id, paragraph_text: job.text, s_ver: ack.ver });
+                note_id: job.note_id, paragraph_text: job.text, s_ver: ack.ver, quote_anchor_index: job.anchor_index,
+                context_before: job.context_before, context_after: '' });
             status('已保存，並自動把插入的引文連到證據筆記。');
         } catch (error) {
             status(`已保存，但沒有自動連結：${error.message}（引文若被改寫，請選取該段後手動連結）`);
@@ -138,6 +164,19 @@
         }
         box.appendChild(head);
         box.appendChild(el('blockquote', 'border-start ps-2 mb-1 text-dark', item.paragraph_text));
+        const loc = item.location || {};
+        if (!item.retracted && loc.status === 'matched') {
+            const where = el('div', 'text-muted', `位置：最新版本${(loc.paragraphs || []).map(i => `第 ${i + 1} 段`).join('、')}`);
+            where.setAttribute('data-provenance-location', 'matched');
+            box.appendChild(where);
+        }
+        const quote = item.quote || {};
+        if (quote.side && !quote.hidden) {
+            const q = el('div', quote.machine_translation ? 'text-warning-emphasis' : 'text-success',
+                `插入的引文：${quote.machine_translation ? '機器翻譯，非原文' : '原文'} · PDF 第 ${quote.page || '?'} 頁 · 連結當下核對：${quote.status_at_link || '未核對'}`);
+            q.setAttribute('data-provenance-quote-record', quote.machine_translation ? 'machine_translation' : 'original');
+            box.appendChild(q);
+        }
         (item.issue_labels || []).forEach(t => box.appendChild(el('div', 'text-warning-emphasis', '・' + t)));
         if (item.kind === 'free_writing' && item.reason) box.appendChild(el('div', 'text-muted', '說明：' + item.reason));
         const note = item.note || {};
@@ -177,17 +216,30 @@
         byId('ppCoverageSummary').textContent = `共 ${cov.total} 段：連到證據筆記 ${c.evidence_note}、需要重新核對 ${c.needs_recheck}、`
             + `自由寫作 ${c.free_writing}、尚未標記 ${c.unmarked}`
             + (cov.orphaned_links ? `；另有 ${cov.orphaned_links} 筆出處的文字已不在最新版本` : '')
+            + (cov.ambiguous_links ? `；${cov.ambiguous_links} 筆出處位置不明確（文字出現多處），不算有出處` : '')
+            + (cov.partial_paragraphs ? `；${cov.partial_paragraphs} 段只有部分文字有出處` : '')
             + '。只是提示，不影響保存與匯出。';
         cov.paragraphs.forEach(p => {
             const row = el('div', 'd-flex align-items-start gap-2 border-bottom py-1 small');
             row.setAttribute('data-coverage-state', p.state);
             const [cls, label] = STATE[p.state] || STATE.unmarked;
-            row.appendChild(el('span', `badge ${cls} flex-shrink-0`, label));
-            row.appendChild(el('span', 'flex-grow-1', p.text.length > 140 ? p.text.slice(0, 140) + '…' : p.text));
+            const badge = el('span', `badge ${cls} flex-shrink-0`, p.partial ? `${label}（部分，約 ${Math.round(p.covered_ratio * 100)}%）` : label);
+            if (p.partial) row.setAttribute('data-coverage-partial', '1');
+            row.appendChild(badge);
+            const body = el('span', 'flex-grow-1', p.text.length > 140 ? p.text.slice(0, 140) + '…' : p.text);
+            if ((p.ambiguous_link_ids || []).length) {
+                row.setAttribute('data-coverage-ambiguous', String(p.ambiguous_link_ids.length));
+                body.appendChild(el('div', 'text-warning-emphasis', `有 ${p.ambiguous_link_ids.length} 筆出處可能指到這裡，但文字出現多處、位置不明確；請按「選這段」重新連結。`));
+            }
+            row.appendChild(body);
             const pick = el('button', 'btn btn-sm btn-link p-0 flex-shrink-0', '選這段');
             pick.type = 'button';
             pick.setAttribute('data-coverage-pick', String(p.index));
-            pick.onclick = () => { byId('ppParagraph').value = p.text; status('已帶入這一段；選一則證據筆記或標為自由寫作。'); };
+            pick.onclick = () => {
+                byId('ppParagraph').value = p.text;
+                hint = { text: p.text, paragraph_index: p.index, s_ver: latestSVer };
+                status('已帶入這一段；選一則證據筆記或標為自由寫作。');
+            };
             row.appendChild(pick);
             box.appendChild(row);
         });
@@ -196,6 +248,7 @@
     async function load() {
         const data = await api(`/manuscript/api/provenance?pid=${encodeURIComponent(pid)}&section=${encodeURIComponent(section)}`);
         rev = data.rev;
+        latestSVer = data.latest_s_ver;
         notes = data.notes || [];
         renderCoverage(data.coverage);
         const select = byId('ppNote');
@@ -218,6 +271,13 @@
         if (kind === 'evidence_note') body.note_id = byId('ppNote').value;
         else body.reason = byId('ppReason').value.trim();
         if (!body.paragraph_text) return status('請先選取或貼上已保存的這一段。');
+        if (hint && hint.paragraph_index !== undefined && hint.text.includes(body.paragraph_text)) {
+            body.paragraph_index = hint.paragraph_index;
+            if (hint.s_ver) body.s_ver = hint.s_ver;
+        } else if (hint && hint.text === body.paragraph_text) {
+            body.context_before = hint.context_before;
+            body.context_after = hint.context_after;
+        }
         try {
             await api('/manuscript/api/provenance/link', body);
             status(kind === 'free_writing' ? '已標為自由寫作。' : '已連結證據筆記。之後段落或筆記改變時，這裡會提示重新核對。');
@@ -239,6 +299,25 @@
         } catch (error) { status(error.message); }
     }
 
+    // 編輯器選取的前後文（各 80 字）：同一段文字出現多次時，讓伺服器確定是哪一處。
+    function selectionHint(text) {
+        try {
+            const sel = window.getSelection();
+            if (!sel || !sel.rangeCount) return null;
+            const range = sel.getRangeAt(0);
+            const start = range.startContainer.nodeType === 1 ? range.startContainer : range.startContainer.parentElement;
+            const root = start && start.closest('.card-content');
+            if (!root) return null;
+            const before = document.createRange();
+            before.selectNodeContents(root);
+            before.setEnd(range.startContainer, range.startOffset);
+            const after = document.createRange();
+            after.selectNodeContents(root);
+            after.setStart(range.endContainer, range.endOffset);
+            return { text, context_before: before.toString().slice(-80), context_after: after.toString().slice(0, 80) };
+        } catch (e) { return null; }
+    }
+
     window.paragraphProvenance = {
         open: async function () {
             ensurePanel();
@@ -248,7 +327,11 @@
             byId('ppTarget').textContent = `${pid} · ${section} · 目前 S.Ver ${app.collab.currentSVer() || '尚未保存'}`;
             byId('ppExport').href = `/manuscript/api/provenance/export?pid=${encodeURIComponent(pid)}`;
             const selection = String(window.getSelection() || '').trim();
-            if (selection) byId('ppParagraph').value = selection;
+            hint = null;
+            if (selection) {
+                byId('ppParagraph').value = selection;
+                hint = selectionHint(selection);
+            }
             if (!app._provenanceAckBound && app.socket) {
                 app._provenanceAckBound = true;
                 app.socket.on('save_ack', ack => { completePending(ack || {}); });

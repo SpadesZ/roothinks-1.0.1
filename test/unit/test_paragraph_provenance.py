@@ -218,3 +218,225 @@ def test_coverage_shows_each_paragraph_state_without_blocking(env):
     assert [p["state"] for p in cov["paragraphs"]] == ["unmarked", "free_writing"] and cov["orphaned_links"] == 1
     text = owner.get(f"/manuscript/api/provenance/export?pid={PID}").get_data(as_text=True)
     assert "覆蓋（introduction，最新版本共 2 段）" in text and "尚未標記 1" in text
+
+
+# ---------------- R6：重複／重疊文字、舊連結、跨段選取、部分覆蓋 ----------------
+DUP = "這個結果與先前研究一致。"
+MID = "中間是另一段不相關的文字。"
+
+
+def _legacy_link(root, text, s_ver, kind="free_writing"):
+    """模擬 R6 以前的連結（沒有 anchor）。"""
+    from app.core_pro.manuscript import paragraph_provenance as prov
+    path = Path(prov.links_path(str(root), PID))
+    doc = json.loads(path.read_text(encoding="utf-8")) if path.exists() else {"schema": prov.SCHEMA, "pid": PID, "links": [], "_rev": 0}
+    doc["links"].append({"link_id": "pl_0123456789ab", "kind": kind, "section": SECTION, "s_ver": s_ver, "paragraph_text": text,
+                         "paragraph_hash": prov.paragraph_hash(text), "reason": "", "created_by": {"username": "owner"},
+                         "created_at": "2026-10-01T00:00:00+00:00", "retracted": None, "note": None})
+    doc["_rev"] = int(doc.get("_rev") or 0) + 1
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(doc, ensure_ascii=False), encoding="utf-8")
+
+
+def test_duplicate_paragraphs_never_mark_the_copy_as_covered(env):
+    """同一段文字出現兩次：沒有提示時拒絕猜；「選這段」只覆蓋選的那一處，另一處仍是尚未標記。"""
+    app, root, owner, nid = env
+    with app.app_context():
+        _save_section(f"<p>開頭。</p><p>{DUP}</p><p>{MID}</p><p>{DUP}</p><p>結尾。</p>")
+    ver = listed(owner)["latest_s_ver"]
+    refused = link(owner, 0, kind="evidence_note", note_id=nid, paragraph_text=DUP)
+    assert refused.status_code == 409 and "出現 2 次" in refused.json["message"]
+    ok = link(owner, 0, kind="evidence_note", note_id=nid, paragraph_text=DUP, paragraph_index=3, s_ver=ver)
+    assert ok.status_code == 201, ok.get_data(as_text=True)
+    assert ok.json["link"]["anchor"]["occurrence"] == 1 and ok.json["link"]["anchor"]["paragraphs"] == [3, 3]
+    cov = listed(owner)["coverage"]
+    assert [p["state"] for p in cov["paragraphs"]] == ["unmarked", "unmarked", "unmarked", "evidence_note", "unmarked"]
+    # 之後在前面再加一段：位置由前後文決定，仍然只有原本那一處
+    with app.app_context():
+        _save_section(f"<p>新加的開頭。</p><p>開頭。</p><p>{DUP}</p><p>{MID}</p><p>{DUP}</p><p>結尾。</p>")
+    cov = listed(owner)["coverage"]
+    assert [p["state"] for p in cov["paragraphs"]] == ["unmarked"] * 4 + ["evidence_note", "unmarked"]
+    # 把這段複製到自己後面：兩處前後文都只對一半、段落雜湊相同，無法確定 → 不覆蓋任何一處，標示位置不明確
+    with app.app_context():
+        _save_section(f"<p>新加的開頭。</p><p>開頭。</p><p>{DUP}</p><p>{MID}</p><p>{DUP}</p><p>{DUP}</p><p>結尾。</p>")
+    data = listed(owner)
+    assert data["coverage"]["counts"]["evidence_note"] == 0 and data["coverage"]["ambiguous_links"] == 1
+    assert "paragraph_ambiguous" in data["links"][0]["issues"]
+    assert [p["ambiguous_link_ids"] != [] for p in data["coverage"]["paragraphs"]] == [False, False, True, False, True, True, False]
+    # 研究者自主：拒絕連結與位置不明確都不擋保存與匯出
+    export = owner.get(f"/manuscript/api/provenance/export?pid={PID}")
+    assert export.status_code == 200 and "無法確定出處屬於哪一處" in export.get_data(as_text=True)
+
+
+def test_short_fragment_shared_by_two_paragraphs_uses_editor_context(env):
+    app, root, owner, nid = env
+    with app.app_context():
+        _save_section(f"<p>第一段的開頭。{DUP}第一段的結尾。</p><p>第二段的開頭。{DUP}第二段的結尾。</p>")
+    assert link(owner, 0, kind="free_writing", paragraph_text=DUP).status_code == 409
+    ok = link(owner, 0, kind="free_writing", paragraph_text=DUP, context_before="第二段的開頭。", context_after="第二段的結尾。")
+    assert ok.status_code == 201 and ok.json["link"]["anchor"]["chosen_by"] == "context"
+    rows = listed(owner)["coverage"]["paragraphs"]
+    assert [r["state"] for r in rows] == ["unmarked", "free_writing"]
+    assert rows[1]["partial"] is True and 0 < rows[1]["covered_ratio"] < 0.9, "只連一句，不能宣稱整段都有出處"
+
+
+def test_short_paragraph_inside_longer_one_does_not_cover_the_longer(env):
+    """重疊：短段落的文字也出現在另一段中。連結短段落不得讓長段落算有出處。"""
+    app, root, owner, nid = env
+    with app.app_context():
+        _save_section(f"<p>{DUP}</p><p>前文說明。{DUP}後文延伸。</p>")
+    ver = listed(owner)["latest_s_ver"]
+    assert link(owner, 0, kind="free_writing", paragraph_text=DUP, paragraph_index=0, s_ver=ver).status_code == 201
+    rows = listed(owner)["coverage"]["paragraphs"]
+    assert [r["state"] for r in rows] == ["free_writing", "unmarked"] and rows[0]["partial"] is False
+
+
+def test_legacy_link_ambiguous_at_link_time_is_not_counted(env):
+    """R6 以前的連結沒有位置；連結當時文字就出現兩次的，不能把兩段都算有出處。"""
+    app, root, owner, nid = env
+    with app.app_context():
+        _save_section(f"<p>{DUP}</p><p>{MID}</p><p>{DUP}</p>")
+    ver = listed(owner)["latest_s_ver"]
+    _legacy_link(root, DUP, ver)
+    data = listed(owner)
+    cov = data["coverage"]
+    assert cov["counts"]["free_writing"] == 0 and cov["ambiguous_links"] == 1 and cov["orphaned_links"] == 0
+    assert data["links"][0]["anchor"]["legacy"] is True and data["links"][0]["anchor"]["ambiguous_at_link"] is True
+    assert data["links"][0]["issues"] == ["paragraph_ambiguous"]
+
+
+def test_legacy_link_unique_at_link_time_survives_a_later_copy(env):
+    app, root, owner, nid = env
+    with app.app_context():
+        _save_section(f"<p>開頭。</p><p>{DUP}</p><p>{MID}</p>")
+    _legacy_link(root, DUP, listed(owner)["latest_s_ver"])
+    assert [p["state"] for p in listed(owner)["coverage"]["paragraphs"]] == ["unmarked", "free_writing", "unmarked"]
+    with app.app_context():
+        _save_section(f"<p>開頭。</p><p>{DUP}</p><p>{MID}</p><p>結論重複一次：</p><p>{DUP}</p>")
+    rows = listed(owner)["coverage"]["paragraphs"]
+    assert [p["state"] for p in rows] == ["unmarked", "free_writing", "unmarked", "unmarked", "unmarked"]
+
+
+def test_selection_across_two_paragraphs_counts_both_not_orphaned(env):
+    app, root, owner, nid = env
+    resp = link(owner, 0, kind="evidence_note", note_id=nid, paragraph_text=f"{PARA}\n{OTHER_PARA}")
+    assert resp.status_code == 201 and resp.json["link"]["anchor"]["paragraphs"] == [0, 1]
+    cov = listed(owner)["coverage"]
+    assert [p["state"] for p in cov["paragraphs"]] == ["evidence_note", "evidence_note"] and cov["orphaned_links"] == 0
+    assert "位置（最新版本" in owner.get(f"/manuscript/api/provenance/export?pid={PID}").get_data(as_text=True)
+
+
+# ---------------- R6：引文插入（原文／機器翻譯、重新核對來源、頁碼與來源出處） ----------------
+MT = "改善只在 300 K 一種校準協定下觀察到。"
+
+
+def _write_bilingual_paper(root, original=QUOTE, translation=MT):
+    base = root / PID / "literature" / "papers" / PAPER / "05_interprets" / "fusion"
+    base.mkdir(parents=True, exist_ok=True)
+    content = [{"page": 1, "blocks": [{"type": "title", "content": "T", "seq_id": "p1_title_1"},
+                                      {"type": "body", "seq_id": "p1_body_2", "content": "Bounded result. " + original,
+                                       "translation": "有界的結果。" + translation}]}]
+    (base / "full_text.json").write_text(json.dumps({"paper_id": PAPER, "content": content}), encoding="utf-8")
+
+
+def _bilingual_note(owner, base_rev=1):
+    note = {"paper_id": PAPER, "anchors": [{"quote": QUOTE, "side": "original", "ref": "p1-b2", "source": "flowa_fusion"},
+                                           {"quote": MT, "side": "translation", "ref": "p1-b2", "source": "flowa_fusion"}],
+            "statements": [{"kind": "source_fact", "evidence": [0]}, {"kind": "human_hypothesis", "text": "雙語筆記"}]}
+    resp = owner.post("/api/study/evidence_notes/accept", json={"pid": PID, "base_rev": base_rev, "accepted": True, "note": note})
+    assert resp.status_code == 200, resp.get_data(as_text=True)
+    return resp.json["note"]["note_id"]
+
+
+def _choices(owner, nid):
+    return next(n for n in listed(owner)["notes"] if n["note_id"] == nid)["quotes"]
+
+
+def test_quote_choices_are_rechecked_against_the_current_source(env):
+    app, root, owner, _ = env
+    _write_bilingual_paper(root)
+    nid = _bilingual_note(owner)
+    orig, mt = _choices(owner, nid)
+    assert orig["side"] == "original" and orig["machine_translation"] is False and orig["insertable"] is True
+    assert orig["current_status"] == "exact" and orig["page"] == 1 and orig["ref"] == "p1-b2"
+    assert mt["machine_translation"] is True and mt["insertable"] is True
+    # 原文重跑、引文已不存在：仍列出，但不能插入，並說明原因（不默默消失、也不假裝仍有效）
+    _write_bilingual_paper(root, original="A different sentence now.", translation="完全不同的譯文。")
+    orig, mt = _choices(owner, nid)
+    assert orig["insertable"] is False and orig["current_status"] == "not_found" and "找不到" in orig["blocked_reason"]
+    assert mt["insertable"] is False
+
+
+def test_inserted_quote_link_keeps_page_side_and_server_recheck(env):
+    app, root, owner, _ = env
+    _write_bilingual_paper(root)
+    nid = _bilingual_note(owner)
+    orig_p = f"「{QUOTE}」（{PAPER}，PDF 第 1 頁，原文）"
+    mt_p = f"［機器翻譯，非原文引文］{MT}（{PAPER}，PDF 第 1 頁，譯文）"
+    with app.app_context():
+        _save_section(f"<p>{PARA}</p><p>{orig_p}</p><p>{mt_p}</p>")
+    rev = listed(owner)["rev"]
+    # 用戶端偽造的核對結果一律忽略
+    r = link(owner, rev, kind="evidence_note", note_id=nid, paragraph_text=orig_p, quote_anchor_index=0,
+             quote_current={"status": "exact", "page": 99})
+    assert r.status_code == 201, r.get_data(as_text=True)
+    q = r.json["link"]["quote"]
+    assert (q["side"], q["machine_translation"], q["page"], q["ref"], q["status_at_link"]) == ("original", False, 1, "p1-b2", "exact")
+    r = link(owner, rev + 1, kind="evidence_note", note_id=nid, paragraph_text=mt_p, quote_anchor_index=1)
+    assert r.status_code == 201 and r.json["link"]["quote"]["machine_translation"] is True
+    text = owner.get(f"/manuscript/api/provenance/export?pid={PID}").get_data(as_text=True)
+    assert "插入的引文：原文" in text and "機器翻譯，非原文（不可當作原文引用）" in text and "PDF 第 1 頁" in text
+    # 引文被改寫：不能再宣稱是引文
+    altered = "「The improvement was observed at all temperatures.」（paper1，PDF 第 1 頁，原文）"
+    with app.app_context():
+        _save_section(f"<p>{PARA}</p><p>{orig_p}</p><p>{mt_p}</p><p>{altered}</p>")
+    r = link(owner, rev + 2, kind="evidence_note", note_id=nid, paragraph_text=altered, quote_anchor_index=0)
+    assert r.status_code == 409 and "不再逐字相同" in r.json["message"]
+    assert link(owner, rev + 2, kind="evidence_note", note_id=nid, paragraph_text=orig_p, quote_anchor_index=7).status_code == 400
+
+
+def test_quote_linked_after_source_rerun_is_recorded_not_blocked(env):
+    """連結當下原文已重跑：照樣連結（研究者自主），但記錄核對結果並標示需要重新核對；偽造的核對結果被忽略。"""
+    app, root, owner, _ = env
+    _write_bilingual_paper(root)
+    nid = _bilingual_note(owner)
+    orig_p = f"「{QUOTE}」（{PAPER}，PDF 第 1 頁，原文）"
+    with app.app_context():
+        _save_section(f"<p>{PARA}</p><p>{orig_p}</p>")
+    _write_bilingual_paper(root, original="A different sentence now.")
+    r = link(owner, listed(owner)["rev"], kind="evidence_note", note_id=nid, paragraph_text=orig_p, quote_anchor_index=0,
+             quote_current={"status": "exact"})
+    assert r.status_code == 201 and r.json["link"]["quote"]["status_at_link"] == "not_found"
+    item = listed(owner)["links"][-1]
+    assert "source_changed" in item["issues"]
+    assert "目前原文中找不到" in owner.get(f"/manuscript/api/provenance/export?pid={PID}").get_data(as_text=True)
+
+
+def test_same_quote_inserted_twice_links_the_new_copy(env):
+    """同一段引文插入兩次（重複段落）：自動連結用插入點前文確定是新的那一處，舊的那處不被重複計算。"""
+    app, root, owner, nid = env
+    orig_p = f"「{QUOTE}」（{PAPER}，PDF 第 1 頁，原文）"
+    with app.app_context():
+        _save_section(f"<p>{PARA}</p><p>{orig_p}</p>")
+    first = link(owner, 0, kind="evidence_note", note_id=nid, paragraph_text=orig_p, quote_anchor_index=0)
+    assert first.status_code == 201
+    with app.app_context():
+        _save_section(f"<p>{PARA}</p><p>{orig_p}</p><p>{orig_p}</p>")
+    second = link(owner, 1, kind="evidence_note", note_id=nid, paragraph_text=orig_p, quote_anchor_index=0,
+                  context_before=f"{PARA}{orig_p}"[-80:], context_after="")
+    assert second.status_code == 201, second.get_data(as_text=True)
+    assert second.json["link"]["anchor"]["paragraphs"] == [2, 2]
+    cov = listed(owner)["coverage"]
+    assert [p["state"] for p in cov["paragraphs"]] == ["unmarked", "evidence_note", "evidence_note"]
+    assert [p["link_ids"] for p in cov["paragraphs"]][1:] == [[first.json["link"]["link_id"]], [second.json["link"]["link_id"]]]
+
+
+def test_coauthor_sees_no_quote_provenance_from_study(env):
+    app, root, owner, nid = env
+    orig_p = f"「{QUOTE}」（{PAPER}，PDF 第 1 頁，原文）"
+    with app.app_context():
+        _save_section(f"<p>{PARA}</p><p>{orig_p}</p>")
+    assert link(owner, 0, kind="evidence_note", note_id=nid, paragraph_text=orig_p, quote_anchor_index=0).status_code == 201
+    _add_coauthor(app, SECTION)
+    item = listed(login(app, "coauthor"))["links"][0]
+    assert item["note"] == {"hidden": True} and item["quote"] == {"hidden": True}
