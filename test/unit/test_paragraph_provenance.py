@@ -440,3 +440,60 @@ def test_coauthor_sees_no_quote_provenance_from_study(env):
     _add_coauthor(app, SECTION)
     item = listed(login(app, "coauthor"))["links"][0]
     assert item["note"] == {"hidden": True} and item["quote"] == {"hidden": True}
+
+
+# ---------------- R6：流程接縫缺陷（稽核發現） ----------------
+def test_review_scope_sees_current_shared_note_not_link_time_snapshot(env):
+    """教授審閱身分：連結當時的快照含之後被取代的陳述，不能經由段落出處看到（與 Study review_shared 一致）。"""
+    app, _, owner, nid = env
+    assert link(owner, 0, kind="evidence_note", note_id=nid, paragraph_text=PARA).status_code == 201
+    upd = owner.post("/api/study/evidence_notes/update", json={"pid": PID, "base_rev": 1, "note_id": nid,
+                                                               "statements": [{"kind": "human_hypothesis", "text": "修訂後的假說"}]})
+    assert upd.status_code == 200, upd.get_data(as_text=True)
+    owner.post("/api/study/evidence_notes/review", json={"pid": PID, "note_id": nid, "action": "request"})
+    prof = login(app, "prof")
+    body = prof.get(f"/manuscript/api/provenance?pid={PID}&section={SECTION}")
+    note = body.json["links"][0]["note"]
+    assert note["revised_since_link"] is True and note["shown_version"] == "current_shared"
+    assert [s["text"] for s in note["statements"]] == ["修訂後的假說"]
+    for text in (body.get_data(as_text=True), prof.get(f"/manuscript/api/provenance/export?pid={PID}").get_data(as_text=True)):
+        assert "退火時間可能是混淆因素" not in text and "只支持 300 K" not in text
+    assert listed(owner)["links"][0]["note"]["statements"][2]["text"] == "退火時間可能是混淆因素", "owner 仍看到連結時的快照"
+
+
+def test_anchor_ambiguous_at_creation_is_not_reported_as_source_change(env):
+    """建立筆記時引文在同一段出現兩次（ambiguous_in_block）：原文沒變就不能說「原文已重跑或改版」。"""
+    app, root, owner, _ = env
+    _write_paper(root, text=f"{QUOTE} {QUOTE}")
+    note = {"paper_id": PAPER, "anchors": [{"quote": QUOTE, "side": "original", "ref": "p1-b2", "source": "flowa_fusion"}],
+            "statements": [{"kind": "source_fact", "evidence": [0]}]}
+    resp = owner.post("/api/study/evidence_notes/accept", json={"pid": PID, "base_rev": 1, "accepted": True, "note": note})
+    assert resp.status_code == 200 and resp.json["note"]["anchors"][0]["status"] == "ambiguous_in_block"
+    assert link(owner, 0, kind="evidence_note", note_id=resp.json["note"]["note_id"], paragraph_text=PARA).status_code == 201
+    assert listed(owner)["links"][0]["issues"] == [] and listed(owner)["coverage"]["paragraphs"][0]["state"] == "evidence_note"
+    _write_paper(root, text="A different sentence now.")
+    assert listed(owner)["links"][0]["issues"] == ["source_changed"]
+
+
+def test_export_labels_machine_translation_and_unverified_anchors(env):
+    app, root, owner, _ = env
+    _write_bilingual_paper(root)
+    nid = _bilingual_note(owner)
+    assert link(owner, 0, kind="evidence_note", note_id=nid, paragraph_text=PARA).status_code == 201
+    text = owner.get(f"/manuscript/api/provenance/export?pid={PID}").get_data(as_text=True)
+    mt_line = next(l for l in text.splitlines() if MT in l)
+    assert "機器翻譯（非原文）" in mt_line and "原文中逐字找到" not in mt_line and "在機器翻譯中逐字找到" in mt_line
+    orig_line = next(l for l in text.splitlines() if QUOTE in l and "證據" in l)
+    assert "原文" in orig_line and "PDF 第 1 頁" in orig_line and "不代表支持" in orig_line
+
+
+def test_export_coverage_lists_sections_without_links(env):
+    app, root, owner, _ = env
+    from app.core_pro.manuscript.manuscript_io import ManuscriptIO
+    from app.core_pro.manuscript.manuscript_routes import _get_or_init_sections
+    with app.app_context():
+        _get_or_init_sections(PID)
+        ManuscriptIO.save_block_version(PID, "method", "Method", "<p>方法第一段。</p><p>方法第二段。</p>", updated_by="owner")
+    assert link(owner, 0, kind="free_writing", paragraph_text=OTHER_PARA).status_code == 201
+    text = owner.get(f"/manuscript/api/provenance/export?pid={PID}").get_data(as_text=True)
+    assert "覆蓋（introduction" in text and "覆蓋（method，最新版本共 2 段）" in text and "尚未標記 2" in text

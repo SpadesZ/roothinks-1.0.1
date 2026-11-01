@@ -240,7 +240,7 @@ def _note_snapshot(note):
         "statements": [{"kind": st.get("kind"), "text": st.get("text") or "", "evidence": list(st.get("evidence") or []),
                         "claim_support": st.get("claim_support") if st.get("kind") != "source_fact" else None}
                        for st in note.get("statements") or []],
-        "anchors": [{k: a.get(k) for k in ("paper_id", "ref", "page", "side", "quote", "status", "source")}
+        "anchors": [{k: a.get(k) for k in ("paper_id", "ref", "page", "side", "quote", "status", "source", "match_kind")}
                     for a in note.get("anchors") or []],
         "ai_uncertainty": (note.get("origin") or {}).get("ai_uncertainty"),
         "accepted_by": note.get("accepted_by"),
@@ -341,6 +341,37 @@ def retract_link(data_root, pid, link_id, reason, actor, base_rev):
     return found["link"], result.get("rev")
 
 
+_RANK = {"exact": 0, "relocated": 1, "ambiguous_in_block": 1, "ambiguous": 2, "not_found": 3, "unavailable": 3}
+
+
+def _anchor_state(state):
+    """anchor_status 的一個元素：{stored, status, version_changed}（舊呼叫端只給目前狀態字串，視為建立時 exact）。"""
+    if isinstance(state, dict):
+        return {"stored": state.get("stored") or "exact", "status": state.get("status") or "unavailable",
+                "version_changed": bool(state.get("version_changed"))}
+    return {"stored": "exact", "status": state or "unavailable", "version_changed": False}
+
+
+def anchor_label(anchor):
+    """證據筆記裡一個錨點的說明（R6）：分清原文與機器翻譯，並依建立筆記時的核對結果用字；找到也不代表支持。"""
+    if anchor.get("side") == "translation":
+        where = "機器翻譯（非原文）"
+    elif anchor.get("match_kind") == "paragraph_from_translation":
+        where = "整段原文（由譯文選取推得，不是逐句對應）"
+    else:
+        where = "原文"
+    status = anchor.get("status")
+    if status in ("exact", "relocated", "ambiguous_in_block"):
+        found = f"建立筆記時在{'機器翻譯' if anchor.get('side') == 'translation' else '原文'}中逐字找到，不代表支持"
+    elif status == "unavailable":
+        found = "建立筆記時讀不到原文，沒有核對"
+    elif status:
+        found = "建立筆記時沒有在原文中唯一找到這段文字"
+    else:
+        found = "核對狀態未知"
+    return where, found
+
+
 def link_issues(pid, link, notes_by_id, latest_text, anchor_status, location=None):
     """只回報可觀測的變化；不判斷科學支持、不阻擋任何動作。anchor_status：note_id → [目前錨點狀態]。
 
@@ -361,10 +392,12 @@ def link_issues(pid, link, notes_by_id, latest_text, anchor_status, location=Non
         else:
             if len(note.get("revisions") or []) != snap.get("revision_count"):
                 issues.append("note_revised")
-            states = anchor_status.get(snap.get("note_id")) or []
-            if any(s == "unavailable" for s in states):
+            states = [_anchor_state(s) for s in anchor_status.get(snap.get("note_id")) or []]
+            if any(s["status"] == "unavailable" for s in states):
                 issues.append("source_unavailable")
-            elif any(s not in (None, "exact") for s in states):
+            elif any(s["version_changed"] or _RANK.get(s["status"], 3) > _RANK.get(s["stored"], 3) for s in states):
+                # R6：只有原文真的改版，或核對結果比建立筆記時更差，才算「原文已改變」。
+                # 建立時就是 ambiguous_in_block／not_found 的錨點不會因此永遠被標成需要重新核對。
                 issues.append("source_changed")
     return issues
 
@@ -404,6 +437,14 @@ def describe(pid, links, notes, anchor_status, redact_unshared=False, redact_all
             current = notes_by_id.get((link.get("note") or {}).get("note_id"))
             if not current or (current.get("review") or {}).get("state") != "requested":
                 item["note"] = {"hidden": True}
+            else:
+                # R6：審閱身分只看「目前分享的版本」（與 Study 的 review_shared 相同）。連結當時的快照可能含被取代的
+                # 草稿陳述與舊的支持判斷，不能經由段落出處看到；改過就標明「連結後已修改」。
+                from app.core_pro.study.study_evidence_notes import review_shared
+                shared = _note_snapshot(review_shared([current])[0])
+                shared["revised_since_link"] = shared["revision_count"] != (link.get("note") or {}).get("revision_count")
+                shared["shown_version"] = "current_shared"
+                item["note"] = shared
         if (item.get("note") or {}).get("hidden") and item.get("quote"):
             # 引文本身已在稿件段落中；筆記的頁碼、來源與核對紀錄屬於 Study，跟著筆記一起隱藏（F1）。
             item["quote"] = {"hidden": True}
@@ -478,11 +519,47 @@ def coverage(latest_text, described):
             "ambiguous_links": ambiguous, "partial_paragraphs": sum(1 for r in rows if r["partial"])}
 
 
-def used_in(links, note_id):
-    """Study 端的反向連結：這則證據筆記被用在哪些段落（未撤回）。"""
-    return [{"section": l["section"], "s_ver": l["s_ver"], "excerpt": normalize(l["paragraph_text"])[:80], "link_id": l["link_id"]}
-            for l in links if l.get("kind") == "evidence_note" and not l.get("retracted")
-            and (l.get("note") or {}).get("note_id") == note_id]
+def locations_for(pid, links):
+    """每筆未撤回連結在最新版本中的位置（R6）；link_id → {status, latest_s_ver, paragraphs}。給 Study 反向連結用。"""
+    latest, at_link, out = {}, {}, {}
+    for link in links:
+        if link.get("retracted"):
+            continue
+        section = link.get("section")
+        if section not in latest:
+            ver, text = section_text(pid, section)
+            latest[section] = (ver, layout(text) if text is not None else None)
+        ver, lay = latest[section]
+        if lay is None:
+            out[link["link_id"]] = {"status": "missing", "latest_s_ver": ver, "paragraphs": []}
+            continue
+        item = dict(link)
+        if not item.get("anchor"):
+            key = (section, link.get("s_ver"))
+            if key not in at_link:
+                at_link[key] = section_text(pid, section, link.get("s_ver"))[1] if link.get("s_ver") else None
+            item["anchor"] = derive_legacy_anchor(link, at_link[key])
+        loc = locate(item, lay, same_version=str(link.get("s_ver")) == str(ver))
+        out[link["link_id"]] = {"status": loc["status"], "latest_s_ver": ver, "paragraphs": loc["paragraphs"]}
+    return out
+
+
+def used_in(links, note_id, locations=None):
+    """Study 端的反向連結：這則證據筆記被用在哪些段落（未撤回）。
+
+    locations：locations_for() 的結果。有給時每筆附上 location（matched／ambiguous／missing）與最新版本號；
+    missing 代表這段文字已不在最新版本（被改寫或刪除），Study 不應再算成「已用在稿件」。
+    """
+    out = []
+    for l in links:
+        if l.get("kind") != "evidence_note" or l.get("retracted") or (l.get("note") or {}).get("note_id") != note_id:
+            continue
+        row = {"section": l["section"], "s_ver": l["s_ver"], "excerpt": normalize(l["paragraph_text"])[:80], "link_id": l["link_id"]}
+        if locations is not None:
+            loc = locations.get(l["link_id"]) or {}
+            row.update(location=loc.get("status"), latest_s_ver=loc.get("latest_s_ver"))
+        out.append(row)
+    return out
 
 
 def to_markdown(pid, described, coverage_by_section=None):
@@ -522,8 +599,9 @@ def to_markdown(pid, described, coverage_by_section=None):
             else:
                 lines.append(f"- 證據筆記：{note.get('title') or note.get('note_id')}（{note.get('paper_id')}，連結時修訂 {note.get('revision_count')} 次）")
                 for no, a in enumerate(note.get("anchors") or []):
-                    side = "譯文" if a.get("side") == "translation" else "原文"
-                    lines.append(f"  - 證據 {no + 1}：{side} p.{a.get('page')} {a.get('ref')}：\"{a.get('quote')}\"（引文在原文中找到，不代表支持）")
+                    where, found = anchor_label(a)
+                    lines.append(f"  - 證據 {no + 1}：{where}，PDF 第 {a.get('page') or '?'} 頁 {a.get('ref') or ''}："
+                                 f"\"{a.get('quote')}\"（{found}）")
                 for st in note.get("statements") or []:
                     label = KIND_LABELS.get(st.get("kind"), st.get("kind"))
                     judged = "" if st.get("kind") == "source_fact" else f"；{SUPPORT_LABELS.get(st.get('claim_support') or 'not_assessed')}"

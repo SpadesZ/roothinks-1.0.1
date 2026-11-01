@@ -148,6 +148,17 @@
         if (byId('paragraphProvenancePanel')?.classList.contains('show')) await load().catch(() => {});
     }
 
+    // 與伺服器 paragraph_provenance.anchor_label 相同：分清原文與機器翻譯；依建立筆記時的核對結果用字。
+    function anchorLabel(a) {
+        const where = a.side === 'translation' ? '機器翻譯（非原文）'
+            : (a.match_kind === 'paragraph_from_translation' ? '整段原文（由譯文選取推得）' : '原文');
+        let found = '核對狀態未知';
+        if (['exact', 'relocated', 'ambiguous_in_block'].includes(a.status)) found = `建立筆記時在${a.side === 'translation' ? '機器翻譯' : '原文'}中逐字找到，不代表支持`;
+        else if (a.status === 'unavailable') found = '建立筆記時讀不到原文，沒有核對';
+        else if (a.status) found = '建立筆記時沒有在原文中唯一找到這段文字';
+        return [where, found];
+    }
+
     function card(item) {
         const box = el('div', 'border rounded p-2 mb-2 small bg-white');
         box.setAttribute('data-provenance-item', item.link_id);
@@ -183,8 +194,14 @@
         if (note.hidden) box.appendChild(el('div', 'text-muted', '連結到未分享的證據筆記（審閱模式不顯示內容）。'));
         else if (item.kind === 'evidence_note') {
             box.appendChild(el('div', 'fw-bold', `${note.title || note.note_id} · ${note.paper_id || ''}（連結時修訂 ${note.revision_count} 次）`));
-            (note.anchors || []).forEach((a, i) => box.appendChild(el('div', 'text-muted',
-                `證據 ${i + 1}：${a.side === 'translation' ? '譯文' : '原文'} p.${a.page || '?'}「${a.quote}」（引文找到，不代表支持）`)));
+            if (note.revised_since_link) box.appendChild(el('div', 'text-warning-emphasis', '筆記在連結後已修改；這裡顯示目前分享給審閱者的版本。'));
+            (note.anchors || []).forEach((a, i) => {
+                const [where, found] = anchorLabel(a);
+                const row = el('div', a.side === 'translation' ? 'text-warning-emphasis' : 'text-muted',
+                    `證據 ${i + 1}：${where} PDF 第 ${a.page || '?'} 頁「${a.quote}」（${found}）`);
+                row.setAttribute('data-provenance-anchor-side', a.side === 'translation' ? 'machine_translation' : 'original');
+                box.appendChild(row);
+            });
             (note.statements || []).forEach(st => {
                 const row = el('div', '', `【${KIND[st.kind] || st.kind}】${st.text}`);
                 if (st.kind !== 'source_fact') row.appendChild(el('span', 'badge bg-light text-dark border ms-1', SUPPORT[st.claim_support || 'not_assessed']));

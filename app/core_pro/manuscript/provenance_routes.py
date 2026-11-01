@@ -46,7 +46,9 @@ def _current_anchors(pid, notes):
 
 
 def _anchor_status(notes, current):
-    return {n.get("note_id"): [c.get("status") for a, c in zip(n.get("anchors") or [], current.get(n.get("note_id")) or [])
+    """note_id → [{stored, status, version_changed}]；建立時就讀不到原文的錨點不列入（從未核對過）。"""
+    return {n.get("note_id"): [{"stored": a.get("status"), "status": c.get("status"), "version_changed": bool(c.get("version_changed"))}
+                               for a, c in zip(n.get("anchors") or [], current.get(n.get("note_id")) or [])
                                if a.get("status") != "unavailable"] for n in notes}
 
 
@@ -174,6 +176,17 @@ def retract_paragraph_provenance():
     return jsonify(success=True, link=link, rev=rev)
 
 
+def _export_sections(pid, uid, described):
+    from app.core_pro.manuscript.manuscript_routes import ManuSectionConfig
+    try:  # 只讀章節設定（不初始化：匯出是 GET，不寫資料庫）
+        rows = ManuSectionConfig.query.filter_by(pid=pid).order_by(ManuSectionConfig.order_index.asc()).all()
+        keys = [r.section_key for r in rows if r.section_key]
+    except Exception:  # 章節設定讀不到時退回「有出處的章節」，匯出不能因此失敗
+        keys = []
+    keys += sorted({d.get("section") for d in described if d.get("section")} - set(keys))
+    return [k for k in keys if uid is None or _socket_can_read_section(uid, pid, k)]
+
+
 @bp.route('/api/provenance/export', methods=['GET'])
 def export_paragraph_provenance():
     pid = _resolve_formal_project_pid(request.args.get('pid'))
@@ -187,7 +200,8 @@ def export_paragraph_provenance():
     described = prov.describe(pid, doc["links"], notes, _anchor_status(notes, _current_anchors(pid, notes)),
                               redact_unshared=_review_scoped(pid), redact_all=_no_study_access(uid, pid))
     cov = {}
-    for section in sorted({d.get("section") for d in described if d.get("section")}):
+    # R6：每一個有保存版本、而且這個人讀得到的章節都列出覆蓋統計（沒有任何出處的章節也要列，否則會低估未標記的段落）
+    for section in _export_sections(pid, uid, described):
         _, text = prov.section_text(pid, section)
         if text is not None:
             cov[section] = prov.coverage(text, [d for d in described if d.get("section") == section])
