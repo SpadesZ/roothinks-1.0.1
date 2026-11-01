@@ -36,7 +36,7 @@
 | 熱修 H9 紅測試 | 修補前 viewer 和 coauthor 兩個測試失敗；修補後 3／3 通過（3.12 與 3.10） |
 | R5＋熱修（`eb017ad`），Python 3.12 完整回歸 | 1,751 通過、50 略過、1 失敗（說明見下方） |
 | R5＋熱修，Python 3.10 熱修測試 | 30／30 通過；`test_security_log_isolation.py` 13／13 |
-| R6 整合，Python 3.12 完整回歸 | （執行中；完成後更新） |
+| R6 整合（`6c7b4ca` 程式），Python 3.12 完整回歸 | **1,796 通過／50 略過／0 失敗**。也就是 R6 的 1,777，加上 19 個熱修專屬測試（日誌隔離 13、寫作 AI 對話 3、章節結構 3）。工作樹放在 `/tmp` 以外，所以 `test_data_safety_guard` 也通過 |
 | 熱修真瀏覽器（token／session／`HOTFIX_SECURE=1`），在 R6 整合樹上執行 | token 4／4、session 3／3、`HOTFIX_SECURE=1` 4／4（熱修分支 `b3b935e` 上也是同樣結果） |
 | 秘密掃描（熱修差異、合併差異、整合樹對 `main` 的全部差異） | 0 筆；沒有追蹤 `.env`、`data/`、log、模型、`.codegraph` 或 CA 檔 |
 
