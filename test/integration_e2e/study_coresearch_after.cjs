@@ -290,12 +290,16 @@ module.exports=async function after(ctx){
     check('R5 覆蓋摘要顯示 2 段都已標記',(await page.locator('#ppCoverageSummary').innerText()).includes('尚未標記 0'));
     await snapshot(page,'14-manuscript-provenance-linked');
     // R5：把核對過的原文引文插入 2B（附加，不覆蓋），保存後自動建立出處
+    const quoteRow=page.locator('[data-provenance-quote]').first();
+    check('R6 可插入的引文標明原文或機器翻譯、PDF 頁碼與目前原文核對結果',
+        await quoteRow.getAttribute('data-quote-side')==='original'&&(await quoteRow.innerText()).includes('PDF 第')&&
+        (await quoteRow.innerText()).includes('目前原文核對'),await quoteRow.innerText());
     await page.locator('[data-provenance-insert-quote="0"]').click();
     const QUOTE_TXT='The improvement was observed only at 300 K under one calibration protocol.';
     check('R5 原文引文附加到 2B 本章末尾（含頁碼），原有段落不變',await page.evaluate(q=>{
         const card=document.querySelector('.editor-card[data-section="introduction"] .card-content');
         const ps=[...card.querySelectorAll('p')].map(p=>p.textContent);
-        return ps.length>=3&&ps.at(-1).includes(q)&&ps.at(-1).includes('p.1')&&ps[0].includes('300 K');},QUOTE_TXT));
+        return ps.length>=3&&ps.at(-1).includes(q)&&ps.at(-1).includes('PDF 第 1 頁')&&ps.at(-1).includes('原文')&&ps[0].includes('300 K');},QUOTE_TXT));
     // 改寫已連結的段落並保存：保存成功（不被出處擋住），出處標示需要重新核對
     await page.keyboard.press('Escape');
     await page.locator('#paragraphProvenancePanel').evaluate(el=>bootstrap.Offcanvas.getOrCreateInstance(el).hide());
@@ -328,6 +332,25 @@ module.exports=async function after(ctx){
     const provExport=await page.evaluate(async p=>{const r=await fetch(`/manuscript/api/provenance/export?pid=${p}`);return {status:r.status,text:await r.text()};},pid);
     check('R4 出處紀錄可匯出，標明需要重新核對與自由寫作',provExport.status===200&&provExport.text.includes('需要重新核對')&&
         provExport.text.includes('自由寫作')&&provExport.text.includes('不代表支持'),provExport.status);
+    check('R6 自動連結保留引文出處（原文、PDF 頁碼、連結當下重新核對）',
+        await page.locator('[data-provenance-quote-record="original"]').count()===1&&provExport.text.includes('插入的引文：原文')&&
+        provExport.text.includes('連結當下重新核對：在目前原文中逐字找到'));
+    // R6：同一段引文再插入一次（重複段落）。自動連結用插入點前文確定是新的那一處；兩處各算一次，不互相覆蓋、不標成不明確。
+    await page.locator('[data-provenance-insert-quote="0"]').click();
+    await page.locator('#paragraphProvenancePanel').evaluate(el=>bootstrap.Offcanvas.getOrCreateInstance(el).hide());
+    await page.waitForTimeout(400);
+    const dupVer=await page.evaluate(()=>window.wsApp.collab.currentSVer());
+    await page.locator('button:has-text("Save")').first().click();
+    await page.waitForFunction(v=>window.wsApp.collab.currentSVer()&&window.wsApp.collab.currentSVer()!==v,dupVer,{timeout:15000});
+    await page.locator('#btn-paragraph-provenance').click();
+    await page.waitForFunction(()=>document.querySelectorAll('[data-coverage-state]').length===4&&
+        document.querySelectorAll('[data-provenance-quote-record]').length===2,null,{timeout:15000});
+    const dupStates=await page.locator('[data-coverage-state]').evaluateAll(es=>es.map(e=>e.getAttribute('data-coverage-state')));
+    check('R6 重複插入的引文：兩處各自連到證據，沒有一筆連結覆蓋兩段',dupStates[2]==='evidence_note'&&dupStates[3]==='evidence_note'&&
+        await page.locator('[data-coverage-ambiguous]').count()===0&&
+        !(await page.locator('#ppCoverageSummary').innerText()).includes('位置不明確'),dupStates);
+    await page.waitForTimeout(500);
+    await snapshot(page,'16b-manuscript-duplicate-quote');
     evidence.metrics.provenance_export_chars=provExport.text.length;
     // Study 端看得到反向連結
     await page.goto(`${base}/study/project/${pid}?pid=${pid}`);
