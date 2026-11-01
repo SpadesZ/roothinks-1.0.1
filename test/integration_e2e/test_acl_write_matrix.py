@@ -4,6 +4,7 @@
 #     唯一允許的寫入是逐項審核過的設計（EXPECTED），其餘任何對 ACLP1 的改變都會讓測試失敗。
 #   - 匯出掃描本身有效（負向控制）：owner 匯出 DOCX 時，解開 zip 後找得到手稿哨兵。
 #   - 刪除論文（含原始 PDF）只限 owner；Study 對話只限建立者或 owner；舊對話（沒有建立者）只限 owner。
+#   - R6 正向控制：矩陣 payload 的 sections 對 owner／editor 真的會改章節結構；教授、團隊 viewer、限定編輯一律 403 且不變。
 # 驗證：python -m pytest test/integration_e2e/test_acl_write_matrix.py -q
 import json
 import os
@@ -49,6 +50,24 @@ def test_write_matrix_only_reviewed_design_writes_remain(matrix):
     assert not [r for r in result["rows"] if r.get("status") == "exception"]
 
 
+def test_sections_probe_reaches_rewrite_and_only_writers_succeed(matrix):
+    """R6 正向控制：矩陣送的 sections 是真的能改章節結構的請求（owner／editor 會改到 ACLP1），
+    所以矩陣裡其他角色「沒改到」是被授權擋下，不是 payload 不合格被 400 擋掉。"""
+    for writer in ("owner", "editor"):
+        app, ids, conv, note_id = matrix.new_world()
+        url = f"/manuscript/api/sections/{matrix.base.PID}"
+        body = matrix.payload(ids, conv, note_id, matrix.base.PID)
+        for name in ("prof", "teamviewer", "coauthor"):
+            before = matrix.fingerprint()
+            assert matrix.base.login(app, name).post(url, json=body).status_code == 403, name
+            assert matrix.fingerprint() == before, name
+        before = matrix.fingerprint()
+        client = matrix.base.login(app, writer)
+        assert client.post(url, json=body).status_code == 200, writer
+        assert matrix.fingerprint() != before, writer
+        assert "MUTATION_PROBE" in [s["label"] for s in client.get(url).json["sections"]], writer
+
+
 def test_indirect_get_and_export_scanner(matrix):
     indirect = matrix.run_get_indirect()
     assert indirect["requests"] >= 80 and indirect["findings"] == []
@@ -87,12 +106,13 @@ def test_irreversible_deletes_need_owner_or_creator(matrix):
 
 
 def test_socket_matrix_no_findings_and_controls_fire(matrix, monkeypatch):
-    """R5：Manuscript Socket 指令（14 個 × 7 個角色）。修補前 coauthor 與教授審閱身分可讀別章／寫作 AI 對話。
+    """R5：Manuscript Socket 指令（14 個 × 8 個角色；R6 加上 outsider-indirect：以自己的專案連線、指令帶別人的 pid）。
+    修補前 coauthor 與教授審閱身分可讀別章／寫作 AI 對話。
     正向控制必須觸發：owner 存檔會寫入、owner 讀得到自己的草稿、editor 讀不到 owner 的草稿。"""
     sys.modules.pop("socket_acl_matrix", None)
     import socket_acl_matrix
     result = socket_acl_matrix.run()
-    assert result["events"] == 14 and result["requests"] == 98
+    assert result["events"] == 14 and result["requests"] == 14 * len(socket_acl_matrix.ROLES) == 112
     assert result["findings"] == [], json.dumps(result["findings"], ensure_ascii=False)
     ctrl = result["controls"]
     assert ctrl["cmd_save_block"]["owner"]["mutated"] and ctrl["cmd_autosave_block"]["owner"]["mutated"]

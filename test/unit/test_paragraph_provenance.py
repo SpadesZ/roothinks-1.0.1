@@ -497,3 +497,19 @@ def test_export_coverage_lists_sections_without_links(env):
     assert link(owner, 0, kind="free_writing", paragraph_text=OTHER_PARA).status_code == 201
     text = owner.get(f"/manuscript/api/provenance/export?pid={PID}").get_data(as_text=True)
     assert "覆蓋（introduction" in text and "覆蓋（method，最新版本共 2 段）" in text and "尚未標記 2" in text
+
+
+def test_mentor_workbench_drops_backlinks_to_deleted_paragraphs(env):
+    """R6：導師工作台的「用在稿件」只列段落仍在最新版本的連結。"""
+    app, _, owner, nid = env
+    assert link(owner, 0, kind="evidence_note", note_id=nid, paragraph_text=PARA).status_code == 201
+    assert link(owner, 1, kind="evidence_note", note_id=nid, paragraph_text=OTHER_PARA).status_code == 201
+    owner.post("/api/study/evidence_notes/review", json={"pid": PID, "note_id": nid, "action": "request"})
+    from app.models import User
+    with app.app_context():
+        owner_id = User.query.filter_by(username="owner").first().id
+        _save_section(f"<p>{OTHER_PARA}</p>")
+    resp = login(app, "prof").get(f"/api/mentor/mentees/{owner_id}/study-reviews/{PID}")
+    assert resp.status_code == 200, resp.get_data(as_text=True)
+    used = resp.json["notes"][0]["used_in"]
+    assert [u["excerpt"] for u in used] == [OTHER_PARA] and used[0]["location"] == "matched"

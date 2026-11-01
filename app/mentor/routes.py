@@ -182,6 +182,11 @@ def _review_item_dict(row: MentorReviewItem) -> dict:
                 payload['context_issues'] = []
             except (Conflict,BadRequest) as exc:
                 payload['context_issues'] = [exc.description]
+            # [R6] 段落決策快照複製了研究者的私人閱讀筆記；教授審閱身分只拿得到去掉筆記的版本
+            # （與 Literature 的 _without_reading_notes 同規則）。驗證已用原件做完，這裡只遮蔽輸出。
+            if is_review_scoped(current_user.id,row.pid):
+                from app.core_pro.manuscript.paragraph_context import without_reading_note
+                payload['paragraph_decision'] = without_reading_note(payload['paragraph_decision'])
         except Conflict:
             payload['context_issue'] = '段落決策缺少；原意見仍保留。'
     if row.kind == MentorReviewItem.KIND_RESOURCE_PDF:
@@ -691,6 +696,10 @@ def get_review_workbench(mentee_id, pid):
     section_versions = (loaded or {}).get('sections',{}) if latest_meta else {}
     decisions = [r for r in list_decisions(_get_data_root(),clean_pid) if r.get('paragraph_context') and
         section_versions.get(r['section_id'])==r['paragraph_context']['s_ver']]
+    if is_review_scoped(current_user.id,clean_pid):
+        # [R6] 教授審閱身分看不到研究者的閱讀筆記（Literature 已遮蔽；快照不可成為繞道）。
+        from app.core_pro.manuscript.paragraph_context import without_reading_note
+        decisions = [without_reading_note(r) for r in decisions]
     return jsonify({
         "success": True,
         "pid": clean_pid,
@@ -836,8 +845,11 @@ def list_study_review_requests(mentee_id, pid):
     try:
         from app.core_pro.manuscript import paragraph_provenance
         links = paragraph_provenance.load(_data_root(), clean_pid)["links"]
+        # R6：只列出段落仍在最新版本中的連結；已被刪除或改寫的段落不再算「用在稿件」
+        locations = paragraph_provenance.locations_for(clean_pid, links)
         for note in notes:
-            note["used_in"] = paragraph_provenance.used_in(links, note.get("note_id"))
+            note["used_in"] = [u for u in paragraph_provenance.used_in(links, note.get("note_id"), locations)
+                               if u.get("location") != "missing"]
     except Exception:
         current_app.logger.warning("[study-reviews] 讀取段落出處失敗 pid=%s", clean_pid, exc_info=True)
     return jsonify({"success": True, "pid": clean_pid, "notes": notes})

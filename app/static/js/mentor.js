@@ -330,7 +330,7 @@ class MentorDashboard {
                 card.appendChild(make('div', '', `【${labels[st.kind] || st.kind}】${st.text}${tail}`));
             });
             if ((note.used_in || []).length) {
-                const used = make('div', 'text-muted mt-1', '用在稿件：' + note.used_in.map(u => `${u.section} S.Ver ${u.s_ver}「${u.excerpt}」`).join('；'));
+                const used = make('div', 'text-muted mt-1', '用在稿件：' + note.used_in.map(u => `${u.section} S.Ver ${u.latest_s_ver || u.s_ver}「${u.excerpt}」${u.location === 'ambiguous' ? '（位置不明確）' : ''}`).join('；'));
                 used.setAttribute('data-study-review-used-in', String(note.used_in.length));
                 card.appendChild(used);
             }

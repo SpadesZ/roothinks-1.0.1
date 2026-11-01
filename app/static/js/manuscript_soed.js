@@ -9,6 +9,8 @@
 //版本 v1.2 (Drafter multiline input + visible cancellation lifecycle)
 //更版時間 20260806-0130
 // inner comment: 保留 v1.0 全量代碼與防呆邏輯。本版變更：
+//   [R6] 2B 存檔按鈕不再用 800ms 計時器假裝成功：成功只認伺服器 save_ack（同章節、同 req_token），
+//     save_error 顯示失敗；15 秒沒有回應顯示「尚未確認保存」。見 cardActionSave / _settleBlockSave。
 //   [v1.1] 修掉「送出後永久轉圈」：新增 _armAckTimeout / _failPendingRequest。
 //     - 舊 _armTypingTimeout 在 activeJobId 為 null 時直接 return，
 //       而收不到 job_queued 正是 activeJobId 為 null 的情況 ——
@@ -397,10 +399,20 @@ class ManuSoed {
         }
 
         const icon = btn.querySelector('i');
-        const originalClass = icon.className;
+        // [R6] 圖示的「閒置樣式」只在第一次記下：之後按鈕可能停在轉圈、失敗或未確認狀態，
+        // 拿當下的 className 當原樣，收尾時就會還原成錯的圖示。
+        const originalClass = icon._idleClass || (icon._idleClass = icon.className);
+        // 同章節前一次存檔還在等回應：收掉它的逾時計時器，結果只認這一次（見 _settleBlockSave）。
+        this._blockSaves = this._blockSaves || {};
+        const prev = this._blockSaves[section];
+        if (prev) clearTimeout(prev.timer);
         icon.className = 'spinner-border spinner-border-sm text-primary';
 
         const title = this.app.paperTitleInput ? this.app.paperTitleInput.value.trim() : "Untitled_Paper";
+        // [R6] 每次存檔帶一個識別碼，伺服器在 save_ack / save_error 原樣帶回；
+        // 只認同章節、同識別碼的回應，舊請求或別章的回應不能讓這顆按鈕顯示成功。
+        this._blockSaveSeq = (this._blockSaveSeq || 0) + 1;
+        const reqToken = `blk-${Date.now()}-${this._blockSaveSeq}`;
 
         this.app.socket.emit('cmd_save_block', {
             pid: this.app.pid,
@@ -408,14 +420,47 @@ class ManuSoed {
             section: section,
             content: content,
             from_ver: this._currentSectionVer(section),
+            req_token: reqToken,
         });
 
         if(this.app.saveStatus) this.app.saveStatus.innerText = `Saving [${section}] ...`;
 
-        setTimeout(() => {
+        // [R6] 原本 800ms 後無條件顯示綠色勾勾——伺服器拒絕（viewer、未指派章節）或存檔失敗時
+        // 也照樣「成功」。現在成功只由 save_ack 觸發（_settleBlockSave）；15 秒內沒有任何回應
+        // 就明說「尚未確認保存」，不猜測結果。
+        const pending = {token: reqToken, icon, originalClass, timer: null};
+        pending.timer = setTimeout(() => {
+            if (this._blockSaves[section] !== pending) return;
+            icon.className = 'bi bi-exclamation-triangle text-warning';
+            if (this.app.saveStatus) {
+                this.app.saveStatus.innerText = `尚未確認保存 [${section}]：伺服器沒有回應，請確認連線後再存一次。`;
+            }
+        }, 15000);
+        this._blockSaves[section] = pending;
+    }
+
+    /**
+     * [R6] 依伺服器的 save_ack / save_error 收尾存檔按鈕。只認 target='block'、同章節、
+     * 同 req_token（伺服器沒帶 req_token 的舊回應視同本章最近一次請求）。
+     * 逾時後才到的回應仍照實收尾：晚到的成功就是成功，晚到的失敗就是失敗。
+     */
+    _settleBlockSave(data, ok) {
+        if (!data || data.target !== 'block' || !this._blockSaves) return;
+        const pending = this._blockSaves[data.section];
+        if (!pending || (data.req_token != null && data.req_token !== pending.token)) return;
+        delete this._blockSaves[data.section];
+        clearTimeout(pending.timer);
+        const {icon, originalClass} = pending;
+        if (ok) {
             icon.className = 'bi bi-check-lg text-success';
             setTimeout(() => icon.className = originalClass, 1500);
-        }, 800);
+            return;
+        }
+        // 失敗狀態留著不自動消失：使用者要知道這次沒有存進去。下次按存檔時會還原圖示。
+        icon.className = 'bi bi-x-lg text-danger';
+        if (this.app.saveStatus) {
+            this.app.saveStatus.innerText = `存檔失敗 [${data.section}]：${data.msg || '伺服器未保存'}`;
+        }
     }
 
     // =========================================================================
@@ -1526,6 +1571,8 @@ class ManuSoed {
                     this.app.socket.emit('cmd_list_papers', { pid: this.app.pid, title: title });
                 }
             } else if (data.target === 'block') {
+                // [R6] 存檔按鈕只在這裡（伺服器確認落盤）才顯示成功。
+                this._settleBlockSave(data, true);
                 if (Number.isInteger(data.draft_rev)) this._draftRevMap[data.section] = data.draft_rev;
                 delete this._draftConflicts[data.section];
                 if(this.app.saveStatus) {
@@ -1544,6 +1591,10 @@ class ManuSoed {
                 }
             }
         });
+
+        // [R6] cmd_save_block 未落盤（權限不足、無專案權限、存檔例外）時伺服器回 save_error；
+        // 訊息文字另有 sys_msg 顯示在訊息區，這裡只負責讓按鈕與狀態列說實話。
+        this.app.socket.on('save_error', (data) => this._settleBlockSave(data, false));
 
         // [v1.8] 自動存檔回應：只更新狀態文字，不動版本選單（草稿不是版本）。
         this.app.socket.on('autosave_ack', data => this._handleDraftAck(data));

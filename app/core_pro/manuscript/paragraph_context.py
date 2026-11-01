@@ -2,6 +2,7 @@
 # 目的：重用 append-only 引用決策保存段落契約；每次使用重新驗版本及證據。
 # 上下游：manuscript API/Socket、Mentor 審閱 → 此層 → 既有 ledger / library / EvidenceSegment。
 # 邊界：人類確認僅代表作者意圖，不代表科學支持成立；不推論未知適用條件。
+#       證據快照含研究者的私人閱讀筆記；交給教授審閱身分前一律經 without_reading_note 遮蔽（只遮輸出，不改快照與指紋）。
 # 驗證：python -m pytest test/unit/test_sai_review_workflow.py -q
 import hashlib
 import json
@@ -72,6 +73,28 @@ def _evidence(data_root,pid,entry_id,evidence_id):
         raise Conflict('證據段落過大；請先選取更精確的來源段落，不可截掉尾端限制。')
     evidence['fingerprint'] = fingerprint(evidence)
     return evidence
+
+
+def context_without_reading_note(context):
+    """教授審閱身分看不到研究者的私人閱讀筆記；與 Literature 的 _without_reading_notes 同一規則。
+
+    只遮蔽「輸出」，不改保存的快照：evidence 指紋含閱讀筆記，用來偵測「作者採用理由已變更」；
+    若改成不存或存檔時刪掉，既有決策的指紋全部對不上而被誤判為來源已變更，作者本人也會失去原本看得到的內容。
+    回傳新物件，不改動傳入的資料（呼叫端可能還要拿原件比對指紋或快照）。
+    """
+    evidence = context.get('evidence') if isinstance(context,dict) else None
+    if not isinstance(evidence,dict) or 'reading_note' not in evidence:
+        return context
+    hidden = {k:v for k,v in evidence.items() if k != 'reading_note'}
+    hidden['reading_note_hidden'] = bool(evidence.get('reading_note'))
+    return dict(context,evidence=hidden)
+
+
+def without_reading_note(row):
+    """引用決策列（含 paragraph_context 快照）去掉閱讀筆記；沒有段落脈絡的舊列原樣回傳。"""
+    if not isinstance(row,dict) or not isinstance(row.get('paragraph_context'),dict):
+        return row
+    return dict(row,paragraph_context=context_without_reading_note(row['paragraph_context']))
 
 
 def confirm_context(data_root,pid,data,actor,*,supersedes=None):

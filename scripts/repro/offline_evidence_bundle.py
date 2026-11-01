@@ -4,6 +4,8 @@
 # 內容: Study Tutor 評估協議 v2 的負向控制與忠實／作假替身（工具自我檢查，**不是模型品質**）、
 #       翻譯保護層量測（**模擬**佔位符損壞，不是任何真引擎的品質）。
 # 輸出: <out>/manifest.json（程式 SHA、工作樹是否乾淨、Python 版本、每個輸出的穩定雜湊）＋每個輸出 JSON。
+#       工作樹狀態 worktree 為 "clean"／"dirty"／"unknown"；git 不能執行或沒有 commit 時一律 unknown
+#       （worktree_dirty 為 null），不可因為查不到就回報成乾淨。
 #       「穩定雜湊」先移除只代表執行時間的欄位（started_at 等）與程式 SHA，同一份程式與資料在任何時間重跑都相同。
 # 用法: python scripts/repro/offline_evidence_bundle.py --out <dir>
 #       python scripts/repro/offline_evidence_bundle.py --verify <dir>   # 重跑並比對；不一致時 exit 1
@@ -41,6 +43,27 @@ def _git(*args):
         return None
 
 
+def _worktree_dirty(code_sha):
+    """工作樹是否有未提交變更：True／False；git 不能執行或沒有 commit（code_sha 為 None）時回 None。
+
+    原本寫成 bool(_git("status", "--porcelain"))：git 失敗時 _git 回 None，bool(None) 是 False，
+    manifest 就在 code_sha 為 null 的同時宣稱工作樹乾淨——稽核者會把「無從得知」讀成「已確認乾淨」。
+    """
+    if code_sha is None:
+        return None
+    status = _git("status", "--porcelain")
+    if status is None:
+        return None
+    return bool(status)
+
+
+def worktree_label(dirty, code_sha):
+    """給人看的工作樹狀態。舊版 manifest 在 git 失敗時寫成 code_sha=null＋worktree_dirty=false，同樣視為 unknown。"""
+    if dirty is None or code_sha is None:
+        return "unknown"
+    return "dirty" if dirty else "clean"
+
+
 def collect():
     """在本程序內重跑全部離線評估；回傳 {名稱: 結果}。"""
     import scripts.study_r2_eval as ev
@@ -69,9 +92,11 @@ def build(out):
     out = Path(out)
     out.mkdir(parents=True, exist_ok=True)
     results = collect()
-    manifest = {"schema": "roothinks.offline_evidence_bundle/1", "code_sha": _git("rev-parse", "HEAD"),
-                "worktree_dirty": bool(_git("status", "--porcelain")), "python": platform.python_version(),
-                "outputs": {}}
+    code_sha = _git("rev-parse", "HEAD")
+    dirty = _worktree_dirty(code_sha)
+    manifest = {"schema": "roothinks.offline_evidence_bundle/1", "code_sha": code_sha,
+                "worktree_dirty": dirty, "worktree": worktree_label(dirty, code_sha),
+                "python": platform.python_version(), "outputs": {}}
     for name, value in results.items():
         path = out / f"{name}.json"
         path.write_text(json.dumps(value, ensure_ascii=False, indent=1), encoding="utf-8")
@@ -84,7 +109,10 @@ def verify(directory):
     directory = Path(directory)
     manifest = json.loads((directory / "manifest.json").read_text(encoding="utf-8"))
     fresh = collect()
-    report = {"bundle_code_sha": manifest.get("code_sha"), "current_code_sha": _git("rev-parse", "HEAD"), "outputs": {}}
+    current_sha = _git("rev-parse", "HEAD")
+    report = {"bundle_code_sha": manifest.get("code_sha"), "current_code_sha": current_sha,
+              "bundle_worktree": worktree_label(manifest.get("worktree_dirty"), manifest.get("code_sha")),
+              "current_worktree": worktree_label(_worktree_dirty(current_sha), current_sha), "outputs": {}}
     for name, meta in manifest["outputs"].items():
         stored = json.loads((directory / meta["file"]).read_text(encoding="utf-8"))
         report["outputs"][name] = {

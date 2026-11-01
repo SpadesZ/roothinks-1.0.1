@@ -927,6 +927,14 @@ def save_sections(pid):
     if not pid:
         return jsonify({'ok': False, 'message': 'Invalid pid'}), 404
 
+    # [R6] 章節結構是專案層設定：下面會整批刪除再重建 ManuSectionConfig（改名、刪章、排序），
+    # 因此需 editor 以上，與 2C 全篇總裝同一道門檻。before_request 只驗「是專案成員」——
+    # 原本教授審閱身分、團隊 viewer、限定編輯（coauthor）都能把整份章節結構改掉。
+    # 必須在任何 DB 異動之前擋下；路徑在 /manuscript/api/ 之下不走 CSRF 守衛，授權只能在這裡做。
+    uid = _session_uid()
+    if uid is not None and not _socket_can_write(uid, pid):
+        return jsonify({'ok': False, 'message': 'Forbidden'}), 403
+
     data = request.get_json(silent=True) or {}
     sections = data.get('sections', [])
     if not isinstance(sections, list) or not sections:
@@ -1991,16 +1999,22 @@ def handle_save_block(data):
     [Batch C] 儲存 2B 段落 Block。
     [collab] session 模式下改採章節層判定：editor 以上可寫全部章節，
     coauthor 只能寫被指派的章節。成功後寫 RevisionLog 並廣播 peer_update。
+    [R6] 回應契約（前端存檔按鈕依賴）：成功必回 save_ack（target='block'）；
+    未落盤的每一條出口都回 save_error（target='block', section, msg）。兩者都原樣帶回
+    前端的 req_token，讓按鈕只認「這一次」請求的結果。sys_msg 照舊保留給訊息區顯示。
     """
     data = data or {}
-    pid = _resolve_socket_pid_or_emit(data)
+    section = data.get('section', 'general')
+    failure = {'target': 'block', 'section': section, **_req_echo(data)}
+    pid = _resolve_socket_pid_or_emit(data, missing_event='save_error',
+                                      missing_payload=dict(failure, msg=_SOCKET_MISSING_PID_MSG))
     if not pid:
         return
-    if not _ensure_socket_project_access(pid):
+    if not _ensure_socket_project_access(pid, forbidden_event='save_error',
+                                         forbidden_payload=dict(failure, msg='Forbidden project access.')):
         return
 
     title = data.get('title', 'Untitled_Paper')
-    section = data.get('section', 'general')
     content = data.get('content', '')
 
     # [Batch C] session 模式寫入權限檢查（section 必須先取出才能做章節層判定）
@@ -2014,10 +2028,10 @@ def handle_save_block(data):
                 current_uid = current_user.id
                 current_username = current_user.username
                 if not _socket_can_write_section(current_uid, pid, section):
-                    emit('sys_msg', {
-                        'msg': f'權限不足：你沒有「{section}」章節的撰寫權限，'
-                               '可改用留言功能提供意見。',
-                    })
+                    refusal = (f'權限不足：你沒有「{section}」章節的撰寫權限，'
+                               '可改用留言功能提供意見。')
+                    emit('sys_msg', {'msg': refusal})
+                    emit('save_error', dict(failure, msg=refusal, reason='forbidden'))
                     return
         except ImportError:
             pass
@@ -2026,6 +2040,7 @@ def handle_save_block(data):
     # 前端送來的 s_ver 一律忽略——版本號改由伺服器指派（見下方註解）。
     from_ver = data.get('from_ver') or None
 
+    acked = False
     try:
         # [v1.8] 版本由伺服器指派為 max+0.1，並以 O_EXCL 原子占用檔名。
         # 不再有 save_conflict：每次存檔都是新檔案，兩人同時存只會得到兩個相鄰
@@ -2060,7 +2075,9 @@ def handle_save_block(data):
             'updated_at': save_result.get('updated_at'),
             '_rev': 1,
             'versions': ManuscriptIO.list_block_versions(pid, section),
+            **_req_echo(data),
         })
+        acked = True
 
         # [Batch C] RevisionLog
         summary = f"block save: section={section} ver={new_ver} chars={len(str(content))}"
@@ -2085,6 +2102,9 @@ def handle_save_block(data):
     except Exception as e:
         logger.error("[cmd_save_block] %s", e, exc_info=True)
         emit('sys_msg', {'msg': 'Save Error.'})
+        # 已回 save_ack 代表版本已落盤（之後只是紀錄／廣播失敗），不能再告訴按鈕「存檔失敗」。
+        if not acked:
+            emit('save_error', dict(failure, msg='Save Error.'))
 
 
 @bp.route('/api/draft/flush', methods=['POST'])
@@ -2717,6 +2737,12 @@ def change_impact_report():
         row['can_reconfirm'] = uid==row['author_id'] and row['reviewer_active']
     for row in result['claims']:
         row['can_reconfirm'] = uid is None or _socket_can_write_section(uid,pid,row['section'])
+    if _hide_reading_notes(pid):
+        # [R6] claims[].context 是完整段落決策快照（含閱讀筆記）。只遮蔽輸出：
+        # snapshot 已在 build_impact 內以原件算好，重新確認時伺服器也以原件重算，兩邊仍一致。
+        from app.core_pro.manuscript.paragraph_context import context_without_reading_note
+        for row in result['claims']:
+            row['context'] = context_without_reading_note(row['context'])
     return jsonify(result)
 
 
@@ -2789,12 +2815,31 @@ def confirm_paragraph_context():
     return jsonify(success=True,decision=decision),201
 
 
+def _hide_reading_notes(pid):
+    """[R6] 目前登入者是否為教授審閱身分（看不到研究者的私人閱讀筆記）。
+
+    與 Literature 的 /api/literature/library（_without_reading_notes）同一個判斷：
+    只收窄教授審閱身分；owner／editor／一般團隊 viewer 照舊看得到。
+    段落決策快照（paragraph_context.evidence）複製了 reading_note，凡是把快照或文獻庫條目
+    交給前端的 Manuscript 端點都要經過這裡，否則 Literature 的遮蔽可以從 Manuscript 繞過。
+    """
+    from app.security import current_user_review_scoped
+    return current_user_review_scoped(pid)
+
+
+def _source_without_reading_note(source):
+    """段落脈絡選單的一筆來源去掉閱讀筆記；保留 reading_note_hidden 讓 UI 知道「有但不給看」。"""
+    out = {k:v for k,v in source.items() if k != 'reading_note'}
+    out['reading_note_hidden'] = bool(source.get('reading_note'))
+    return out
+
+
 @bp.route('/api/paragraph/context',methods=['GET'])
 def paragraph_context_choices():
     from app.models import EvidenceSegment
     from app.services.literature_library import LiteratureLibrary
     from app.core_pro.manuscript.citation_ledger import list_decisions
-    from app.core_pro.manuscript.paragraph_context import validate_context
+    from app.core_pro.manuscript.paragraph_context import validate_context,without_reading_note
     pid = _resolve_formal_project_pid(request.args.get('pid'))
     section = str(request.args.get('section') or '')
     uid = _session_uid()
@@ -2802,6 +2847,8 @@ def paragraph_context_choices():
         return jsonify(success=False,message='Invalid pid'),404
     if uid is not None and not _socket_can_read_section(uid,pid,section):
         return jsonify(success=False,message='Forbidden'),403
+    # [R6] 教授審閱身分：來源與決策快照都去掉閱讀筆記（validate_context 仍用原件比對指紋）。
+    hide_notes = _hide_reading_notes(pid)
     from app.security import get_workspace_role,is_section_scoped_role
     if uid is not None and is_section_scoped_role(get_workspace_role(uid,pid),pid):
         rows = [r for r in list_decisions(_citation_data_root(),pid,section_id=section) if r.get('paragraph_context')]
@@ -2816,6 +2863,9 @@ def paragraph_context_choices():
                 row['issues'] = []
             except (Conflict,BadRequest) as exc:
                 row['issues'] = [exc.description]
+        if hide_notes:
+            sources = {k:_source_without_reading_note(v) for k,v in sources.items()}
+            rows = [without_reading_note(r) for r in rows]
         return jsonify(success=True,sources=list(sources.values()),decisions=rows,source_scope='explicit_section_evidence_only',
             versions=ManuscriptIO.list_block_versions(pid,section))
     entries = [e for e in LiteratureLibrary(_citation_data_root()).list_entries(pid) if
@@ -2835,6 +2885,9 @@ def paragraph_context_choices():
             row['issues'] = []
         except (Conflict,BadRequest) as exc:
             row['issues'] = [exc.description]
+    if hide_notes:
+        sources = [_source_without_reading_note(source) for source in sources]
+        rows = [without_reading_note(r) for r in rows]
     return jsonify(success=True,sources=sources,decisions=rows,versions=ManuscriptIO.list_block_versions(pid,section))
 
 
@@ -2949,6 +3002,10 @@ def citation_decisions_api():
         if uid is not None:
             decisions = [row for row in decisions if
                          _socket_can_read_section(uid, pid, row.get('section_id', ''))]
+        if _hide_reading_notes(pid):
+            # [R6] 段落決策快照複製了閱讀筆記；教授審閱身分只拿得到去掉筆記的版本。
+            from app.core_pro.manuscript.paragraph_context import without_reading_note
+            decisions = [without_reading_note(row) for row in decisions]
         return jsonify({"success": True, "count": len(decisions), "decisions": decisions})
     except Exception as e:
         logger.error("[citation_decisions_api] %s", e, exc_info=True)
@@ -2958,6 +3015,12 @@ def citation_decisions_api():
 # ---------------------------------------------------------------------------
 # [Batch C] Revision Log API
 # ---------------------------------------------------------------------------
+
+def _revision_section(entity_ref) -> str:
+    """manuscript_block 版本紀錄的章節 key：「<章節>/<版本檔名>」取最後一個 "/" 之前；舊格式（無 "/"）整串。"""
+    ref = str(entity_ref or '')
+    return ref.rsplit('/', 1)[0] if '/' in ref else ref
+
 
 @bp.route('/api/revisions/<pid>', methods=['GET'])
 def get_revisions(pid):
@@ -2986,8 +3049,13 @@ def get_revisions(pid):
         )
         uid = _session_uid()
         if uid is not None and not _socket_can_read_paper(uid, formal_pid):
+            # [R6] manuscript_block 的 entity_ref 是「<章節>/<版本檔名>」（cmd_save_block、
+            # cmd_delete_block_version 寫入），整串拿去做章節判定永遠不等於被指派的章節 key，
+            # 限定編輯因此連自己章節的版本紀錄都看不到。檔名由伺服器產生、不含 "/"，
+            # 所以取最後一個 "/" 之前的完整章節比對（不取第一段：前綴相同不代表是同一章）。
+            # 沒有 "/" 的舊紀錄整串即章節 key。
             rows = [row for row in rows if row.entity_type == 'manuscript_block' and
-                    _socket_can_read_section(uid, formal_pid, row.entity_ref)]
+                    _socket_can_read_section(uid, formal_pid, _revision_section(row.entity_ref))]
         return jsonify({
             "ok": True,
             "pid": formal_pid,

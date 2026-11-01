@@ -97,8 +97,16 @@ def fingerprint():
     return h.hexdigest()
 
 
+# 章節結構（POST /manuscript/api/sections/<pid>）的真實請求：固定章節原樣保留（否則在第一道檢查就被 400 擋下，
+# 根本走不到「整批刪除重建」），再加一個新章節。R6 前任何專案成員（教授審閱、viewer、限定編輯）都能改成功。
+SECTIONS_PROBE = [{"id": key, "label": label, "is_fixed": True}
+                  for key, label in (("title", "Title"), ("author", "Author"), ("abstract", "Abstract"), ("keyword", "Keyword"))]
+SECTIONS_PROBE += [{"id": "mutation_probe", "label": "MUTATION_PROBE", "is_fixed": False}]
+
+
 def payload(ids, conv, note_id, pid, section="introduction"):
     return {"pid": pid, "project_id": pid, "paper_id": base.PAPER, "paper_ids": [base.PAPER], "conv_id": conv,
+            "sections": [dict(s) for s in SECTIONS_PROBE],
             "note_id": note_id, "suggestion_id": "s1", "section_key": section, "block_key": section, "section": section,
             "content": "MUTATION_PROBE", "text": "MUTATION_PROBE", "notes": "MUTATION_PROBE", "title": "MUTATION_PROBE",
             "name": "MUTATION_PROBE", "html": "<p>MUTATION_PROBE</p>", "body": "MUTATION_PROBE", "message": "MUTATION_PROBE",
