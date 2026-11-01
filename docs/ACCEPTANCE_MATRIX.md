@@ -385,3 +385,17 @@ Owner 已改採本機主導；新隔離分支 `codex/py312-local-first-integrati
 | 證據筆記搜尋篩選 | TESTED（瀏覽器） | `study_r5_evidence/browser-journey-after.json` | — |
 | 文獻庫 → Study 直達閱讀 | TESTED（瀏覽器） | 同上 | — |
 | 科學建議報告需要寫入權 | 缺陷修補，TESTED（紅測試） | `test_scientific_review_workflow.py`；`acl-write-matrix-*.json` | PA 無關：與既有「回應報告需寫入權」一致 |
+
+## R6（2026-11-01；`codex/study-r6-20261101`，未合併）
+
+| 面向 | 判定 | 證據 | 仍開放 |
+|---|---|---|---|
+| 出處位置：重複／重疊文字不重複計算、無法確定時不猜、舊連結安全推導、部分覆蓋、跨段選取 | 缺陷修補，TESTED（6 個紅測試在 R5 失敗） | `test_paragraph_provenance.py`；`study_r6_evidence/provenance-tests-on-r5.txt`；瀏覽器「重複插入的引文」 | 位置只靠文字與前後文；大幅改寫要人工重連 |
+| 引文插入：目前原文重新核對、機器翻譯標示、頁碼與來源出處、伺服器端核對結果 | TESTED（5 個紅測試；瀏覽器 3 項） | 同上 | 頁碼是 PDF 頁序；只核對字面相符，不判斷支持 |
+| 流程接縫：教授看目前分享版本、來源誤報、錨點標示、匯出覆蓋所有章節、Study 匯出重新核對、反向連結已刪段落、損壞錨點不讓整頁失敗 | 缺陷修補，TESTED | `test_paragraph_provenance.py`、`test_study_r6_seams.py` | 教授部分屬 PA-01（提議中） |
+| 章節結構只有 editor 以上能改（H9） | 缺陷修補，TESTED（熱修與 R6 都有紅測試；寫入矩陣加真實探測） | `test_manuscript_sections_acl.py`（熱修）、`test_manuscript_r6_seams.py` | `main` 也有，已進熱修 |
+| 教授經 Manuscript 讀不到文獻庫閱讀筆記 | 缺陷修補，TESTED | `test_manuscript_r6_seams.py` | 屬 PA-01 擴充（提議中） |
+| 保存按鈕只在伺服器確認後顯示成功；coauthor 修訂紀錄；證據包 git 狀態 | 缺陷修補，TESTED（紅測試） | `test_manuscript_r6_seams.py`、`test_offline_bundle_r6.py` | — |
+| Socket 跨專案 pid 混用（112 次請求） | TESTED，0 發現 | `study_r6_evidence/socket-matrix-after.json` | — |
+| 出處對抗測試：跨專案 id、偽造位置、最差狀態不擋保存與匯出 | TESTED | `test_provenance_adversarial.py` | — |
+| 熱修＋R 堆疊整合 | TESTED | [發佈就緒評估](engineering/RELEASE_READINESS_R6_2026-11-01.md) | 合併與部署要 Owner 核准 |

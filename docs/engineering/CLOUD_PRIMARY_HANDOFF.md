@@ -1,6 +1,6 @@
 # Cloud primary 接手文件
 
-溝通及實作報告用繁體中文。**每完成一步就更新本文件。** 目前狀態：**R5 開發候選完成**（研究流程整合＋授權補強，`codex/study-r5-20261101`）；安全熱修最新 `2c99ce2`（含 H8）待 Owner。前一狀態：**安全第二輪完成**：熱修候選（從 `main`，`b80b94e`）與 R4 後續候選（`codex/study-r4-followup-20261028`）。都未合併、未部署、未輪替憑證，停在 Owner 決定點。規格與整體狀態以 [`docs/SAI.md`](../SAI.md) 為唯一入口。
+溝通及實作報告用繁體中文。**每完成一步就更新本文件。** 目前狀態：**R6 開發候選**（出處位置、引文核對、流程接縫、對抗測試，`codex/study-r6-20261101`）；安全熱修最新 `b3b935e`（含 H8、H9）待 Owner；整合分支 `codex/integration-hotfix-r6-20261101`。前一狀態：**安全第二輪完成**：熱修候選（從 `main`，`b80b94e`）與 R4 後續候選（`codex/study-r4-followup-20261028`）。都未合併、未部署、未輪替憑證，停在 Owner 決定點。規格與整體狀態以 [`docs/SAI.md`](../SAI.md) 為唯一入口。
 
 最後完整驗證點：R5 `bf5716e`，1,736 通過／50 略過／0 失敗；熱修 `2c99ce2` 在 3.10 與 3.12 各 1,140 通過＋1 個 main 既有失敗。之前：R4 `457d887`，1,705 通過／50 略過／0 失敗（見下方 R4 段）；更早的 `aa8ff3e`（R2 資料防護）為 1,553 通過／50 略過／0 失敗。
 已推送個人倉庫（`7c905b5` 起）；推送前後核對，main、整合分支與其他所有分支的遠端 SHA 都沒變。
@@ -85,7 +85,24 @@ Flow B debug 輸出在 `DATA_ROOT` 不可用時不再寫到 repo `data/`（`Flow
 - 最終狀態：程式凍結 `4fb65e9`（完整回歸 1,620／50／0）；瀏覽器 40／40 於 `c100ac3`；驗證結果文件 `b70599f` 已推送並核對遠端，
   其後只有本接手文件的更新 commit。main、R1、py312 分支遠端 SHA 未變。
 
-## R5（2026-11-01，最新）
+## R6（2026-11-01，最新）
+
+- 分支 `codex/study-r6-20261101`（從 R5 `81789fc`）。SAI §3.3／§3.4。證據：`study_r6_evidence/`。發佈：`RELEASE_READINESS_R6_2026-11-01.md`。
+- **段落出處位置**：`paragraph_provenance.layout()／make_anchor()／locate()／derive_legacy_anchor()／locations_for()`。
+  - 新連結存 `anchor`（occurrence、前後文、段落雜湊）。`coverage()` 只算 `location.status == matched`，ambiguous 列在 `ambiguous_links`。
+  - 新增連結：可帶 `paragraph_index`（加上 `s_ver`）或 `context_before`／`context_after`。文字出現多處又沒有提示時回 409。
+  - 舊連結：讀取時用連結當時的 S.Ver 推導，不寫回。
+- **引文**：`provenance_routes._current_anchors()` 用目前原文重新核對；`_quote_choices()` 給 `insertable`／`blocked_reason`／`machine_translation`。
+  - 連結帶 `quote_anchor_index` 時，伺服器自己算 `quote_current`（用戶端送的會被丟掉），存成 `link.quote`。
+- **隱藏規則**：教授審閱身分看到的是 `review_shared` 的目前版本（`revised_since_link`）。筆記被隱藏時，`quote` 也一起隱藏。
+- **錨點狀態**：`_anchor_status()` 現在給 `{stored, status, version_changed}`。`source_changed` 只在原文改版或核對結果變差時出現。
+- **Study**：`export_evidence_notes` 會重新核對原文；`used_in(..., locations)` 帶 `location`。單一損壞的錨點只會標成 unavailable。
+- **Manuscript**：`save_sections` 需要 editor 以上（H9）；教授看不到閱讀筆記（段落脈絡、引用決定、導師工作台）；`cmd_save_block` 回傳 `save_error`；coauthor 的修訂紀錄修好了。
+- **Socket 矩陣**：多了 `outsider-indirect` 角色（用自己的專案連線，再帶別專案的 pid）。
+- **熱修**：`b3b935e` 加了 H9。在整合工作樹（scratchpad/integ）跑完整回歸時，`test_data_safety_guard` 會因為路徑在 /tmp 底下而失敗，這是環境造成的。
+- **熱修瀏覽器**：`hotfix_token_browser.cjs` 要用 R 堆疊的 `vendor-route.cjs`（熱修分支沒有這個檔）。
+
+## R5（2026-11-01）
 
 - 分支 `codex/study-r5-20261101`（從 R4 後續 `00558b8`）。SAI §3.2。證據：`study_r5_evidence/`。
 - 段落覆蓋：`paragraph_provenance.coverage()`、`split_paragraphs()`；面板 `#ppCoverage`、`[data-coverage-state]`、`[data-coverage-pick]`。
