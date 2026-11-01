@@ -101,7 +101,7 @@ RootThinks 的目標是一個**整合的人機協作科學研究工作區**：AI
 | coauthor 的修訂紀錄、離線證據包 | coauthor 看得到自己章節的修訂紀錄。沒有 git 時，證據包的工作樹狀態寫成「未知」，不再寫成「乾淨」 | 缺陷修補，TESTED（紅測試） |
 | 對抗測試 | Socket 矩陣加入「用自己的專案連線、指令帶別專案 pid」：14 個指令 × 8 個角色，共 112 次請求，0 個發現，正向控制有觸發。段落出處另測：跨專案 note_id、pid 不一致、偽造位置與核對結果，以及最差的出處狀態也不擋保存、DOCX 匯出、出處匯出 | TESTED：`socket-matrix-after.json`、`test_provenance_adversarial.py` |
 
-R6 完整回歸：（執行中；完成後更新）。共研瀏覽器旅程：**69／69**（R5 是 66；新增 3 項 R6 檢查；`study_r6_evidence/browser-journey-after.json`，程式 `da27392`）。
+R6 完整回歸：**1,777 通過／50 略過／0 失敗**（Python 3.12，程式 `da27392`；R5 是 1,736）。共研瀏覽器旅程：**69／69**（R5 是 66；新增 3 項 R6 檢查；`study_r6_evidence/browser-journey-after.json`，程式 `da27392`）。
 
 ### 3.4 熱修與 R 堆疊的整合（2026-11-01）
 
