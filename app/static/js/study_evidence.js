@@ -23,6 +23,22 @@
         return owner && owner !== 'local' ? Number(owner) : null;
     }
 
+    // R6：反向連結的位置由伺服器依最新稿件版本算出。missing＝這段文字已不在最新版本（被刪除或改寫），不算「已用在稿件」；
+    // ambiguous＝位置不明確，仍算用過（只是提醒重新連結）；沒有 location 欄位（舊版伺服器）照舊視為用過。
+    function liveUsedIn(note) {
+        return (note.used_in || []).filter(u => u.location !== 'missing');
+    }
+
+    function usedInLabel(u) {
+        const base = `${u.section} S.Ver ${u.s_ver}「${u.excerpt}」`;
+        if (u.location === 'missing') {
+            const latest = u.latest_s_ver !== undefined && u.latest_s_ver !== null && u.latest_s_ver !== '' ? ` S.Ver ${u.latest_s_ver}` : '';
+            return `${base}（這段已不在最新版本${latest}）`;
+        }
+        if (u.location === 'ambiguous') return `${base}（位置不明確，請在 Manuscript 重新連結）`;
+        return base;
+    }
+
     function supportSelect(st, onChange) {
         const sel = el('select', 'form-select form-select-sm w-auto');
         sel.setAttribute('aria-label', '引文是否支持這則陳述（你的判斷）');
@@ -448,8 +464,9 @@
         _matches(note) {
             const f = this.filter || {};
             if (f.paper && note.paper_id !== f.paper) return false;
-            if (f.usage === 'used' && !(note.used_in || []).length) return false;
-            if (f.usage === 'unused' && (note.used_in || []).length) return false;
+            // 已不在最新版本（location=missing）的連結不算用在稿件。
+            if (f.usage === 'used' && !liveUsedIn(note).length) return false;
+            if (f.usage === 'unused' && liveUsedIn(note).length) return false;
             const judged = (note.statements || []).filter(st => st.kind !== 'source_fact');
             if (f.support && !judged.some(st => (st.claim_support || 'not_assessed') === f.support)) return false;
             const q = String(f.q || '').trim().toLowerCase();
@@ -529,12 +546,21 @@
                 line.setAttribute('data-ai-uncertainty', unc.level || 'unknown');
                 card.appendChild(line);
             }
-            if ((note.used_in || []).length) {
+            const live = liveUsedIn(note);
+            const gone = (note.used_in || []).filter(u => u.location === 'missing');
+            if (live.length) {
                 // 反向連結（R4）：這則筆記被用在稿件哪幾段。
                 const used = el('div', 'small text-muted mb-1');
-                used.setAttribute('data-evidence-used-in', String(note.used_in.length));
-                used.textContent = '用在稿件：' + note.used_in.map(u => `${u.section} S.Ver ${u.s_ver}「${u.excerpt}」`).join('；');
+                used.setAttribute('data-evidence-used-in', String(live.length));
+                used.textContent = '用在稿件：' + live.map(usedInLabel).join('；');
                 card.appendChild(used);
+            }
+            if (gone.length) {
+                // R6：段落已被刪除或改寫的連結只留作紀錄（淡色），不再顯示成「用在稿件」。
+                const missing = el('div', 'small text-muted opacity-75 mb-1');
+                missing.setAttribute('data-evidence-used-in-missing', String(gone.length));
+                missing.textContent = gone.map(usedInLabel).join('；');
+                card.appendChild(missing);
             }
             card.appendChild(this._historyBlock(note));
 

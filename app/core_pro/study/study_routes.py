@@ -2389,8 +2389,11 @@ def list_evidence_notes(pid):
             try:
                 from app.core_pro.manuscript import paragraph_provenance
                 links = paragraph_provenance.load(resolve_data_root(), pid)["links"]
+                # R6：每個連結在最新稿件版本中的位置，一次請求只算一次（不是每則筆記算一次）；
+                # location=missing 代表那段文字已被刪除或改寫，前端不能再算成「已用在稿件」。
+                locations = paragraph_provenance.locations_for(pid, links)
                 for note in doc["notes"]:
-                    note["used_in"] = paragraph_provenance.used_in(links, note.get("note_id"))
+                    note["used_in"] = paragraph_provenance.used_in(links, note.get("note_id"), locations)
             except Exception:
                 logger.warning("[evidence_notes] 讀取段落出處失敗 pid=%s", pid, exc_info=True)
         return jsonify({"ok": True, "rev": doc.get("_rev", 0), "notes": doc["notes"], "review_scope": scoped})
@@ -2415,7 +2418,12 @@ def _attach_current_anchor_status(pid, notes):
             if sources[key] is None:
                 anchor["current"] = {"status": "unavailable"}
                 continue
-            current = study_anchors.resolve(sources[key][0], anchor, sources[key][1])
+            try:
+                current = study_anchors.resolve(sources[key][0], anchor, sources[key][1])
+            except Exception:  # R6：單一損壞的錨點不能讓整份清單、出處面板或匯出變成 500
+                logger.warning("[anchors] 重新定位錨點失敗 pid=%s paper=%s", pid, paper_id, exc_info=True)
+                anchor["current"] = {"status": "unavailable"}
+                continue
             anchor["current"] = {k: current.get(k) for k in ("status", "version_changed", "ref", "page")}
 
 
@@ -2582,7 +2590,14 @@ def export_evidence_notes(pid):
         doc = study_evidence_notes.load(_evidence_path(pid), pid)
         if _review_scope(pid):
             doc["notes"] = study_evidence_notes.review_shared(doc["notes"])
-        body = study_evidence_notes.to_markdown(doc, pid)
+        # 匯出時重新核對目前原文：只在複本上附加 current，不寫回；原文重跑後不能再把建立時的 exact 印成現況。
+        # 研究者自主：原文讀不到或核對出錯都不擋匯出，錨點會標示「無法重新核對」或「未重新核對」。
+        notes = [dict(n, anchors=[dict(a) for a in n.get("anchors") or []]) for n in doc["notes"]]
+        try:
+            _attach_current_anchor_status(pid, notes)
+        except Exception:
+            logger.warning("[evidence_notes] 匯出時重新核對原文失敗 pid=%s", pid, exc_info=True)
+        body = study_evidence_notes.to_markdown(dict(doc, notes=notes), pid)
         response = current_app.response_class(body, mimetype='text/markdown; charset=utf-8')
         response.headers['Content-Disposition'] = f"attachment; filename*=UTF-8''{quote(pid)}_evidence_notes.md"
         return response

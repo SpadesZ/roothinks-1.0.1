@@ -293,26 +293,83 @@ def _who(actor):
     return (actor or {}).get("username") or "未知"
 
 
+def _current_status(anchor):
+    """匯出時重新核對的結果；沒有 current（呼叫端沒有核對，或建立時就讀不到原文）回 None。"""
+    current = anchor.get("current")
+    return current.get("status") if isinstance(current, dict) else None
+
+
+def _match_summary(anchors):
+    """摘要「引文有沒有在原文中找到」：以「目前」原文的核對結果為準，不沿用建立時存的 quote_match。
+
+    只算原文側錨點；譯文錨點是機器翻譯，在譯文中找到不代表原文有這段話。
+    """
+    original = [a for a in anchors if a.get("side") != "translation"]
+    now = [_current_status(a) for a in original]
+    if any(s in study_anchors.TEXT_FOUND for s in now):
+        return "至少一個引文在原文中找到（已重新核對目前原文；不代表支持陳述）"
+    was_found = any(a.get("status") in study_anchors.TEXT_FOUND for a in original)
+    if any(s == "unavailable" for s in now):
+        return "目前讀不到原文，無法重新核對" + ("（建立時有引文在原文中找到）" if was_found else "")
+    if any(s is not None for s in now):
+        return "沒有在原文中找到的引文（已重新核對目前原文" + ("；建立時曾找到，原文之後可能重跑或改版" if was_found else "") + "）"
+    if was_found:
+        return "建立時有引文在原文中找到（這次匯出沒有重新核對目前原文，不代表現在仍找得到）"
+    never = any(a.get("status") == "unavailable" for a in original)
+    return "沒有在原文中找到的引文" + ("（建立時讀不到原文，從未核對過）" if never else "")
+
+
+def _anchor_line(no, anchor):
+    """單一錨點：同時列出建立時與目前的狀態，原文重跑後不會被印成仍然 exact。"""
+    translation = anchor.get("side") == "translation"
+    where = f"p.{anchor.get('page')} {anchor.get('ref')}" if anchor.get("page") else "位置不明"
+    scope = "，由譯文推定的整段原文" if anchor.get("match_kind") == "paragraph_from_translation" else ""
+    stored = anchor.get("status") or "未知"
+    now = _current_status(anchor)
+    target = "譯文" if translation else "原文"
+    if now == "unavailable":
+        checked = "目前讀不到原文，無法重新核對"
+    elif now is None:
+        # 建立時就讀不到原文的錨點從未核對過，匯出時也不重新核對。
+        checked = "建立時就讀不到原文，從未核對過" if stored == "unavailable" else f"目前{target}：未重新核對"
+    else:
+        checked = f"目前{target}：{now}"
+        if (anchor.get("current") or {}).get("version_changed"):
+            checked += "；原文已改版"
+    # 譯文是機器翻譯，不是原文；一眼要看得出來，不能被當成原文引用。
+    origin = "機器翻譯，非原文" if translation else "原文"
+    return (f"- [證據 {no + 1}] {where}（建立時：{stored}，{origin}{scope}；{checked}）："
+            f"\"{anchor.get('quote')}\"")
+
+
 def to_markdown(doc, title=""):
-    """匯出：不需要教授或任何科學驗證；每則陳述都帶類別、引文比對結果與研究者的支持判斷。"""
+    """匯出：不需要教授或任何科學驗證；每則陳述都帶類別、引文比對結果與研究者的支持判斷。
+
+    錨點的 current（路由在匯出前重新核對、不寫回）若有，就以它為準；建立時的狀態只當歷史紀錄一起列出。
+    """
     lines = [f"# 證據筆記 {title}".rstrip(), "",
              "> 類別：原文事實＝在原文中逐字找到的引文；AI 解讀＝模型輸出經研究者接受；我的假說＝研究者自己的判斷。",
-             "> 「在原文中找到」只代表引文存在，不代表它支持任何陳述；是否支持只記錄研究者自己的判斷。", ""]
+             "> 「在原文中找到」只代表引文存在，不代表它支持任何陳述；是否支持只記錄研究者自己的判斷。",
+             "> 錨點狀態：建立時＝存檔當下的比對結果；目前＝匯出時重新比對目前原文的結果（exact／relocated＝找到，"
+             "ambiguous_in_block＝同段多處只確定段落，ambiguous＝多段都有無法定位，not_found＝找不到）。譯文是機器翻譯，不是原文。", ""]
     for note in doc.get("notes") or []:
         lines.append(f"## {note.get('title') or note['note_id']}")
-        match = "至少一個引文在原文中找到（不代表支持陳述）" if note.get("quote_match") == "found" else "沒有在原文中找到的引文"
-        lines.append(f"- 論文：{note.get('paper_id')}；{match}；作者：{_who(note.get('accepted_by'))}；接受時間：{note.get('accepted_at')}")
-        for no, anchor in enumerate(note.get("anchors") or []):
-            where = f"p.{anchor.get('page')} {anchor.get('ref')}" if anchor.get("page") else "位置不明"
-            scope = "，由譯文推定的整段原文" if anchor.get("match_kind") == "paragraph_from_translation" else ""
-            lines.append(f"- [證據 {no + 1}] {where}（{anchor.get('status')}，{'譯文' if anchor.get('side') == 'translation' else '原文'}{scope}）："
-                         f"\"{anchor.get('quote')}\"")
+        anchors = note.get("anchors") or []
+        lines.append(f"- 論文：{note.get('paper_id')}；{_match_summary(anchors)}；作者：{_who(note.get('accepted_by'))}；接受時間：{note.get('accepted_at')}")
+        for no, anchor in enumerate(anchors):
+            lines.append(_anchor_line(no, anchor))
         for st in note.get("statements") or []:
             refs = "、".join(f"證據 {i + 1}" for i in st.get("evidence") or [])
-            if st["kind"] == "source_fact":
-                tail = f"（{refs}）" if refs else ""
-            else:
-                tail = f"（{refs}；{CLAIM_SUPPORT_LABELS.get(st.get('claim_support'), '未判定是否支持')}）" if refs else "（無證據）"
+            bits = [refs] if refs else []
+            if st["kind"] != "source_fact" and refs:
+                bits.append(CLAIM_SUPPORT_LABELS.get(st.get("claim_support"), "未判定是否支持"))
+            # 引用的原文錨點目前核對不到時，陳述旁邊也要看得到，而不是只在錨點行才提醒。
+            stale = [f"證據 {i + 1}＝{_current_status(anchors[i])}" for i in st.get("evidence") or []
+                     if i < len(anchors) and anchors[i].get("side") != "translation"
+                     and _current_status(anchors[i]) not in (None, "unavailable", *study_anchors.TEXT_FOUND)]
+            if stale:
+                bits.append("目前原文核對：" + "、".join(stale))
+            tail = f"（{'；'.join(bits)}）" if bits else ("" if st["kind"] == "source_fact" else "（無證據）")
             lines.append(f"- **{KIND_LABELS[st['kind']]}**：{st['text']}{tail}")
         unc = (note.get("origin") or {}).get("ai_uncertainty")
         if unc:
