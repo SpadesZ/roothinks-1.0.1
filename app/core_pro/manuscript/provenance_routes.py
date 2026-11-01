@@ -11,6 +11,7 @@ from flask import Response, jsonify, request
 from werkzeug.exceptions import BadRequest, Conflict
 
 from app.core_pro.manuscript import paragraph_provenance as prov
+from app.core_pro.study.study_anchors import TEXT_FOUND as _TEXT_FOUND
 from app.core_pro.manuscript.manuscript_routes import (
     _citation_data_root, _resolve_formal_project_pid, _session_uid, _socket_can_read_paper,
     _socket_can_read_section, _socket_can_write_section, bp,
@@ -84,7 +85,10 @@ def list_paragraph_provenance():
         choices = [{"note_id": n["note_id"], "title": n.get("title") or "", "paper_id": n.get("paper_id") or "",
                     "accepted_by": (n.get("accepted_by") or {}).get("username"),
                     "summary": [{"kind": st.get("kind"), "text": (st.get("text") or "")[:160],
-                                 "claim_support": st.get("claim_support")} for st in n.get("statements") or []]}
+                                 "claim_support": st.get("claim_support")} for st in n.get("statements") or []],
+                    # R5：只提供伺服器在原文中找得到的引文（TEXT_FOUND），供「插入原文引文」使用
+                    "quotes": [{"quote": a.get("quote"), "page": a.get("page"), "side": a.get("side"), "paper_id": a.get("paper_id")}
+                               for a in n.get("anchors") or [] if a.get("status") in _TEXT_FOUND and a.get("quote")]}
                    for n in notes]
     latest_ver, latest_text = prov.section_text(pid, section) if section else (None, None)
     cov = prov.coverage(latest_text, described) if section and latest_text is not None else None

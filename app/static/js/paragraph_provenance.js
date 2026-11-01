@@ -78,6 +78,48 @@
         box.appendChild(el('div', 'fw-bold', `${note.title || '證據筆記'} · ${note.paper_id || ''} · 作者 ${note.accepted_by || '未知'}`));
         (note.summary || []).forEach(st => box.appendChild(el('div', '',
             `【${KIND[st.kind] || st.kind}】${st.text}${st.kind !== 'source_fact' ? '（' + (SUPPORT[st.claim_support || 'not_assessed']) + '）' : ''}`)));
+        (note.quotes || []).forEach((q, i) => {
+            const btn = el('button', 'btn btn-sm btn-outline-primary mt-1 me-1', `插入原文引文 ${i + 1} 到 2B（保存後自動連結）`);
+            btn.type = 'button';
+            btn.setAttribute('data-provenance-insert-quote', String(i));
+            btn.onclick = () => insertQuote(note, q);
+            box.appendChild(btn);
+        });
+    }
+
+    // R5：把伺服器核對過的原文引文（連同頁碼）附加到 2B 目前章節的最後一段；不覆蓋任何既有文字。
+    // 保存成功（save_ack）後自動以這段文字建立「證據筆記」出處；若保存前改寫了引文，伺服器會拒絕並提示手動連結。
+    let pending = null;
+
+    function quoteText(note, q) {
+        const where = [q.paper_id || note.paper_id, q.page ? `p.${q.page}` : '', q.side === 'translation' ? '譯文' : ''].filter(Boolean).join('，');
+        return `「${q.quote}」（${where}）`;
+    }
+
+    function insertQuote(note, q) {
+        const content = document.querySelector(`.editor-card[data-section="${CSS.escape(section)}"] .card-content`);
+        if (!content) return status('找不到 2B 目前章節的編輯區；請先在 2B 開啟這一章。');
+        const p = document.createElement('p');
+        p.textContent = quoteText(note, q);
+        content.appendChild(p);
+        content.dispatchEvent(new Event('input', { bubbles: true }));
+        pending = { section, note_id: note.note_id, text: p.textContent };
+        status('已在 2B 末尾插入原文引文。按 Save 保存後，會自動把這段連到證據筆記。');
+    }
+
+    async function completePending(ack) {
+        if (!pending || ack.target !== 'block' || ack.section !== pending.section) return;
+        const job = pending;
+        pending = null;
+        try {
+            const data = await api(`/manuscript/api/provenance?pid=${encodeURIComponent(pid)}&section=${encodeURIComponent(job.section)}`);
+            await api('/manuscript/api/provenance/link', { pid, section: job.section, base_rev: data.rev, kind: 'evidence_note',
+                note_id: job.note_id, paragraph_text: job.text, s_ver: ack.ver });
+            status('已保存，並自動把插入的引文連到證據筆記。');
+        } catch (error) {
+            status(`已保存，但沒有自動連結：${error.message}（引文若被改寫，請選取該段後手動連結）`);
+        }
+        if (byId('paragraphProvenancePanel')?.classList.contains('show')) await load().catch(() => {});
     }
 
     function card(item) {
@@ -207,6 +249,10 @@
             byId('ppExport').href = `/manuscript/api/provenance/export?pid=${encodeURIComponent(pid)}`;
             const selection = String(window.getSelection() || '').trim();
             if (selection) byId('ppParagraph').value = selection;
+            if (!app._provenanceAckBound && app.socket) {
+                app._provenanceAckBound = true;
+                app.socket.on('save_ack', ack => { completePending(ack || {}); });
+            }
             status('載入中…');
             bootstrap.Offcanvas.getOrCreateInstance(byId('paragraphProvenancePanel')).show();
             try { await load(); status(''); } catch (error) { status(error.message); }

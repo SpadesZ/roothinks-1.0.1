@@ -289,6 +289,13 @@ module.exports=async function after(ctx){
     await page.waitForFunction(()=>document.querySelectorAll('[data-coverage-state]')[1]?.getAttribute('data-coverage-state')==='free_writing');
     check('R5 覆蓋摘要顯示 2 段都已標記',(await page.locator('#ppCoverageSummary').innerText()).includes('尚未標記 0'));
     await snapshot(page,'14-manuscript-provenance-linked');
+    // R5：把核對過的原文引文插入 2B（附加，不覆蓋），保存後自動建立出處
+    await page.locator('[data-provenance-insert-quote="0"]').click();
+    const QUOTE_TXT='The improvement was observed only at 300 K under one calibration protocol.';
+    check('R5 原文引文附加到 2B 本章末尾（含頁碼），原有段落不變',await page.evaluate(q=>{
+        const card=document.querySelector('.editor-card[data-section="introduction"] .card-content');
+        const ps=[...card.querySelectorAll('p')].map(p=>p.textContent);
+        return ps.length>=3&&ps.at(-1).includes(q)&&ps.at(-1).includes('p.1')&&ps[0].includes('300 K');},QUOTE_TXT));
     // 改寫已連結的段落並保存：保存成功（不被出處擋住），出處標示需要重新核對
     await page.keyboard.press('Escape');
     await page.locator('#paragraphProvenancePanel').evaluate(el=>bootstrap.Offcanvas.getOrCreateInstance(el).hide());
@@ -308,10 +315,13 @@ module.exports=async function after(ctx){
     await page.waitForFunction(()=>document.querySelector('[data-provenance-kind="evidence_note"] [data-provenance-issues]'),null,{timeout:10000});
     const issues=await page.locator('[data-provenance-kind="evidence_note"] [data-provenance-issues]').first().getAttribute('data-provenance-issues');
     check('R4 段落改寫後出處標示需要重新核對',issues.split(',').includes('paragraph_changed'),issues);
-    await page.waitForFunction(()=>document.querySelectorAll('[data-coverage-state]').length===2);
-    check('R5 改寫後第一段變成尚未標記，並提示有出處已不在最新版本',
-        await page.locator('[data-coverage-state]').nth(0).getAttribute('data-coverage-state')==='unmarked'&&
-        (await page.locator('#ppCoverageSummary').innerText()).includes('已不在最新版本'));
+    await page.waitForFunction(()=>document.querySelectorAll('[data-coverage-state]').length===3&&
+        document.querySelectorAll('[data-coverage-state]')[2].getAttribute('data-coverage-state')==='evidence_note',null,{timeout:15000});
+    const states=await page.locator('[data-coverage-state]').evaluateAll(es=>es.map(e=>e.getAttribute('data-coverage-state')));
+    check('R5 改寫後第一段變成尚未標記，並提示有出處已不在最新版本',states[0]==='unmarked'&&
+        (await page.locator('#ppCoverageSummary').innerText()).includes('已不在最新版本'),states);
+    check('R5 保存後插入的引文自動連到證據筆記（同一次保存，不用手動連結）',states[2]==='evidence_note'&&
+        await page.locator('[data-provenance-kind="evidence_note"] blockquote',{hasText:QUOTE_TXT}).count()===1,states);
     await page.locator('#paragraphProvenancePanel.show').waitFor();
     await page.waitForTimeout(500);  // offcanvas 滑入動畫
     await snapshot(page,'15-manuscript-provenance-recheck');

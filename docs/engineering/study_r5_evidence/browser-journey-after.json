@@ -1,8 +1,8 @@
 {
-  "run": "study-after-2026-10-31T19-28-28-794Z",
+  "run": "study-after-2026-11-01T05-21-59-628Z",
   "phase": "after",
-  "sha": "3f13b713e2e22b85aa9a80fc78d50cf32deee354",
-  "dirty": 4,
+  "sha": "3c12cb81503713ede9faafbad9daea8b641dadfe",
+  "dirty": 3,
   "checks": [
     {
       "name": "R3 介面沒有殘留英文狀態字",
@@ -360,7 +360,7 @@
     {
       "name": "R3 插入研究筆記帶出處與判斷狀態",
       "ok": true,
-      "detail": "【證據筆記】未命名（作者：researcher，2026/10/31 19:28:31）\n- 證據 1（synthetic_calibration 原文 p.1，原文中找到）：「The improvement was observed only at 300 K under one calibration protocol.」\n- 原文事實：The improvement was observed only at 300 K under one calibration protocol.\n- AI 解讀：這段只支持樣本 A、300 K、單一校正流程下的改善；不能外推到其他樣本或溫度。（無證據）"
+      "detail": "【證據筆記】未命名（作者：researcher，2026/11/1 05:22:13）\n- 證據 1（synthetic_calibration 原文 p.1，原文中找到）：「The improvement was observed only at 300 K under one calibration protocol.」\n- 原文事實：The improvement was observed only at 300 K under one calibration protocol.\n- AI 解讀：這段只支持樣本 A、300 K、單一校正流程下的改善；不能外推到其他樣本或溫度。（無證據）\n"
     },
     {
       "name": "R3 插入的內容經既有存檔路徑寫入伺服器",
@@ -377,7 +377,7 @@
     {
       "name": "R4 段落連到證據筆記，分開顯示原文引文、AI 解讀、研究者判斷",
       "ok": true,
-      "detail": "證據筆記\nS.Ver 0.1\n本研究只在 300 K 觀察到樣本 A 的改善，結論不能外推到其他溫度或樣本。\nen_14ed3b730212 · synthetic_calibration（連結時修訂 2 次）\n證據 1：原文 p.1「The improvement was observed only at 300 K under one calibration protocol.」（引文找到，不代表支持）\n【原文事實】The improvement was observed only at 300 K under one calibration protocol.\n【AI 解讀】這段只支持樣"
+      "detail": "證據筆記\nS.Ver 0.1\n本研究只在 300 K 觀察到樣本 A 的改善，結論不能外推到其他溫度或樣本。\nen_9d7381ab423e · synthetic_calibration（連結時修訂 2 次）\n證據 1：原文 p.1「The improvement was observed only at 300 K under one calibration protocol.」（引文找到，不代表支持）\n【原文事實】The improvement was observed only at 300 K under one calibration protocol.\n【AI 解讀】這段只支持樣"
     },
     {
       "name": "R5 本章段落清單：第一段已連到證據、第二段尚未標記",
@@ -400,6 +400,11 @@
       "detail": null
     },
     {
+      "name": "R5 原文引文附加到 2B 本章末尾（含頁碼），原有段落不變",
+      "ok": true,
+      "detail": null
+    },
+    {
       "name": "R4 有出處的段落仍可改寫並保存成新版本",
       "ok": true,
       "detail": {
@@ -415,7 +420,20 @@
     {
       "name": "R5 改寫後第一段變成尚未標記，並提示有出處已不在最新版本",
       "ok": true,
-      "detail": null
+      "detail": [
+        "unmarked",
+        "free_writing",
+        "evidence_note"
+      ]
+    },
+    {
+      "name": "R5 保存後插入的引文自動連到證據筆記（同一次保存，不用手動連結）",
+      "ok": true,
+      "detail": [
+        "unmarked",
+        "free_writing",
+        "evidence_note"
+      ]
     },
     {
       "name": "R4 出處紀錄可匯出，標明需要重新核對與自由寫作",
@@ -514,7 +532,7 @@
     "answer_evidence_links": 1,
     "answer_rejected_quotes": 1,
     "answer_uncertainty_shown": 1,
-    "provenance_export_chars": 890
+    "provenance_export_chars": 1496
   },
   "errors": []
 }
