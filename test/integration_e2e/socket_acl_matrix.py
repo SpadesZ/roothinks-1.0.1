@@ -4,6 +4,8 @@
 #   discussion 章（coauthor 沒被指派）、各章的 2A 寫作 AI 對話、主論文版本，各帶哨兵字串。
 #   每個指令以每個角色送出（目標章節一律是 discussion），收集回傳事件找哨兵，並以檔案＋資料庫指紋偵測寫入。
 #   owner／editor 是正向控制：證明哨兵與寫入真的可以被觸發；改變後重建世界。
+# R6：加上 outsider-indirect——外人以自己的專案（ACLP2）連線通過，再在每個指令的 payload 帶 ACLP1 的 pid
+#     （連線時的專案與指令中的專案不同）。任何讀到或改到 ACLP1 都是跨專案發現。
 # 刻意不送 chat_message：允許時會啟動模型工作（不得花費）；它的章節寫入檢查已有 test_sai_channel_acl 的專門測試。
 # 執行：python test/integration_e2e/socket_acl_matrix.py <輸出 JSON>
 import base64
@@ -19,7 +21,7 @@ base = w.base
 SECTION = "discussion"
 EXTRA = {"discussion_section": "SENT_DISCUSSION_SECTION", "chat_discussion": "SENT_CHAT_DISCUSSION",
          "chat_introduction": "SENT_CHAT_INTRODUCTION", "full_paper": "SENT_FULL_PAPER", "owner_draft": "SENT_OWNER_DRAFT"}
-ROLES = ("prof", "legacymentor", "teamviewer", "coauthor", "outsider", "editor", "owner")
+ROLES = ("prof", "legacymentor", "teamviewer", "coauthor", "outsider", "outsider-indirect", "editor", "owner")
 CONTROLS = ("owner", "editor")
 PNG = base64.b64encode(b"\x89PNG\r\n\x1a\n" + b"\x00" * 32).decode()
 
@@ -68,8 +70,9 @@ def world():
 
 def socket_for(app, role):
     from app import socketio
-    http = base.login(app, role)
-    return socketio.test_client(app, namespace="/manu_ws", flask_test_client=http, auth={"pid": base.PID})
+    http = base.login(app, role.split("-")[0])
+    connect_pid = base.OTHER if role == "outsider-indirect" else base.PID  # 用自己的專案連線
+    return socketio.test_client(app, namespace="/manu_ws", flask_test_client=http, auth={"pid": connect_pid})
 
 
 def leaks(received):
@@ -83,10 +86,10 @@ def classify(role, leaked, mutated):
     if role in CONTROLS:
         return "draft-cross-user-read" if role == "editor" and "owner_draft" in leaked else None
     if mutated:
-        return "section-scope-write" if role == "coauthor" else "cross-project-write" if role == "outsider" else "viewer-write"
+        return "section-scope-write" if role == "coauthor" else "cross-project-write" if role.startswith("outsider") else "viewer-write"
     if "owner_draft" in leaked:
         return "draft-cross-user-read"
-    if role == "outsider" and leaked:
+    if role.startswith("outsider") and leaked:
         return "cross-project-read"
     if role == "coauthor" and set(leaked) - {"manuscript_section", "chat_introduction"}:
         return "section-scope-read"
