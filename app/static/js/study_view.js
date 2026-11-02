@@ -66,7 +66,11 @@ class StudyView {
      */
     _translationCheckHtml(original, translation) {
         if (!translation) return '';
-        const norm = s => String(s || '').replace(/(\d),(?=\d{3}\b)/g, '$1');
+        // R7：網址／DOI 裡的數字不是量測值（例：zenodo.1234567890123 前面是「.」會被誤判成遺失），比對前先拿掉；
+        // 網址本身是否遺失由下面的〔翻譯時遺失〕提示負責。
+        const norm = s => String(s || '')
+            .replace(/https?:\/\/\S+|\bdoi:\s*\S+|\b10\.\d{4,9}\/\S+/gi, ' ')
+            .replace(/(\d),(?=\d{3}\b)/g, '$1');
         const want = norm(original).match(/\d+\.\d+|\d{2,}/g) || [];
         const got = norm(translation);
         const missing = [...new Set(want.filter(n => !new RegExp(`(^|[^\\d.])${n.replace('.', '\\.')}(?![\\d])`).test(got)))];
@@ -123,12 +127,73 @@ class StudyView {
         return `data-ref="${this._escapeHtml(row.ref)}" data-page="${this._escapeHtml(String(row.page || ''))}" data-seq-id="${this._escapeHtml(row.seqId || '')}"`;
     }
 
+    // R7：圖說／標題的機器翻譯。標籤放在錨點元素之外（user-select:none），選字與錨點核對只拿到譯文本身。
+    _captionTranslationHtml(caption, block) {
+        const zh = String(block?.translation || block?.content_zh || '').trim();
+        if (!zh || zh === String(caption || '').trim()) return '';
+        return `<p class="mt-1 small study-caption-trans selectable-text"><span class="study-mt-badge" title="由翻譯引擎產生，引用請以原文為準">機器翻譯</span>${this._escapeHtml(zh)}</p>`;
+    }
+
+    _headingTranslationHtml(original, zh, anchor) {
+        const text = String(zh || '').trim();
+        if (!text || text === String(original || '').trim()) return '';
+        return `<div class="study-heading-trans small"><span class="study-mt-badge" title="由翻譯引擎產生，引用請以原文為準">機器翻譯</span><span class="selectable-text" data-side="translation" ${this._anchorAttrs(anchor)}>${this._escapeHtml(text)}</span></div>`;
+    }
+
+    // R7：KaTeX 排不出來（例如 OCR 帶出 siunitx 的 \SI）時整條改顯示原始 LaTeX＋OCR 文字。
+    // 舊作法 throwOnError:false 會把不認得的指令畫成紅字、把 4.2e6 排成 4.2·e·6，數值被誤讀。
+    _equationFallbackHtml(latex, ocrText) {
+        const ocr = String(ocrText || '').trim();
+        return `<span class="study-equation-fallback" data-equation-fallback>`
+            + `<span class="study-equation-fallback-note">⚠ 這條公式無法完整排版（含不支援的 LaTeX 指令），以下為原始 LaTeX；數值與符號請以原文為準。</span>`
+            + `<code class="study-latex-source">${this._escapeHtml(latex)}</code>`
+            + (ocr && !this._isFailedEquationText(ocr) ? `<span class="study-equation-ocr">OCR 文字：${this._escapeHtml(ocr)}</span>` : '')
+            + `</span>`;
+    }
+
+    _renderReaderMath(content) {
+        if (!content) return;
+        content.querySelectorAll('.katex-eq[data-latex]').forEach(el => {
+            const raw = this._sanitizeLatex(el.getAttribute('data-latex') || '');
+            if (!raw || this._isFailedEquationText(raw)) {
+                el.textContent = '公式辨識失敗：請對照原文 PDF';
+                return;
+            }
+            if (!window.katex) {
+                el.innerHTML = this._equationFallbackHtml(raw, el.getAttribute('data-equation-text'));
+                return;
+            }
+            try {
+                window.katex.render(raw, el, { displayMode: true, throwOnError: true });
+            } catch (e) {
+                el.innerHTML = this._equationFallbackHtml(raw, el.getAttribute('data-equation-text'));
+            }
+        });
+        // 表格圖最小寬度＝原圖寬（上限 720px）：不放大小圖，大圖在窄螢幕改成區塊內捲動。
+        content.querySelectorAll('.study-table-img').forEach(img => {
+            const apply = () => { if (img.naturalWidth) img.style.minWidth = `${Math.min(img.naturalWidth, 720)}px`; };
+            if (img.complete) apply();
+            else img.addEventListener('load', apply, { once: true });
+        });
+    }
+
+    // R7：跳頁列（只在段落對照版）。按鈕捲到 data-page-marker，見 initEventListeners。
+    _renderPageNav(pageNums) {
+        const pages = [...new Set((pageNums || []).map(Number).filter(n => Number.isFinite(n) && n > 0))];
+        if (pages.length < 2) return '';
+        return `<nav class="study-page-nav" data-page-nav aria-label="跳到論文頁碼"><span class="study-page-nav-label">跳到頁</span>`
+            + pages.map(n => `<button type="button" class="btn btn-sm btn-outline-secondary" data-page-jump="${n}" aria-label="跳到第 ${n} 頁">${n}</button>`).join('')
+            + `</nav>`;
+    }
+
+    // 頁界標記。文字只能含頁碼這一組數字（旅程測試以 textContent 去掉非數字取頁碼）；
+    // data-page-marker 是「跳到第 N 頁」的目標，tabindex=-1 讓跳頁後焦點能落在標記上。
     _renderPageMarker(pageNum) {
-        const pageLabel = Number.isFinite(Number(pageNum)) && Number(pageNum) > 0 ? Number(pageNum) : '?';
+        const pageLabel =Number.isFinite(Number(pageNum)) && Number(pageNum) > 0 ? Number(pageNum) : '?';
         return `
-            <div class="page-marker my-4 d-flex align-items-center">
+            <div class="page-marker my-4 d-flex align-items-center" data-page-marker="${this._escapeHtml(pageLabel)}" tabindex="-1">
                 <div class="flex-grow-1" style="height: 1px; background: linear-gradient(to right, transparent, #cbd5e0, transparent);"></div>
-                <span class="px-3 text-muted" style="font-size: 0.8rem; font-weight: 500;">Page ${this._escapeHtml(pageLabel)}</span>
+                <span class="px-3 text-muted" style="font-size: 0.8rem; font-weight: 500;">第 ${this._escapeHtml(pageLabel)} 頁</span>
                 <div class="flex-grow-1" style="height: 1px; background: linear-gradient(to right, transparent, #cbd5e0, transparent);"></div>
             </div>
         `;
@@ -177,21 +242,29 @@ class StudyView {
                 const eqImgUrl = (pidEq && paperIdEq && seqIdEq)
                     ? `/api/study/media_asset/${encodeURIComponent(pidEq)}/${encodeURIComponent(paperIdEq)}/${encodeURIComponent(seqIdEq)}.png?kind=equation`
                     : '';
-                let html = `<div class="equation-block mb-3 text-center" style="background:#fff7ed;border-radius:8px;border:1px solid #fed7aa;padding:${compact ? '0.8rem 1rem' : '1rem 1.5rem'};max-width:${compact ? 980 : 900}px;margin:0 auto;">`;
+                let html = `<div class="equation-block mb-3 text-center" ${this._anchorAttrs(opts.anchor)} style="background:#fff7ed;border-radius:8px;border:1px solid #fed7aa;padding:${compact ? '0.8rem 1rem' : '1rem 1.5rem'};max-width:${compact ? 980 : 900}px;margin:0 auto;">`;
                 if (eqImgUrl) {
-                    html += `<div class="mb-2"><img src="${this._escapeHtml(eqImgUrl)}" alt="equation region" loading="lazy" style="max-width:100%;border-radius:6px;border:1px solid #fdba74;background:#fff;"></div>`;
+                    html += `<div class="mb-2"><img src="${this._escapeHtml(eqImgUrl)}" alt="公式切塊圖片" loading="lazy" style="max-width:100%;border-radius:6px;border:1px solid #fdba74;background:#fff;"></div>`;
                 }
-                html += `<div class="small" style="color:#9a3412;font-weight:600;">${this._escapeHtml(failureLabel || '<Failed to OCR Equation>')}</div>`;
+                // R7：管線的英文哨兵字（<Failed to OCR Equation>）改成中文說明，原字留在 title；
+                // 不是哨兵字時那是 OCR 取得的公式文字，原樣顯示、不改寫。
+                const sentinel = !failureLabel || this._isFailedEquationText(failureLabel);
+                const failText = sentinel
+                    ? (eqImgUrl ? '公式辨識失敗：請以上方原文切塊圖片為準' : '公式辨識失敗：請對照原文 PDF')
+                    : `公式辨識不可靠，以下為 OCR 文字（請對照原文）：${failureLabel}`;
+                html += `<div class="small" style="color:#9a3412;font-weight:600;" title="${this._escapeHtml(failureLabel || '<Failed to OCR Equation>')}">${this._escapeHtml(failText)}</div>`;
                 const failReason = String(safeBlock.equation_failure_reason || '').trim();
                 if (failReason) {
-                    html += `<div class="small mt-1 text-muted">reason: ${this._escapeHtml(failReason)}</div>`;
+                    html += `<div class="small mt-1 text-muted">原因代碼：${this._escapeHtml(failReason)}</div>`;
                 }
                 html += `</div>`;
                 return html;
             }
 
             const latexEsc = this._escapeHtml(latexRaw);
-            return `<div class="equation-block mb-3 text-center" style="background:#f8f9fa;border-radius:8px;border:1px solid #e2e8f0;padding:${compact ? '0.8rem 1rem' : '1rem 1.5rem'};overflow-x:auto;max-width:${compact ? 980 : 900}px;margin:0 auto;"><span class="katex-eq" data-latex="${latexEsc}"></span></div>`;
+            // R7：寬公式在自己的區塊內左右捲動；可聚焦（tabindex=0）鍵盤使用者才捲得到右半邊。
+            // data-equation-text 是 OCR 文字，KaTeX 排不出來時與原始 LaTeX 一起顯示（見 _renderReaderMath）。
+            return `<div class="equation-block mb-3 text-center" ${this._anchorAttrs(opts.anchor)} data-scroll-region tabindex="0" role="region" aria-label="公式（較寬時可用方向鍵左右捲動）" style="background:#f8f9fa;border-radius:8px;border:1px solid #e2e8f0;padding:${compact ? '0.8rem 1rem' : '1rem 1.5rem'};overflow-x:auto;max-width:${compact ? 980 : 900}px;margin:0 auto;"><span class="katex-eq" data-latex="${latexEsc}" data-equation-text="${this._escapeHtml(contentRaw)}"></span></div>`;
         }
 
         if (isFigure) {
@@ -202,13 +275,15 @@ class StudyView {
             const imgUrl = (pid && paperId && seqId)
                 ? `/api/study/media_asset/${encodeURIComponent(pid)}/${encodeURIComponent(paperId)}/${encodeURIComponent(seqId)}.png?kind=figure`
                 : '';
-            let html = `<div class="figure-block mb-4 text-center" style="background:#fff;border-radius:12px;border:1px solid #e2e8f0;padding:${compact ? '1rem' : '1.5rem'};max-width:${cardMaxWidth}px;margin:0 auto;">`;
+            let html = `<div class="figure-block mb-4 text-center" ${this._anchorAttrs(opts.anchor)} style="background:#fff;border-radius:12px;border:1px solid #e2e8f0;padding:${compact ? '1rem' : '1.5rem'};max-width:${cardMaxWidth}px;margin:0 auto;">`;
             if (imgUrl) {
-                html += `<img src="${this._escapeHtml(imgUrl)}" style="max-width:100%;border-radius:6px;" alt="${this._escapeHtml(caption)}" loading="lazy">`;
+                // R7：窄螢幕縮得很小，點圖可在新分頁看原尺寸。
+                html += `<a href="${this._escapeHtml(imgUrl)}" target="_blank" rel="noopener" class="study-figure-link" title="在新分頁開啟原尺寸圖片"><img src="${this._escapeHtml(imgUrl)}" style="max-width:100%;border-radius:6px;" alt="${this._escapeHtml(caption)}" loading="lazy"></a>`;
             }
             if (caption && caption !== '[Figure]') {
                 html += `<p class="mt-2 text-muted small selectable-text">${this._escapeHtml(caption)}</p>`;
             }
+            html += this._captionTranslationHtml(caption, safeBlock);
             html += `</div>`;
             return html;
         }
@@ -221,13 +296,16 @@ class StudyView {
             const imgUrl = (pid && paperId && seqId)
                 ? `/api/study/media_asset/${encodeURIComponent(pid)}/${encodeURIComponent(paperId)}/${encodeURIComponent(seqId)}.png?kind=table`
                 : '';
-            let html = `<div class="table-block mb-4 text-center" style="background:#fff;border-radius:12px;border:1px solid #e2e8f0;padding:${compact ? '1rem' : '1.5rem'};max-width:${cardMaxWidth}px;margin:0 auto;">`;
+            let html = `<div class="table-block mb-4 text-center" ${this._anchorAttrs(opts.anchor)} style="background:#fff;border-radius:12px;border:1px solid #e2e8f0;padding:${compact ? '1rem' : '1.5rem'};max-width:${cardMaxWidth}px;margin:0 auto;">`;
             if (imgUrl) {
-                html += `<img src="${this._escapeHtml(imgUrl)}" style="max-width:100%;border-radius:6px;" alt="${this._escapeHtml(caption)}" loading="lazy">`;
+                // R7：表格圖不再無限縮小（手機上縮到 0.09 倍讀不到數字）；最小寬度由 _renderReaderMath 依原圖設定，
+                // 超出時在這個可聚焦的區塊內左右捲動。
+                html += `<div class="study-media-scroll" data-scroll-region tabindex="0" role="region" aria-label="表格圖片（較寬時可用方向鍵左右捲動）"><img class="study-table-img" src="${this._escapeHtml(imgUrl)}" style="max-width:100%;border-radius:6px;" alt="${this._escapeHtml(caption)}" loading="lazy"></div>`;
             }
             if (caption && caption !== '[Table]') {
                 html += `<p class="mt-2 text-muted small selectable-text">${this._escapeHtml(caption)}</p>`;
             }
+            html += this._captionTranslationHtml(caption, safeBlock);
             html += `</div>`;
             return html;
         }
@@ -268,8 +346,8 @@ class StudyView {
             html += `<div class="translation-content selectable-text" style="font-size: ${compact ? '0.95rem' : '1.02rem'}; line-height: 1.8; color: #1a202c; text-align: justify;">${this._escapeHtml(translation)}</div>`;
             html += this._translationCheckHtml(text, translation);
         } else {
-            const tipDesc = translationReady ? '此段落暫無可用翻譯' : '尚未產生翻譯，請回 Literature 重新執行 Flow B';
-            html += `<div class="text-muted small">${this._escapeHtml(tipDesc)}</div>`;
+            const tipDesc = translationReady ? '此段落沒有機器翻譯，請以原文為準' : '尚未產生翻譯，請回 Literature 重新執行 Flow B';
+            html += `<div class="text-muted small study-translation-missing" data-translation-missing>${this._escapeHtml(tipDesc)}</div>`;
         }
         html += `
                     </div>
@@ -301,8 +379,13 @@ class StudyView {
         const compact = !!opts.compact;
         const cardMaxWidth = compact ? 1000 : 1200;
         const tipDesc = translationReady
-            ? '此段落暫無可用翻譯'
+            ? '此段落沒有機器翻譯，請以原文為準'
             : '尚未產生翻譯，請回 Literature 重新執行 Flow B';
+        // R7：黏到上一列的短碎片仍保有自己的錨點與譯文（舊版只黏原文，譯文與 data-ref 都消失）。
+        const fragmentHtml = (row, side) => (row.fragments || [])
+            .filter(f => (side === 'original' ? f.text : f.zh))
+            .map(f => `<p class="study-fragment selectable-text mt-2 mb-0" data-side="${side}" ${this._anchorAttrs(f)}>${this._escapeHtml(side === 'original' ? f.text : f.zh)}</p>`)
+            .join('');
 
         let html = '';
         let lastPage = 0;
@@ -335,16 +418,18 @@ class StudyView {
                 firstBody = false;
                 const borderTop = idx > 0 ? 'border-top:1px solid #edf2f7;' : '';
                 const anchorAttrs = this._anchorAttrs(row);
-                html += `<div class="row g-0 study-anchor-row" ${anchorAttrs} style="min-height:${compact ? 100 : 120}px;${borderTop}">`;
+                // R7：study-row-labelled＝這列有欄頭；閱讀窗格窄到上下排列時，其他列靠 CSS 在譯文欄補「機器翻譯」標示。
+                html += `<div class="row g-0 study-anchor-row${isFirst ? ' study-row-labelled' : ''}" ${anchorAttrs} style="min-height:${compact ? 100 : 120}px;${borderTop}">`;
                 // Left: original
-                html += `<div class="col-md-6" style="border-right:2px solid #e2e8f0;padding:${compact ? '0.75rem 1rem' : '1rem 1.5rem'};background:#fafbfc;">`;
+                html += `<div class="col-md-6 study-orig-col" style="border-right:2px solid #e2e8f0;padding:${compact ? '0.75rem 1rem' : '1rem 1.5rem'};background:#fafbfc;">`;
                 if (isFirst) {
                     html += `<div class="section-header mb-2 small fw-bold text-uppercase text-secondary">原文</div>`;
                 }
                 html += `<div class="original-content selectable-text" data-side="original" ${anchorAttrs}>${row.origHtml}</div>`;
+                html += fragmentHtml(row, 'original');
                 html += `</div>`;
                 // Right: translation
-                html += `<div class="col-md-6" style="padding:${compact ? '0.75rem 1rem' : '1rem 1.5rem'};background:#ffffff;">`;
+                html += `<div class="col-md-6 study-trans-col" style="padding:${compact ? '0.75rem 1rem' : '1rem 1.5rem'};background:#ffffff;">`;
                 if (isFirst) {
                     html += `<div class="section-header mb-2 small fw-bold text-uppercase" style="color:#667eea;" title="由翻譯引擎產生，引用請以原文為準">中文翻譯（機器翻譯）</div>`;
                 }
@@ -352,8 +437,9 @@ class StudyView {
                     html += `<div class="translation-content selectable-text" data-side="translation" ${anchorAttrs} style="font-size:${compact ? '0.95rem' : '1.02rem'};line-height:1.8;color:#1a202c;text-align:justify;">${row.transHtml}</div>`;
                     html += row.checkHtml || '';
                 } else {
-                    html += `<div class="text-muted small">${this._escapeHtml(tipDesc)}</div>`;
+                    html += `<div class="text-muted small study-translation-missing" data-translation-missing>${this._escapeHtml(tipDesc)}</div>`;
                 }
+                html += fragmentHtml(row, 'translation');
                 html += `</div>`;
                 html += `</div>`;
             });
@@ -422,8 +508,10 @@ class StudyView {
                     // Flush existing section and start a new one with this title.
                     flushSection();
                     sectionOpen = true;
+                    // R7：標題的機器翻譯也顯示（舊版只顯示英文，章節名的譯文整個不見）。
                     sectionTitleHtml = text
                         ? `<h4 class="mb-0 selectable-text" data-side="original" ${this._anchorAttrs(anchor)} style="font-weight:600;font-size:1.25rem;color:#2d3748;">${this._escapeHtml(text)}</h4>`
+                            + this._headingTranslationHtml(text, safeBlock.translation || safeBlock.content_zh, anchor)
                         : '';
                     sectionRows = [];
                     lastRowIdx = -1;
@@ -431,17 +519,23 @@ class StudyView {
                 }
 
                 if (isSubtitle) {
-                    // Subtitles: flush, emit via _renderBlockCard, keep section state reset.
+                    // Subtitles: flush, keep section state reset.
+                    // R7：小標題帶錨點（data-side/data-ref）與機器翻譯；舊版委派 _renderBlockCard，兩者都沒有。
                     flushSection();
-                    const subHtml = this._renderBlockCard(safeBlock, { translationReady, compact });
-                    if (subHtml) html += subHtml;
+                    if (text) {
+                        html += `<div class="study-subtitle mt-4 mb-2" style="border-left:3px solid #667eea;padding-left:0.75rem;">`
+                            + `<h5 class="mb-0 selectable-text" data-side="original" ${this._anchorAttrs(anchor)} style="font-weight:600;font-size:1.1rem;color:#4a5568;">${this._escapeHtml(text)}</h5>`
+                            + this._headingTranslationHtml(text, safeBlock.translation || safeBlock.content_zh, anchor)
+                            + `</div>`;
+                    }
                     return;
                 }
 
                 if (isSpecial) {
                     // Figures/tables/equations/noise: flush section, delegate, continue.
+                    // R7：圖／表／公式外框帶 data-ref／data-page（不帶 data-side，不是選字錨點）。
                     flushSection();
-                    const specialHtml = this._renderBlockCard(safeBlock, { translationReady, compact });
+                    const specialHtml = this._renderBlockCard(safeBlock, { translationReady, compact, anchor });
                     if (specialHtml) html += specialHtml;
                     return;
                 }
@@ -465,10 +559,13 @@ class StudyView {
 
                 const isFragment = text.length < 12;
                 if (isFragment && lastRowIdx >= 0 && sectionRows[lastRowIdx]) {
-                    // Glue fragment onto previous row's original column.
-                    const fontSize = compact ? '0.9rem' : '0.95rem';
-                    sectionRows[lastRowIdx].origHtml +=
-                        `<p class="mt-2" style="font-size:${fontSize};line-height:1.75;color:#2d3748;text-align:justify;margin-bottom:0;">${this._escapeHtml(text)}</p>`;
+                    // Glue fragment onto previous row (rendered by fragmentHtml with its own anchor + translation).
+                    const prev = sectionRows[lastRowIdx];
+                    (prev.fragments = prev.fragments || []).push({
+                        text,
+                        zh: String(safeBlock.translation || safeBlock.content_zh || '').trim(),
+                        ...anchor,
+                    });
                     return;
                 }
 
@@ -540,7 +637,7 @@ class StudyView {
 
             const pageNo = Number(block.__page || 0);
             if (pageNo > 0 && pageNo !== lastPage) {
-                html += `<div class="small text-muted mt-2 mb-1"><i class="bi bi-journal-text me-1"></i>Page ${pageNo}</div>`;
+                html += `<div class="small text-muted mt-2 mb-1"><i class="bi bi-journal-text me-1"></i>第 ${pageNo} 頁</div>`;
                 lastPage = pageNo;
             }
 
@@ -677,6 +774,17 @@ class StudyView {
                 this.onContentModeChanged();
             });
         }
+
+        // R7：跳頁列（_renderPageNav）。委派在 document 上，全文 innerHTML 換掉也不用重綁；
+        // 跳過去後把焦點移到頁界標記，鍵盤與螢幕報讀器使用者知道自己到了哪裡。
+        document.addEventListener('click', (e) => {
+            const btn = e.target && e.target.closest ? e.target.closest('[data-page-jump]') : null;
+            if (!btn) return;
+            const marker = document.querySelector(`#fulltext-content [data-page-marker="${CSS.escape(btn.dataset.pageJump || '')}"]`);
+            if (!marker) return;
+            marker.scrollIntoView({ block: 'start' });
+            marker.focus({ preventScroll: true });
+        });
     }
 
     setDisplayMode(mode, opts = {}) {
@@ -796,6 +904,7 @@ class StudyView {
                 content.style.display = 'block';
                 if (placeholder) placeholder.style.display = 'none';
                 this.initTextSelection();
+                this._renderReaderMath(content); // 快取是未排版的 HTML；背景重抓前先排好公式
             }
             this.setDisplayMode('single');
             // 使用快取先秒開，但同步背景 no-store 重抓，避免顯示舊資料。
@@ -1012,185 +1121,16 @@ class StudyView {
     }
 
     /**
-     * [Enhanced] 核心渲染函數：將 Task 6 JSON 轉為 HTML Table
-     * 兼容新版後端結構 { baseline: {}, comparisons: [] }
+     * R7：研究矩陣（多篇欄位、每格狀態、原文中找到的引文、比較依據）移到 study_matrix_view.js；這裡只轉交。
+     * 新舊記錄（roothinks.study.matrix/2 與舊版單一比較）都由該檔渲染。
      */
     renderMatrix(data) {
-        if (!this.matrixContainer) return;
-
-        // [Fix] 檢查數據完整性
-        if (!data || (typeof data === 'object' && Object.keys(data).length === 0)) {
-            this.matrixContainer.innerHTML = `
-                <div class="d-flex flex-column align-items-center justify-content-center h-100 text-warning">
-                    <i class="bi bi-exclamation-circle display-1"></i>
-                    <p class="mt-3 fw-bold">矩陣數據為空</p>
-                    <p class="small text-muted">請至少選擇 2 篇文獻或檢查 API 響應</p>
-                </div>`;
-            return;
+        if (window.studyMatrixView && typeof window.studyMatrixView.render === 'function') {
+            return window.studyMatrixView.render(data, this);
         }
-
-        // 1. Error Handling
-        if (data.error) {
-            this.matrixContainer.innerHTML = `
-                <div class="d-flex flex-column align-items-center justify-content-center h-100 text-danger">
-                    <i class="bi bi-exclamation-triangle display-1"></i>
-                    <p class="mt-3 fw-bold">${data.error}</p>
-                    <p class="small text-muted">${data.raw ? 'Raw output available in console' : ''}</p>
-                </div>`;
-            if(data.raw) console.warn("[Matrix] Raw Error Data:", data.raw);
-            return;
+        if (this.matrixContainer) {
+            this.matrixContainer.innerHTML = '<div class="p-4 text-danger" role="alert">矩陣模組（study_matrix_view.js）沒有載入，請重新整理頁面。</div>';
         }
-
-        // 2. Data Parsing (Adapt v1.6 backend to v3.0 frontend logic)
-        // 後端 v1.6 結構: { baseline: {id, title}, comparisons: [{target_title, content/analysis, ...}] }
-        // 我們需要將其轉換為 Matrix Row 結構以支援過濾
-        
-        const baseline = data.baseline || { title: "Baseline" };
-        const comparisons = data.comparisons || [];
-        const criteria = data.criteria || "General";
-        const safeCriteria = this._escapeHtml(criteria);
-
-        // 3. Build HTML - [Enhanced] 改進寬度計算和完整性顯示
-        console.log(`[StudyView] renderMatrix: baseline=${baseline.title}, comparisons=${comparisons.length}`);
-        
-        const totalWidth = 100;
-        const dimWidth = 14;
-        const paperAWidth = 28;
-        const paperBWidth = 28;
-        const synthesisWidth = totalWidth - dimWidth - paperAWidth - paperBWidth;
-        const activeComp = comparisons[0] || null;
-        const paperBTitle = activeComp
-            ? (activeComp.target_paper_title || activeComp.target_title || activeComp.target || 'Paper B')
-            : 'Paper B';
-        const paperBPid = activeComp
-            ? (activeComp.id || activeComp.paper_id || activeComp.target_paper_id || 'paper_b')
-            : 'paper_b';
-        const paperAPid = String(baseline.id || baseline.paper_id || 'paper_a');
-        const pidEncA = encodeURIComponent(paperAPid);
-        const pidEncB = encodeURIComponent(String(paperBPid || 'paper_b'));
-        const pidEncS = encodeURIComponent('synthesis');
-        const focusAEnc = encodeURIComponent(JSON.stringify([paperAPid]));
-        const focusBEnc = encodeURIComponent(JSON.stringify([String(paperBPid || 'paper_b')]));
-        const focusSEnc = encodeURIComponent(JSON.stringify([paperAPid, String(paperBPid || 'paper_b')]));
-        
-        let html = `<div class="card shadow-sm border-0" style="max-width: 100%;">
-            <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
-                <h5 class="mb-0 fw-bold text-primary">
-                    <i class="bi bi-grid-3x3-gap-fill me-2"></i>Analysis Matrix: ${safeCriteria}
-                </h5>
-                <span class="badge bg-secondary">${comparisons.length + 1} Papers</span>
-            </div>
-            <div class="w-100">
-                <table class="table table-bordered table-hover mb-0 align-middle roothinks-matrix" style="width: 100%;">`;
-
-        // A. Table Header (Baseline + Targets)
-        html += `<thead class="table-light text-center sticky-top" style="z-index: 10;"><tr>
-                    <th style="width: ${dimWidth}%; background-color: #f8f9fa; min-width: 80px;">維度</th>
-                    <th style="width: ${paperAWidth}%; background-color: #e9ecef; border-bottom: 2px solid #0d6efd; min-width: 150px;">
-                        <div class="badge bg-primary mb-1">Paper A</div><br>
-                        <div class="fw-bold text-truncate" title="${this._escapeHtml(baseline.title)}">${this._escapeHtml(baseline.title)}</div>
-                    </th>
-                    <th style="width: ${paperBWidth}%; min-width: 150px;">
-                        <div class="badge bg-secondary mb-1">Paper B</div><br>
-                        <div class="fw-bold text-truncate" title="${this._escapeHtml(paperBTitle)}">${this._escapeHtml(paperBTitle)}</div>
-                    </th>
-                    <th style="width: ${synthesisWidth}%; min-width: 160px; background-color: #f8f9ff; border-bottom: 2px solid #6f42c1;">
-                        <div class="badge bg-info text-dark mb-1">Synthesis</div><br>
-                        <div class="fw-bold text-truncate" title="Paper A + Paper B">Cross-paper Integration</div>
-                    </th>`;
-        html += `</tr></thead>`;
-
-        // B. Table Body (dimension-oriented rows)
-        html += `<tbody>`;
-        const dimSet = new Set();
-        comparisons.forEach(comp => {
-            const points = Array.isArray(comp.comparison_points) ? comp.comparison_points : [];
-            points.forEach(p => {
-                if (p && p.dimension) dimSet.add(String(p.dimension));
-            });
-        });
-        const dims = Array.from(dimSet);
-        if (!dims.length) dims.push('核心分析');
-
-        const findPoint = (comp, dim) => {
-            const points = Array.isArray(comp.comparison_points) ? comp.comparison_points : [];
-            return points.find(p => p && String(p.dimension) === String(dim)) || null;
-        };
-
-        dims.forEach((dim) => {
-            const dimSafe = this._escapeHtml(dim);
-            const dimKey = encodeURIComponent(dim);
-            const p = activeComp ? findPoint(activeComp, dim) : null;
-            let baselineText = 'N/A';
-            if (p && p.baseline_view) baselineText = String(p.baseline_view);
-            let targetText = 'N/A';
-            let synthesisText = 'N/A';
-            if (p) {
-                targetText = String(p.target_view || 'N/A');
-                synthesisText = String(p.synthesis || 'N/A');
-            } else if (activeComp && activeComp.analysis) {
-                synthesisText = String(activeComp.analysis);
-            }
-
-            const baselineShort = baselineText.length > 260 ? baselineText.slice(0, 260) + '...' : baselineText;
-            const targetShort = targetText.length > 260 ? targetText.slice(0, 260) + '...' : targetText;
-            const synthShort = synthesisText.length > 300 ? synthesisText.slice(0, 300) + '...' : synthesisText;
-
-            const safeDim = encodeURIComponent(dim);
-            const safeAContent = encodeURIComponent(String(baselineText));
-            const safeBContent = encodeURIComponent(String(targetText));
-            const safeSContent = encodeURIComponent(String(synthesisText));
-
-            html += `<tr class="matrix-row" data-dim="${dimKey}">
-                        <th class="bg-light fw-bold text-center" style="width: ${dimWidth}%">${dimSafe}</th>
-                        <td class="p-3 bg-light matrix-cell" style="width: ${paperAWidth}%; word-break: break-word; white-space: normal;"
-                            data-pid-enc="${pidEncA}" data-dim-enc="${safeDim}" data-content-enc="${safeAContent}" data-focus-enc="${focusAEnc}">
-                            <div class="small text-muted mb-1">Baseline View</div>
-                            <div>${this._escapeHtml(baselineShort)}</div>
-                        </td>
-                        <td class="p-3 matrix-cell" style="width: ${paperBWidth}%; word-break: break-word; white-space: normal;"
-                            data-pid-enc="${pidEncB}" data-dim-enc="${safeDim}" data-content-enc="${safeBContent}" data-focus-enc="${focusBEnc}">
-                            <div class="small text-muted mb-1">Target View</div>
-                            <div>${this._escapeHtml(targetShort)}</div>
-                        </td>
-                        <td class="p-3 matrix-cell" style="width: ${synthesisWidth}%; word-break: break-word; white-space: normal; background-color: #fcfcff;"
-                            data-pid-enc="${pidEncS}" data-dim-enc="${safeDim}" data-content-enc="${safeSContent}" data-focus-enc="${focusSEnc}">
-                            <div class="small text-muted mb-1">Cross-paper Synthesis</div>
-                            <div>${this._escapeHtml(synthShort)}</div>
-                        </td>`;
-            html += `</tr>`;
-        });
-        
-        html += `</tbody></table></div></div>`;
-
-        // 4. Inject
-        this.matrixContainer.innerHTML = html;
-
-        // 4.1 Bind cell click handlers after DOM injection (safer than inline onclick)
-        this.matrixContainer.querySelectorAll('.matrix-cell').forEach(cell => {
-            cell.addEventListener('click', () => {
-                const pid = decodeURIComponent(cell.getAttribute('data-pid-enc') || '');
-                const dim = decodeURIComponent(cell.getAttribute('data-dim-enc') || '');
-                const content = decodeURIComponent(cell.getAttribute('data-content-enc') || '');
-                let focusPids = [];
-                try {
-                    const raw = decodeURIComponent(cell.getAttribute('data-focus-enc') || '[]');
-                    const arr = JSON.parse(raw);
-                    if (Array.isArray(arr)) focusPids = arr;
-                } catch (e) {
-                    focusPids = [];
-                }
-                this.handleCellClick(cell, pid, dim, content, focusPids);
-            });
-        });
-        
-        // 5. [Restored] Update UI Status & Filters
-        if(this.matrixTitle) this.matrixTitle.innerText = `已比較 ${Math.min(comparisons.length + 1, 2)} 篇文獻`;
-        
-        this._updateDimensionFilters(dims);
-        this.setDisplayMode('matrix');
-        
-        console.log(`[StudyView] Rendered matrix with ${comparisons.length} targets.`);
     }
 
     /**
@@ -1625,7 +1565,8 @@ class StudyView {
                         ${contentHtml}
                     </div>
                 `;
-                const buildReaderFrame = (modeLabel, bodyHtml) => `
+                // R7：navHtml＝跳頁列；放在 .fulltext-reader 的直接子層，position:sticky 才會在整篇捲動時都留在頂端。
+                const buildReaderFrame = (modeLabel, bodyHtml, navHtml = '') => `
                     <div class="fulltext-reader" style="background: #ffffff; padding: 1.5rem 0.75rem;">
                         <div class="reader-header mb-4" style="max-width: 900px; margin: 0 auto; padding-bottom: 1rem; border-bottom: 2px solid #e2e8f0;">
                             <h3 style="color: #2d3748; font-weight: 700; font-size: 1.65rem; margin-bottom: 0.6rem; line-height: 1.4;">${this._escapeHtml(data.title || targetPaperId)}</h3>
@@ -1634,6 +1575,7 @@ class StudyView {
                                 <span class="badge bg-light text-dark">${this._escapeHtml(modeLabel)}</span>
                             </div>
                         </div>
+                        ${navHtml}
                         ${summaryHtml}
                         ${bodyHtml}
                         <div class="text-center text-muted small mt-4">
@@ -1641,7 +1583,10 @@ class StudyView {
                         </div>
                     </div>
                 `;
-                const blockModeHtml = buildReaderFrame('段落對照', rawBlocksHtml);
+                const pageNavHtml = Array.isArray(data.blocks)
+                    ? this._renderPageNav(data.blocks.map((p, i) => Number((p && p.page) || (i + 1))))
+                    : '';
+                const blockModeHtml = buildReaderFrame('段落對照', rawBlocksHtml, pageNavHtml);
                 // Reflow mode: prefer source-order document_flow; semantic sections are legacy fallback.
                 // If neither exists, fall back to the merged block stream so the reader still sees content.
                 const reflowPrimaryHtml = (hasDocumentFlow || hasReflowSections || hasReflowMeta)
@@ -1679,21 +1624,8 @@ class StudyView {
                         this._pendingReveal = null;
                         setTimeout(() => this.revealAnchor(pending), 0);
                     }
-                    // 渲染 KaTeX 公式
-                    content.querySelectorAll('.katex-eq[data-latex]').forEach(el => {
-                        try {
-                            const raw = this._sanitizeLatex(el.getAttribute('data-latex') || '');
-                            if (!raw || this._isFailedEquationText(raw)) {
-                                el.textContent = '<Failed to OCR Equation>';
-                                return;
-                            }
-                            if (window.katex) {
-                                window.katex.render(raw, el, { displayMode: true, throwOnError: false });
-                            }
-                        } catch (e) {
-                            el.textContent = '<Equation Render Error>';
-                        }
-                    });
+                    // 渲染 KaTeX 公式（排不出來時顯示原始 LaTeX）與表格圖最小寬度。
+                    this._renderReaderMath(content);
                     if (!silent) {
                         const modeLabel = normalizedMode === 'fulltext_reflow' ? '文件流' : '段落對照';
                         window.studyCore?.showToast(`全文已載入（${modeLabel}）`, 'success');
@@ -1914,7 +1846,8 @@ class StudyView {
         const rect = range.getBoundingClientRect();
         const top = rect.top - bar.offsetHeight - 8 > 8 ? rect.top - bar.offsetHeight - 8 : rect.bottom + 8;
         bar.style.top = `${Math.min(window.innerHeight - bar.offsetHeight - 8, top)}px`;
-        bar.style.left = `${Math.min(window.innerWidth - bar.offsetWidth - 8, Math.max(8, rect.left))}px`;
+        // R7：先夾右緣、再夾左緣。舊式在窄螢幕（動作列比視窗寬）會算出負值，左邊按鈕被切掉（390px 實測 left=-2）。
+        bar.style.left = `${Math.max(8, Math.min(window.innerWidth - bar.offsetWidth - 8, rect.left))}px`;
     }
 
     _followSelection() {

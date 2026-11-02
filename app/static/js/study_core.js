@@ -286,8 +286,8 @@ class StudyCore {
             const safePidJs = this.escapeJs(this.pid);
             const isActive = (p.paper_id === this.currentPaperId) ? 'active' : '';
             const statusBadge = p.is_ready 
-                ? `<span class="badge bg-success rounded-pill" style="font-size:0.5em;">Ready</span>`
-                : `<span class="badge bg-secondary rounded-pill" style="font-size:0.5em;">Wait</span>`;
+                ? `<span class="badge bg-success rounded-pill" style="font-size:0.5em;" title="全文與譯文已就緒，可以閱讀">可閱讀</span>`
+                : `<span class="badge bg-secondary rounded-pill" style="font-size:0.5em;" title="全文或譯文還在處理中">處理中</span>`;
             
             html += `
             <div class="list-group-item bg-transparent text-light border-secondary px-0 py-2 ${isActive}">
@@ -538,6 +538,11 @@ class StudyCore {
     }
 
     runTask6() {
+        // R7：多篇比較矩陣由 study_matrix_view.js 送出（研究者勾選的順序、明示基準與比較維度）；
+        // 該檔沒載入時才走下面的舊流程。
+        if (window.studyMatrixView && typeof window.studyMatrixView.runFromSidebar === 'function') {
+            return window.studyMatrixView.runFromSidebar(this);
+        }
         if (this.isLoading) return;
         const pid = this.resolvePidRuntime();
         if (!pid) {
@@ -604,12 +609,12 @@ class StudyCore {
         const container = document.getElementById('historyListContainer');
         if (!container) return;
 
-        container.innerHTML = '<div class="text-secondary small py-2"><div class="spinner-border spinner-border-sm me-2"></div>Loading...</div>';
+        container.innerHTML = '<div class="text-secondary small py-2"><div class="spinner-border spinner-border-sm me-2"></div>載入中…</div>';
         fetch(`/api/study/${pid}/matrix/history`)
             .then(r => r.json())
             .then(res => {
                 if (!res.ok) {
-                    container.innerHTML = `<div class="text-danger small">Error: ${this.escapeHtml(res.msg || 'load failed')}</div>`;
+                    container.innerHTML = `<div class="text-danger small">載入失敗：${this.escapeHtml(res.msg || '請重新整理')}</div>`;
                     return;
                 }
 
@@ -622,9 +627,11 @@ class StudyCore {
                 let html = '<div class="list-group list-group-flush">';
                 rows.forEach((item) => {
                     const matrixIdJs = this.escapeJs(item.matrix_id);
-                    const papers = Array.isArray(item.paper_titles) ? item.paper_titles.slice(0, 2) : [];
-                    const p1 = this.escapeHtml(papers[0] || 'Paper A');
-                    const p2 = this.escapeHtml(papers[1] || 'Paper B');
+                    // R7：列出全部論文（第一篇是基準），不再只顯示前兩篇
+                    const papers = Array.isArray(item.paper_titles) ? item.paper_titles.filter(Boolean) : [];
+                    const count = Number(item.paper_count) || papers.length;
+                    const p1 = this.escapeHtml(papers[0] || '（未記錄）');
+                    const others = papers.slice(1).map(x => this.escapeHtml(x));
                     const created = this.escapeHtml(item.created_at || '');
                     const criteria = this.escapeHtml(item.criteria || 'General');
                     const displayName = this.escapeHtml(item.display_name || item.matrix_id || criteria);
@@ -637,13 +644,13 @@ class StudyCore {
                                         onclick="window.studyCore.loadMatrixRecord('${matrixIdJs}')">
                                     <div class="fw-bold small text-dark">${displayName}</div>
                                     <div class="small text-muted text-truncate">${criteria}</div>
-                                    <div class="small text-muted text-truncate">A: ${p1}</div>
-                                    <div class="small text-muted text-truncate">B: ${p2}</div>
+                                    <div class="small text-muted text-truncate" title="${p1}">基準：${p1}</div>
+                                    <div class="small text-muted" data-matrix-history-count="${count}">比較：${others.length ? others.join('；') : '（未記錄）'}（共 ${count} 篇）</div>
                                     <div class="small text-secondary mt-1">${created}</div>
                                 </button>
                                 <div class="btn-group btn-group-sm ms-2" role="group">
                                     <button class="btn btn-outline-secondary"
-                                            title="${isLegacy ? 'Legacy 記錄不支援改名' : '改名'}"
+                                            title="${isLegacy ? '舊版記錄不支援改名' : '改名'}"
                                             ${isLegacy ? 'disabled' : ''}
                                             onclick="window.studyCore.renameMatrixRecord('${matrixIdJs}')">
                                         <i class="bi bi-pencil"></i>

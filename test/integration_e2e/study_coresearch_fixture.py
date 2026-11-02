@@ -134,6 +134,10 @@ with app.app_context():
     db.session.add(Paper(paper_id=PAPER, pid=PID, title=PAGES[0][1][0][1], interpretation_status=Paper.STATUS_GOLD_READY))
     db.session.commit()
     _write_paper()
+    from matrix_fixture_papers import install_matrix_papers  # R7：多篇比較矩陣的另一個合成專案與比較器替身
+    install_matrix_papers(root, PAGES, study_routes)
+    # R7 閱讀介面：另加一篇豐富合成論文（公式／圖表／引文／缺譯）；代碼排在後面，第一個「閱讀全文」仍是本篇。
+    from reading_ui_fixture_paper import install as _r7_reading_paper; _r7_reading_paper(root, PID)
     # R5：文獻庫條目已連結到這篇 PDF，供「在 Study 閱讀」旅程使用。
     from app.services.literature_library import LiteratureLibrary
     _lib = LiteratureLibrary(str(root))
