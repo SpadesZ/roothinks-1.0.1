@@ -95,8 +95,19 @@ def test_runtime_log_tail_is_admin_only(env):
 
 
 def test_flowb_probe_returns_only_this_projects_log_lines(env):
-    app, _, _, _ = env
-    resp = login(app, "teamviewer").get(f"/api/literature/debug/flowb_probe?pid={PID}&paper_id={PAPER}")
+    app, _, ids, _ = env
+    # [整合 H10] 一般成員拿不到全站日誌原文，只拿到本專案行的行數（熱修第六輪的規則在整合分支保留）。
+    member = login(app, "teamviewer").get(f"/api/literature/debug/flowb_probe?pid={PID}&paper_id={PAPER}")
+    assert member.status_code == 200
+    runtime = member.json["debug"]["runtime_log"]
+    assert runtime["tail_hits"] == [] and runtime["withheld_lines"] == 2 and "OWN_LINE" not in member.get_data(as_text=True)
+    # 結構化出處過濾本身仍要正確：以同時是專案成員的系統管理員檢查。
+    from app import db
+    from app.models import WorkspaceMember
+    with app.app_context():
+        db.session.add(WorkspaceMember(user_id=ids["admin"], pid=PID, role="viewer"))
+        db.session.commit()
+    resp = login(app, "admin").get(f"/api/literature/debug/flowb_probe?pid={PID}&paper_id={PAPER}")
     assert resp.status_code == 200
     debug = resp.json["debug"]
     hits = " ".join(debug["runtime_log"]["tail_hits"])
