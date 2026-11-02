@@ -27,6 +27,18 @@ from typing import Any, Callable
 
 from app.core_pro.storage_layout import resolve_literature_paper_dir
 
+# 伺服器絕對路徑（兩段以上；POSIX 或 Windows 磁碟機）。診斷快照只留最後一段檔名（H10）。
+_ABS_SERVER_PATH = re.compile(r"(?<![\w.~:/\\-])(?:/|[A-Za-z]:[\\/]+)(?:[^\s/\\\"'<>|:]+[\\/]+)+[^\s/\\\"'<>|:]*")
+
+
+def _redact_server_paths(text: Any) -> str:
+    """把伺服器絕對路徑縮成「…/檔名」：看得到是哪個檔，看不到伺服器的目錄配置。"""
+    def _short(match):
+        tail = re.split(r"[\\/]+", match.group(0).rstrip("/\\"))[-1]
+        return "…/" + tail
+
+    return _ABS_SERVER_PATH.sub(_short, str(text or ""))
+
 
 def _paper_dir(data_root: str, pid: str, paper_id: str, for_write: bool = False) -> str:
     return resolve_literature_paper_dir(
@@ -997,7 +1009,12 @@ def flowb_debug_snapshot(deps: FlowBRuntimeDeps, pid: str, paper_id: str, log_li
         low = row.lower()
         if any(p.search(low) for p in pid_patterns) and any(k in low for k in filters):
             runtime_hits.append(row)
-    runtime_hits = runtime_hits[-max(20, min(int(log_lines), 400)) :]
+    runtime_hits = [_redact_server_paths(row) for row in runtime_hits[-max(20, min(int(log_lines), 400)) :]]
+    # 事件檔與 process_log 是本篇自己的資料，但含伺服器絕對路徑（輸出檔、子程序 stderr、模型快取）：只留檔名（H10）。
+    events_tail = [
+        _redact_server_paths(row)
+        for row in deps._tail_text_file(event_path, lines=max(20, min(int(log_lines), 400)))
+    ]
 
     return {
         "pid": pid,
@@ -1005,7 +1022,7 @@ def flowb_debug_snapshot(deps: FlowBRuntimeDeps, pid: str, paper_id: str, log_li
         "db": {
             "interpretation_status": status_raw,
             "process_status": (paper.process_status or "") if paper else "",
-            "process_log": (paper.process_log or "") if paper else "",
+            "process_log": _redact_server_paths(paper.process_log or "") if paper else "",
             "updated_at": updated_at.isoformat() if isinstance(updated_at, datetime) else None,
             "age_sec": round(float(age_sec), 3) if age_sec is not None else None,
             "flowb_stale_sec": stale_sec,
@@ -1021,7 +1038,7 @@ def flowb_debug_snapshot(deps: FlowBRuntimeDeps, pid: str, paper_id: str, log_li
             "nllb_count": nllb_count,
             "judge_count": judge_count,
         },
-        "events_tail": deps._tail_text_file(event_path, lines=max(20, min(int(log_lines), 400))),
+        "events_tail": events_tail,
         "runtime_log": {
             # 伺服器檔案路徑不給一般成員。
             "tail_hits": runtime_hits,

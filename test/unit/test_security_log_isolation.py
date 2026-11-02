@@ -4,6 +4,8 @@
 #      修補後只給系統管理員：session（system_role=admin）、Bearer（TOKEN_ACL_MAP 明確 system_role=admin）。
 #   2. flowb_probe／recover_flowb 的快照用通用字過濾全站日誌，會把其他專案的行給本專案成員。
 #      修補後只留下提到本專案 pid（含 -p 別名、嚴格字界）的行，且不回傳伺服器日誌路徑。
+#      H10（第六輪）起：文字比對無法證明出處，一般成員改為拿不到任何日誌原文（只拿行數與說明）；
+#      pid 過濾的行只給系統管理員與開發模式。下面的成員測試期待值因此刻意改變（見 test_flowb_log_r7_hotfix.py）。
 #   3. 開發模式（兩種認證都關）行為不變，便於本機除錯與回滾相容。
 # 驗證：python -m pytest test/unit/test_security_log_isolation.py -q
 import sys
@@ -139,14 +141,26 @@ def test_dev_mode_without_auth_is_unchanged(dev_app):
 
 
 @pytest.mark.parametrize("who", ["owner", "viewer", "mentor"])
-def test_flowb_probe_returns_only_this_projects_lines_and_no_server_path(session_app, who):
+def test_flowb_probe_gives_members_no_log_text_and_no_server_path(session_app, who):
     resp = _probe(_login(session_app, who))
     assert resp.status_code == 200
     runtime = resp.json["debug"]["runtime_log"]
-    text = "\n".join(runtime["tail_hits"])
+    body = resp.get_data(as_text=True)
+    assert runtime["tail_hits"] == [] and runtime["withheld_lines"] == 2  # OWN_LINE 與 OWN_BASE_ALIAS_LINE
+    assert "OWN_LINE" not in body and "OTHER_PROJECT_LINE" not in body and "ELSEWHERE_LINE" not in body
+    assert "path" not in runtime and "runtime.log" not in body
+
+
+def test_flowb_probe_system_admin_member_sees_only_this_projects_lines(session_app):
+    from app import db
+    from app.models import User, WorkspaceMember
+    with session_app.app_context():
+        admin = User.query.filter_by(username="admin").first()
+        db.session.add(WorkspaceMember(user_id=admin.id, pid=PID, role="viewer"))
+        db.session.commit()
+    text = "\n".join(_probe(_login(session_app, "admin")).json["debug"]["runtime_log"]["tail_hits"])
     assert "OWN_LINE" in text and "OWN_BASE_ALIAS_LINE" in text
     assert "OTHER_PROJECT_LINE" not in text and "ELSEWHERE_LINE" not in text
-    assert "path" not in runtime and "runtime.log" not in resp.get_data(as_text=True)
 
 
 def test_flowb_probe_outsider_and_anonymous_are_refused(session_app):
@@ -154,10 +168,14 @@ def test_flowb_probe_outsider_and_anonymous_are_refused(session_app):
     assert _probe(session_app.test_client()).status_code == 401
 
 
-def test_flowb_probe_token_scoped_to_project_sees_only_own_lines(token_app):
+def test_flowb_probe_token_scoped_to_project_gets_no_log_text(token_app):
     resp = _probe(token_app.test_client(), {"Authorization": f"Bearer {PROJECT_TOKEN}"})
     assert resp.status_code == 200
-    text = "\n".join(resp.json["debug"]["runtime_log"]["tail_hits"])
+    runtime = resp.json["debug"]["runtime_log"]
+    assert runtime["tail_hits"] == [] and runtime["withheld_lines"] == 2
+    assert "OTHER_PROJECT_LINE" not in resp.get_data(as_text=True)
+    admin = _probe(token_app.test_client(), {"Authorization": f"Bearer {ADMIN_TOKEN}"})
+    text = "\n".join(admin.json["debug"]["runtime_log"]["tail_hits"])
     assert "OWN_LINE" in text and "OTHER_PROJECT_LINE" not in text
 
 
