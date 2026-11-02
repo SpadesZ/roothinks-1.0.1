@@ -1,0 +1,3655 @@
+{
+  "phase": "after",
+  "base": "http://127.0.0.1:8941",
+  "paper": "synthetic_r7_reading",
+  "started": "2026-11-02T10:19:17.259Z",
+  "viewports": {
+    "desktop": {
+      "viewport": [
+        1440,
+        900
+      ],
+      "doc": {
+        "scrollWidth": 1440,
+        "clientWidth": 1440,
+        "overflow": false
+      },
+      "reader": {
+        "clientWidth": 969,
+        "scrollWidth": 969,
+        "overflow": false
+      },
+      "overflowing": [],
+      "overflowCount": 0,
+      "rows": [
+        {
+          "ref": "p1-b3",
+          "page": "1",
+          "origRef": "p1-b3",
+          "transRef": "p1-b3",
+          "stacked": false,
+          "topDiff": 0,
+          "heightDiff": 0,
+          "missingShown": false,
+          "missingText": null,
+          "mtLabelInRow": true
+        },
+        {
+          "ref": "p1-b5",
+          "page": "1",
+          "origRef": "p1-b5",
+          "transRef": "p1-b5",
+          "stacked": false,
+          "topDiff": 0,
+          "heightDiff": 0,
+          "missingShown": false,
+          "missingText": null,
+          "mtLabelInRow": true
+        },
+        {
+          "ref": "p1-b7",
+          "page": "1",
+          "origRef": "p1-b7",
+          "transRef": "p1-b7",
+          "stacked": false,
+          "topDiff": 0,
+          "heightDiff": 0,
+          "missingShown": false,
+          "missingText": null,
+          "mtLabelInRow": true
+        },
+        {
+          "ref": "p1-b8",
+          "page": "1",
+          "origRef": "p1-b8",
+          "transRef": "p1-b8",
+          "stacked": false,
+          "topDiff": 0,
+          "heightDiff": 0,
+          "missingShown": false,
+          "missingText": null,
+          "mtLabelInRow": false
+        },
+        {
+          "ref": "p1-b9",
+          "page": "1",
+          "origRef": "p1-b9",
+          "transRef": "p1-b9",
+          "stacked": false,
+          "topDiff": 0,
+          "heightDiff": 0,
+          "missingShown": false,
+          "missingText": null,
+          "mtLabelInRow": false
+        },
+        {
+          "ref": "p2-b4",
+          "page": "2",
+          "origRef": "p2-b4",
+          "transRef": "p2-b4",
+          "stacked": false,
+          "topDiff": 0,
+          "heightDiff": 0,
+          "missingShown": false,
+          "missingText": null,
+          "mtLabelInRow": true
+        },
+        {
+          "ref": "p2-b6",
+          "page": "2",
+          "origRef": "p2-b6",
+          "transRef": "p2-b6",
+          "stacked": false,
+          "topDiff": 0,
+          "heightDiff": 0,
+          "missingShown": false,
+          "missingText": null,
+          "mtLabelInRow": true
+        },
+        {
+          "ref": "p2-b9",
+          "page": "2",
+          "origRef": "p2-b9",
+          "transRef": null,
+          "stacked": false,
+          "topDiff": 0,
+          "heightDiff": 0,
+          "missingShown": true,
+          "missingText": "中文翻譯（機器翻譯）\n此段落沒有機器翻譯，請以原文為準",
+          "mtLabelInRow": true
+        },
+        {
+          "ref": "p2-b12",
+          "page": "2",
+          "origRef": "p2-b12",
+          "transRef": "p2-b12",
+          "stacked": false,
+          "topDiff": 0,
+          "heightDiff": 0,
+          "missingShown": false,
+          "missingText": null,
+          "mtLabelInRow": true
+        },
+        {
+          "ref": "p3-b3",
+          "page": "3",
+          "origRef": "p3-b3",
+          "transRef": "p3-b3",
+          "stacked": false,
+          "topDiff": 0,
+          "heightDiff": 0,
+          "missingShown": false,
+          "missingText": null,
+          "mtLabelInRow": true
+        },
+        {
+          "ref": "p3-b5",
+          "page": "3",
+          "origRef": "p3-b5",
+          "transRef": "p3-b5",
+          "stacked": false,
+          "topDiff": 0,
+          "heightDiff": 0,
+          "missingShown": false,
+          "missingText": null,
+          "mtLabelInRow": true
+        },
+        {
+          "ref": "p3-b7",
+          "page": "3",
+          "origRef": "p3-b7",
+          "transRef": "p3-b7",
+          "stacked": false,
+          "topDiff": 0,
+          "heightDiff": 0,
+          "missingShown": false,
+          "missingText": null,
+          "mtLabelInRow": true
+        },
+        {
+          "ref": "p4-b3",
+          "page": "4",
+          "origRef": "p4-b3",
+          "transRef": "p4-b3",
+          "stacked": false,
+          "topDiff": 0,
+          "heightDiff": 0,
+          "missingShown": false,
+          "missingText": null,
+          "mtLabelInRow": true
+        },
+        {
+          "ref": "p4-b5",
+          "page": "4",
+          "origRef": "p4-b5",
+          "transRef": "p4-b5",
+          "stacked": false,
+          "topDiff": 0,
+          "heightDiff": 0,
+          "missingShown": false,
+          "missingText": null,
+          "mtLabelInRow": true
+        },
+        {
+          "ref": "p4-b6",
+          "page": "4",
+          "origRef": "p4-b6",
+          "transRef": null,
+          "stacked": false,
+          "topDiff": 0,
+          "heightDiff": 0,
+          "missingShown": true,
+          "missingText": "此段落沒有機器翻譯，請以原文為準",
+          "mtLabelInRow": false
+        },
+        {
+          "ref": "p4-b7",
+          "page": "4",
+          "origRef": "p4-b7",
+          "transRef": "p4-b7",
+          "stacked": false,
+          "topDiff": 0,
+          "heightDiff": 0,
+          "missingShown": false,
+          "missingText": null,
+          "mtLabelInRow": false
+        }
+      ],
+      "blocks": {
+        "total": 37,
+        "text": 25,
+        "originalAnchored": 25,
+        "withTranslation": 23,
+        "translationAnchored": 23,
+        "withoutTranslation": [
+          "p2-b9",
+          "p4-b6"
+        ],
+        "noOriginalAnchor": [],
+        "translationNotShown": [],
+        "originalAltered": [],
+        "specialWithRef": 6,
+        "special": 6
+      },
+      "equations": {
+        "blocks": 4,
+        "rendered": 2,
+        "katexErrorNodes": 0,
+        "katexErrorText": [],
+        "fallbackShown": 1,
+        "items": [
+          {
+            "w": 898,
+            "sw": 898,
+            "scrolls": false,
+            "scrollContainer": {
+              "sw": 898,
+              "cw": 898,
+              "tab": 0,
+              "role": "region"
+            },
+            "outer": 900,
+            "text": "𝜅 = 𝐿 2 𝐴 𝜒 𝑇 ∂ 𝜔 / ∂ 𝑃 ( 1 ) κ= 2A L ​ ∂ω/"
+          },
+          {
+            "w": 898,
+            "sw": 898,
+            "scrolls": false,
+            "scrollContainer": {
+              "sw": 898,
+              "cw": 898,
+              "tab": 0,
+              "role": "region"
+            },
+            "outer": 900,
+            "text": "𝜅 ( 𝑇 , 𝜀 ) = 𝜅 0 ( 1 + 𝛼 𝜀 + 𝛽 𝜀 2 ) exp "
+          },
+          {
+            "w": 898,
+            "sw": 898,
+            "scrolls": false,
+            "scrollContainer": {
+              "sw": 898,
+              "cw": 898,
+              "tab": 0,
+              "role": "region"
+            },
+            "outer": 900,
+            "text": "⚠ 這條公式無法完整排版（含不支援的 LaTeX 指令），以下為原始 LaTeX；數值與符號請以原文"
+          },
+          {
+            "w": 898,
+            "sw": 898,
+            "scrolls": false,
+            "scrollContainer": null,
+            "outer": 900,
+            "text": "公式辨識失敗：請以上方原文切塊圖片為準 原因代碼：latex_low_confidence"
+          }
+        ]
+      },
+      "media": [
+        {
+          "kind": "figure",
+          "imgLoaded": true,
+          "natural": 1400,
+          "shown": 906,
+          "scale": 0.65,
+          "blockWidth": 947,
+          "outer": 949,
+          "blockOverflow": false,
+          "scrollRegion": null,
+          "caption": "Figure 1. In-plane thermal conductivity ",
+          "captionZh": true,
+          "mtLabel": true
+        },
+        {
+          "kind": "table",
+          "imgLoaded": true,
+          "natural": 2000,
+          "shown": 906,
+          "scale": 0.45,
+          "blockWidth": 947,
+          "outer": 949,
+          "blockOverflow": false,
+          "scrollRegion": {
+            "sw": 906,
+            "cw": 906,
+            "scrolls": false,
+            "tab": 0,
+            "role": "region",
+            "label": "表格圖片（較寬時可用方向鍵左右捲動）"
+          },
+          "caption": "w (µm) n κ(ε=0) κ(ε=0.8%) dκ/dε Λ_eff (µ",
+          "captionZh": false,
+          "mtLabel": false
+        }
+      ],
+      "links": [
+        {
+          "ref": "p2-b4",
+          "side": "original",
+          "own": 0,
+          "colOverflow": 0,
+          "rightOver": -22
+        },
+        {
+          "ref": "p2-b4",
+          "side": "translation",
+          "own": 0,
+          "colOverflow": 0,
+          "rightOver": -20
+        },
+        {
+          "ref": "p4-b5",
+          "side": "original",
+          "own": 0,
+          "colOverflow": 0,
+          "rightOver": -22
+        },
+        {
+          "ref": "p4-b5",
+          "side": "translation",
+          "own": 0,
+          "colOverflow": 0,
+          "rightOver": -20
+        },
+        {
+          "ref": "p4-b6",
+          "side": "original",
+          "own": 0,
+          "colOverflow": 0,
+          "rightOver": -22
+        },
+        {
+          "ref": "p4-b7",
+          "side": "original",
+          "own": 0,
+          "colOverflow": 0,
+          "rightOver": -22
+        },
+        {
+          "ref": "p4-b7",
+          "side": "translation",
+          "own": 0,
+          "colOverflow": 0,
+          "rightOver": -20
+        }
+      ],
+      "pages": {
+        "markers": [
+          "第 1 頁",
+          "第 2 頁",
+          "第 3 頁",
+          "第 4 頁"
+        ],
+        "nav": true,
+        "navItems": [
+          "1",
+          "2",
+          "3",
+          "4"
+        ],
+        "outOfOrder": []
+      },
+      "mt": {
+        "sections": 12,
+        "sectionsWithTranslation": 11,
+        "sectionsLabelled": 11,
+        "translationHosts": 23,
+        "unlabelled": []
+      },
+      "layout": {
+        "matrixPane": [
+          969,
+          852
+        ],
+        "auxPane": [
+          413,
+          852
+        ],
+        "splitStacked": false,
+        "readerWidth": 969
+      },
+      "l10n": {
+        "simplified": [],
+        "mainland": [],
+        "uiEnglish": [],
+        "headerLabels": [
+          "原文",
+          "中文翻譯（機器翻譯）"
+        ]
+      },
+      "keyboard": {
+        "scrollRegions": 0,
+        "focusable": 0,
+        "unfocusable": []
+      },
+      "selection": {
+        "visible": true,
+        "left": 555,
+        "right": 939,
+        "top": 415,
+        "bottom": 452,
+        "width": 384,
+        "height": 37,
+        "vw": 1440,
+        "vh": 900,
+        "inViewport": true,
+        "overlapsSelection": false,
+        "buttons": 3,
+        "buttonsVisible": 3,
+        "note": "譯文：來源事實會改用整段原文"
+      },
+      "keyboardFocus": {
+        "regions": 4,
+        "focused": true,
+        "outline": "solid 2px",
+        "boxShadow": "none",
+        "labelled": true,
+        "roles": [
+          "region"
+        ]
+      }
+    },
+    "laptop": {
+      "viewport": [
+        1280,
+        800
+      ],
+      "doc": {
+        "scrollWidth": 1280,
+        "clientWidth": 1280,
+        "overflow": false
+      },
+      "reader": {
+        "clientWidth": 857,
+        "scrollWidth": 857,
+        "overflow": false
+      },
+      "overflowing": [],
+      "overflowCount": 0,
+      "rows": [
+        {
+          "ref": "p1-b3",
+          "page": "1",
+          "origRef": "p1-b3",
+          "transRef": "p1-b3",
+          "stacked": false,
+          "topDiff": 0,
+          "heightDiff": 0,
+          "missingShown": false,
+          "missingText": null,
+          "mtLabelInRow": true
+        },
+        {
+          "ref": "p1-b5",
+          "page": "1",
+          "origRef": "p1-b5",
+          "transRef": "p1-b5",
+          "stacked": false,
+          "topDiff": 0,
+          "heightDiff": 0,
+          "missingShown": false,
+          "missingText": null,
+          "mtLabelInRow": true
+        },
+        {
+          "ref": "p1-b7",
+          "page": "1",
+          "origRef": "p1-b7",
+          "transRef": "p1-b7",
+          "stacked": false,
+          "topDiff": 0,
+          "heightDiff": 0,
+          "missingShown": false,
+          "missingText": null,
+          "mtLabelInRow": true
+        },
+        {
+          "ref": "p1-b8",
+          "page": "1",
+          "origRef": "p1-b8",
+          "transRef": "p1-b8",
+          "stacked": false,
+          "topDiff": 0,
+          "heightDiff": 0,
+          "missingShown": false,
+          "missingText": null,
+          "mtLabelInRow": false
+        },
+        {
+          "ref": "p1-b9",
+          "page": "1",
+          "origRef": "p1-b9",
+          "transRef": "p1-b9",
+          "stacked": false,
+          "topDiff": 0,
+          "heightDiff": 0,
+          "missingShown": false,
+          "missingText": null,
+          "mtLabelInRow": false
+        },
+        {
+          "ref": "p2-b4",
+          "page": "2",
+          "origRef": "p2-b4",
+          "transRef": "p2-b4",
+          "stacked": false,
+          "topDiff": 0,
+          "heightDiff": 0,
+          "missingShown": false,
+          "missingText": null,
+          "mtLabelInRow": true
+        },
+        {
+          "ref": "p2-b6",
+          "page": "2",
+          "origRef": "p2-b6",
+          "transRef": "p2-b6",
+          "stacked": false,
+          "topDiff": 0,
+          "heightDiff": 0,
+          "missingShown": false,
+          "missingText": null,
+          "mtLabelInRow": true
+        },
+        {
+          "ref": "p2-b9",
+          "page": "2",
+          "origRef": "p2-b9",
+          "transRef": null,
+          "stacked": false,
+          "topDiff": 0,
+          "heightDiff": 0,
+          "missingShown": true,
+          "missingText": "中文翻譯（機器翻譯）\n此段落沒有機器翻譯，請以原文為準",
+          "mtLabelInRow": true
+        },
+        {
+          "ref": "p2-b12",
+          "page": "2",
+          "origRef": "p2-b12",
+          "transRef": "p2-b12",
+          "stacked": false,
+          "topDiff": 0,
+          "heightDiff": 0,
+          "missingShown": false,
+          "missingText": null,
+          "mtLabelInRow": true
+        },
+        {
+          "ref": "p3-b3",
+          "page": "3",
+          "origRef": "p3-b3",
+          "transRef": "p3-b3",
+          "stacked": false,
+          "topDiff": 0,
+          "heightDiff": 0,
+          "missingShown": false,
+          "missingText": null,
+          "mtLabelInRow": true
+        },
+        {
+          "ref": "p3-b5",
+          "page": "3",
+          "origRef": "p3-b5",
+          "transRef": "p3-b5",
+          "stacked": false,
+          "topDiff": 0,
+          "heightDiff": 0,
+          "missingShown": false,
+          "missingText": null,
+          "mtLabelInRow": true
+        },
+        {
+          "ref": "p3-b7",
+          "page": "3",
+          "origRef": "p3-b7",
+          "transRef": "p3-b7",
+          "stacked": false,
+          "topDiff": 0,
+          "heightDiff": 0,
+          "missingShown": false,
+          "missingText": null,
+          "mtLabelInRow": true
+        },
+        {
+          "ref": "p4-b3",
+          "page": "4",
+          "origRef": "p4-b3",
+          "transRef": "p4-b3",
+          "stacked": false,
+          "topDiff": 0,
+          "heightDiff": 0,
+          "missingShown": false,
+          "missingText": null,
+          "mtLabelInRow": true
+        },
+        {
+          "ref": "p4-b5",
+          "page": "4",
+          "origRef": "p4-b5",
+          "transRef": "p4-b5",
+          "stacked": false,
+          "topDiff": 0,
+          "heightDiff": 0,
+          "missingShown": false,
+          "missingText": null,
+          "mtLabelInRow": true
+        },
+        {
+          "ref": "p4-b6",
+          "page": "4",
+          "origRef": "p4-b6",
+          "transRef": null,
+          "stacked": false,
+          "topDiff": 0,
+          "heightDiff": 0,
+          "missingShown": true,
+          "missingText": "此段落沒有機器翻譯，請以原文為準",
+          "mtLabelInRow": false
+        },
+        {
+          "ref": "p4-b7",
+          "page": "4",
+          "origRef": "p4-b7",
+          "transRef": "p4-b7",
+          "stacked": false,
+          "topDiff": 0,
+          "heightDiff": 0,
+          "missingShown": false,
+          "missingText": null,
+          "mtLabelInRow": false
+        }
+      ],
+      "blocks": {
+        "total": 37,
+        "text": 25,
+        "originalAnchored": 25,
+        "withTranslation": 23,
+        "translationAnchored": 23,
+        "withoutTranslation": [
+          "p2-b9",
+          "p4-b6"
+        ],
+        "noOriginalAnchor": [],
+        "translationNotShown": [],
+        "originalAltered": [],
+        "specialWithRef": 6,
+        "special": 6
+      },
+      "equations": {
+        "blocks": 4,
+        "rendered": 2,
+        "katexErrorNodes": 0,
+        "katexErrorText": [],
+        "fallbackShown": 1,
+        "items": [
+          {
+            "w": 835,
+            "sw": 835,
+            "scrolls": false,
+            "scrollContainer": {
+              "sw": 835,
+              "cw": 835,
+              "tab": 0,
+              "role": "region"
+            },
+            "outer": 837,
+            "text": "𝜅 = 𝐿 2 𝐴 𝜒 𝑇 ∂ 𝜔 / ∂ 𝑃 ( 1 ) κ= 2A L ​ ∂ω/"
+          },
+          {
+            "w": 835,
+            "sw": 835,
+            "scrolls": false,
+            "scrollContainer": {
+              "sw": 835,
+              "cw": 835,
+              "tab": 0,
+              "role": "region"
+            },
+            "outer": 837,
+            "text": "𝜅 ( 𝑇 , 𝜀 ) = 𝜅 0 ( 1 + 𝛼 𝜀 + 𝛽 𝜀 2 ) exp "
+          },
+          {
+            "w": 835,
+            "sw": 835,
+            "scrolls": false,
+            "scrollContainer": {
+              "sw": 835,
+              "cw": 835,
+              "tab": 0,
+              "role": "region"
+            },
+            "outer": 837,
+            "text": "⚠ 這條公式無法完整排版（含不支援的 LaTeX 指令），以下為原始 LaTeX；數值與符號請以原文"
+          },
+          {
+            "w": 835,
+            "sw": 835,
+            "scrolls": false,
+            "scrollContainer": null,
+            "outer": 837,
+            "text": "公式辨識失敗：請以上方原文切塊圖片為準 原因代碼：latex_low_confidence"
+          }
+        ]
+      },
+      "media": [
+        {
+          "kind": "figure",
+          "imgLoaded": true,
+          "natural": 1400,
+          "shown": 794,
+          "scale": 0.57,
+          "blockWidth": 835,
+          "outer": 837,
+          "blockOverflow": false,
+          "scrollRegion": null,
+          "caption": "Figure 1. In-plane thermal conductivity ",
+          "captionZh": true,
+          "mtLabel": true
+        },
+        {
+          "kind": "table",
+          "imgLoaded": true,
+          "natural": 2000,
+          "shown": 794,
+          "scale": 0.4,
+          "blockWidth": 835,
+          "outer": 837,
+          "blockOverflow": false,
+          "scrollRegion": {
+            "sw": 794,
+            "cw": 794,
+            "scrolls": false,
+            "tab": 0,
+            "role": "region",
+            "label": "表格圖片（較寬時可用方向鍵左右捲動）"
+          },
+          "caption": "w (µm) n κ(ε=0) κ(ε=0.8%) dκ/dε Λ_eff (µ",
+          "captionZh": false,
+          "mtLabel": false
+        }
+      ],
+      "links": [
+        {
+          "ref": "p2-b4",
+          "side": "original",
+          "own": 0,
+          "colOverflow": 0,
+          "rightOver": -22
+        },
+        {
+          "ref": "p2-b4",
+          "side": "translation",
+          "own": 0,
+          "colOverflow": 0,
+          "rightOver": -20
+        },
+        {
+          "ref": "p4-b5",
+          "side": "original",
+          "own": 0,
+          "colOverflow": 0,
+          "rightOver": -22
+        },
+        {
+          "ref": "p4-b5",
+          "side": "translation",
+          "own": 0,
+          "colOverflow": 0,
+          "rightOver": -20
+        },
+        {
+          "ref": "p4-b6",
+          "side": "original",
+          "own": 0,
+          "colOverflow": 0,
+          "rightOver": -22
+        },
+        {
+          "ref": "p4-b7",
+          "side": "original",
+          "own": 0,
+          "colOverflow": 0,
+          "rightOver": -22
+        },
+        {
+          "ref": "p4-b7",
+          "side": "translation",
+          "own": 0,
+          "colOverflow": 0,
+          "rightOver": -20
+        }
+      ],
+      "pages": {
+        "markers": [
+          "第 1 頁",
+          "第 2 頁",
+          "第 3 頁",
+          "第 4 頁"
+        ],
+        "nav": true,
+        "navItems": [
+          "1",
+          "2",
+          "3",
+          "4"
+        ],
+        "outOfOrder": []
+      },
+      "mt": {
+        "sections": 12,
+        "sectionsWithTranslation": 11,
+        "sectionsLabelled": 11,
+        "translationHosts": 23,
+        "unlabelled": []
+      },
+      "layout": {
+        "matrixPane": [
+          857,
+          752
+        ],
+        "auxPane": [
+          365,
+          752
+        ],
+        "splitStacked": false,
+        "readerWidth": 857
+      },
+      "l10n": {
+        "simplified": [],
+        "mainland": [],
+        "uiEnglish": [],
+        "headerLabels": [
+          "原文",
+          "中文翻譯（機器翻譯）"
+        ]
+      },
+      "keyboard": {
+        "scrollRegions": 0,
+        "focusable": 0,
+        "unfocusable": []
+      },
+      "selection": {
+        "visible": true,
+        "left": 499,
+        "right": 883,
+        "top": 365,
+        "bottom": 402,
+        "width": 384,
+        "height": 37,
+        "vw": 1280,
+        "vh": 800,
+        "inViewport": true,
+        "overlapsSelection": false,
+        "buttons": 3,
+        "buttonsVisible": 3,
+        "note": "譯文：來源事實會改用整段原文"
+      },
+      "keyboardFocus": {
+        "regions": 4,
+        "focused": true,
+        "outline": "solid 2px",
+        "boxShadow": "none",
+        "labelled": true,
+        "roles": [
+          "region"
+        ]
+      }
+    },
+    "tablet": {
+      "viewport": [
+        820,
+        1180
+      ],
+      "doc": {
+        "scrollWidth": 820,
+        "clientWidth": 820,
+        "overflow": false
+      },
+      "reader": {
+        "clientWidth": 535,
+        "scrollWidth": 535,
+        "overflow": false
+      },
+      "overflowing": [],
+      "overflowCount": 0,
+      "rows": [
+        {
+          "ref": "p1-b3",
+          "page": "1",
+          "origRef": "p1-b3",
+          "transRef": "p1-b3",
+          "stacked": true,
+          "topDiff": null,
+          "heightDiff": null,
+          "missingShown": false,
+          "missingText": null,
+          "mtLabelInRow": true
+        },
+        {
+          "ref": "p1-b5",
+          "page": "1",
+          "origRef": "p1-b5",
+          "transRef": "p1-b5",
+          "stacked": true,
+          "topDiff": null,
+          "heightDiff": null,
+          "missingShown": false,
+          "missingText": null,
+          "mtLabelInRow": true
+        },
+        {
+          "ref": "p1-b7",
+          "page": "1",
+          "origRef": "p1-b7",
+          "transRef": "p1-b7",
+          "stacked": true,
+          "topDiff": null,
+          "heightDiff": null,
+          "missingShown": false,
+          "missingText": null,
+          "mtLabelInRow": true
+        },
+        {
+          "ref": "p1-b8",
+          "page": "1",
+          "origRef": "p1-b8",
+          "transRef": "p1-b8",
+          "stacked": true,
+          "topDiff": null,
+          "heightDiff": null,
+          "missingShown": false,
+          "missingText": null,
+          "mtLabelInRow": false
+        },
+        {
+          "ref": "p1-b9",
+          "page": "1",
+          "origRef": "p1-b9",
+          "transRef": "p1-b9",
+          "stacked": true,
+          "topDiff": null,
+          "heightDiff": null,
+          "missingShown": false,
+          "missingText": null,
+          "mtLabelInRow": false
+        },
+        {
+          "ref": "p2-b4",
+          "page": "2",
+          "origRef": "p2-b4",
+          "transRef": "p2-b4",
+          "stacked": true,
+          "topDiff": null,
+          "heightDiff": null,
+          "missingShown": false,
+          "missingText": null,
+          "mtLabelInRow": true
+        },
+        {
+          "ref": "p2-b6",
+          "page": "2",
+          "origRef": "p2-b6",
+          "transRef": "p2-b6",
+          "stacked": true,
+          "topDiff": null,
+          "heightDiff": null,
+          "missingShown": false,
+          "missingText": null,
+          "mtLabelInRow": true
+        },
+        {
+          "ref": "p2-b9",
+          "page": "2",
+          "origRef": "p2-b9",
+          "transRef": null,
+          "stacked": true,
+          "topDiff": null,
+          "heightDiff": null,
+          "missingShown": true,
+          "missingText": "中文翻譯（機器翻譯）\n此段落沒有機器翻譯，請以原文為準",
+          "mtLabelInRow": true
+        },
+        {
+          "ref": "p2-b12",
+          "page": "2",
+          "origRef": "p2-b12",
+          "transRef": "p2-b12",
+          "stacked": true,
+          "topDiff": null,
+          "heightDiff": null,
+          "missingShown": false,
+          "missingText": null,
+          "mtLabelInRow": true
+        },
+        {
+          "ref": "p3-b3",
+          "page": "3",
+          "origRef": "p3-b3",
+          "transRef": "p3-b3",
+          "stacked": true,
+          "topDiff": null,
+          "heightDiff": null,
+          "missingShown": false,
+          "missingText": null,
+          "mtLabelInRow": true
+        },
+        {
+          "ref": "p3-b5",
+          "page": "3",
+          "origRef": "p3-b5",
+          "transRef": "p3-b5",
+          "stacked": true,
+          "topDiff": null,
+          "heightDiff": null,
+          "missingShown": false,
+          "missingText": null,
+          "mtLabelInRow": true
+        },
+        {
+          "ref": "p3-b7",
+          "page": "3",
+          "origRef": "p3-b7",
+          "transRef": "p3-b7",
+          "stacked": true,
+          "topDiff": null,
+          "heightDiff": null,
+          "missingShown": false,
+          "missingText": null,
+          "mtLabelInRow": true
+        },
+        {
+          "ref": "p4-b3",
+          "page": "4",
+          "origRef": "p4-b3",
+          "transRef": "p4-b3",
+          "stacked": true,
+          "topDiff": null,
+          "heightDiff": null,
+          "missingShown": false,
+          "missingText": null,
+          "mtLabelInRow": true
+        },
+        {
+          "ref": "p4-b5",
+          "page": "4",
+          "origRef": "p4-b5",
+          "transRef": "p4-b5",
+          "stacked": true,
+          "topDiff": null,
+          "heightDiff": null,
+          "missingShown": false,
+          "missingText": null,
+          "mtLabelInRow": true
+        },
+        {
+          "ref": "p4-b6",
+          "page": "4",
+          "origRef": "p4-b6",
+          "transRef": null,
+          "stacked": true,
+          "topDiff": null,
+          "heightDiff": null,
+          "missingShown": true,
+          "missingText": "此段落沒有機器翻譯，請以原文為準",
+          "mtLabelInRow": false
+        },
+        {
+          "ref": "p4-b7",
+          "page": "4",
+          "origRef": "p4-b7",
+          "transRef": "p4-b7",
+          "stacked": true,
+          "topDiff": null,
+          "heightDiff": null,
+          "missingShown": false,
+          "missingText": null,
+          "mtLabelInRow": false
+        }
+      ],
+      "blocks": {
+        "total": 37,
+        "text": 25,
+        "originalAnchored": 25,
+        "withTranslation": 23,
+        "translationAnchored": 23,
+        "withoutTranslation": [
+          "p2-b9",
+          "p4-b6"
+        ],
+        "noOriginalAnchor": [],
+        "translationNotShown": [],
+        "originalAltered": [],
+        "specialWithRef": 6,
+        "special": 6
+      },
+      "equations": {
+        "blocks": 4,
+        "rendered": 2,
+        "katexErrorNodes": 0,
+        "katexErrorText": [],
+        "fallbackShown": 1,
+        "items": [
+          {
+            "w": 513,
+            "sw": 513,
+            "scrolls": false,
+            "scrollContainer": {
+              "sw": 513,
+              "cw": 513,
+              "tab": 0,
+              "role": "region"
+            },
+            "outer": 515,
+            "text": "𝜅 = 𝐿 2 𝐴 𝜒 𝑇 ∂ 𝜔 / ∂ 𝑃 ( 1 ) κ= 2A L ​ ∂ω/"
+          },
+          {
+            "w": 513,
+            "sw": 698,
+            "scrolls": true,
+            "scrollContainer": {
+              "sw": 698,
+              "cw": 513,
+              "tab": 0,
+              "role": "region"
+            },
+            "outer": 515,
+            "text": "𝜅 ( 𝑇 , 𝜀 ) = 𝜅 0 ( 1 + 𝛼 𝜀 + 𝛽 𝜀 2 ) exp "
+          },
+          {
+            "w": 513,
+            "sw": 513,
+            "scrolls": false,
+            "scrollContainer": {
+              "sw": 513,
+              "cw": 513,
+              "tab": 0,
+              "role": "region"
+            },
+            "outer": 515,
+            "text": "⚠ 這條公式無法完整排版（含不支援的 LaTeX 指令），以下為原始 LaTeX；數值與符號請以原文"
+          },
+          {
+            "w": 513,
+            "sw": 513,
+            "scrolls": false,
+            "scrollContainer": null,
+            "outer": 515,
+            "text": "公式辨識失敗：請以上方原文切塊圖片為準 原因代碼：latex_low_confidence"
+          }
+        ]
+      },
+      "media": [
+        {
+          "kind": "figure",
+          "imgLoaded": true,
+          "natural": 1400,
+          "shown": 472,
+          "scale": 0.34,
+          "blockWidth": 513,
+          "outer": 515,
+          "blockOverflow": false,
+          "scrollRegion": null,
+          "caption": "Figure 1. In-plane thermal conductivity ",
+          "captionZh": true,
+          "mtLabel": true
+        },
+        {
+          "kind": "table",
+          "imgLoaded": true,
+          "natural": 2000,
+          "shown": 720,
+          "scale": 0.36,
+          "blockWidth": 513,
+          "outer": 515,
+          "blockOverflow": false,
+          "scrollRegion": {
+            "sw": 720,
+            "cw": 472,
+            "scrolls": true,
+            "tab": 0,
+            "role": "region",
+            "label": "表格圖片（較寬時可用方向鍵左右捲動）"
+          },
+          "caption": "w (µm) n κ(ε=0) κ(ε=0.8%) dκ/dε Λ_eff (µ",
+          "captionZh": false,
+          "mtLabel": false
+        }
+      ],
+      "links": [
+        {
+          "ref": "p2-b4",
+          "side": "original",
+          "own": 0,
+          "colOverflow": 0,
+          "rightOver": -20
+        },
+        {
+          "ref": "p2-b4",
+          "side": "translation",
+          "own": 0,
+          "colOverflow": 0,
+          "rightOver": -20
+        },
+        {
+          "ref": "p4-b5",
+          "side": "original",
+          "own": 0,
+          "colOverflow": 0,
+          "rightOver": -20
+        },
+        {
+          "ref": "p4-b5",
+          "side": "translation",
+          "own": 0,
+          "colOverflow": 0,
+          "rightOver": -20
+        },
+        {
+          "ref": "p4-b6",
+          "side": "original",
+          "own": 0,
+          "colOverflow": 0,
+          "rightOver": -20
+        },
+        {
+          "ref": "p4-b7",
+          "side": "original",
+          "own": 0,
+          "colOverflow": 0,
+          "rightOver": -20
+        },
+        {
+          "ref": "p4-b7",
+          "side": "translation",
+          "own": 0,
+          "colOverflow": 0,
+          "rightOver": -20
+        }
+      ],
+      "pages": {
+        "markers": [
+          "第 1 頁",
+          "第 2 頁",
+          "第 3 頁",
+          "第 4 頁"
+        ],
+        "nav": true,
+        "navItems": [
+          "1",
+          "2",
+          "3",
+          "4"
+        ],
+        "outOfOrder": []
+      },
+      "mt": {
+        "sections": 12,
+        "sectionsWithTranslation": 11,
+        "sectionsLabelled": 11,
+        "translationHosts": 23,
+        "unlabelled": []
+      },
+      "layout": {
+        "matrixPane": [
+          535,
+          1132
+        ],
+        "auxPane": [
+          227,
+          1132
+        ],
+        "splitStacked": false,
+        "readerWidth": 535
+      },
+      "l10n": {
+        "simplified": [],
+        "mainland": [],
+        "uiEnglish": [],
+        "headerLabels": [
+          "原文",
+          "中文翻譯（機器翻譯）"
+        ]
+      },
+      "keyboard": {
+        "scrollRegions": 2,
+        "focusable": 2,
+        "unfocusable": []
+      },
+      "selection": {
+        "visible": true,
+        "left": 115,
+        "right": 499,
+        "top": 569,
+        "bottom": 605,
+        "width": 384,
+        "height": 37,
+        "vw": 820,
+        "vh": 1180,
+        "inViewport": true,
+        "overlapsSelection": false,
+        "buttons": 3,
+        "buttonsVisible": 3,
+        "note": "譯文：來源事實會改用整段原文"
+      },
+      "keyboardFocus": {
+        "regions": 4,
+        "focused": true,
+        "outline": "solid 2px",
+        "boxShadow": "none",
+        "labelled": true,
+        "roles": [
+          "region"
+        ]
+      }
+    },
+    "phone": {
+      "viewport": [
+        390,
+        844
+      ],
+      "doc": {
+        "scrollWidth": 390,
+        "clientWidth": 390,
+        "overflow": false
+      },
+      "reader": {
+        "clientWidth": 340,
+        "scrollWidth": 340,
+        "overflow": false
+      },
+      "overflowing": [],
+      "overflowCount": 0,
+      "rows": [
+        {
+          "ref": "p1-b3",
+          "page": "1",
+          "origRef": "p1-b3",
+          "transRef": "p1-b3",
+          "stacked": true,
+          "topDiff": null,
+          "heightDiff": null,
+          "missingShown": false,
+          "missingText": null,
+          "mtLabelInRow": true
+        },
+        {
+          "ref": "p1-b5",
+          "page": "1",
+          "origRef": "p1-b5",
+          "transRef": "p1-b5",
+          "stacked": true,
+          "topDiff": null,
+          "heightDiff": null,
+          "missingShown": false,
+          "missingText": null,
+          "mtLabelInRow": true
+        },
+        {
+          "ref": "p1-b7",
+          "page": "1",
+          "origRef": "p1-b7",
+          "transRef": "p1-b7",
+          "stacked": true,
+          "topDiff": null,
+          "heightDiff": null,
+          "missingShown": false,
+          "missingText": null,
+          "mtLabelInRow": true
+        },
+        {
+          "ref": "p1-b8",
+          "page": "1",
+          "origRef": "p1-b8",
+          "transRef": "p1-b8",
+          "stacked": true,
+          "topDiff": null,
+          "heightDiff": null,
+          "missingShown": false,
+          "missingText": null,
+          "mtLabelInRow": false
+        },
+        {
+          "ref": "p1-b9",
+          "page": "1",
+          "origRef": "p1-b9",
+          "transRef": "p1-b9",
+          "stacked": true,
+          "topDiff": null,
+          "heightDiff": null,
+          "missingShown": false,
+          "missingText": null,
+          "mtLabelInRow": false
+        },
+        {
+          "ref": "p2-b4",
+          "page": "2",
+          "origRef": "p2-b4",
+          "transRef": "p2-b4",
+          "stacked": true,
+          "topDiff": null,
+          "heightDiff": null,
+          "missingShown": false,
+          "missingText": null,
+          "mtLabelInRow": true
+        },
+        {
+          "ref": "p2-b6",
+          "page": "2",
+          "origRef": "p2-b6",
+          "transRef": "p2-b6",
+          "stacked": true,
+          "topDiff": null,
+          "heightDiff": null,
+          "missingShown": false,
+          "missingText": null,
+          "mtLabelInRow": true
+        },
+        {
+          "ref": "p2-b9",
+          "page": "2",
+          "origRef": "p2-b9",
+          "transRef": null,
+          "stacked": true,
+          "topDiff": null,
+          "heightDiff": null,
+          "missingShown": true,
+          "missingText": "中文翻譯（機器翻譯）\n此段落沒有機器翻譯，請以原文為準",
+          "mtLabelInRow": true
+        },
+        {
+          "ref": "p2-b12",
+          "page": "2",
+          "origRef": "p2-b12",
+          "transRef": "p2-b12",
+          "stacked": true,
+          "topDiff": null,
+          "heightDiff": null,
+          "missingShown": false,
+          "missingText": null,
+          "mtLabelInRow": true
+        },
+        {
+          "ref": "p3-b3",
+          "page": "3",
+          "origRef": "p3-b3",
+          "transRef": "p3-b3",
+          "stacked": true,
+          "topDiff": null,
+          "heightDiff": null,
+          "missingShown": false,
+          "missingText": null,
+          "mtLabelInRow": true
+        },
+        {
+          "ref": "p3-b5",
+          "page": "3",
+          "origRef": "p3-b5",
+          "transRef": "p3-b5",
+          "stacked": true,
+          "topDiff": null,
+          "heightDiff": null,
+          "missingShown": false,
+          "missingText": null,
+          "mtLabelInRow": true
+        },
+        {
+          "ref": "p3-b7",
+          "page": "3",
+          "origRef": "p3-b7",
+          "transRef": "p3-b7",
+          "stacked": true,
+          "topDiff": null,
+          "heightDiff": null,
+          "missingShown": false,
+          "missingText": null,
+          "mtLabelInRow": true
+        },
+        {
+          "ref": "p4-b3",
+          "page": "4",
+          "origRef": "p4-b3",
+          "transRef": "p4-b3",
+          "stacked": true,
+          "topDiff": null,
+          "heightDiff": null,
+          "missingShown": false,
+          "missingText": null,
+          "mtLabelInRow": true
+        },
+        {
+          "ref": "p4-b5",
+          "page": "4",
+          "origRef": "p4-b5",
+          "transRef": "p4-b5",
+          "stacked": true,
+          "topDiff": null,
+          "heightDiff": null,
+          "missingShown": false,
+          "missingText": null,
+          "mtLabelInRow": true
+        },
+        {
+          "ref": "p4-b6",
+          "page": "4",
+          "origRef": "p4-b6",
+          "transRef": null,
+          "stacked": true,
+          "topDiff": null,
+          "heightDiff": null,
+          "missingShown": true,
+          "missingText": "此段落沒有機器翻譯，請以原文為準",
+          "mtLabelInRow": false
+        },
+        {
+          "ref": "p4-b7",
+          "page": "4",
+          "origRef": "p4-b7",
+          "transRef": "p4-b7",
+          "stacked": true,
+          "topDiff": null,
+          "heightDiff": null,
+          "missingShown": false,
+          "missingText": null,
+          "mtLabelInRow": false
+        }
+      ],
+      "blocks": {
+        "total": 37,
+        "text": 25,
+        "originalAnchored": 25,
+        "withTranslation": 23,
+        "translationAnchored": 23,
+        "withoutTranslation": [
+          "p2-b9",
+          "p4-b6"
+        ],
+        "noOriginalAnchor": [],
+        "translationNotShown": [],
+        "originalAltered": [],
+        "specialWithRef": 6,
+        "special": 6
+      },
+      "equations": {
+        "blocks": 4,
+        "rendered": 2,
+        "katexErrorNodes": 0,
+        "katexErrorText": [],
+        "fallbackShown": 1,
+        "items": [
+          {
+            "w": 318,
+            "sw": 318,
+            "scrolls": false,
+            "scrollContainer": {
+              "sw": 318,
+              "cw": 318,
+              "tab": 0,
+              "role": "region"
+            },
+            "outer": 320,
+            "text": "𝜅 = 𝐿 2 𝐴 𝜒 𝑇 ∂ 𝜔 / ∂ 𝑃 ( 1 ) κ= 2A L ​ ∂ω/"
+          },
+          {
+            "w": 318,
+            "sw": 698,
+            "scrolls": true,
+            "scrollContainer": {
+              "sw": 698,
+              "cw": 318,
+              "tab": 0,
+              "role": "region"
+            },
+            "outer": 320,
+            "text": "𝜅 ( 𝑇 , 𝜀 ) = 𝜅 0 ( 1 + 𝛼 𝜀 + 𝛽 𝜀 2 ) exp "
+          },
+          {
+            "w": 318,
+            "sw": 318,
+            "scrolls": false,
+            "scrollContainer": {
+              "sw": 318,
+              "cw": 318,
+              "tab": 0,
+              "role": "region"
+            },
+            "outer": 320,
+            "text": "⚠ 這條公式無法完整排版（含不支援的 LaTeX 指令），以下為原始 LaTeX；數值與符號請以原文"
+          },
+          {
+            "w": 318,
+            "sw": 318,
+            "scrolls": false,
+            "scrollContainer": null,
+            "outer": 320,
+            "text": "公式辨識失敗：請以上方原文切塊圖片為準 原因代碼：latex_low_confidence"
+          }
+        ]
+      },
+      "media": [
+        {
+          "kind": "figure",
+          "imgLoaded": true,
+          "natural": 1400,
+          "shown": 277,
+          "scale": 0.2,
+          "blockWidth": 318,
+          "outer": 320,
+          "blockOverflow": false,
+          "scrollRegion": null,
+          "caption": "Figure 1. In-plane thermal conductivity ",
+          "captionZh": true,
+          "mtLabel": true
+        },
+        {
+          "kind": "table",
+          "imgLoaded": true,
+          "natural": 2000,
+          "shown": 720,
+          "scale": 0.36,
+          "blockWidth": 318,
+          "outer": 320,
+          "blockOverflow": false,
+          "scrollRegion": {
+            "sw": 720,
+            "cw": 277,
+            "scrolls": true,
+            "tab": 0,
+            "role": "region",
+            "label": "表格圖片（較寬時可用方向鍵左右捲動）"
+          },
+          "caption": "w (µm) n κ(ε=0) κ(ε=0.8%) dκ/dε Λ_eff (µ",
+          "captionZh": false,
+          "mtLabel": false
+        }
+      ],
+      "links": [
+        {
+          "ref": "p2-b4",
+          "side": "original",
+          "own": 0,
+          "colOverflow": 0,
+          "rightOver": -20
+        },
+        {
+          "ref": "p2-b4",
+          "side": "translation",
+          "own": 0,
+          "colOverflow": 0,
+          "rightOver": -20
+        },
+        {
+          "ref": "p4-b5",
+          "side": "original",
+          "own": 0,
+          "colOverflow": 0,
+          "rightOver": -20
+        },
+        {
+          "ref": "p4-b5",
+          "side": "translation",
+          "own": 0,
+          "colOverflow": 0,
+          "rightOver": -20
+        },
+        {
+          "ref": "p4-b6",
+          "side": "original",
+          "own": 0,
+          "colOverflow": 0,
+          "rightOver": -20
+        },
+        {
+          "ref": "p4-b7",
+          "side": "original",
+          "own": 0,
+          "colOverflow": 0,
+          "rightOver": -20
+        },
+        {
+          "ref": "p4-b7",
+          "side": "translation",
+          "own": 0,
+          "colOverflow": 0,
+          "rightOver": -20
+        }
+      ],
+      "pages": {
+        "markers": [
+          "第 1 頁",
+          "第 2 頁",
+          "第 3 頁",
+          "第 4 頁"
+        ],
+        "nav": true,
+        "navItems": [
+          "1",
+          "2",
+          "3",
+          "4"
+        ],
+        "outOfOrder": []
+      },
+      "mt": {
+        "sections": 12,
+        "sectionsWithTranslation": 11,
+        "sectionsLabelled": 11,
+        "translationHosts": 23,
+        "unlabelled": []
+      },
+      "layout": {
+        "matrixPane": [
+          340,
+          494
+        ],
+        "auxPane": [
+          340,
+          303
+        ],
+        "splitStacked": true,
+        "readerWidth": 340
+      },
+      "l10n": {
+        "simplified": [],
+        "mainland": [],
+        "uiEnglish": [],
+        "headerLabels": [
+          "原文",
+          "中文翻譯（機器翻譯）"
+        ]
+      },
+      "keyboard": {
+        "scrollRegions": 2,
+        "focusable": 2,
+        "unfocusable": []
+      },
+      "selection": {
+        "visible": true,
+        "left": 8,
+        "right": 382,
+        "top": 215,
+        "bottom": 273,
+        "width": 374,
+        "height": 59,
+        "vw": 390,
+        "vh": 844,
+        "inViewport": true,
+        "overlapsSelection": false,
+        "buttons": 3,
+        "buttonsVisible": 3,
+        "note": "譯文：來源事實會改用整段原文"
+      },
+      "keyboardFocus": {
+        "regions": 4,
+        "focused": true,
+        "outline": "solid 2px",
+        "boxShadow": "none",
+        "labelled": true,
+        "roles": [
+          "region"
+        ]
+      }
+    }
+  },
+  "checks": [
+    {
+      "name": "desktop 整頁沒有水平溢出",
+      "ok": true,
+      "detail": {
+        "scrollWidth": 1440,
+        "clientWidth": 1440,
+        "overflow": false
+      }
+    },
+    {
+      "name": "desktop 閱讀窗格沒有水平溢出",
+      "ok": true,
+      "detail": {
+        "clientWidth": 969,
+        "scrollWidth": 969,
+        "overflow": false
+      }
+    },
+    {
+      "name": "desktop 段落內容沒有撐出欄位（長網址／DOI／檔名）",
+      "ok": true,
+      "detail": []
+    },
+    {
+      "name": "desktop 每列原文與譯文同一 data-ref",
+      "ok": true,
+      "detail": []
+    },
+    {
+      "name": "desktop 並排時原文與譯文同列頂端對齊、等高",
+      "ok": true,
+      "detail": []
+    },
+    {
+      "name": "desktop 每個正文區塊都有原文錨點",
+      "ok": true,
+      "detail": []
+    },
+    {
+      "name": "desktop 每段有譯文的區塊都顯示譯文且帶同一錨點",
+      "ok": true,
+      "detail": {
+        "anchored": 23,
+        "expected": 23,
+        "notShown": []
+      }
+    },
+    {
+      "name": "desktop 原文逐字保留（不正規化符號與數字）",
+      "ok": true,
+      "detail": []
+    },
+    {
+      "name": "desktop 缺譯段落明確標示",
+      "ok": true,
+      "detail": [
+        {
+          "ref": "p2-b9",
+          "page": "2",
+          "origRef": "p2-b9",
+          "transRef": null,
+          "stacked": false,
+          "topDiff": 0,
+          "heightDiff": 0,
+          "missingShown": true,
+          "missingText": "中文翻譯（機器翻譯）\n此段落沒有機器翻譯，請以原文為準",
+          "mtLabelInRow": true
+        },
+        {
+          "ref": "p4-b6",
+          "page": "4",
+          "origRef": "p4-b6",
+          "transRef": null,
+          "stacked": false,
+          "topDiff": 0,
+          "heightDiff": 0,
+          "missingShown": true,
+          "missingText": "此段落沒有機器翻譯，請以原文為準",
+          "mtLabelInRow": false
+        }
+      ]
+    },
+    {
+      "name": "desktop 公式全部排版或改顯示原始 LaTeX，沒有 KaTeX 錯誤節點",
+      "ok": true,
+      "detail": {
+        "blocks": 4,
+        "rendered": 2,
+        "katexErrorNodes": 0,
+        "katexErrorText": [],
+        "fallbackShown": 1,
+        "items": [
+          {
+            "w": 898,
+            "sw": 898,
+            "scrolls": false,
+            "scrollContainer": {
+              "sw": 898,
+              "cw": 898,
+              "tab": 0,
+              "role": "region"
+            },
+            "outer": 900,
+            "text": "𝜅 = 𝐿 2 𝐴 𝜒 𝑇 ∂ 𝜔 / ∂ 𝑃 ( 1 ) κ= 2A L ​ ∂ω/"
+          },
+          {
+            "w": 898,
+            "sw": 898,
+            "scrolls": false,
+            "scrollContainer": {
+              "sw": 898,
+              "cw": 898,
+              "tab": 0,
+              "role": "region"
+            },
+            "outer": 900,
+            "text": "𝜅 ( 𝑇 , 𝜀 ) = 𝜅 0 ( 1 + 𝛼 𝜀 + 𝛽 𝜀 2 ) exp "
+          },
+          {
+            "w": 898,
+            "sw": 898,
+            "scrolls": false,
+            "scrollContainer": {
+              "sw": 898,
+              "cw": 898,
+              "tab": 0,
+              "role": "region"
+            },
+            "outer": 900,
+            "text": "⚠ 這條公式無法完整排版（含不支援的 LaTeX 指令），以下為原始 LaTeX；數值與符號請以原文"
+          },
+          {
+            "w": 898,
+            "sw": 898,
+            "scrolls": false,
+            "scrollContainer": null,
+            "outer": 900,
+            "text": "公式辨識失敗：請以上方原文切塊圖片為準 原因代碼：latex_low_confidence"
+          }
+        ]
+      }
+    },
+    {
+      "name": "desktop 公式寬時在自己的區塊內捲動",
+      "ok": true,
+      "detail": [
+        {
+          "w": 898,
+          "sw": 898,
+          "scrolls": false,
+          "scrollContainer": {
+            "sw": 898,
+            "cw": 898,
+            "tab": 0,
+            "role": "region"
+          },
+          "outer": 900,
+          "text": "𝜅 = 𝐿 2 𝐴 𝜒 𝑇 ∂ 𝜔 / ∂ 𝑃 ( 1 ) κ= 2A L ​ ∂ω/"
+        },
+        {
+          "w": 898,
+          "sw": 898,
+          "scrolls": false,
+          "scrollContainer": {
+            "sw": 898,
+            "cw": 898,
+            "tab": 0,
+            "role": "region"
+          },
+          "outer": 900,
+          "text": "𝜅 ( 𝑇 , 𝜀 ) = 𝜅 0 ( 1 + 𝛼 𝜀 + 𝛽 𝜀 2 ) exp "
+        },
+        {
+          "w": 898,
+          "sw": 898,
+          "scrolls": false,
+          "scrollContainer": {
+            "sw": 898,
+            "cw": 898,
+            "tab": 0,
+            "role": "region"
+          },
+          "outer": 900,
+          "text": "⚠ 這條公式無法完整排版（含不支援的 LaTeX 指令），以下為原始 LaTeX；數值與符號請以原文"
+        },
+        {
+          "w": 898,
+          "sw": 898,
+          "scrolls": false,
+          "scrollContainer": null,
+          "outer": 900,
+          "text": "公式辨識失敗：請以上方原文切塊圖片為準 原因代碼：latex_low_confidence"
+        }
+      ]
+    },
+    {
+      "name": "desktop 圖表圖片都載入",
+      "ok": true,
+      "detail": [
+        {
+          "kind": "figure",
+          "imgLoaded": true,
+          "natural": 1400,
+          "shown": 906,
+          "scale": 0.65,
+          "blockWidth": 947,
+          "outer": 949,
+          "blockOverflow": false,
+          "scrollRegion": null,
+          "caption": "Figure 1. In-plane thermal conductivity ",
+          "captionZh": true,
+          "mtLabel": true
+        },
+        {
+          "kind": "table",
+          "imgLoaded": true,
+          "natural": 2000,
+          "shown": 906,
+          "scale": 0.45,
+          "blockWidth": 947,
+          "outer": 949,
+          "blockOverflow": false,
+          "scrollRegion": {
+            "sw": 906,
+            "cw": 906,
+            "scrolls": false,
+            "tab": 0,
+            "role": "region",
+            "label": "表格圖片（較寬時可用方向鍵左右捲動）"
+          },
+          "caption": "w (µm) n κ(ε=0) κ(ε=0.8%) dκ/dε Λ_eff (µ",
+          "captionZh": false,
+          "mtLabel": false
+        }
+      ]
+    },
+    {
+      "name": "desktop 表格在自己的容器內捲動且可讀（縮放 ≥ 0.3）",
+      "ok": true,
+      "detail": [
+        {
+          "kind": "table",
+          "imgLoaded": true,
+          "natural": 2000,
+          "shown": 906,
+          "scale": 0.45,
+          "blockWidth": 947,
+          "outer": 949,
+          "blockOverflow": false,
+          "scrollRegion": {
+            "sw": 906,
+            "cw": 906,
+            "scrolls": false,
+            "tab": 0,
+            "role": "region",
+            "label": "表格圖片（較寬時可用方向鍵左右捲動）"
+          },
+          "caption": "w (µm) n κ(ε=0) κ(ε=0.8%) dκ/dε Λ_eff (µ",
+          "captionZh": false,
+          "mtLabel": false
+        }
+      ]
+    },
+    {
+      "name": "desktop 圖說附機器翻譯並標示",
+      "ok": true,
+      "detail": [
+        {
+          "kind": "figure",
+          "imgLoaded": true,
+          "natural": 1400,
+          "shown": 906,
+          "scale": 0.65,
+          "blockWidth": 947,
+          "outer": 949,
+          "blockOverflow": false,
+          "scrollRegion": null,
+          "caption": "Figure 1. In-plane thermal conductivity ",
+          "captionZh": true,
+          "mtLabel": true
+        },
+        {
+          "kind": "table",
+          "imgLoaded": true,
+          "natural": 2000,
+          "shown": 906,
+          "scale": 0.45,
+          "blockWidth": 947,
+          "outer": 949,
+          "blockOverflow": false,
+          "scrollRegion": {
+            "sw": 906,
+            "cw": 906,
+            "scrolls": false,
+            "tab": 0,
+            "role": "region",
+            "label": "表格圖片（較寬時可用方向鍵左右捲動）"
+          },
+          "caption": "w (µm) n κ(ε=0) κ(ε=0.8%) dκ/dε Λ_eff (µ",
+          "captionZh": false,
+          "mtLabel": false
+        }
+      ]
+    },
+    {
+      "name": "desktop 引文／網址段落不撐出欄位",
+      "ok": true,
+      "detail": [
+        {
+          "ref": "p2-b4",
+          "side": "original",
+          "own": 0,
+          "colOverflow": 0,
+          "rightOver": -22
+        },
+        {
+          "ref": "p2-b4",
+          "side": "translation",
+          "own": 0,
+          "colOverflow": 0,
+          "rightOver": -20
+        },
+        {
+          "ref": "p4-b5",
+          "side": "original",
+          "own": 0,
+          "colOverflow": 0,
+          "rightOver": -22
+        },
+        {
+          "ref": "p4-b5",
+          "side": "translation",
+          "own": 0,
+          "colOverflow": 0,
+          "rightOver": -20
+        },
+        {
+          "ref": "p4-b6",
+          "side": "original",
+          "own": 0,
+          "colOverflow": 0,
+          "rightOver": -22
+        },
+        {
+          "ref": "p4-b7",
+          "side": "original",
+          "own": 0,
+          "colOverflow": 0,
+          "rightOver": -22
+        },
+        {
+          "ref": "p4-b7",
+          "side": "translation",
+          "own": 0,
+          "colOverflow": 0,
+          "rightOver": -20
+        }
+      ]
+    },
+    {
+      "name": "desktop 每段譯文都看得到「機器翻譯」標示（並排看欄頭，上下排列每段自帶）",
+      "ok": true,
+      "detail": {
+        "sections": 12,
+        "sectionsWithTranslation": 11,
+        "sectionsLabelled": 11,
+        "translationHosts": 23,
+        "unlabelled": []
+      }
+    },
+    {
+      "name": "desktop 閱讀窗格寬度可讀（≥ 300px）",
+      "ok": true,
+      "detail": {
+        "matrixPane": [
+          969,
+          852
+        ],
+        "auxPane": [
+          413,
+          852
+        ],
+        "splitStacked": false,
+        "readerWidth": 969
+      }
+    },
+    {
+      "name": "desktop 頁碼標記 4 頁、順序正確、可跳頁",
+      "ok": true,
+      "detail": {
+        "markers": [
+          "第 1 頁",
+          "第 2 頁",
+          "第 3 頁",
+          "第 4 頁"
+        ],
+        "nav": true,
+        "navItems": [
+          "1",
+          "2",
+          "3",
+          "4"
+        ],
+        "outOfOrder": []
+      }
+    },
+    {
+      "name": "desktop 介面沒有簡體字或大陸用語",
+      "ok": true,
+      "detail": {
+        "simplified": [],
+        "mainland": [],
+        "uiEnglish": [],
+        "headerLabels": [
+          "原文",
+          "中文翻譯（機器翻譯）"
+        ]
+      }
+    },
+    {
+      "name": "desktop 閱讀器沒有殘留英文介面字",
+      "ok": true,
+      "detail": []
+    },
+    {
+      "name": "desktop 選字動作列在視窗內、三個按鈕可見、不蓋住選取",
+      "ok": true,
+      "detail": {
+        "visible": true,
+        "left": 555,
+        "right": 939,
+        "top": 415,
+        "bottom": 452,
+        "width": 384,
+        "height": 37,
+        "vw": 1440,
+        "vh": 900,
+        "inViewport": true,
+        "overlapsSelection": false,
+        "buttons": 3,
+        "buttonsVisible": 3,
+        "note": "譯文：來源事實會改用整段原文"
+      }
+    },
+    {
+      "name": "desktop 可捲動的公式／表格區可用鍵盤聚焦",
+      "ok": true,
+      "detail": {
+        "scrollRegions": 0,
+        "focusable": 0,
+        "unfocusable": [],
+        "regions": 4,
+        "focused": true,
+        "outline": "solid 2px",
+        "boxShadow": "none",
+        "labelled": true,
+        "roles": [
+          "region"
+        ]
+      }
+    },
+    {
+      "name": "laptop 整頁沒有水平溢出",
+      "ok": true,
+      "detail": {
+        "scrollWidth": 1280,
+        "clientWidth": 1280,
+        "overflow": false
+      }
+    },
+    {
+      "name": "laptop 閱讀窗格沒有水平溢出",
+      "ok": true,
+      "detail": {
+        "clientWidth": 857,
+        "scrollWidth": 857,
+        "overflow": false
+      }
+    },
+    {
+      "name": "laptop 段落內容沒有撐出欄位（長網址／DOI／檔名）",
+      "ok": true,
+      "detail": []
+    },
+    {
+      "name": "laptop 每列原文與譯文同一 data-ref",
+      "ok": true,
+      "detail": []
+    },
+    {
+      "name": "laptop 並排時原文與譯文同列頂端對齊、等高",
+      "ok": true,
+      "detail": []
+    },
+    {
+      "name": "laptop 每個正文區塊都有原文錨點",
+      "ok": true,
+      "detail": []
+    },
+    {
+      "name": "laptop 每段有譯文的區塊都顯示譯文且帶同一錨點",
+      "ok": true,
+      "detail": {
+        "anchored": 23,
+        "expected": 23,
+        "notShown": []
+      }
+    },
+    {
+      "name": "laptop 原文逐字保留（不正規化符號與數字）",
+      "ok": true,
+      "detail": []
+    },
+    {
+      "name": "laptop 缺譯段落明確標示",
+      "ok": true,
+      "detail": [
+        {
+          "ref": "p2-b9",
+          "page": "2",
+          "origRef": "p2-b9",
+          "transRef": null,
+          "stacked": false,
+          "topDiff": 0,
+          "heightDiff": 0,
+          "missingShown": true,
+          "missingText": "中文翻譯（機器翻譯）\n此段落沒有機器翻譯，請以原文為準",
+          "mtLabelInRow": true
+        },
+        {
+          "ref": "p4-b6",
+          "page": "4",
+          "origRef": "p4-b6",
+          "transRef": null,
+          "stacked": false,
+          "topDiff": 0,
+          "heightDiff": 0,
+          "missingShown": true,
+          "missingText": "此段落沒有機器翻譯，請以原文為準",
+          "mtLabelInRow": false
+        }
+      ]
+    },
+    {
+      "name": "laptop 公式全部排版或改顯示原始 LaTeX，沒有 KaTeX 錯誤節點",
+      "ok": true,
+      "detail": {
+        "blocks": 4,
+        "rendered": 2,
+        "katexErrorNodes": 0,
+        "katexErrorText": [],
+        "fallbackShown": 1,
+        "items": [
+          {
+            "w": 835,
+            "sw": 835,
+            "scrolls": false,
+            "scrollContainer": {
+              "sw": 835,
+              "cw": 835,
+              "tab": 0,
+              "role": "region"
+            },
+            "outer": 837,
+            "text": "𝜅 = 𝐿 2 𝐴 𝜒 𝑇 ∂ 𝜔 / ∂ 𝑃 ( 1 ) κ= 2A L ​ ∂ω/"
+          },
+          {
+            "w": 835,
+            "sw": 835,
+            "scrolls": false,
+            "scrollContainer": {
+              "sw": 835,
+              "cw": 835,
+              "tab": 0,
+              "role": "region"
+            },
+            "outer": 837,
+            "text": "𝜅 ( 𝑇 , 𝜀 ) = 𝜅 0 ( 1 + 𝛼 𝜀 + 𝛽 𝜀 2 ) exp "
+          },
+          {
+            "w": 835,
+            "sw": 835,
+            "scrolls": false,
+            "scrollContainer": {
+              "sw": 835,
+              "cw": 835,
+              "tab": 0,
+              "role": "region"
+            },
+            "outer": 837,
+            "text": "⚠ 這條公式無法完整排版（含不支援的 LaTeX 指令），以下為原始 LaTeX；數值與符號請以原文"
+          },
+          {
+            "w": 835,
+            "sw": 835,
+            "scrolls": false,
+            "scrollContainer": null,
+            "outer": 837,
+            "text": "公式辨識失敗：請以上方原文切塊圖片為準 原因代碼：latex_low_confidence"
+          }
+        ]
+      }
+    },
+    {
+      "name": "laptop 公式寬時在自己的區塊內捲動",
+      "ok": true,
+      "detail": [
+        {
+          "w": 835,
+          "sw": 835,
+          "scrolls": false,
+          "scrollContainer": {
+            "sw": 835,
+            "cw": 835,
+            "tab": 0,
+            "role": "region"
+          },
+          "outer": 837,
+          "text": "𝜅 = 𝐿 2 𝐴 𝜒 𝑇 ∂ 𝜔 / ∂ 𝑃 ( 1 ) κ= 2A L ​ ∂ω/"
+        },
+        {
+          "w": 835,
+          "sw": 835,
+          "scrolls": false,
+          "scrollContainer": {
+            "sw": 835,
+            "cw": 835,
+            "tab": 0,
+            "role": "region"
+          },
+          "outer": 837,
+          "text": "𝜅 ( 𝑇 , 𝜀 ) = 𝜅 0 ( 1 + 𝛼 𝜀 + 𝛽 𝜀 2 ) exp "
+        },
+        {
+          "w": 835,
+          "sw": 835,
+          "scrolls": false,
+          "scrollContainer": {
+            "sw": 835,
+            "cw": 835,
+            "tab": 0,
+            "role": "region"
+          },
+          "outer": 837,
+          "text": "⚠ 這條公式無法完整排版（含不支援的 LaTeX 指令），以下為原始 LaTeX；數值與符號請以原文"
+        },
+        {
+          "w": 835,
+          "sw": 835,
+          "scrolls": false,
+          "scrollContainer": null,
+          "outer": 837,
+          "text": "公式辨識失敗：請以上方原文切塊圖片為準 原因代碼：latex_low_confidence"
+        }
+      ]
+    },
+    {
+      "name": "laptop 圖表圖片都載入",
+      "ok": true,
+      "detail": [
+        {
+          "kind": "figure",
+          "imgLoaded": true,
+          "natural": 1400,
+          "shown": 794,
+          "scale": 0.57,
+          "blockWidth": 835,
+          "outer": 837,
+          "blockOverflow": false,
+          "scrollRegion": null,
+          "caption": "Figure 1. In-plane thermal conductivity ",
+          "captionZh": true,
+          "mtLabel": true
+        },
+        {
+          "kind": "table",
+          "imgLoaded": true,
+          "natural": 2000,
+          "shown": 794,
+          "scale": 0.4,
+          "blockWidth": 835,
+          "outer": 837,
+          "blockOverflow": false,
+          "scrollRegion": {
+            "sw": 794,
+            "cw": 794,
+            "scrolls": false,
+            "tab": 0,
+            "role": "region",
+            "label": "表格圖片（較寬時可用方向鍵左右捲動）"
+          },
+          "caption": "w (µm) n κ(ε=0) κ(ε=0.8%) dκ/dε Λ_eff (µ",
+          "captionZh": false,
+          "mtLabel": false
+        }
+      ]
+    },
+    {
+      "name": "laptop 表格在自己的容器內捲動且可讀（縮放 ≥ 0.3）",
+      "ok": true,
+      "detail": [
+        {
+          "kind": "table",
+          "imgLoaded": true,
+          "natural": 2000,
+          "shown": 794,
+          "scale": 0.4,
+          "blockWidth": 835,
+          "outer": 837,
+          "blockOverflow": false,
+          "scrollRegion": {
+            "sw": 794,
+            "cw": 794,
+            "scrolls": false,
+            "tab": 0,
+            "role": "region",
+            "label": "表格圖片（較寬時可用方向鍵左右捲動）"
+          },
+          "caption": "w (µm) n κ(ε=0) κ(ε=0.8%) dκ/dε Λ_eff (µ",
+          "captionZh": false,
+          "mtLabel": false
+        }
+      ]
+    },
+    {
+      "name": "laptop 圖說附機器翻譯並標示",
+      "ok": true,
+      "detail": [
+        {
+          "kind": "figure",
+          "imgLoaded": true,
+          "natural": 1400,
+          "shown": 794,
+          "scale": 0.57,
+          "blockWidth": 835,
+          "outer": 837,
+          "blockOverflow": false,
+          "scrollRegion": null,
+          "caption": "Figure 1. In-plane thermal conductivity ",
+          "captionZh": true,
+          "mtLabel": true
+        },
+        {
+          "kind": "table",
+          "imgLoaded": true,
+          "natural": 2000,
+          "shown": 794,
+          "scale": 0.4,
+          "blockWidth": 835,
+          "outer": 837,
+          "blockOverflow": false,
+          "scrollRegion": {
+            "sw": 794,
+            "cw": 794,
+            "scrolls": false,
+            "tab": 0,
+            "role": "region",
+            "label": "表格圖片（較寬時可用方向鍵左右捲動）"
+          },
+          "caption": "w (µm) n κ(ε=0) κ(ε=0.8%) dκ/dε Λ_eff (µ",
+          "captionZh": false,
+          "mtLabel": false
+        }
+      ]
+    },
+    {
+      "name": "laptop 引文／網址段落不撐出欄位",
+      "ok": true,
+      "detail": [
+        {
+          "ref": "p2-b4",
+          "side": "original",
+          "own": 0,
+          "colOverflow": 0,
+          "rightOver": -22
+        },
+        {
+          "ref": "p2-b4",
+          "side": "translation",
+          "own": 0,
+          "colOverflow": 0,
+          "rightOver": -20
+        },
+        {
+          "ref": "p4-b5",
+          "side": "original",
+          "own": 0,
+          "colOverflow": 0,
+          "rightOver": -22
+        },
+        {
+          "ref": "p4-b5",
+          "side": "translation",
+          "own": 0,
+          "colOverflow": 0,
+          "rightOver": -20
+        },
+        {
+          "ref": "p4-b6",
+          "side": "original",
+          "own": 0,
+          "colOverflow": 0,
+          "rightOver": -22
+        },
+        {
+          "ref": "p4-b7",
+          "side": "original",
+          "own": 0,
+          "colOverflow": 0,
+          "rightOver": -22
+        },
+        {
+          "ref": "p4-b7",
+          "side": "translation",
+          "own": 0,
+          "colOverflow": 0,
+          "rightOver": -20
+        }
+      ]
+    },
+    {
+      "name": "laptop 每段譯文都看得到「機器翻譯」標示（並排看欄頭，上下排列每段自帶）",
+      "ok": true,
+      "detail": {
+        "sections": 12,
+        "sectionsWithTranslation": 11,
+        "sectionsLabelled": 11,
+        "translationHosts": 23,
+        "unlabelled": []
+      }
+    },
+    {
+      "name": "laptop 閱讀窗格寬度可讀（≥ 300px）",
+      "ok": true,
+      "detail": {
+        "matrixPane": [
+          857,
+          752
+        ],
+        "auxPane": [
+          365,
+          752
+        ],
+        "splitStacked": false,
+        "readerWidth": 857
+      }
+    },
+    {
+      "name": "laptop 頁碼標記 4 頁、順序正確、可跳頁",
+      "ok": true,
+      "detail": {
+        "markers": [
+          "第 1 頁",
+          "第 2 頁",
+          "第 3 頁",
+          "第 4 頁"
+        ],
+        "nav": true,
+        "navItems": [
+          "1",
+          "2",
+          "3",
+          "4"
+        ],
+        "outOfOrder": []
+      }
+    },
+    {
+      "name": "laptop 介面沒有簡體字或大陸用語",
+      "ok": true,
+      "detail": {
+        "simplified": [],
+        "mainland": [],
+        "uiEnglish": [],
+        "headerLabels": [
+          "原文",
+          "中文翻譯（機器翻譯）"
+        ]
+      }
+    },
+    {
+      "name": "laptop 閱讀器沒有殘留英文介面字",
+      "ok": true,
+      "detail": []
+    },
+    {
+      "name": "laptop 選字動作列在視窗內、三個按鈕可見、不蓋住選取",
+      "ok": true,
+      "detail": {
+        "visible": true,
+        "left": 499,
+        "right": 883,
+        "top": 365,
+        "bottom": 402,
+        "width": 384,
+        "height": 37,
+        "vw": 1280,
+        "vh": 800,
+        "inViewport": true,
+        "overlapsSelection": false,
+        "buttons": 3,
+        "buttonsVisible": 3,
+        "note": "譯文：來源事實會改用整段原文"
+      }
+    },
+    {
+      "name": "laptop 可捲動的公式／表格區可用鍵盤聚焦",
+      "ok": true,
+      "detail": {
+        "scrollRegions": 0,
+        "focusable": 0,
+        "unfocusable": [],
+        "regions": 4,
+        "focused": true,
+        "outline": "solid 2px",
+        "boxShadow": "none",
+        "labelled": true,
+        "roles": [
+          "region"
+        ]
+      }
+    },
+    {
+      "name": "tablet 整頁沒有水平溢出",
+      "ok": true,
+      "detail": {
+        "scrollWidth": 820,
+        "clientWidth": 820,
+        "overflow": false
+      }
+    },
+    {
+      "name": "tablet 閱讀窗格沒有水平溢出",
+      "ok": true,
+      "detail": {
+        "clientWidth": 535,
+        "scrollWidth": 535,
+        "overflow": false
+      }
+    },
+    {
+      "name": "tablet 段落內容沒有撐出欄位（長網址／DOI／檔名）",
+      "ok": true,
+      "detail": []
+    },
+    {
+      "name": "tablet 每列原文與譯文同一 data-ref",
+      "ok": true,
+      "detail": []
+    },
+    {
+      "name": "tablet 並排時原文與譯文同列頂端對齊、等高",
+      "ok": true,
+      "detail": []
+    },
+    {
+      "name": "tablet 每個正文區塊都有原文錨點",
+      "ok": true,
+      "detail": []
+    },
+    {
+      "name": "tablet 每段有譯文的區塊都顯示譯文且帶同一錨點",
+      "ok": true,
+      "detail": {
+        "anchored": 23,
+        "expected": 23,
+        "notShown": []
+      }
+    },
+    {
+      "name": "tablet 原文逐字保留（不正規化符號與數字）",
+      "ok": true,
+      "detail": []
+    },
+    {
+      "name": "tablet 缺譯段落明確標示",
+      "ok": true,
+      "detail": [
+        {
+          "ref": "p2-b9",
+          "page": "2",
+          "origRef": "p2-b9",
+          "transRef": null,
+          "stacked": true,
+          "topDiff": null,
+          "heightDiff": null,
+          "missingShown": true,
+          "missingText": "中文翻譯（機器翻譯）\n此段落沒有機器翻譯，請以原文為準",
+          "mtLabelInRow": true
+        },
+        {
+          "ref": "p4-b6",
+          "page": "4",
+          "origRef": "p4-b6",
+          "transRef": null,
+          "stacked": true,
+          "topDiff": null,
+          "heightDiff": null,
+          "missingShown": true,
+          "missingText": "此段落沒有機器翻譯，請以原文為準",
+          "mtLabelInRow": false
+        }
+      ]
+    },
+    {
+      "name": "tablet 公式全部排版或改顯示原始 LaTeX，沒有 KaTeX 錯誤節點",
+      "ok": true,
+      "detail": {
+        "blocks": 4,
+        "rendered": 2,
+        "katexErrorNodes": 0,
+        "katexErrorText": [],
+        "fallbackShown": 1,
+        "items": [
+          {
+            "w": 513,
+            "sw": 513,
+            "scrolls": false,
+            "scrollContainer": {
+              "sw": 513,
+              "cw": 513,
+              "tab": 0,
+              "role": "region"
+            },
+            "outer": 515,
+            "text": "𝜅 = 𝐿 2 𝐴 𝜒 𝑇 ∂ 𝜔 / ∂ 𝑃 ( 1 ) κ= 2A L ​ ∂ω/"
+          },
+          {
+            "w": 513,
+            "sw": 698,
+            "scrolls": true,
+            "scrollContainer": {
+              "sw": 698,
+              "cw": 513,
+              "tab": 0,
+              "role": "region"
+            },
+            "outer": 515,
+            "text": "𝜅 ( 𝑇 , 𝜀 ) = 𝜅 0 ( 1 + 𝛼 𝜀 + 𝛽 𝜀 2 ) exp "
+          },
+          {
+            "w": 513,
+            "sw": 513,
+            "scrolls": false,
+            "scrollContainer": {
+              "sw": 513,
+              "cw": 513,
+              "tab": 0,
+              "role": "region"
+            },
+            "outer": 515,
+            "text": "⚠ 這條公式無法完整排版（含不支援的 LaTeX 指令），以下為原始 LaTeX；數值與符號請以原文"
+          },
+          {
+            "w": 513,
+            "sw": 513,
+            "scrolls": false,
+            "scrollContainer": null,
+            "outer": 515,
+            "text": "公式辨識失敗：請以上方原文切塊圖片為準 原因代碼：latex_low_confidence"
+          }
+        ]
+      }
+    },
+    {
+      "name": "tablet 公式寬時在自己的區塊內捲動",
+      "ok": true,
+      "detail": [
+        {
+          "w": 513,
+          "sw": 513,
+          "scrolls": false,
+          "scrollContainer": {
+            "sw": 513,
+            "cw": 513,
+            "tab": 0,
+            "role": "region"
+          },
+          "outer": 515,
+          "text": "𝜅 = 𝐿 2 𝐴 𝜒 𝑇 ∂ 𝜔 / ∂ 𝑃 ( 1 ) κ= 2A L ​ ∂ω/"
+        },
+        {
+          "w": 513,
+          "sw": 698,
+          "scrolls": true,
+          "scrollContainer": {
+            "sw": 698,
+            "cw": 513,
+            "tab": 0,
+            "role": "region"
+          },
+          "outer": 515,
+          "text": "𝜅 ( 𝑇 , 𝜀 ) = 𝜅 0 ( 1 + 𝛼 𝜀 + 𝛽 𝜀 2 ) exp "
+        },
+        {
+          "w": 513,
+          "sw": 513,
+          "scrolls": false,
+          "scrollContainer": {
+            "sw": 513,
+            "cw": 513,
+            "tab": 0,
+            "role": "region"
+          },
+          "outer": 515,
+          "text": "⚠ 這條公式無法完整排版（含不支援的 LaTeX 指令），以下為原始 LaTeX；數值與符號請以原文"
+        },
+        {
+          "w": 513,
+          "sw": 513,
+          "scrolls": false,
+          "scrollContainer": null,
+          "outer": 515,
+          "text": "公式辨識失敗：請以上方原文切塊圖片為準 原因代碼：latex_low_confidence"
+        }
+      ]
+    },
+    {
+      "name": "tablet 圖表圖片都載入",
+      "ok": true,
+      "detail": [
+        {
+          "kind": "figure",
+          "imgLoaded": true,
+          "natural": 1400,
+          "shown": 472,
+          "scale": 0.34,
+          "blockWidth": 513,
+          "outer": 515,
+          "blockOverflow": false,
+          "scrollRegion": null,
+          "caption": "Figure 1. In-plane thermal conductivity ",
+          "captionZh": true,
+          "mtLabel": true
+        },
+        {
+          "kind": "table",
+          "imgLoaded": true,
+          "natural": 2000,
+          "shown": 720,
+          "scale": 0.36,
+          "blockWidth": 513,
+          "outer": 515,
+          "blockOverflow": false,
+          "scrollRegion": {
+            "sw": 720,
+            "cw": 472,
+            "scrolls": true,
+            "tab": 0,
+            "role": "region",
+            "label": "表格圖片（較寬時可用方向鍵左右捲動）"
+          },
+          "caption": "w (µm) n κ(ε=0) κ(ε=0.8%) dκ/dε Λ_eff (µ",
+          "captionZh": false,
+          "mtLabel": false
+        }
+      ]
+    },
+    {
+      "name": "tablet 表格在自己的容器內捲動且可讀（縮放 ≥ 0.3）",
+      "ok": true,
+      "detail": [
+        {
+          "kind": "table",
+          "imgLoaded": true,
+          "natural": 2000,
+          "shown": 720,
+          "scale": 0.36,
+          "blockWidth": 513,
+          "outer": 515,
+          "blockOverflow": false,
+          "scrollRegion": {
+            "sw": 720,
+            "cw": 472,
+            "scrolls": true,
+            "tab": 0,
+            "role": "region",
+            "label": "表格圖片（較寬時可用方向鍵左右捲動）"
+          },
+          "caption": "w (µm) n κ(ε=0) κ(ε=0.8%) dκ/dε Λ_eff (µ",
+          "captionZh": false,
+          "mtLabel": false
+        }
+      ]
+    },
+    {
+      "name": "tablet 圖說附機器翻譯並標示",
+      "ok": true,
+      "detail": [
+        {
+          "kind": "figure",
+          "imgLoaded": true,
+          "natural": 1400,
+          "shown": 472,
+          "scale": 0.34,
+          "blockWidth": 513,
+          "outer": 515,
+          "blockOverflow": false,
+          "scrollRegion": null,
+          "caption": "Figure 1. In-plane thermal conductivity ",
+          "captionZh": true,
+          "mtLabel": true
+        },
+        {
+          "kind": "table",
+          "imgLoaded": true,
+          "natural": 2000,
+          "shown": 720,
+          "scale": 0.36,
+          "blockWidth": 513,
+          "outer": 515,
+          "blockOverflow": false,
+          "scrollRegion": {
+            "sw": 720,
+            "cw": 472,
+            "scrolls": true,
+            "tab": 0,
+            "role": "region",
+            "label": "表格圖片（較寬時可用方向鍵左右捲動）"
+          },
+          "caption": "w (µm) n κ(ε=0) κ(ε=0.8%) dκ/dε Λ_eff (µ",
+          "captionZh": false,
+          "mtLabel": false
+        }
+      ]
+    },
+    {
+      "name": "tablet 引文／網址段落不撐出欄位",
+      "ok": true,
+      "detail": [
+        {
+          "ref": "p2-b4",
+          "side": "original",
+          "own": 0,
+          "colOverflow": 0,
+          "rightOver": -20
+        },
+        {
+          "ref": "p2-b4",
+          "side": "translation",
+          "own": 0,
+          "colOverflow": 0,
+          "rightOver": -20
+        },
+        {
+          "ref": "p4-b5",
+          "side": "original",
+          "own": 0,
+          "colOverflow": 0,
+          "rightOver": -20
+        },
+        {
+          "ref": "p4-b5",
+          "side": "translation",
+          "own": 0,
+          "colOverflow": 0,
+          "rightOver": -20
+        },
+        {
+          "ref": "p4-b6",
+          "side": "original",
+          "own": 0,
+          "colOverflow": 0,
+          "rightOver": -20
+        },
+        {
+          "ref": "p4-b7",
+          "side": "original",
+          "own": 0,
+          "colOverflow": 0,
+          "rightOver": -20
+        },
+        {
+          "ref": "p4-b7",
+          "side": "translation",
+          "own": 0,
+          "colOverflow": 0,
+          "rightOver": -20
+        }
+      ]
+    },
+    {
+      "name": "tablet 每段譯文都看得到「機器翻譯」標示（並排看欄頭，上下排列每段自帶）",
+      "ok": true,
+      "detail": {
+        "sections": 12,
+        "sectionsWithTranslation": 11,
+        "sectionsLabelled": 11,
+        "translationHosts": 23,
+        "unlabelled": []
+      }
+    },
+    {
+      "name": "tablet 閱讀窗格寬度可讀（≥ 300px）",
+      "ok": true,
+      "detail": {
+        "matrixPane": [
+          535,
+          1132
+        ],
+        "auxPane": [
+          227,
+          1132
+        ],
+        "splitStacked": false,
+        "readerWidth": 535
+      }
+    },
+    {
+      "name": "tablet 頁碼標記 4 頁、順序正確、可跳頁",
+      "ok": true,
+      "detail": {
+        "markers": [
+          "第 1 頁",
+          "第 2 頁",
+          "第 3 頁",
+          "第 4 頁"
+        ],
+        "nav": true,
+        "navItems": [
+          "1",
+          "2",
+          "3",
+          "4"
+        ],
+        "outOfOrder": []
+      }
+    },
+    {
+      "name": "tablet 介面沒有簡體字或大陸用語",
+      "ok": true,
+      "detail": {
+        "simplified": [],
+        "mainland": [],
+        "uiEnglish": [],
+        "headerLabels": [
+          "原文",
+          "中文翻譯（機器翻譯）"
+        ]
+      }
+    },
+    {
+      "name": "tablet 閱讀器沒有殘留英文介面字",
+      "ok": true,
+      "detail": []
+    },
+    {
+      "name": "tablet 選字動作列在視窗內、三個按鈕可見、不蓋住選取",
+      "ok": true,
+      "detail": {
+        "visible": true,
+        "left": 115,
+        "right": 499,
+        "top": 569,
+        "bottom": 605,
+        "width": 384,
+        "height": 37,
+        "vw": 820,
+        "vh": 1180,
+        "inViewport": true,
+        "overlapsSelection": false,
+        "buttons": 3,
+        "buttonsVisible": 3,
+        "note": "譯文：來源事實會改用整段原文"
+      }
+    },
+    {
+      "name": "tablet 可捲動的公式／表格區可用鍵盤聚焦",
+      "ok": true,
+      "detail": {
+        "scrollRegions": 2,
+        "focusable": 2,
+        "unfocusable": [],
+        "regions": 4,
+        "focused": true,
+        "outline": "solid 2px",
+        "boxShadow": "none",
+        "labelled": true,
+        "roles": [
+          "region"
+        ]
+      }
+    },
+    {
+      "name": "phone 整頁沒有水平溢出",
+      "ok": true,
+      "detail": {
+        "scrollWidth": 390,
+        "clientWidth": 390,
+        "overflow": false
+      }
+    },
+    {
+      "name": "phone 閱讀窗格沒有水平溢出",
+      "ok": true,
+      "detail": {
+        "clientWidth": 340,
+        "scrollWidth": 340,
+        "overflow": false
+      }
+    },
+    {
+      "name": "phone 段落內容沒有撐出欄位（長網址／DOI／檔名）",
+      "ok": true,
+      "detail": []
+    },
+    {
+      "name": "phone 每列原文與譯文同一 data-ref",
+      "ok": true,
+      "detail": []
+    },
+    {
+      "name": "phone 並排時原文與譯文同列頂端對齊、等高",
+      "ok": true,
+      "detail": []
+    },
+    {
+      "name": "phone 每個正文區塊都有原文錨點",
+      "ok": true,
+      "detail": []
+    },
+    {
+      "name": "phone 每段有譯文的區塊都顯示譯文且帶同一錨點",
+      "ok": true,
+      "detail": {
+        "anchored": 23,
+        "expected": 23,
+        "notShown": []
+      }
+    },
+    {
+      "name": "phone 原文逐字保留（不正規化符號與數字）",
+      "ok": true,
+      "detail": []
+    },
+    {
+      "name": "phone 缺譯段落明確標示",
+      "ok": true,
+      "detail": [
+        {
+          "ref": "p2-b9",
+          "page": "2",
+          "origRef": "p2-b9",
+          "transRef": null,
+          "stacked": true,
+          "topDiff": null,
+          "heightDiff": null,
+          "missingShown": true,
+          "missingText": "中文翻譯（機器翻譯）\n此段落沒有機器翻譯，請以原文為準",
+          "mtLabelInRow": true
+        },
+        {
+          "ref": "p4-b6",
+          "page": "4",
+          "origRef": "p4-b6",
+          "transRef": null,
+          "stacked": true,
+          "topDiff": null,
+          "heightDiff": null,
+          "missingShown": true,
+          "missingText": "此段落沒有機器翻譯，請以原文為準",
+          "mtLabelInRow": false
+        }
+      ]
+    },
+    {
+      "name": "phone 公式全部排版或改顯示原始 LaTeX，沒有 KaTeX 錯誤節點",
+      "ok": true,
+      "detail": {
+        "blocks": 4,
+        "rendered": 2,
+        "katexErrorNodes": 0,
+        "katexErrorText": [],
+        "fallbackShown": 1,
+        "items": [
+          {
+            "w": 318,
+            "sw": 318,
+            "scrolls": false,
+            "scrollContainer": {
+              "sw": 318,
+              "cw": 318,
+              "tab": 0,
+              "role": "region"
+            },
+            "outer": 320,
+            "text": "𝜅 = 𝐿 2 𝐴 𝜒 𝑇 ∂ 𝜔 / ∂ 𝑃 ( 1 ) κ= 2A L ​ ∂ω/"
+          },
+          {
+            "w": 318,
+            "sw": 698,
+            "scrolls": true,
+            "scrollContainer": {
+              "sw": 698,
+              "cw": 318,
+              "tab": 0,
+              "role": "region"
+            },
+            "outer": 320,
+            "text": "𝜅 ( 𝑇 , 𝜀 ) = 𝜅 0 ( 1 + 𝛼 𝜀 + 𝛽 𝜀 2 ) exp "
+          },
+          {
+            "w": 318,
+            "sw": 318,
+            "scrolls": false,
+            "scrollContainer": {
+              "sw": 318,
+              "cw": 318,
+              "tab": 0,
+              "role": "region"
+            },
+            "outer": 320,
+            "text": "⚠ 這條公式無法完整排版（含不支援的 LaTeX 指令），以下為原始 LaTeX；數值與符號請以原文"
+          },
+          {
+            "w": 318,
+            "sw": 318,
+            "scrolls": false,
+            "scrollContainer": null,
+            "outer": 320,
+            "text": "公式辨識失敗：請以上方原文切塊圖片為準 原因代碼：latex_low_confidence"
+          }
+        ]
+      }
+    },
+    {
+      "name": "phone 公式寬時在自己的區塊內捲動",
+      "ok": true,
+      "detail": [
+        {
+          "w": 318,
+          "sw": 318,
+          "scrolls": false,
+          "scrollContainer": {
+            "sw": 318,
+            "cw": 318,
+            "tab": 0,
+            "role": "region"
+          },
+          "outer": 320,
+          "text": "𝜅 = 𝐿 2 𝐴 𝜒 𝑇 ∂ 𝜔 / ∂ 𝑃 ( 1 ) κ= 2A L ​ ∂ω/"
+        },
+        {
+          "w": 318,
+          "sw": 698,
+          "scrolls": true,
+          "scrollContainer": {
+            "sw": 698,
+            "cw": 318,
+            "tab": 0,
+            "role": "region"
+          },
+          "outer": 320,
+          "text": "𝜅 ( 𝑇 , 𝜀 ) = 𝜅 0 ( 1 + 𝛼 𝜀 + 𝛽 𝜀 2 ) exp "
+        },
+        {
+          "w": 318,
+          "sw": 318,
+          "scrolls": false,
+          "scrollContainer": {
+            "sw": 318,
+            "cw": 318,
+            "tab": 0,
+            "role": "region"
+          },
+          "outer": 320,
+          "text": "⚠ 這條公式無法完整排版（含不支援的 LaTeX 指令），以下為原始 LaTeX；數值與符號請以原文"
+        },
+        {
+          "w": 318,
+          "sw": 318,
+          "scrolls": false,
+          "scrollContainer": null,
+          "outer": 320,
+          "text": "公式辨識失敗：請以上方原文切塊圖片為準 原因代碼：latex_low_confidence"
+        }
+      ]
+    },
+    {
+      "name": "phone 圖表圖片都載入",
+      "ok": true,
+      "detail": [
+        {
+          "kind": "figure",
+          "imgLoaded": true,
+          "natural": 1400,
+          "shown": 277,
+          "scale": 0.2,
+          "blockWidth": 318,
+          "outer": 320,
+          "blockOverflow": false,
+          "scrollRegion": null,
+          "caption": "Figure 1. In-plane thermal conductivity ",
+          "captionZh": true,
+          "mtLabel": true
+        },
+        {
+          "kind": "table",
+          "imgLoaded": true,
+          "natural": 2000,
+          "shown": 720,
+          "scale": 0.36,
+          "blockWidth": 318,
+          "outer": 320,
+          "blockOverflow": false,
+          "scrollRegion": {
+            "sw": 720,
+            "cw": 277,
+            "scrolls": true,
+            "tab": 0,
+            "role": "region",
+            "label": "表格圖片（較寬時可用方向鍵左右捲動）"
+          },
+          "caption": "w (µm) n κ(ε=0) κ(ε=0.8%) dκ/dε Λ_eff (µ",
+          "captionZh": false,
+          "mtLabel": false
+        }
+      ]
+    },
+    {
+      "name": "phone 表格在自己的容器內捲動且可讀（縮放 ≥ 0.3）",
+      "ok": true,
+      "detail": [
+        {
+          "kind": "table",
+          "imgLoaded": true,
+          "natural": 2000,
+          "shown": 720,
+          "scale": 0.36,
+          "blockWidth": 318,
+          "outer": 320,
+          "blockOverflow": false,
+          "scrollRegion": {
+            "sw": 720,
+            "cw": 277,
+            "scrolls": true,
+            "tab": 0,
+            "role": "region",
+            "label": "表格圖片（較寬時可用方向鍵左右捲動）"
+          },
+          "caption": "w (µm) n κ(ε=0) κ(ε=0.8%) dκ/dε Λ_eff (µ",
+          "captionZh": false,
+          "mtLabel": false
+        }
+      ]
+    },
+    {
+      "name": "phone 圖說附機器翻譯並標示",
+      "ok": true,
+      "detail": [
+        {
+          "kind": "figure",
+          "imgLoaded": true,
+          "natural": 1400,
+          "shown": 277,
+          "scale": 0.2,
+          "blockWidth": 318,
+          "outer": 320,
+          "blockOverflow": false,
+          "scrollRegion": null,
+          "caption": "Figure 1. In-plane thermal conductivity ",
+          "captionZh": true,
+          "mtLabel": true
+        },
+        {
+          "kind": "table",
+          "imgLoaded": true,
+          "natural": 2000,
+          "shown": 720,
+          "scale": 0.36,
+          "blockWidth": 318,
+          "outer": 320,
+          "blockOverflow": false,
+          "scrollRegion": {
+            "sw": 720,
+            "cw": 277,
+            "scrolls": true,
+            "tab": 0,
+            "role": "region",
+            "label": "表格圖片（較寬時可用方向鍵左右捲動）"
+          },
+          "caption": "w (µm) n κ(ε=0) κ(ε=0.8%) dκ/dε Λ_eff (µ",
+          "captionZh": false,
+          "mtLabel": false
+        }
+      ]
+    },
+    {
+      "name": "phone 引文／網址段落不撐出欄位",
+      "ok": true,
+      "detail": [
+        {
+          "ref": "p2-b4",
+          "side": "original",
+          "own": 0,
+          "colOverflow": 0,
+          "rightOver": -20
+        },
+        {
+          "ref": "p2-b4",
+          "side": "translation",
+          "own": 0,
+          "colOverflow": 0,
+          "rightOver": -20
+        },
+        {
+          "ref": "p4-b5",
+          "side": "original",
+          "own": 0,
+          "colOverflow": 0,
+          "rightOver": -20
+        },
+        {
+          "ref": "p4-b5",
+          "side": "translation",
+          "own": 0,
+          "colOverflow": 0,
+          "rightOver": -20
+        },
+        {
+          "ref": "p4-b6",
+          "side": "original",
+          "own": 0,
+          "colOverflow": 0,
+          "rightOver": -20
+        },
+        {
+          "ref": "p4-b7",
+          "side": "original",
+          "own": 0,
+          "colOverflow": 0,
+          "rightOver": -20
+        },
+        {
+          "ref": "p4-b7",
+          "side": "translation",
+          "own": 0,
+          "colOverflow": 0,
+          "rightOver": -20
+        }
+      ]
+    },
+    {
+      "name": "phone 每段譯文都看得到「機器翻譯」標示（並排看欄頭，上下排列每段自帶）",
+      "ok": true,
+      "detail": {
+        "sections": 12,
+        "sectionsWithTranslation": 11,
+        "sectionsLabelled": 11,
+        "translationHosts": 23,
+        "unlabelled": []
+      }
+    },
+    {
+      "name": "phone 閱讀窗格寬度可讀（≥ 300px）",
+      "ok": true,
+      "detail": {
+        "matrixPane": [
+          340,
+          494
+        ],
+        "auxPane": [
+          340,
+          303
+        ],
+        "splitStacked": true,
+        "readerWidth": 340
+      }
+    },
+    {
+      "name": "phone 頁碼標記 4 頁、順序正確、可跳頁",
+      "ok": true,
+      "detail": {
+        "markers": [
+          "第 1 頁",
+          "第 2 頁",
+          "第 3 頁",
+          "第 4 頁"
+        ],
+        "nav": true,
+        "navItems": [
+          "1",
+          "2",
+          "3",
+          "4"
+        ],
+        "outOfOrder": []
+      }
+    },
+    {
+      "name": "phone 介面沒有簡體字或大陸用語",
+      "ok": true,
+      "detail": {
+        "simplified": [],
+        "mainland": [],
+        "uiEnglish": [],
+        "headerLabels": [
+          "原文",
+          "中文翻譯（機器翻譯）"
+        ]
+      }
+    },
+    {
+      "name": "phone 閱讀器沒有殘留英文介面字",
+      "ok": true,
+      "detail": []
+    },
+    {
+      "name": "phone 選字動作列在視窗內、三個按鈕可見、不蓋住選取",
+      "ok": true,
+      "detail": {
+        "visible": true,
+        "left": 8,
+        "right": 382,
+        "top": 215,
+        "bottom": 273,
+        "width": 374,
+        "height": 59,
+        "vw": 390,
+        "vh": 844,
+        "inViewport": true,
+        "overlapsSelection": false,
+        "buttons": 3,
+        "buttonsVisible": 3,
+        "note": "譯文：來源事實會改用整段原文"
+      }
+    },
+    {
+      "name": "phone 可捲動的公式／表格區可用鍵盤聚焦",
+      "ok": true,
+      "detail": {
+        "scrollRegions": 2,
+        "focusable": 2,
+        "unfocusable": [],
+        "regions": 4,
+        "focused": true,
+        "outline": "solid 2px",
+        "boxShadow": "none",
+        "labelled": true,
+        "roles": [
+          "region"
+        ]
+      }
+    },
+    {
+      "name": "沒有頁面腳本錯誤",
+      "ok": true,
+      "detail": []
+    }
+  ],
+  "errors": [],
+  "finished": "2026-11-02T10:19:25.979Z",
+  "summary": {
+    "checks": 89,
+    "passed": 89,
+    "failed": 0,
+    "errors": 0
+  }
+}

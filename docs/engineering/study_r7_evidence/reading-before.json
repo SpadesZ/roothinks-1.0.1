@@ -1,0 +1,4157 @@
+{
+  "phase": "before",
+  "base": "http://127.0.0.1:8921",
+  "paper": "synthetic_r7_reading",
+  "started": "2026-11-02T06:07:46.691Z",
+  "viewports": {
+    "desktop": {
+      "viewport": [
+        1440,
+        900
+      ],
+      "doc": {
+        "scrollWidth": 1440,
+        "clientWidth": 1440,
+        "overflow": false
+      },
+      "reader": {
+        "clientWidth": 969,
+        "scrollWidth": 969,
+        "overflow": false
+      },
+      "overflowing": [
+        {
+          "cls": "translation-content selectable-text",
+          "excess": 11,
+          "width": 433,
+          "clippedBy": "bilingual-section mb-4:hidden",
+          "text": "微帶以電子束微影（PMMA 950K A4，300 nm）與氧電漿蝕刻定義圖形，接著在緩衝氫氟酸中釋放並以臨界點乾燥。應變由 2D 拉曼峰的"
+        },
+        {
+          "cls": "row g-0 study-anchor-row",
+          "excess": 5,
+          "width": 947,
+          "clippedBy": "bilingual-section mb-4:hidden",
+          "text": "原文The width dependence is captured by a Fuchs–Sondheimer-type boundary"
+        },
+        {
+          "cls": "col-md-6",
+          "excess": 6,
+          "width": 473,
+          "clippedBy": "bilingual-section mb-4:hidden",
+          "text": "中文翻譯（機器翻譯）寬度相依性可由 Fuchs–Sondheimer 型邊界項描述，鏡面反射參數 $p = 0.12 \\pm 0.05$，亦"
+        },
+        {
+          "cls": "translation-content selectable-text",
+          "excess": 25,
+          "width": 433,
+          "clippedBy": "bilingual-section mb-4:hidden",
+          "text": "寬度相依性可由 Fuchs–Sondheimer 型邊界項描述，鏡面反射參數 $p = 0.12 \\pm 0.05$，亦即邊緣以漫反射為主，"
+        }
+      ],
+      "overflowCount": 4,
+      "rows": [
+        {
+          "ref": "p1-b3",
+          "page": "1",
+          "origRef": "p1-b3",
+          "transRef": "p1-b3",
+          "stacked": false,
+          "topDiff": 0,
+          "heightDiff": 0,
+          "missingShown": false,
+          "missingText": null,
+          "mtLabelInRow": true
+        },
+        {
+          "ref": "p1-b5",
+          "page": "1",
+          "origRef": "p1-b5",
+          "transRef": "p1-b5",
+          "stacked": false,
+          "topDiff": 0,
+          "heightDiff": 0,
+          "missingShown": false,
+          "missingText": null,
+          "mtLabelInRow": true
+        },
+        {
+          "ref": "p1-b7",
+          "page": "1",
+          "origRef": "p1-b7",
+          "transRef": "p1-b7",
+          "stacked": false,
+          "topDiff": 0,
+          "heightDiff": 0,
+          "missingShown": false,
+          "missingText": null,
+          "mtLabelInRow": true
+        },
+        {
+          "ref": "p1-b8",
+          "page": "1",
+          "origRef": "p1-b8",
+          "transRef": "p1-b8",
+          "stacked": false,
+          "topDiff": 0,
+          "heightDiff": 0,
+          "missingShown": false,
+          "missingText": null,
+          "mtLabelInRow": false
+        },
+        {
+          "ref": "p1-b9",
+          "page": "1",
+          "origRef": "p1-b9",
+          "transRef": "p1-b9",
+          "stacked": false,
+          "topDiff": 0,
+          "heightDiff": 0,
+          "missingShown": false,
+          "missingText": null,
+          "mtLabelInRow": false
+        },
+        {
+          "ref": "p2-b4",
+          "page": "2",
+          "origRef": "p2-b4",
+          "transRef": "p2-b4",
+          "stacked": false,
+          "topDiff": 0,
+          "heightDiff": 0,
+          "missingShown": false,
+          "missingText": null,
+          "mtLabelInRow": true
+        },
+        {
+          "ref": "p2-b6",
+          "page": "2",
+          "origRef": "p2-b6",
+          "transRef": "p2-b6",
+          "stacked": false,
+          "topDiff": 0,
+          "heightDiff": 0,
+          "missingShown": false,
+          "missingText": null,
+          "mtLabelInRow": true
+        },
+        {
+          "ref": "p2-b9",
+          "page": "2",
+          "origRef": "p2-b9",
+          "transRef": null,
+          "stacked": false,
+          "topDiff": 0,
+          "heightDiff": 0,
+          "missingShown": false,
+          "missingText": "中文翻譯（機器翻譯）\n此段落暫無可用翻譯",
+          "mtLabelInRow": true
+        },
+        {
+          "ref": "p2-b12",
+          "page": "2",
+          "origRef": "p2-b12",
+          "transRef": "p2-b12",
+          "stacked": false,
+          "topDiff": 0,
+          "heightDiff": 0,
+          "missingShown": false,
+          "missingText": null,
+          "mtLabelInRow": true
+        },
+        {
+          "ref": "p3-b3",
+          "page": "3",
+          "origRef": "p3-b3",
+          "transRef": "p3-b3",
+          "stacked": false,
+          "topDiff": 0,
+          "heightDiff": 0,
+          "missingShown": false,
+          "missingText": null,
+          "mtLabelInRow": true
+        },
+        {
+          "ref": "p3-b5",
+          "page": "3",
+          "origRef": "p3-b5",
+          "transRef": "p3-b5",
+          "stacked": false,
+          "topDiff": 0,
+          "heightDiff": 0,
+          "missingShown": false,
+          "missingText": null,
+          "mtLabelInRow": true
+        },
+        {
+          "ref": "p3-b7",
+          "page": "3",
+          "origRef": "p3-b7",
+          "transRef": "p3-b7",
+          "stacked": false,
+          "topDiff": 0,
+          "heightDiff": 0,
+          "missingShown": false,
+          "missingText": null,
+          "mtLabelInRow": true
+        },
+        {
+          "ref": "p4-b3",
+          "page": "4",
+          "origRef": "p4-b3",
+          "transRef": "p4-b3",
+          "stacked": false,
+          "topDiff": 0,
+          "heightDiff": 0,
+          "missingShown": false,
+          "missingText": null,
+          "mtLabelInRow": true
+        },
+        {
+          "ref": "p4-b5",
+          "page": "4",
+          "origRef": "p4-b5",
+          "transRef": "p4-b5",
+          "stacked": false,
+          "topDiff": 0,
+          "heightDiff": 0,
+          "missingShown": false,
+          "missingText": null,
+          "mtLabelInRow": true
+        },
+        {
+          "ref": "p4-b6",
+          "page": "4",
+          "origRef": "p4-b6",
+          "transRef": null,
+          "stacked": false,
+          "topDiff": 0,
+          "heightDiff": 0,
+          "missingShown": false,
+          "missingText": "此段落暫無可用翻譯",
+          "mtLabelInRow": false
+        },
+        {
+          "ref": "p4-b7",
+          "page": "4",
+          "origRef": "p4-b7",
+          "transRef": "p4-b7",
+          "stacked": false,
+          "topDiff": 0,
+          "heightDiff": 0,
+          "missingShown": false,
+          "missingText": null,
+          "mtLabelInRow": false
+        }
+      ],
+      "blocks": {
+        "total": 37,
+        "text": 25,
+        "originalAnchored": 21,
+        "withTranslation": 23,
+        "translationAnchored": 14,
+        "withoutTranslation": [
+          "p2-b9",
+          "p4-b6"
+        ],
+        "noOriginalAnchor": [
+          "p1-b4:subtitle:Abstract",
+          "p2-b2:subtitle:2. Methods",
+          "p2-b3:subsubtitle:2.1 Sample fabrication a",
+          "p2-b7:body:(n = 12)"
+        ],
+        "translationNotShown": [
+          "p1-b2:maintitle:懸空少層石墨烯微帶的應變可調",
+          "p1-b6:body:1. 緒論",
+          "p2-b2:subtitle:2. 方法",
+          "p2-b3:subsubtitle:2.1 樣本製作與應變校正",
+          "p2-b7:body:（n = 12）",
+          "p3-b2:title:3. 結果",
+          "p4-b2:body:4. 討論與結論",
+          "p4-b4:body:參考文獻"
+        ],
+        "originalAltered": [],
+        "specialWithRef": 0,
+        "special": 6
+      },
+      "equations": {
+        "blocks": 4,
+        "rendered": 3,
+        "katexErrorNodes": 16,
+        "katexErrorText": [
+          "\\SI",
+          "\\SI",
+          "\\kelvin",
+          "\\kelvin",
+          "\\per",
+          "\\per",
+          "\\watt",
+          "\\watt",
+          "\\SI",
+          "\\SI",
+          "\\kelvin",
+          "\\kelvin",
+          "\\per",
+          "\\per",
+          "\\watt",
+          "\\watt"
+        ],
+        "fallbackShown": 0,
+        "items": [
+          {
+            "w": 898,
+            "sw": 898,
+            "scrolls": false,
+            "scrollContainer": null,
+            "outer": 900,
+            "text": "𝜅 = 𝐿 2 𝐴 𝜒 𝑇 ∂ 𝜔 / ∂ 𝑃 ( 1 ) κ= 2A L ​ ∂ω/"
+          },
+          {
+            "w": 898,
+            "sw": 898,
+            "scrolls": false,
+            "scrollContainer": null,
+            "outer": 900,
+            "text": "𝜅 ( 𝑇 , 𝜀 ) = 𝜅 0 ( 1 + 𝛼 𝜀 + 𝛽 𝜀 2 ) exp "
+          },
+          {
+            "w": 898,
+            "sw": 898,
+            "scrolls": false,
+            "scrollContainer": null,
+            "outer": 900,
+            "text": "𝑅 t h = \\SI 4.2 𝑒 6 \\kelvin \\per \\watt ± \\SI 0.3"
+          },
+          {
+            "w": 898,
+            "sw": 898,
+            "scrolls": false,
+            "scrollContainer": null,
+            "outer": 900,
+            "text": "<Failed to OCR Equation> reason: latex_low_confide"
+          }
+        ]
+      },
+      "media": [
+        {
+          "kind": "figure",
+          "imgLoaded": true,
+          "natural": 1400,
+          "shown": 906,
+          "scale": 0.65,
+          "blockWidth": 947,
+          "outer": 949,
+          "blockOverflow": false,
+          "scrollRegion": null,
+          "caption": "Figure 1. In-plane thermal conductivity ",
+          "captionZh": false,
+          "mtLabel": false
+        },
+        {
+          "kind": "table",
+          "imgLoaded": true,
+          "natural": 2000,
+          "shown": 906,
+          "scale": 0.45,
+          "blockWidth": 947,
+          "outer": 949,
+          "blockOverflow": false,
+          "scrollRegion": null,
+          "caption": "w (µm) n κ(ε=0) κ(ε=0.8%) dκ/dε Λ_eff (µ",
+          "captionZh": false,
+          "mtLabel": false
+        }
+      ],
+      "links": [
+        {
+          "ref": "p2-b4",
+          "side": "original",
+          "own": 0,
+          "colOverflow": 0,
+          "rightOver": -22
+        },
+        {
+          "ref": "p2-b4",
+          "side": "translation",
+          "own": 11,
+          "colOverflow": 0,
+          "rightOver": -20
+        },
+        {
+          "ref": "p4-b5",
+          "side": "original",
+          "own": 0,
+          "colOverflow": 0,
+          "rightOver": -22
+        },
+        {
+          "ref": "p4-b5",
+          "side": "translation",
+          "own": 0,
+          "colOverflow": 0,
+          "rightOver": -20
+        },
+        {
+          "ref": "p4-b6",
+          "side": "original",
+          "own": 0,
+          "colOverflow": 0,
+          "rightOver": -22
+        },
+        {
+          "ref": "p4-b7",
+          "side": "original",
+          "own": 0,
+          "colOverflow": 0,
+          "rightOver": -22
+        },
+        {
+          "ref": "p4-b7",
+          "side": "translation",
+          "own": 0,
+          "colOverflow": 0,
+          "rightOver": -20
+        }
+      ],
+      "pages": {
+        "markers": [
+          "Page 1",
+          "Page 2",
+          "Page 3",
+          "Page 4"
+        ],
+        "nav": false,
+        "navItems": [],
+        "outOfOrder": []
+      },
+      "mt": {
+        "sections": 12,
+        "sectionsWithTranslation": 11,
+        "sectionsLabelled": 11,
+        "translationHosts": 14,
+        "unlabelled": []
+      },
+      "layout": {
+        "matrixPane": [
+          969,
+          852
+        ],
+        "auxPane": [
+          413,
+          852
+        ],
+        "splitStacked": false,
+        "readerWidth": 969
+      },
+      "l10n": {
+        "simplified": [],
+        "mainland": [],
+        "uiEnglish": [
+          "Page 1",
+          "Page 2",
+          "Failed to OCR Equation",
+          "reason: latex_low_confidence",
+          "Page 3",
+          "Page 4"
+        ],
+        "headerLabels": [
+          "原文",
+          "中文翻譯（機器翻譯）"
+        ]
+      },
+      "keyboard": {
+        "scrollRegions": 0,
+        "focusable": 0,
+        "unfocusable": []
+      },
+      "selection": {
+        "visible": true,
+        "left": 555,
+        "right": 939,
+        "top": 395,
+        "bottom": 432,
+        "width": 384,
+        "height": 37,
+        "vw": 1440,
+        "vh": 900,
+        "inViewport": true,
+        "overlapsSelection": false,
+        "buttons": 3,
+        "buttonsVisible": 3,
+        "note": "譯文：來源事實會改用整段原文"
+      },
+      "keyboardFocus": {
+        "regions": 0
+      }
+    },
+    "laptop": {
+      "viewport": [
+        1280,
+        800
+      ],
+      "doc": {
+        "scrollWidth": 1280,
+        "clientWidth": 1280,
+        "overflow": false
+      },
+      "reader": {
+        "clientWidth": 857,
+        "scrollWidth": 857,
+        "overflow": false
+      },
+      "overflowing": [
+        {
+          "cls": "col-md-6",
+          "excess": 9,
+          "width": 415,
+          "clippedBy": "bilingual-section mb-4:hidden",
+          "text": "原文Ribbons were patterned by electron-beam lithography (PMMA 950K A4, 3"
+        },
+        {
+          "cls": "original-content selectable-text",
+          "excess": 29,
+          "width": 375,
+          "clippedBy": "bilingual-section mb-4:hidden",
+          "text": "Ribbons were patterned by electron-beam lithography (PMMA 950K A4, 300"
+        },
+        {
+          "cls": "P",
+          "excess": 29,
+          "width": 375,
+          "clippedBy": "bilingual-section mb-4:hidden",
+          "text": "Ribbons were patterned by electron-beam lithography (PMMA 950K A4, 300"
+        },
+        {
+          "cls": "col-md-6",
+          "excess": 48,
+          "width": 417,
+          "clippedBy": "bilingual-section mb-4:hidden",
+          "text": "中文翻譯（機器翻譯）微帶以電子束微影（PMMA 950K A4，300 nm）與氧電漿蝕刻定義圖形，接著在緩衝氫氟酸中釋放並以臨界點乾燥。應"
+        },
+        {
+          "cls": "translation-content selectable-text",
+          "excess": 67,
+          "width": 377,
+          "clippedBy": "bilingual-section mb-4:hidden",
+          "text": "微帶以電子束微影（PMMA 950K A4，300 nm）與氧電漿蝕刻定義圖形，接著在緩衝氫氟酸中釋放並以臨界點乾燥。應變由 2D 拉曼峰的"
+        },
+        {
+          "cls": "col-md-6",
+          "excess": 15,
+          "width": 415,
+          "clippedBy": "bilingual-section mb-4:hidden",
+          "text": "原文The width dependence is captured by a Fuchs–Sondheimer-type boundary"
+        },
+        {
+          "cls": "original-content selectable-text",
+          "excess": 34,
+          "width": 375,
+          "clippedBy": "bilingual-section mb-4:hidden",
+          "text": "The width dependence is captured by a Fuchs–Sondheimer-type boundary t"
+        },
+        {
+          "cls": "P",
+          "excess": 34,
+          "width": 375,
+          "clippedBy": "bilingual-section mb-4:hidden",
+          "text": "The width dependence is captured by a Fuchs–Sondheimer-type boundary t"
+        },
+        {
+          "cls": "col-md-6",
+          "excess": 62,
+          "width": 417,
+          "clippedBy": "bilingual-section mb-4:hidden",
+          "text": "中文翻譯（機器翻譯）寬度相依性可由 Fuchs–Sondheimer 型邊界項描述，鏡面反射參數 $p = 0.12 \\pm 0.05$，亦"
+        },
+        {
+          "cls": "translation-content selectable-text",
+          "excess": 81,
+          "width": 377,
+          "clippedBy": "bilingual-section mb-4:hidden",
+          "text": "寬度相依性可由 Fuchs–Sondheimer 型邊界項描述，鏡面反射參數 $p = 0.12 \\pm 0.05$，亦即邊緣以漫反射為主，"
+        }
+      ],
+      "overflowCount": 12,
+      "rows": [
+        {
+          "ref": "p1-b3",
+          "page": "1",
+          "origRef": "p1-b3",
+          "transRef": "p1-b3",
+          "stacked": false,
+          "topDiff": 0,
+          "heightDiff": 0,
+          "missingShown": false,
+          "missingText": null,
+          "mtLabelInRow": true
+        },
+        {
+          "ref": "p1-b5",
+          "page": "1",
+          "origRef": "p1-b5",
+          "transRef": "p1-b5",
+          "stacked": false,
+          "topDiff": 0,
+          "heightDiff": 0,
+          "missingShown": false,
+          "missingText": null,
+          "mtLabelInRow": true
+        },
+        {
+          "ref": "p1-b7",
+          "page": "1",
+          "origRef": "p1-b7",
+          "transRef": "p1-b7",
+          "stacked": false,
+          "topDiff": 0,
+          "heightDiff": 0,
+          "missingShown": false,
+          "missingText": null,
+          "mtLabelInRow": true
+        },
+        {
+          "ref": "p1-b8",
+          "page": "1",
+          "origRef": "p1-b8",
+          "transRef": "p1-b8",
+          "stacked": false,
+          "topDiff": 0,
+          "heightDiff": 0,
+          "missingShown": false,
+          "missingText": null,
+          "mtLabelInRow": false
+        },
+        {
+          "ref": "p1-b9",
+          "page": "1",
+          "origRef": "p1-b9",
+          "transRef": "p1-b9",
+          "stacked": false,
+          "topDiff": 0,
+          "heightDiff": 0,
+          "missingShown": false,
+          "missingText": null,
+          "mtLabelInRow": false
+        },
+        {
+          "ref": "p2-b4",
+          "page": "2",
+          "origRef": "p2-b4",
+          "transRef": "p2-b4",
+          "stacked": false,
+          "topDiff": 0,
+          "heightDiff": 0,
+          "missingShown": false,
+          "missingText": null,
+          "mtLabelInRow": true
+        },
+        {
+          "ref": "p2-b6",
+          "page": "2",
+          "origRef": "p2-b6",
+          "transRef": "p2-b6",
+          "stacked": false,
+          "topDiff": 0,
+          "heightDiff": 0,
+          "missingShown": false,
+          "missingText": null,
+          "mtLabelInRow": true
+        },
+        {
+          "ref": "p2-b9",
+          "page": "2",
+          "origRef": "p2-b9",
+          "transRef": null,
+          "stacked": false,
+          "topDiff": 0,
+          "heightDiff": 0,
+          "missingShown": false,
+          "missingText": "中文翻譯（機器翻譯）\n此段落暫無可用翻譯",
+          "mtLabelInRow": true
+        },
+        {
+          "ref": "p2-b12",
+          "page": "2",
+          "origRef": "p2-b12",
+          "transRef": "p2-b12",
+          "stacked": false,
+          "topDiff": 0,
+          "heightDiff": 0,
+          "missingShown": false,
+          "missingText": null,
+          "mtLabelInRow": true
+        },
+        {
+          "ref": "p3-b3",
+          "page": "3",
+          "origRef": "p3-b3",
+          "transRef": "p3-b3",
+          "stacked": false,
+          "topDiff": 0,
+          "heightDiff": 0,
+          "missingShown": false,
+          "missingText": null,
+          "mtLabelInRow": true
+        },
+        {
+          "ref": "p3-b5",
+          "page": "3",
+          "origRef": "p3-b5",
+          "transRef": "p3-b5",
+          "stacked": false,
+          "topDiff": 0,
+          "heightDiff": 0,
+          "missingShown": false,
+          "missingText": null,
+          "mtLabelInRow": true
+        },
+        {
+          "ref": "p3-b7",
+          "page": "3",
+          "origRef": "p3-b7",
+          "transRef": "p3-b7",
+          "stacked": false,
+          "topDiff": 0,
+          "heightDiff": 0,
+          "missingShown": false,
+          "missingText": null,
+          "mtLabelInRow": true
+        },
+        {
+          "ref": "p4-b3",
+          "page": "4",
+          "origRef": "p4-b3",
+          "transRef": "p4-b3",
+          "stacked": false,
+          "topDiff": 0,
+          "heightDiff": 0,
+          "missingShown": false,
+          "missingText": null,
+          "mtLabelInRow": true
+        },
+        {
+          "ref": "p4-b5",
+          "page": "4",
+          "origRef": "p4-b5",
+          "transRef": "p4-b5",
+          "stacked": false,
+          "topDiff": 0,
+          "heightDiff": 0,
+          "missingShown": false,
+          "missingText": null,
+          "mtLabelInRow": true
+        },
+        {
+          "ref": "p4-b6",
+          "page": "4",
+          "origRef": "p4-b6",
+          "transRef": null,
+          "stacked": false,
+          "topDiff": 0,
+          "heightDiff": 0,
+          "missingShown": false,
+          "missingText": "此段落暫無可用翻譯",
+          "mtLabelInRow": false
+        },
+        {
+          "ref": "p4-b7",
+          "page": "4",
+          "origRef": "p4-b7",
+          "transRef": "p4-b7",
+          "stacked": false,
+          "topDiff": 0,
+          "heightDiff": 0,
+          "missingShown": false,
+          "missingText": null,
+          "mtLabelInRow": false
+        }
+      ],
+      "blocks": {
+        "total": 37,
+        "text": 25,
+        "originalAnchored": 21,
+        "withTranslation": 23,
+        "translationAnchored": 14,
+        "withoutTranslation": [
+          "p2-b9",
+          "p4-b6"
+        ],
+        "noOriginalAnchor": [
+          "p1-b4:subtitle:Abstract",
+          "p2-b2:subtitle:2. Methods",
+          "p2-b3:subsubtitle:2.1 Sample fabrication a",
+          "p2-b7:body:(n = 12)"
+        ],
+        "translationNotShown": [
+          "p1-b2:maintitle:懸空少層石墨烯微帶的應變可調",
+          "p1-b6:body:1. 緒論",
+          "p2-b2:subtitle:2. 方法",
+          "p2-b3:subsubtitle:2.1 樣本製作與應變校正",
+          "p2-b7:body:（n = 12）",
+          "p3-b2:title:3. 結果",
+          "p4-b2:body:4. 討論與結論",
+          "p4-b4:body:參考文獻"
+        ],
+        "originalAltered": [],
+        "specialWithRef": 0,
+        "special": 6
+      },
+      "equations": {
+        "blocks": 4,
+        "rendered": 3,
+        "katexErrorNodes": 16,
+        "katexErrorText": [
+          "\\SI",
+          "\\SI",
+          "\\kelvin",
+          "\\kelvin",
+          "\\per",
+          "\\per",
+          "\\watt",
+          "\\watt",
+          "\\SI",
+          "\\SI",
+          "\\kelvin",
+          "\\kelvin",
+          "\\per",
+          "\\per",
+          "\\watt",
+          "\\watt"
+        ],
+        "fallbackShown": 0,
+        "items": [
+          {
+            "w": 835,
+            "sw": 835,
+            "scrolls": false,
+            "scrollContainer": null,
+            "outer": 837,
+            "text": "𝜅 = 𝐿 2 𝐴 𝜒 𝑇 ∂ 𝜔 / ∂ 𝑃 ( 1 ) κ= 2A L ​ ∂ω/"
+          },
+          {
+            "w": 835,
+            "sw": 835,
+            "scrolls": false,
+            "scrollContainer": null,
+            "outer": 837,
+            "text": "𝜅 ( 𝑇 , 𝜀 ) = 𝜅 0 ( 1 + 𝛼 𝜀 + 𝛽 𝜀 2 ) exp "
+          },
+          {
+            "w": 835,
+            "sw": 835,
+            "scrolls": false,
+            "scrollContainer": null,
+            "outer": 837,
+            "text": "𝑅 t h = \\SI 4.2 𝑒 6 \\kelvin \\per \\watt ± \\SI 0.3"
+          },
+          {
+            "w": 835,
+            "sw": 835,
+            "scrolls": false,
+            "scrollContainer": null,
+            "outer": 837,
+            "text": "<Failed to OCR Equation> reason: latex_low_confide"
+          }
+        ]
+      },
+      "media": [
+        {
+          "kind": "figure",
+          "imgLoaded": true,
+          "natural": 1400,
+          "shown": 794,
+          "scale": 0.57,
+          "blockWidth": 835,
+          "outer": 837,
+          "blockOverflow": false,
+          "scrollRegion": null,
+          "caption": "Figure 1. In-plane thermal conductivity ",
+          "captionZh": false,
+          "mtLabel": false
+        },
+        {
+          "kind": "table",
+          "imgLoaded": true,
+          "natural": 2000,
+          "shown": 794,
+          "scale": 0.4,
+          "blockWidth": 835,
+          "outer": 837,
+          "blockOverflow": false,
+          "scrollRegion": null,
+          "caption": "w (µm) n κ(ε=0) κ(ε=0.8%) dκ/dε Λ_eff (µ",
+          "captionZh": false,
+          "mtLabel": false
+        }
+      ],
+      "links": [
+        {
+          "ref": "p2-b4",
+          "side": "original",
+          "own": 29,
+          "colOverflow": 9,
+          "rightOver": -22
+        },
+        {
+          "ref": "p2-b4",
+          "side": "translation",
+          "own": 67,
+          "colOverflow": 48,
+          "rightOver": -20
+        },
+        {
+          "ref": "p4-b5",
+          "side": "original",
+          "own": 0,
+          "colOverflow": 0,
+          "rightOver": -22
+        },
+        {
+          "ref": "p4-b5",
+          "side": "translation",
+          "own": 0,
+          "colOverflow": 0,
+          "rightOver": -20
+        },
+        {
+          "ref": "p4-b6",
+          "side": "original",
+          "own": 0,
+          "colOverflow": 0,
+          "rightOver": -22
+        },
+        {
+          "ref": "p4-b7",
+          "side": "original",
+          "own": 0,
+          "colOverflow": 0,
+          "rightOver": -22
+        },
+        {
+          "ref": "p4-b7",
+          "side": "translation",
+          "own": 0,
+          "colOverflow": 0,
+          "rightOver": -20
+        }
+      ],
+      "pages": {
+        "markers": [
+          "Page 1",
+          "Page 2",
+          "Page 3",
+          "Page 4"
+        ],
+        "nav": false,
+        "navItems": [],
+        "outOfOrder": []
+      },
+      "mt": {
+        "sections": 12,
+        "sectionsWithTranslation": 11,
+        "sectionsLabelled": 11,
+        "translationHosts": 14,
+        "unlabelled": []
+      },
+      "layout": {
+        "matrixPane": [
+          857,
+          752
+        ],
+        "auxPane": [
+          365,
+          752
+        ],
+        "splitStacked": false,
+        "readerWidth": 857
+      },
+      "l10n": {
+        "simplified": [],
+        "mainland": [],
+        "uiEnglish": [
+          "Page 1",
+          "Page 2",
+          "Failed to OCR Equation",
+          "reason: latex_low_confidence",
+          "Page 3",
+          "Page 4"
+        ],
+        "headerLabels": [
+          "原文",
+          "中文翻譯（機器翻譯）"
+        ]
+      },
+      "keyboard": {
+        "scrollRegions": 0,
+        "focusable": 0,
+        "unfocusable": []
+      },
+      "selection": {
+        "visible": true,
+        "left": 499,
+        "right": 883,
+        "top": 345,
+        "bottom": 382,
+        "width": 384,
+        "height": 37,
+        "vw": 1280,
+        "vh": 800,
+        "inViewport": true,
+        "overlapsSelection": false,
+        "buttons": 3,
+        "buttonsVisible": 3,
+        "note": "譯文：來源事實會改用整段原文"
+      },
+      "keyboardFocus": {
+        "regions": 0
+      }
+    },
+    "tablet": {
+      "viewport": [
+        820,
+        1180
+      ],
+      "doc": {
+        "scrollWidth": 820,
+        "clientWidth": 820,
+        "overflow": false
+      },
+      "reader": {
+        "clientWidth": 535,
+        "scrollWidth": 535,
+        "overflow": false
+      },
+      "overflowing": [
+        {
+          "cls": "col-md-6",
+          "excess": 170,
+          "width": 254,
+          "clippedBy": "bilingual-section mb-4:hidden",
+          "text": "原文Ribbons were patterned by electron-beam lithography (PMMA 950K A4, 3"
+        },
+        {
+          "cls": "original-content selectable-text",
+          "excess": 190,
+          "width": 214,
+          "clippedBy": "bilingual-section mb-4:hidden",
+          "text": "Ribbons were patterned by electron-beam lithography (PMMA 950K A4, 300"
+        },
+        {
+          "cls": "P",
+          "excess": 190,
+          "width": 214,
+          "clippedBy": "bilingual-section mb-4:hidden",
+          "text": "Ribbons were patterned by electron-beam lithography (PMMA 950K A4, 300"
+        },
+        {
+          "cls": "col-md-6",
+          "excess": 209,
+          "width": 256,
+          "clippedBy": "bilingual-section mb-4:hidden",
+          "text": "中文翻譯（機器翻譯）微帶以電子束微影（PMMA 950K A4，300 nm）與氧電漿蝕刻定義圖形，接著在緩衝氫氟酸中釋放並以臨界點乾燥。應"
+        },
+        {
+          "cls": "translation-content selectable-text",
+          "excess": 228,
+          "width": 216,
+          "clippedBy": "bilingual-section mb-4:hidden",
+          "text": "微帶以電子束微影（PMMA 950K A4，300 nm）與氧電漿蝕刻定義圖形，接著在緩衝氫氟酸中釋放並以臨界點乾燥。應變由 2D 拉曼峰的"
+        },
+        {
+          "cls": "katex-display",
+          "excess": 206,
+          "width": 472,
+          "clippedBy": "equation-block mb-3 text-center:auto",
+          "text": "κ(T,ε)=κ0(1+αε+βε2)exp⁡ ⁣(−EakBT)+∑i=1NCi vi2 τi3[1−τiτi+τb(w)]−γ ∂ω2D"
+        },
+        {
+          "cls": "col-md-6",
+          "excess": 176,
+          "width": 254,
+          "clippedBy": "bilingual-section mb-4:hidden",
+          "text": "原文The width dependence is captured by a Fuchs–Sondheimer-type boundary"
+        },
+        {
+          "cls": "original-content selectable-text",
+          "excess": 195,
+          "width": 214,
+          "clippedBy": "bilingual-section mb-4:hidden",
+          "text": "The width dependence is captured by a Fuchs–Sondheimer-type boundary t"
+        },
+        {
+          "cls": "P",
+          "excess": 195,
+          "width": 214,
+          "clippedBy": "bilingual-section mb-4:hidden",
+          "text": "The width dependence is captured by a Fuchs–Sondheimer-type boundary t"
+        },
+        {
+          "cls": "col-md-6",
+          "excess": 223,
+          "width": 256,
+          "clippedBy": "bilingual-section mb-4:hidden",
+          "text": "中文翻譯（機器翻譯）寬度相依性可由 Fuchs–Sondheimer 型邊界項描述，鏡面反射參數 $p = 0.12 \\pm 0.05$，亦"
+        },
+        {
+          "cls": "translation-content selectable-text",
+          "excess": 242,
+          "width": 216,
+          "clippedBy": "bilingual-section mb-4:hidden",
+          "text": "寬度相依性可由 Fuchs–Sondheimer 型邊界項描述，鏡面反射參數 $p = 0.12 \\pm 0.05$，亦即邊緣以漫反射為主，"
+        },
+        {
+          "cls": "original-content selectable-text",
+          "excess": 51,
+          "width": 214,
+          "clippedBy": "bilingual-section mb-4:hidden",
+          "text": "[12] J. Smith, K. Tanaka, L. Moreau, Strain-dependent phonon transport"
+        }
+      ],
+      "overflowCount": 22,
+      "rows": [
+        {
+          "ref": "p1-b3",
+          "page": "1",
+          "origRef": "p1-b3",
+          "transRef": "p1-b3",
+          "stacked": false,
+          "topDiff": 0,
+          "heightDiff": 0,
+          "missingShown": false,
+          "missingText": null,
+          "mtLabelInRow": true
+        },
+        {
+          "ref": "p1-b5",
+          "page": "1",
+          "origRef": "p1-b5",
+          "transRef": "p1-b5",
+          "stacked": false,
+          "topDiff": 0,
+          "heightDiff": 0,
+          "missingShown": false,
+          "missingText": null,
+          "mtLabelInRow": true
+        },
+        {
+          "ref": "p1-b7",
+          "page": "1",
+          "origRef": "p1-b7",
+          "transRef": "p1-b7",
+          "stacked": false,
+          "topDiff": 0,
+          "heightDiff": 0,
+          "missingShown": false,
+          "missingText": null,
+          "mtLabelInRow": true
+        },
+        {
+          "ref": "p1-b8",
+          "page": "1",
+          "origRef": "p1-b8",
+          "transRef": "p1-b8",
+          "stacked": false,
+          "topDiff": 0,
+          "heightDiff": 0,
+          "missingShown": false,
+          "missingText": null,
+          "mtLabelInRow": false
+        },
+        {
+          "ref": "p1-b9",
+          "page": "1",
+          "origRef": "p1-b9",
+          "transRef": "p1-b9",
+          "stacked": false,
+          "topDiff": 0,
+          "heightDiff": 0,
+          "missingShown": false,
+          "missingText": null,
+          "mtLabelInRow": false
+        },
+        {
+          "ref": "p2-b4",
+          "page": "2",
+          "origRef": "p2-b4",
+          "transRef": "p2-b4",
+          "stacked": false,
+          "topDiff": 0,
+          "heightDiff": 0,
+          "missingShown": false,
+          "missingText": null,
+          "mtLabelInRow": true
+        },
+        {
+          "ref": "p2-b6",
+          "page": "2",
+          "origRef": "p2-b6",
+          "transRef": "p2-b6",
+          "stacked": false,
+          "topDiff": 0,
+          "heightDiff": 0,
+          "missingShown": false,
+          "missingText": null,
+          "mtLabelInRow": true
+        },
+        {
+          "ref": "p2-b9",
+          "page": "2",
+          "origRef": "p2-b9",
+          "transRef": null,
+          "stacked": false,
+          "topDiff": 0,
+          "heightDiff": 0,
+          "missingShown": false,
+          "missingText": "中文翻譯（機器翻譯）\n此段落暫無可用翻譯",
+          "mtLabelInRow": true
+        },
+        {
+          "ref": "p2-b12",
+          "page": "2",
+          "origRef": "p2-b12",
+          "transRef": "p2-b12",
+          "stacked": false,
+          "topDiff": 0,
+          "heightDiff": 0,
+          "missingShown": false,
+          "missingText": null,
+          "mtLabelInRow": true
+        },
+        {
+          "ref": "p3-b3",
+          "page": "3",
+          "origRef": "p3-b3",
+          "transRef": "p3-b3",
+          "stacked": false,
+          "topDiff": 0,
+          "heightDiff": 0,
+          "missingShown": false,
+          "missingText": null,
+          "mtLabelInRow": true
+        },
+        {
+          "ref": "p3-b5",
+          "page": "3",
+          "origRef": "p3-b5",
+          "transRef": "p3-b5",
+          "stacked": false,
+          "topDiff": 0,
+          "heightDiff": 0,
+          "missingShown": false,
+          "missingText": null,
+          "mtLabelInRow": true
+        },
+        {
+          "ref": "p3-b7",
+          "page": "3",
+          "origRef": "p3-b7",
+          "transRef": "p3-b7",
+          "stacked": false,
+          "topDiff": 0,
+          "heightDiff": 0,
+          "missingShown": false,
+          "missingText": null,
+          "mtLabelInRow": true
+        },
+        {
+          "ref": "p4-b3",
+          "page": "4",
+          "origRef": "p4-b3",
+          "transRef": "p4-b3",
+          "stacked": false,
+          "topDiff": 0,
+          "heightDiff": 0,
+          "missingShown": false,
+          "missingText": null,
+          "mtLabelInRow": true
+        },
+        {
+          "ref": "p4-b5",
+          "page": "4",
+          "origRef": "p4-b5",
+          "transRef": "p4-b5",
+          "stacked": false,
+          "topDiff": 0,
+          "heightDiff": 0,
+          "missingShown": false,
+          "missingText": null,
+          "mtLabelInRow": true
+        },
+        {
+          "ref": "p4-b6",
+          "page": "4",
+          "origRef": "p4-b6",
+          "transRef": null,
+          "stacked": false,
+          "topDiff": 0,
+          "heightDiff": 0,
+          "missingShown": false,
+          "missingText": "此段落暫無可用翻譯",
+          "mtLabelInRow": false
+        },
+        {
+          "ref": "p4-b7",
+          "page": "4",
+          "origRef": "p4-b7",
+          "transRef": "p4-b7",
+          "stacked": false,
+          "topDiff": 0,
+          "heightDiff": 0,
+          "missingShown": false,
+          "missingText": null,
+          "mtLabelInRow": false
+        }
+      ],
+      "blocks": {
+        "total": 37,
+        "text": 25,
+        "originalAnchored": 21,
+        "withTranslation": 23,
+        "translationAnchored": 14,
+        "withoutTranslation": [
+          "p2-b9",
+          "p4-b6"
+        ],
+        "noOriginalAnchor": [
+          "p1-b4:subtitle:Abstract",
+          "p2-b2:subtitle:2. Methods",
+          "p2-b3:subsubtitle:2.1 Sample fabrication a",
+          "p2-b7:body:(n = 12)"
+        ],
+        "translationNotShown": [
+          "p1-b2:maintitle:懸空少層石墨烯微帶的應變可調",
+          "p1-b6:body:1. 緒論",
+          "p2-b2:subtitle:2. 方法",
+          "p2-b3:subsubtitle:2.1 樣本製作與應變校正",
+          "p2-b7:body:（n = 12）",
+          "p3-b2:title:3. 結果",
+          "p4-b2:body:4. 討論與結論",
+          "p4-b4:body:參考文獻"
+        ],
+        "originalAltered": [],
+        "specialWithRef": 0,
+        "special": 6
+      },
+      "equations": {
+        "blocks": 4,
+        "rendered": 3,
+        "katexErrorNodes": 16,
+        "katexErrorText": [
+          "\\SI",
+          "\\SI",
+          "\\kelvin",
+          "\\kelvin",
+          "\\per",
+          "\\per",
+          "\\watt",
+          "\\watt",
+          "\\SI",
+          "\\SI",
+          "\\kelvin",
+          "\\kelvin",
+          "\\per",
+          "\\per",
+          "\\watt",
+          "\\watt"
+        ],
+        "fallbackShown": 0,
+        "items": [
+          {
+            "w": 513,
+            "sw": 513,
+            "scrolls": false,
+            "scrollContainer": null,
+            "outer": 515,
+            "text": "𝜅 = 𝐿 2 𝐴 𝜒 𝑇 ∂ 𝜔 / ∂ 𝑃 ( 1 ) κ= 2A L ​ ∂ω/"
+          },
+          {
+            "w": 513,
+            "sw": 698,
+            "scrolls": true,
+            "scrollContainer": null,
+            "outer": 515,
+            "text": "𝜅 ( 𝑇 , 𝜀 ) = 𝜅 0 ( 1 + 𝛼 𝜀 + 𝛽 𝜀 2 ) exp "
+          },
+          {
+            "w": 513,
+            "sw": 513,
+            "scrolls": false,
+            "scrollContainer": null,
+            "outer": 515,
+            "text": "𝑅 t h = \\SI 4.2 𝑒 6 \\kelvin \\per \\watt ± \\SI 0.3"
+          },
+          {
+            "w": 513,
+            "sw": 513,
+            "scrolls": false,
+            "scrollContainer": null,
+            "outer": 515,
+            "text": "<Failed to OCR Equation> reason: latex_low_confide"
+          }
+        ]
+      },
+      "media": [
+        {
+          "kind": "figure",
+          "imgLoaded": true,
+          "natural": 1400,
+          "shown": 472,
+          "scale": 0.34,
+          "blockWidth": 513,
+          "outer": 515,
+          "blockOverflow": false,
+          "scrollRegion": null,
+          "caption": "Figure 1. In-plane thermal conductivity ",
+          "captionZh": false,
+          "mtLabel": false
+        },
+        {
+          "kind": "table",
+          "imgLoaded": true,
+          "natural": 2000,
+          "shown": 472,
+          "scale": 0.24,
+          "blockWidth": 513,
+          "outer": 515,
+          "blockOverflow": false,
+          "scrollRegion": null,
+          "caption": "w (µm) n κ(ε=0) κ(ε=0.8%) dκ/dε Λ_eff (µ",
+          "captionZh": false,
+          "mtLabel": false
+        }
+      ],
+      "links": [
+        {
+          "ref": "p2-b4",
+          "side": "original",
+          "own": 190,
+          "colOverflow": 170,
+          "rightOver": -22
+        },
+        {
+          "ref": "p2-b4",
+          "side": "translation",
+          "own": 228,
+          "colOverflow": 209,
+          "rightOver": -20
+        },
+        {
+          "ref": "p4-b5",
+          "side": "original",
+          "own": 0,
+          "colOverflow": 0,
+          "rightOver": -22
+        },
+        {
+          "ref": "p4-b5",
+          "side": "translation",
+          "own": 0,
+          "colOverflow": 0,
+          "rightOver": -20
+        },
+        {
+          "ref": "p4-b6",
+          "side": "original",
+          "own": 51,
+          "colOverflow": 31,
+          "rightOver": -22
+        },
+        {
+          "ref": "p4-b7",
+          "side": "original",
+          "own": 68,
+          "colOverflow": 48,
+          "rightOver": -22
+        },
+        {
+          "ref": "p4-b7",
+          "side": "translation",
+          "own": 86,
+          "colOverflow": 67,
+          "rightOver": -20
+        }
+      ],
+      "pages": {
+        "markers": [
+          "Page 1",
+          "Page 2",
+          "Page 3",
+          "Page 4"
+        ],
+        "nav": false,
+        "navItems": [],
+        "outOfOrder": []
+      },
+      "mt": {
+        "sections": 12,
+        "sectionsWithTranslation": 11,
+        "sectionsLabelled": 11,
+        "translationHosts": 14,
+        "unlabelled": []
+      },
+      "layout": {
+        "matrixPane": [
+          535,
+          1132
+        ],
+        "auxPane": [
+          227,
+          1132
+        ],
+        "splitStacked": false,
+        "readerWidth": 535
+      },
+      "l10n": {
+        "simplified": [],
+        "mainland": [],
+        "uiEnglish": [
+          "Page 1",
+          "Page 2",
+          "Failed to OCR Equation",
+          "reason: latex_low_confidence",
+          "Page 3",
+          "Page 4"
+        ],
+        "headerLabels": [
+          "原文",
+          "中文翻譯（機器翻譯）"
+        ]
+      },
+      "keyboard": {
+        "scrollRegions": 1,
+        "focusable": 0,
+        "unfocusable": [
+          "equation-block mb-3 text-center"
+        ]
+      },
+      "selection": {
+        "visible": true,
+        "left": 338,
+        "right": 722,
+        "top": 511,
+        "bottom": 547,
+        "width": 384,
+        "height": 37,
+        "vw": 820,
+        "vh": 1180,
+        "inViewport": true,
+        "overlapsSelection": false,
+        "buttons": 3,
+        "buttonsVisible": 3,
+        "note": "譯文：來源事實會改用整段原文"
+      },
+      "keyboardFocus": {
+        "regions": 0
+      }
+    },
+    "phone": {
+      "viewport": [
+        390,
+        844
+      ],
+      "doc": {
+        "scrollWidth": 390,
+        "clientWidth": 390,
+        "overflow": false
+      },
+      "reader": {
+        "clientWidth": 234,
+        "scrollWidth": 234,
+        "overflow": false
+      },
+      "overflowing": [
+        {
+          "cls": "original-content selectable-text",
+          "excess": 12,
+          "width": 169,
+          "clippedBy": "bilingual-section mb-4:hidden",
+          "text": "¹ Department of Physics, National Synthetic University, Hsinchu 30013,"
+        },
+        {
+          "cls": "P",
+          "excess": 12,
+          "width": 169,
+          "clippedBy": "bilingual-section mb-4:hidden",
+          "text": "¹ Department of Physics, National Synthetic University, Hsinchu 30013,"
+        },
+        {
+          "cls": "translation-content selectable-text",
+          "excess": 33,
+          "width": 171,
+          "clippedBy": "bilingual-section mb-4:hidden",
+          "text": "¹ 國立合成大學物理學系，新竹 30013，臺灣。² 通訊作者：bowei.chen@example.invalid。³ 虛構材料研究所，愛"
+        },
+        {
+          "cls": "col-md-6",
+          "excess": 214,
+          "width": 210,
+          "clippedBy": "bilingual-section mb-4:hidden",
+          "text": "原文Ribbons were patterned by electron-beam lithography (PMMA 950K A4, 3"
+        },
+        {
+          "cls": "original-content selectable-text",
+          "excess": 235,
+          "width": 169,
+          "clippedBy": "bilingual-section mb-4:hidden",
+          "text": "Ribbons were patterned by electron-beam lithography (PMMA 950K A4, 300"
+        },
+        {
+          "cls": "P",
+          "excess": 235,
+          "width": 169,
+          "clippedBy": "bilingual-section mb-4:hidden",
+          "text": "Ribbons were patterned by electron-beam lithography (PMMA 950K A4, 300"
+        },
+        {
+          "cls": "col-md-6",
+          "excess": 253,
+          "width": 212,
+          "clippedBy": "bilingual-section mb-4:hidden",
+          "text": "中文翻譯（機器翻譯）微帶以電子束微影（PMMA 950K A4，300 nm）與氧電漿蝕刻定義圖形，接著在緩衝氫氟酸中釋放並以臨界點乾燥。應"
+        },
+        {
+          "cls": "translation-content selectable-text",
+          "excess": 273,
+          "width": 171,
+          "clippedBy": "bilingual-section mb-4:hidden",
+          "text": "微帶以電子束微影（PMMA 950K A4，300 nm）與氧電漿蝕刻定義圖形，接著在緩衝氫氟酸中釋放並以臨界點乾燥。應變由 2D 拉曼峰的"
+        },
+        {
+          "cls": "katex-display",
+          "excess": 5,
+          "width": 171,
+          "clippedBy": "equation-block mb-3 text-center:auto",
+          "text": "κ=L2A χT∂ω/∂P(1)\\kappa = \\frac{L}{2 A}\\,\\frac{\\chi_T}{\\partial \\omega "
+        },
+        {
+          "cls": "katex-display",
+          "excess": 507,
+          "width": 171,
+          "clippedBy": "equation-block mb-3 text-center:auto",
+          "text": "κ(T,ε)=κ0(1+αε+βε2)exp⁡ ⁣(−EakBT)+∑i=1NCi vi2 τi3[1−τiτi+τb(w)]−γ ∂ω2D"
+        },
+        {
+          "cls": "katex-display",
+          "excess": 284,
+          "width": 171,
+          "clippedBy": "equation-block mb-3 text-center:auto",
+          "text": "Rth=\\SI4.2e6\\kelvin\\per\\watt±\\SI0.3e6\\kelvin\\per\\wattR_{\\mathrm{th}} ="
+        },
+        {
+          "cls": "col-md-6",
+          "excess": 220,
+          "width": 210,
+          "clippedBy": "bilingual-section mb-4:hidden",
+          "text": "原文The width dependence is captured by a Fuchs–Sondheimer-type boundary"
+        }
+      ],
+      "overflowCount": 36,
+      "rows": [
+        {
+          "ref": "p1-b3",
+          "page": "1",
+          "origRef": "p1-b3",
+          "transRef": "p1-b3",
+          "stacked": true,
+          "topDiff": null,
+          "heightDiff": null,
+          "missingShown": false,
+          "missingText": null,
+          "mtLabelInRow": true
+        },
+        {
+          "ref": "p1-b5",
+          "page": "1",
+          "origRef": "p1-b5",
+          "transRef": "p1-b5",
+          "stacked": true,
+          "topDiff": null,
+          "heightDiff": null,
+          "missingShown": false,
+          "missingText": null,
+          "mtLabelInRow": true
+        },
+        {
+          "ref": "p1-b7",
+          "page": "1",
+          "origRef": "p1-b7",
+          "transRef": "p1-b7",
+          "stacked": true,
+          "topDiff": null,
+          "heightDiff": null,
+          "missingShown": false,
+          "missingText": null,
+          "mtLabelInRow": true
+        },
+        {
+          "ref": "p1-b8",
+          "page": "1",
+          "origRef": "p1-b8",
+          "transRef": "p1-b8",
+          "stacked": true,
+          "topDiff": null,
+          "heightDiff": null,
+          "missingShown": false,
+          "missingText": null,
+          "mtLabelInRow": false
+        },
+        {
+          "ref": "p1-b9",
+          "page": "1",
+          "origRef": "p1-b9",
+          "transRef": "p1-b9",
+          "stacked": true,
+          "topDiff": null,
+          "heightDiff": null,
+          "missingShown": false,
+          "missingText": null,
+          "mtLabelInRow": false
+        },
+        {
+          "ref": "p2-b4",
+          "page": "2",
+          "origRef": "p2-b4",
+          "transRef": "p2-b4",
+          "stacked": true,
+          "topDiff": null,
+          "heightDiff": null,
+          "missingShown": false,
+          "missingText": null,
+          "mtLabelInRow": true
+        },
+        {
+          "ref": "p2-b6",
+          "page": "2",
+          "origRef": "p2-b6",
+          "transRef": "p2-b6",
+          "stacked": true,
+          "topDiff": null,
+          "heightDiff": null,
+          "missingShown": false,
+          "missingText": null,
+          "mtLabelInRow": true
+        },
+        {
+          "ref": "p2-b9",
+          "page": "2",
+          "origRef": "p2-b9",
+          "transRef": null,
+          "stacked": true,
+          "topDiff": null,
+          "heightDiff": null,
+          "missingShown": false,
+          "missingText": "中文翻譯（機器翻譯）\n此段落暫無可用翻譯",
+          "mtLabelInRow": true
+        },
+        {
+          "ref": "p2-b12",
+          "page": "2",
+          "origRef": "p2-b12",
+          "transRef": "p2-b12",
+          "stacked": true,
+          "topDiff": null,
+          "heightDiff": null,
+          "missingShown": false,
+          "missingText": null,
+          "mtLabelInRow": true
+        },
+        {
+          "ref": "p3-b3",
+          "page": "3",
+          "origRef": "p3-b3",
+          "transRef": "p3-b3",
+          "stacked": true,
+          "topDiff": null,
+          "heightDiff": null,
+          "missingShown": false,
+          "missingText": null,
+          "mtLabelInRow": true
+        },
+        {
+          "ref": "p3-b5",
+          "page": "3",
+          "origRef": "p3-b5",
+          "transRef": "p3-b5",
+          "stacked": true,
+          "topDiff": null,
+          "heightDiff": null,
+          "missingShown": false,
+          "missingText": null,
+          "mtLabelInRow": true
+        },
+        {
+          "ref": "p3-b7",
+          "page": "3",
+          "origRef": "p3-b7",
+          "transRef": "p3-b7",
+          "stacked": true,
+          "topDiff": null,
+          "heightDiff": null,
+          "missingShown": false,
+          "missingText": null,
+          "mtLabelInRow": true
+        },
+        {
+          "ref": "p4-b3",
+          "page": "4",
+          "origRef": "p4-b3",
+          "transRef": "p4-b3",
+          "stacked": true,
+          "topDiff": null,
+          "heightDiff": null,
+          "missingShown": false,
+          "missingText": null,
+          "mtLabelInRow": true
+        },
+        {
+          "ref": "p4-b5",
+          "page": "4",
+          "origRef": "p4-b5",
+          "transRef": "p4-b5",
+          "stacked": true,
+          "topDiff": null,
+          "heightDiff": null,
+          "missingShown": false,
+          "missingText": null,
+          "mtLabelInRow": true
+        },
+        {
+          "ref": "p4-b6",
+          "page": "4",
+          "origRef": "p4-b6",
+          "transRef": null,
+          "stacked": true,
+          "topDiff": null,
+          "heightDiff": null,
+          "missingShown": false,
+          "missingText": "此段落暫無可用翻譯",
+          "mtLabelInRow": false
+        },
+        {
+          "ref": "p4-b7",
+          "page": "4",
+          "origRef": "p4-b7",
+          "transRef": "p4-b7",
+          "stacked": true,
+          "topDiff": null,
+          "heightDiff": null,
+          "missingShown": false,
+          "missingText": null,
+          "mtLabelInRow": false
+        }
+      ],
+      "blocks": {
+        "total": 37,
+        "text": 25,
+        "originalAnchored": 21,
+        "withTranslation": 23,
+        "translationAnchored": 14,
+        "withoutTranslation": [
+          "p2-b9",
+          "p4-b6"
+        ],
+        "noOriginalAnchor": [
+          "p1-b4:subtitle:Abstract",
+          "p2-b2:subtitle:2. Methods",
+          "p2-b3:subsubtitle:2.1 Sample fabrication a",
+          "p2-b7:body:(n = 12)"
+        ],
+        "translationNotShown": [
+          "p1-b2:maintitle:懸空少層石墨烯微帶的應變可調",
+          "p1-b6:body:1. 緒論",
+          "p2-b2:subtitle:2. 方法",
+          "p2-b3:subsubtitle:2.1 樣本製作與應變校正",
+          "p2-b7:body:（n = 12）",
+          "p3-b2:title:3. 結果",
+          "p4-b2:body:4. 討論與結論",
+          "p4-b4:body:參考文獻"
+        ],
+        "originalAltered": [],
+        "specialWithRef": 0,
+        "special": 6
+      },
+      "equations": {
+        "blocks": 4,
+        "rendered": 3,
+        "katexErrorNodes": 16,
+        "katexErrorText": [
+          "\\SI",
+          "\\SI",
+          "\\kelvin",
+          "\\kelvin",
+          "\\per",
+          "\\per",
+          "\\watt",
+          "\\watt",
+          "\\SI",
+          "\\SI",
+          "\\kelvin",
+          "\\kelvin",
+          "\\per",
+          "\\per",
+          "\\watt",
+          "\\watt"
+        ],
+        "fallbackShown": 0,
+        "items": [
+          {
+            "w": 212,
+            "sw": 212,
+            "scrolls": false,
+            "scrollContainer": null,
+            "outer": 214,
+            "text": "𝜅 = 𝐿 2 𝐴 𝜒 𝑇 ∂ 𝜔 / ∂ 𝑃 ( 1 ) κ= 2A L ​ ∂ω/"
+          },
+          {
+            "w": 212,
+            "sw": 698,
+            "scrolls": true,
+            "scrollContainer": null,
+            "outer": 214,
+            "text": "𝜅 ( 𝑇 , 𝜀 ) = 𝜅 0 ( 1 + 𝛼 𝜀 + 𝛽 𝜀 2 ) exp "
+          },
+          {
+            "w": 212,
+            "sw": 476,
+            "scrolls": true,
+            "scrollContainer": null,
+            "outer": 214,
+            "text": "𝑅 t h = \\SI 4.2 𝑒 6 \\kelvin \\per \\watt ± \\SI 0.3"
+          },
+          {
+            "w": 212,
+            "sw": 212,
+            "scrolls": false,
+            "scrollContainer": null,
+            "outer": 214,
+            "text": "<Failed to OCR Equation> reason: latex_low_confide"
+          }
+        ]
+      },
+      "media": [
+        {
+          "kind": "figure",
+          "imgLoaded": true,
+          "natural": 1400,
+          "shown": 171,
+          "scale": 0.12,
+          "blockWidth": 212,
+          "outer": 214,
+          "blockOverflow": false,
+          "scrollRegion": null,
+          "caption": "Figure 1. In-plane thermal conductivity ",
+          "captionZh": false,
+          "mtLabel": false
+        },
+        {
+          "kind": "table",
+          "imgLoaded": true,
+          "natural": 2000,
+          "shown": 171,
+          "scale": 0.09,
+          "blockWidth": 212,
+          "outer": 214,
+          "blockOverflow": false,
+          "scrollRegion": null,
+          "caption": "w (µm) n κ(ε=0) κ(ε=0.8%) dκ/dε Λ_eff (µ",
+          "captionZh": false,
+          "mtLabel": false
+        }
+      ],
+      "links": [
+        {
+          "ref": "p2-b4",
+          "side": "original",
+          "own": 235,
+          "colOverflow": 214,
+          "rightOver": -22
+        },
+        {
+          "ref": "p2-b4",
+          "side": "translation",
+          "own": 273,
+          "colOverflow": 253,
+          "rightOver": -20
+        },
+        {
+          "ref": "p4-b5",
+          "side": "original",
+          "own": 31,
+          "colOverflow": 10,
+          "rightOver": -22
+        },
+        {
+          "ref": "p4-b5",
+          "side": "translation",
+          "own": 44,
+          "colOverflow": 23,
+          "rightOver": -20
+        },
+        {
+          "ref": "p4-b6",
+          "side": "original",
+          "own": 96,
+          "colOverflow": 75,
+          "rightOver": -22
+        },
+        {
+          "ref": "p4-b7",
+          "side": "original",
+          "own": 113,
+          "colOverflow": 92,
+          "rightOver": -22
+        },
+        {
+          "ref": "p4-b7",
+          "side": "translation",
+          "own": 131,
+          "colOverflow": 111,
+          "rightOver": -20
+        }
+      ],
+      "pages": {
+        "markers": [
+          "Page 1",
+          "Page 2",
+          "Page 3",
+          "Page 4"
+        ],
+        "nav": false,
+        "navItems": [],
+        "outOfOrder": []
+      },
+      "mt": {
+        "sections": 12,
+        "sectionsWithTranslation": 11,
+        "sectionsLabelled": 11,
+        "translationHosts": 14,
+        "unlabelled": [
+          "p1-b8",
+          "p1-b9",
+          "p4-b7"
+        ]
+      },
+      "layout": {
+        "matrixPane": [
+          234,
+          796
+        ],
+        "auxPane": [
+          98,
+          796
+        ],
+        "splitStacked": false,
+        "readerWidth": 234
+      },
+      "l10n": {
+        "simplified": [],
+        "mainland": [],
+        "uiEnglish": [
+          "Page 1",
+          "Page 2",
+          "Failed to OCR Equation",
+          "reason: latex_low_confidence",
+          "Page 3",
+          "Page 4"
+        ],
+        "headerLabels": [
+          "原文",
+          "中文翻譯（機器翻譯）"
+        ]
+      },
+      "keyboard": {
+        "scrollRegions": 2,
+        "focusable": 0,
+        "unfocusable": [
+          "equation-block mb-3 text-center",
+          "equation-block mb-3 text-center"
+        ]
+      },
+      "selection": {
+        "visible": true,
+        "left": -2,
+        "right": 382,
+        "top": 367,
+        "bottom": 404,
+        "width": 384,
+        "height": 37,
+        "vw": 390,
+        "vh": 844,
+        "inViewport": false,
+        "overlapsSelection": false,
+        "buttons": 3,
+        "buttonsVisible": 3,
+        "note": "譯文：來源事實會改用整段原文"
+      },
+      "keyboardFocus": {
+        "regions": 0
+      }
+    }
+  },
+  "checks": [
+    {
+      "name": "desktop 整頁沒有水平溢出",
+      "ok": true,
+      "detail": {
+        "scrollWidth": 1440,
+        "clientWidth": 1440,
+        "overflow": false
+      }
+    },
+    {
+      "name": "desktop 閱讀窗格沒有水平溢出",
+      "ok": true,
+      "detail": {
+        "clientWidth": 969,
+        "scrollWidth": 969,
+        "overflow": false
+      }
+    },
+    {
+      "name": "desktop 段落內容沒有撐出欄位（長網址／DOI／檔名）",
+      "ok": false,
+      "detail": [
+        {
+          "cls": "translation-content selectable-text",
+          "excess": 11,
+          "width": 433,
+          "clippedBy": "bilingual-section mb-4:hidden",
+          "text": "微帶以電子束微影（PMMA 950K A4，300 nm）與氧電漿蝕刻定義圖形，接著在緩衝氫氟酸中釋放並以臨界點乾燥。應變由 2D 拉曼峰的"
+        },
+        {
+          "cls": "row g-0 study-anchor-row",
+          "excess": 5,
+          "width": 947,
+          "clippedBy": "bilingual-section mb-4:hidden",
+          "text": "原文The width dependence is captured by a Fuchs–Sondheimer-type boundary"
+        },
+        {
+          "cls": "col-md-6",
+          "excess": 6,
+          "width": 473,
+          "clippedBy": "bilingual-section mb-4:hidden",
+          "text": "中文翻譯（機器翻譯）寬度相依性可由 Fuchs–Sondheimer 型邊界項描述，鏡面反射參數 $p = 0.12 \\pm 0.05$，亦"
+        },
+        {
+          "cls": "translation-content selectable-text",
+          "excess": 25,
+          "width": 433,
+          "clippedBy": "bilingual-section mb-4:hidden",
+          "text": "寬度相依性可由 Fuchs–Sondheimer 型邊界項描述，鏡面反射參數 $p = 0.12 \\pm 0.05$，亦即邊緣以漫反射為主，"
+        }
+      ]
+    },
+    {
+      "name": "desktop 每列原文與譯文同一 data-ref",
+      "ok": true,
+      "detail": []
+    },
+    {
+      "name": "desktop 並排時原文與譯文同列頂端對齊、等高",
+      "ok": true,
+      "detail": []
+    },
+    {
+      "name": "desktop 每個正文區塊都有原文錨點",
+      "ok": false,
+      "detail": [
+        "p1-b4:subtitle:Abstract",
+        "p2-b2:subtitle:2. Methods",
+        "p2-b3:subsubtitle:2.1 Sample fabrication a",
+        "p2-b7:body:(n = 12)"
+      ]
+    },
+    {
+      "name": "desktop 每段有譯文的區塊都顯示譯文且帶同一錨點",
+      "ok": false,
+      "detail": {
+        "anchored": 14,
+        "expected": 23,
+        "notShown": [
+          "p1-b2:maintitle:懸空少層石墨烯微帶的應變可調",
+          "p1-b6:body:1. 緒論",
+          "p2-b2:subtitle:2. 方法",
+          "p2-b3:subsubtitle:2.1 樣本製作與應變校正",
+          "p2-b7:body:（n = 12）",
+          "p3-b2:title:3. 結果",
+          "p4-b2:body:4. 討論與結論",
+          "p4-b4:body:參考文獻"
+        ]
+      }
+    },
+    {
+      "name": "desktop 原文逐字保留（不正規化符號與數字）",
+      "ok": true,
+      "detail": []
+    },
+    {
+      "name": "desktop 缺譯段落明確標示",
+      "ok": false,
+      "detail": [
+        {
+          "ref": "p2-b9",
+          "page": "2",
+          "origRef": "p2-b9",
+          "transRef": null,
+          "stacked": false,
+          "topDiff": 0,
+          "heightDiff": 0,
+          "missingShown": false,
+          "missingText": "中文翻譯（機器翻譯）\n此段落暫無可用翻譯",
+          "mtLabelInRow": true
+        },
+        {
+          "ref": "p4-b6",
+          "page": "4",
+          "origRef": "p4-b6",
+          "transRef": null,
+          "stacked": false,
+          "topDiff": 0,
+          "heightDiff": 0,
+          "missingShown": false,
+          "missingText": "此段落暫無可用翻譯",
+          "mtLabelInRow": false
+        }
+      ]
+    },
+    {
+      "name": "desktop 公式全部排版或改顯示原始 LaTeX，沒有 KaTeX 錯誤節點",
+      "ok": false,
+      "detail": {
+        "blocks": 4,
+        "rendered": 3,
+        "katexErrorNodes": 16,
+        "katexErrorText": [
+          "\\SI",
+          "\\SI",
+          "\\kelvin",
+          "\\kelvin",
+          "\\per",
+          "\\per",
+          "\\watt",
+          "\\watt",
+          "\\SI",
+          "\\SI",
+          "\\kelvin",
+          "\\kelvin",
+          "\\per",
+          "\\per",
+          "\\watt",
+          "\\watt"
+        ],
+        "fallbackShown": 0,
+        "items": [
+          {
+            "w": 898,
+            "sw": 898,
+            "scrolls": false,
+            "scrollContainer": null,
+            "outer": 900,
+            "text": "𝜅 = 𝐿 2 𝐴 𝜒 𝑇 ∂ 𝜔 / ∂ 𝑃 ( 1 ) κ= 2A L ​ ∂ω/"
+          },
+          {
+            "w": 898,
+            "sw": 898,
+            "scrolls": false,
+            "scrollContainer": null,
+            "outer": 900,
+            "text": "𝜅 ( 𝑇 , 𝜀 ) = 𝜅 0 ( 1 + 𝛼 𝜀 + 𝛽 𝜀 2 ) exp "
+          },
+          {
+            "w": 898,
+            "sw": 898,
+            "scrolls": false,
+            "scrollContainer": null,
+            "outer": 900,
+            "text": "𝑅 t h = \\SI 4.2 𝑒 6 \\kelvin \\per \\watt ± \\SI 0.3"
+          },
+          {
+            "w": 898,
+            "sw": 898,
+            "scrolls": false,
+            "scrollContainer": null,
+            "outer": 900,
+            "text": "<Failed to OCR Equation> reason: latex_low_confide"
+          }
+        ]
+      }
+    },
+    {
+      "name": "desktop 公式寬時在自己的區塊內捲動",
+      "ok": true,
+      "detail": [
+        {
+          "w": 898,
+          "sw": 898,
+          "scrolls": false,
+          "scrollContainer": null,
+          "outer": 900,
+          "text": "𝜅 = 𝐿 2 𝐴 𝜒 𝑇 ∂ 𝜔 / ∂ 𝑃 ( 1 ) κ= 2A L ​ ∂ω/"
+        },
+        {
+          "w": 898,
+          "sw": 898,
+          "scrolls": false,
+          "scrollContainer": null,
+          "outer": 900,
+          "text": "𝜅 ( 𝑇 , 𝜀 ) = 𝜅 0 ( 1 + 𝛼 𝜀 + 𝛽 𝜀 2 ) exp "
+        },
+        {
+          "w": 898,
+          "sw": 898,
+          "scrolls": false,
+          "scrollContainer": null,
+          "outer": 900,
+          "text": "𝑅 t h = \\SI 4.2 𝑒 6 \\kelvin \\per \\watt ± \\SI 0.3"
+        },
+        {
+          "w": 898,
+          "sw": 898,
+          "scrolls": false,
+          "scrollContainer": null,
+          "outer": 900,
+          "text": "<Failed to OCR Equation> reason: latex_low_confide"
+        }
+      ]
+    },
+    {
+      "name": "desktop 圖表圖片都載入",
+      "ok": true,
+      "detail": [
+        {
+          "kind": "figure",
+          "imgLoaded": true,
+          "natural": 1400,
+          "shown": 906,
+          "scale": 0.65,
+          "blockWidth": 947,
+          "outer": 949,
+          "blockOverflow": false,
+          "scrollRegion": null,
+          "caption": "Figure 1. In-plane thermal conductivity ",
+          "captionZh": false,
+          "mtLabel": false
+        },
+        {
+          "kind": "table",
+          "imgLoaded": true,
+          "natural": 2000,
+          "shown": 906,
+          "scale": 0.45,
+          "blockWidth": 947,
+          "outer": 949,
+          "blockOverflow": false,
+          "scrollRegion": null,
+          "caption": "w (µm) n κ(ε=0) κ(ε=0.8%) dκ/dε Λ_eff (µ",
+          "captionZh": false,
+          "mtLabel": false
+        }
+      ]
+    },
+    {
+      "name": "desktop 表格在自己的容器內捲動且可讀（縮放 ≥ 0.3）",
+      "ok": false,
+      "detail": [
+        {
+          "kind": "table",
+          "imgLoaded": true,
+          "natural": 2000,
+          "shown": 906,
+          "scale": 0.45,
+          "blockWidth": 947,
+          "outer": 949,
+          "blockOverflow": false,
+          "scrollRegion": null,
+          "caption": "w (µm) n κ(ε=0) κ(ε=0.8%) dκ/dε Λ_eff (µ",
+          "captionZh": false,
+          "mtLabel": false
+        }
+      ]
+    },
+    {
+      "name": "desktop 圖說附機器翻譯並標示",
+      "ok": false,
+      "detail": [
+        {
+          "kind": "figure",
+          "imgLoaded": true,
+          "natural": 1400,
+          "shown": 906,
+          "scale": 0.65,
+          "blockWidth": 947,
+          "outer": 949,
+          "blockOverflow": false,
+          "scrollRegion": null,
+          "caption": "Figure 1. In-plane thermal conductivity ",
+          "captionZh": false,
+          "mtLabel": false
+        },
+        {
+          "kind": "table",
+          "imgLoaded": true,
+          "natural": 2000,
+          "shown": 906,
+          "scale": 0.45,
+          "blockWidth": 947,
+          "outer": 949,
+          "blockOverflow": false,
+          "scrollRegion": null,
+          "caption": "w (µm) n κ(ε=0) κ(ε=0.8%) dκ/dε Λ_eff (µ",
+          "captionZh": false,
+          "mtLabel": false
+        }
+      ]
+    },
+    {
+      "name": "desktop 引文／網址段落不撐出欄位",
+      "ok": false,
+      "detail": [
+        {
+          "ref": "p2-b4",
+          "side": "original",
+          "own": 0,
+          "colOverflow": 0,
+          "rightOver": -22
+        },
+        {
+          "ref": "p2-b4",
+          "side": "translation",
+          "own": 11,
+          "colOverflow": 0,
+          "rightOver": -20
+        },
+        {
+          "ref": "p4-b5",
+          "side": "original",
+          "own": 0,
+          "colOverflow": 0,
+          "rightOver": -22
+        },
+        {
+          "ref": "p4-b5",
+          "side": "translation",
+          "own": 0,
+          "colOverflow": 0,
+          "rightOver": -20
+        },
+        {
+          "ref": "p4-b6",
+          "side": "original",
+          "own": 0,
+          "colOverflow": 0,
+          "rightOver": -22
+        },
+        {
+          "ref": "p4-b7",
+          "side": "original",
+          "own": 0,
+          "colOverflow": 0,
+          "rightOver": -22
+        },
+        {
+          "ref": "p4-b7",
+          "side": "translation",
+          "own": 0,
+          "colOverflow": 0,
+          "rightOver": -20
+        }
+      ]
+    },
+    {
+      "name": "desktop 每段譯文都看得到「機器翻譯」標示（並排看欄頭，上下排列每段自帶）",
+      "ok": true,
+      "detail": {
+        "sections": 12,
+        "sectionsWithTranslation": 11,
+        "sectionsLabelled": 11,
+        "translationHosts": 14,
+        "unlabelled": []
+      }
+    },
+    {
+      "name": "desktop 閱讀窗格寬度可讀（≥ 300px）",
+      "ok": true,
+      "detail": {
+        "matrixPane": [
+          969,
+          852
+        ],
+        "auxPane": [
+          413,
+          852
+        ],
+        "splitStacked": false,
+        "readerWidth": 969
+      }
+    },
+    {
+      "name": "desktop 頁碼標記 4 頁、順序正確、可跳頁",
+      "ok": false,
+      "detail": {
+        "markers": [
+          "Page 1",
+          "Page 2",
+          "Page 3",
+          "Page 4"
+        ],
+        "nav": false,
+        "navItems": [],
+        "outOfOrder": []
+      }
+    },
+    {
+      "name": "desktop 介面沒有簡體字或大陸用語",
+      "ok": true,
+      "detail": {
+        "simplified": [],
+        "mainland": [],
+        "uiEnglish": [
+          "Page 1",
+          "Page 2",
+          "Failed to OCR Equation",
+          "reason: latex_low_confidence",
+          "Page 3",
+          "Page 4"
+        ],
+        "headerLabels": [
+          "原文",
+          "中文翻譯（機器翻譯）"
+        ]
+      }
+    },
+    {
+      "name": "desktop 閱讀器沒有殘留英文介面字",
+      "ok": false,
+      "detail": [
+        "Page 1",
+        "Page 2",
+        "Failed to OCR Equation",
+        "reason: latex_low_confidence",
+        "Page 3",
+        "Page 4"
+      ]
+    },
+    {
+      "name": "desktop 選字動作列在視窗內、三個按鈕可見、不蓋住選取",
+      "ok": true,
+      "detail": {
+        "visible": true,
+        "left": 555,
+        "right": 939,
+        "top": 395,
+        "bottom": 432,
+        "width": 384,
+        "height": 37,
+        "vw": 1440,
+        "vh": 900,
+        "inViewport": true,
+        "overlapsSelection": false,
+        "buttons": 3,
+        "buttonsVisible": 3,
+        "note": "譯文：來源事實會改用整段原文"
+      }
+    },
+    {
+      "name": "desktop 可捲動的公式／表格區可用鍵盤聚焦",
+      "ok": false,
+      "detail": {
+        "scrollRegions": 0,
+        "focusable": 0,
+        "unfocusable": [],
+        "regions": 0
+      }
+    },
+    {
+      "name": "laptop 整頁沒有水平溢出",
+      "ok": true,
+      "detail": {
+        "scrollWidth": 1280,
+        "clientWidth": 1280,
+        "overflow": false
+      }
+    },
+    {
+      "name": "laptop 閱讀窗格沒有水平溢出",
+      "ok": true,
+      "detail": {
+        "clientWidth": 857,
+        "scrollWidth": 857,
+        "overflow": false
+      }
+    },
+    {
+      "name": "laptop 段落內容沒有撐出欄位（長網址／DOI／檔名）",
+      "ok": false,
+      "detail": [
+        {
+          "cls": "col-md-6",
+          "excess": 9,
+          "width": 415,
+          "clippedBy": "bilingual-section mb-4:hidden",
+          "text": "原文Ribbons were patterned by electron-beam lithography (PMMA 950K A4, 3"
+        },
+        {
+          "cls": "original-content selectable-text",
+          "excess": 29,
+          "width": 375,
+          "clippedBy": "bilingual-section mb-4:hidden",
+          "text": "Ribbons were patterned by electron-beam lithography (PMMA 950K A4, 300"
+        },
+        {
+          "cls": "P",
+          "excess": 29,
+          "width": 375,
+          "clippedBy": "bilingual-section mb-4:hidden",
+          "text": "Ribbons were patterned by electron-beam lithography (PMMA 950K A4, 300"
+        },
+        {
+          "cls": "col-md-6",
+          "excess": 48,
+          "width": 417,
+          "clippedBy": "bilingual-section mb-4:hidden",
+          "text": "中文翻譯（機器翻譯）微帶以電子束微影（PMMA 950K A4，300 nm）與氧電漿蝕刻定義圖形，接著在緩衝氫氟酸中釋放並以臨界點乾燥。應"
+        },
+        {
+          "cls": "translation-content selectable-text",
+          "excess": 67,
+          "width": 377,
+          "clippedBy": "bilingual-section mb-4:hidden",
+          "text": "微帶以電子束微影（PMMA 950K A4，300 nm）與氧電漿蝕刻定義圖形，接著在緩衝氫氟酸中釋放並以臨界點乾燥。應變由 2D 拉曼峰的"
+        },
+        {
+          "cls": "col-md-6",
+          "excess": 15,
+          "width": 415,
+          "clippedBy": "bilingual-section mb-4:hidden",
+          "text": "原文The width dependence is captured by a Fuchs–Sondheimer-type boundary"
+        },
+        {
+          "cls": "original-content selectable-text",
+          "excess": 34,
+          "width": 375,
+          "clippedBy": "bilingual-section mb-4:hidden",
+          "text": "The width dependence is captured by a Fuchs–Sondheimer-type boundary t"
+        },
+        {
+          "cls": "P",
+          "excess": 34,
+          "width": 375,
+          "clippedBy": "bilingual-section mb-4:hidden",
+          "text": "The width dependence is captured by a Fuchs–Sondheimer-type boundary t"
+        },
+        {
+          "cls": "col-md-6",
+          "excess": 62,
+          "width": 417,
+          "clippedBy": "bilingual-section mb-4:hidden",
+          "text": "中文翻譯（機器翻譯）寬度相依性可由 Fuchs–Sondheimer 型邊界項描述，鏡面反射參數 $p = 0.12 \\pm 0.05$，亦"
+        },
+        {
+          "cls": "translation-content selectable-text",
+          "excess": 81,
+          "width": 377,
+          "clippedBy": "bilingual-section mb-4:hidden",
+          "text": "寬度相依性可由 Fuchs–Sondheimer 型邊界項描述，鏡面反射參數 $p = 0.12 \\pm 0.05$，亦即邊緣以漫反射為主，"
+        }
+      ]
+    },
+    {
+      "name": "laptop 每列原文與譯文同一 data-ref",
+      "ok": true,
+      "detail": []
+    },
+    {
+      "name": "laptop 並排時原文與譯文同列頂端對齊、等高",
+      "ok": true,
+      "detail": []
+    },
+    {
+      "name": "laptop 每個正文區塊都有原文錨點",
+      "ok": false,
+      "detail": [
+        "p1-b4:subtitle:Abstract",
+        "p2-b2:subtitle:2. Methods",
+        "p2-b3:subsubtitle:2.1 Sample fabrication a",
+        "p2-b7:body:(n = 12)"
+      ]
+    },
+    {
+      "name": "laptop 每段有譯文的區塊都顯示譯文且帶同一錨點",
+      "ok": false,
+      "detail": {
+        "anchored": 14,
+        "expected": 23,
+        "notShown": [
+          "p1-b2:maintitle:懸空少層石墨烯微帶的應變可調",
+          "p1-b6:body:1. 緒論",
+          "p2-b2:subtitle:2. 方法",
+          "p2-b3:subsubtitle:2.1 樣本製作與應變校正",
+          "p2-b7:body:（n = 12）",
+          "p3-b2:title:3. 結果",
+          "p4-b2:body:4. 討論與結論",
+          "p4-b4:body:參考文獻"
+        ]
+      }
+    },
+    {
+      "name": "laptop 原文逐字保留（不正規化符號與數字）",
+      "ok": true,
+      "detail": []
+    },
+    {
+      "name": "laptop 缺譯段落明確標示",
+      "ok": false,
+      "detail": [
+        {
+          "ref": "p2-b9",
+          "page": "2",
+          "origRef": "p2-b9",
+          "transRef": null,
+          "stacked": false,
+          "topDiff": 0,
+          "heightDiff": 0,
+          "missingShown": false,
+          "missingText": "中文翻譯（機器翻譯）\n此段落暫無可用翻譯",
+          "mtLabelInRow": true
+        },
+        {
+          "ref": "p4-b6",
+          "page": "4",
+          "origRef": "p4-b6",
+          "transRef": null,
+          "stacked": false,
+          "topDiff": 0,
+          "heightDiff": 0,
+          "missingShown": false,
+          "missingText": "此段落暫無可用翻譯",
+          "mtLabelInRow": false
+        }
+      ]
+    },
+    {
+      "name": "laptop 公式全部排版或改顯示原始 LaTeX，沒有 KaTeX 錯誤節點",
+      "ok": false,
+      "detail": {
+        "blocks": 4,
+        "rendered": 3,
+        "katexErrorNodes": 16,
+        "katexErrorText": [
+          "\\SI",
+          "\\SI",
+          "\\kelvin",
+          "\\kelvin",
+          "\\per",
+          "\\per",
+          "\\watt",
+          "\\watt",
+          "\\SI",
+          "\\SI",
+          "\\kelvin",
+          "\\kelvin",
+          "\\per",
+          "\\per",
+          "\\watt",
+          "\\watt"
+        ],
+        "fallbackShown": 0,
+        "items": [
+          {
+            "w": 835,
+            "sw": 835,
+            "scrolls": false,
+            "scrollContainer": null,
+            "outer": 837,
+            "text": "𝜅 = 𝐿 2 𝐴 𝜒 𝑇 ∂ 𝜔 / ∂ 𝑃 ( 1 ) κ= 2A L ​ ∂ω/"
+          },
+          {
+            "w": 835,
+            "sw": 835,
+            "scrolls": false,
+            "scrollContainer": null,
+            "outer": 837,
+            "text": "𝜅 ( 𝑇 , 𝜀 ) = 𝜅 0 ( 1 + 𝛼 𝜀 + 𝛽 𝜀 2 ) exp "
+          },
+          {
+            "w": 835,
+            "sw": 835,
+            "scrolls": false,
+            "scrollContainer": null,
+            "outer": 837,
+            "text": "𝑅 t h = \\SI 4.2 𝑒 6 \\kelvin \\per \\watt ± \\SI 0.3"
+          },
+          {
+            "w": 835,
+            "sw": 835,
+            "scrolls": false,
+            "scrollContainer": null,
+            "outer": 837,
+            "text": "<Failed to OCR Equation> reason: latex_low_confide"
+          }
+        ]
+      }
+    },
+    {
+      "name": "laptop 公式寬時在自己的區塊內捲動",
+      "ok": true,
+      "detail": [
+        {
+          "w": 835,
+          "sw": 835,
+          "scrolls": false,
+          "scrollContainer": null,
+          "outer": 837,
+          "text": "𝜅 = 𝐿 2 𝐴 𝜒 𝑇 ∂ 𝜔 / ∂ 𝑃 ( 1 ) κ= 2A L ​ ∂ω/"
+        },
+        {
+          "w": 835,
+          "sw": 835,
+          "scrolls": false,
+          "scrollContainer": null,
+          "outer": 837,
+          "text": "𝜅 ( 𝑇 , 𝜀 ) = 𝜅 0 ( 1 + 𝛼 𝜀 + 𝛽 𝜀 2 ) exp "
+        },
+        {
+          "w": 835,
+          "sw": 835,
+          "scrolls": false,
+          "scrollContainer": null,
+          "outer": 837,
+          "text": "𝑅 t h = \\SI 4.2 𝑒 6 \\kelvin \\per \\watt ± \\SI 0.3"
+        },
+        {
+          "w": 835,
+          "sw": 835,
+          "scrolls": false,
+          "scrollContainer": null,
+          "outer": 837,
+          "text": "<Failed to OCR Equation> reason: latex_low_confide"
+        }
+      ]
+    },
+    {
+      "name": "laptop 圖表圖片都載入",
+      "ok": true,
+      "detail": [
+        {
+          "kind": "figure",
+          "imgLoaded": true,
+          "natural": 1400,
+          "shown": 794,
+          "scale": 0.57,
+          "blockWidth": 835,
+          "outer": 837,
+          "blockOverflow": false,
+          "scrollRegion": null,
+          "caption": "Figure 1. In-plane thermal conductivity ",
+          "captionZh": false,
+          "mtLabel": false
+        },
+        {
+          "kind": "table",
+          "imgLoaded": true,
+          "natural": 2000,
+          "shown": 794,
+          "scale": 0.4,
+          "blockWidth": 835,
+          "outer": 837,
+          "blockOverflow": false,
+          "scrollRegion": null,
+          "caption": "w (µm) n κ(ε=0) κ(ε=0.8%) dκ/dε Λ_eff (µ",
+          "captionZh": false,
+          "mtLabel": false
+        }
+      ]
+    },
+    {
+      "name": "laptop 表格在自己的容器內捲動且可讀（縮放 ≥ 0.3）",
+      "ok": false,
+      "detail": [
+        {
+          "kind": "table",
+          "imgLoaded": true,
+          "natural": 2000,
+          "shown": 794,
+          "scale": 0.4,
+          "blockWidth": 835,
+          "outer": 837,
+          "blockOverflow": false,
+          "scrollRegion": null,
+          "caption": "w (µm) n κ(ε=0) κ(ε=0.8%) dκ/dε Λ_eff (µ",
+          "captionZh": false,
+          "mtLabel": false
+        }
+      ]
+    },
+    {
+      "name": "laptop 圖說附機器翻譯並標示",
+      "ok": false,
+      "detail": [
+        {
+          "kind": "figure",
+          "imgLoaded": true,
+          "natural": 1400,
+          "shown": 794,
+          "scale": 0.57,
+          "blockWidth": 835,
+          "outer": 837,
+          "blockOverflow": false,
+          "scrollRegion": null,
+          "caption": "Figure 1. In-plane thermal conductivity ",
+          "captionZh": false,
+          "mtLabel": false
+        },
+        {
+          "kind": "table",
+          "imgLoaded": true,
+          "natural": 2000,
+          "shown": 794,
+          "scale": 0.4,
+          "blockWidth": 835,
+          "outer": 837,
+          "blockOverflow": false,
+          "scrollRegion": null,
+          "caption": "w (µm) n κ(ε=0) κ(ε=0.8%) dκ/dε Λ_eff (µ",
+          "captionZh": false,
+          "mtLabel": false
+        }
+      ]
+    },
+    {
+      "name": "laptop 引文／網址段落不撐出欄位",
+      "ok": false,
+      "detail": [
+        {
+          "ref": "p2-b4",
+          "side": "original",
+          "own": 29,
+          "colOverflow": 9,
+          "rightOver": -22
+        },
+        {
+          "ref": "p2-b4",
+          "side": "translation",
+          "own": 67,
+          "colOverflow": 48,
+          "rightOver": -20
+        },
+        {
+          "ref": "p4-b5",
+          "side": "original",
+          "own": 0,
+          "colOverflow": 0,
+          "rightOver": -22
+        },
+        {
+          "ref": "p4-b5",
+          "side": "translation",
+          "own": 0,
+          "colOverflow": 0,
+          "rightOver": -20
+        },
+        {
+          "ref": "p4-b6",
+          "side": "original",
+          "own": 0,
+          "colOverflow": 0,
+          "rightOver": -22
+        },
+        {
+          "ref": "p4-b7",
+          "side": "original",
+          "own": 0,
+          "colOverflow": 0,
+          "rightOver": -22
+        },
+        {
+          "ref": "p4-b7",
+          "side": "translation",
+          "own": 0,
+          "colOverflow": 0,
+          "rightOver": -20
+        }
+      ]
+    },
+    {
+      "name": "laptop 每段譯文都看得到「機器翻譯」標示（並排看欄頭，上下排列每段自帶）",
+      "ok": true,
+      "detail": {
+        "sections": 12,
+        "sectionsWithTranslation": 11,
+        "sectionsLabelled": 11,
+        "translationHosts": 14,
+        "unlabelled": []
+      }
+    },
+    {
+      "name": "laptop 閱讀窗格寬度可讀（≥ 300px）",
+      "ok": true,
+      "detail": {
+        "matrixPane": [
+          857,
+          752
+        ],
+        "auxPane": [
+          365,
+          752
+        ],
+        "splitStacked": false,
+        "readerWidth": 857
+      }
+    },
+    {
+      "name": "laptop 頁碼標記 4 頁、順序正確、可跳頁",
+      "ok": false,
+      "detail": {
+        "markers": [
+          "Page 1",
+          "Page 2",
+          "Page 3",
+          "Page 4"
+        ],
+        "nav": false,
+        "navItems": [],
+        "outOfOrder": []
+      }
+    },
+    {
+      "name": "laptop 介面沒有簡體字或大陸用語",
+      "ok": true,
+      "detail": {
+        "simplified": [],
+        "mainland": [],
+        "uiEnglish": [
+          "Page 1",
+          "Page 2",
+          "Failed to OCR Equation",
+          "reason: latex_low_confidence",
+          "Page 3",
+          "Page 4"
+        ],
+        "headerLabels": [
+          "原文",
+          "中文翻譯（機器翻譯）"
+        ]
+      }
+    },
+    {
+      "name": "laptop 閱讀器沒有殘留英文介面字",
+      "ok": false,
+      "detail": [
+        "Page 1",
+        "Page 2",
+        "Failed to OCR Equation",
+        "reason: latex_low_confidence",
+        "Page 3",
+        "Page 4"
+      ]
+    },
+    {
+      "name": "laptop 選字動作列在視窗內、三個按鈕可見、不蓋住選取",
+      "ok": true,
+      "detail": {
+        "visible": true,
+        "left": 499,
+        "right": 883,
+        "top": 345,
+        "bottom": 382,
+        "width": 384,
+        "height": 37,
+        "vw": 1280,
+        "vh": 800,
+        "inViewport": true,
+        "overlapsSelection": false,
+        "buttons": 3,
+        "buttonsVisible": 3,
+        "note": "譯文：來源事實會改用整段原文"
+      }
+    },
+    {
+      "name": "laptop 可捲動的公式／表格區可用鍵盤聚焦",
+      "ok": false,
+      "detail": {
+        "scrollRegions": 0,
+        "focusable": 0,
+        "unfocusable": [],
+        "regions": 0
+      }
+    },
+    {
+      "name": "tablet 整頁沒有水平溢出",
+      "ok": true,
+      "detail": {
+        "scrollWidth": 820,
+        "clientWidth": 820,
+        "overflow": false
+      }
+    },
+    {
+      "name": "tablet 閱讀窗格沒有水平溢出",
+      "ok": true,
+      "detail": {
+        "clientWidth": 535,
+        "scrollWidth": 535,
+        "overflow": false
+      }
+    },
+    {
+      "name": "tablet 段落內容沒有撐出欄位（長網址／DOI／檔名）",
+      "ok": false,
+      "detail": [
+        {
+          "cls": "col-md-6",
+          "excess": 170,
+          "width": 254,
+          "clippedBy": "bilingual-section mb-4:hidden",
+          "text": "原文Ribbons were patterned by electron-beam lithography (PMMA 950K A4, 3"
+        },
+        {
+          "cls": "original-content selectable-text",
+          "excess": 190,
+          "width": 214,
+          "clippedBy": "bilingual-section mb-4:hidden",
+          "text": "Ribbons were patterned by electron-beam lithography (PMMA 950K A4, 300"
+        },
+        {
+          "cls": "P",
+          "excess": 190,
+          "width": 214,
+          "clippedBy": "bilingual-section mb-4:hidden",
+          "text": "Ribbons were patterned by electron-beam lithography (PMMA 950K A4, 300"
+        },
+        {
+          "cls": "col-md-6",
+          "excess": 209,
+          "width": 256,
+          "clippedBy": "bilingual-section mb-4:hidden",
+          "text": "中文翻譯（機器翻譯）微帶以電子束微影（PMMA 950K A4，300 nm）與氧電漿蝕刻定義圖形，接著在緩衝氫氟酸中釋放並以臨界點乾燥。應"
+        },
+        {
+          "cls": "translation-content selectable-text",
+          "excess": 228,
+          "width": 216,
+          "clippedBy": "bilingual-section mb-4:hidden",
+          "text": "微帶以電子束微影（PMMA 950K A4，300 nm）與氧電漿蝕刻定義圖形，接著在緩衝氫氟酸中釋放並以臨界點乾燥。應變由 2D 拉曼峰的"
+        },
+        {
+          "cls": "katex-display",
+          "excess": 206,
+          "width": 472,
+          "clippedBy": "equation-block mb-3 text-center:auto",
+          "text": "κ(T,ε)=κ0(1+αε+βε2)exp⁡ ⁣(−EakBT)+∑i=1NCi vi2 τi3[1−τiτi+τb(w)]−γ ∂ω2D"
+        },
+        {
+          "cls": "col-md-6",
+          "excess": 176,
+          "width": 254,
+          "clippedBy": "bilingual-section mb-4:hidden",
+          "text": "原文The width dependence is captured by a Fuchs–Sondheimer-type boundary"
+        },
+        {
+          "cls": "original-content selectable-text",
+          "excess": 195,
+          "width": 214,
+          "clippedBy": "bilingual-section mb-4:hidden",
+          "text": "The width dependence is captured by a Fuchs–Sondheimer-type boundary t"
+        },
+        {
+          "cls": "P",
+          "excess": 195,
+          "width": 214,
+          "clippedBy": "bilingual-section mb-4:hidden",
+          "text": "The width dependence is captured by a Fuchs–Sondheimer-type boundary t"
+        },
+        {
+          "cls": "col-md-6",
+          "excess": 223,
+          "width": 256,
+          "clippedBy": "bilingual-section mb-4:hidden",
+          "text": "中文翻譯（機器翻譯）寬度相依性可由 Fuchs–Sondheimer 型邊界項描述，鏡面反射參數 $p = 0.12 \\pm 0.05$，亦"
+        },
+        {
+          "cls": "translation-content selectable-text",
+          "excess": 242,
+          "width": 216,
+          "clippedBy": "bilingual-section mb-4:hidden",
+          "text": "寬度相依性可由 Fuchs–Sondheimer 型邊界項描述，鏡面反射參數 $p = 0.12 \\pm 0.05$，亦即邊緣以漫反射為主，"
+        },
+        {
+          "cls": "original-content selectable-text",
+          "excess": 51,
+          "width": 214,
+          "clippedBy": "bilingual-section mb-4:hidden",
+          "text": "[12] J. Smith, K. Tanaka, L. Moreau, Strain-dependent phonon transport"
+        }
+      ]
+    },
+    {
+      "name": "tablet 每列原文與譯文同一 data-ref",
+      "ok": true,
+      "detail": []
+    },
+    {
+      "name": "tablet 並排時原文與譯文同列頂端對齊、等高",
+      "ok": true,
+      "detail": []
+    },
+    {
+      "name": "tablet 每個正文區塊都有原文錨點",
+      "ok": false,
+      "detail": [
+        "p1-b4:subtitle:Abstract",
+        "p2-b2:subtitle:2. Methods",
+        "p2-b3:subsubtitle:2.1 Sample fabrication a",
+        "p2-b7:body:(n = 12)"
+      ]
+    },
+    {
+      "name": "tablet 每段有譯文的區塊都顯示譯文且帶同一錨點",
+      "ok": false,
+      "detail": {
+        "anchored": 14,
+        "expected": 23,
+        "notShown": [
+          "p1-b2:maintitle:懸空少層石墨烯微帶的應變可調",
+          "p1-b6:body:1. 緒論",
+          "p2-b2:subtitle:2. 方法",
+          "p2-b3:subsubtitle:2.1 樣本製作與應變校正",
+          "p2-b7:body:（n = 12）",
+          "p3-b2:title:3. 結果",
+          "p4-b2:body:4. 討論與結論",
+          "p4-b4:body:參考文獻"
+        ]
+      }
+    },
+    {
+      "name": "tablet 原文逐字保留（不正規化符號與數字）",
+      "ok": true,
+      "detail": []
+    },
+    {
+      "name": "tablet 缺譯段落明確標示",
+      "ok": false,
+      "detail": [
+        {
+          "ref": "p2-b9",
+          "page": "2",
+          "origRef": "p2-b9",
+          "transRef": null,
+          "stacked": false,
+          "topDiff": 0,
+          "heightDiff": 0,
+          "missingShown": false,
+          "missingText": "中文翻譯（機器翻譯）\n此段落暫無可用翻譯",
+          "mtLabelInRow": true
+        },
+        {
+          "ref": "p4-b6",
+          "page": "4",
+          "origRef": "p4-b6",
+          "transRef": null,
+          "stacked": false,
+          "topDiff": 0,
+          "heightDiff": 0,
+          "missingShown": false,
+          "missingText": "此段落暫無可用翻譯",
+          "mtLabelInRow": false
+        }
+      ]
+    },
+    {
+      "name": "tablet 公式全部排版或改顯示原始 LaTeX，沒有 KaTeX 錯誤節點",
+      "ok": false,
+      "detail": {
+        "blocks": 4,
+        "rendered": 3,
+        "katexErrorNodes": 16,
+        "katexErrorText": [
+          "\\SI",
+          "\\SI",
+          "\\kelvin",
+          "\\kelvin",
+          "\\per",
+          "\\per",
+          "\\watt",
+          "\\watt",
+          "\\SI",
+          "\\SI",
+          "\\kelvin",
+          "\\kelvin",
+          "\\per",
+          "\\per",
+          "\\watt",
+          "\\watt"
+        ],
+        "fallbackShown": 0,
+        "items": [
+          {
+            "w": 513,
+            "sw": 513,
+            "scrolls": false,
+            "scrollContainer": null,
+            "outer": 515,
+            "text": "𝜅 = 𝐿 2 𝐴 𝜒 𝑇 ∂ 𝜔 / ∂ 𝑃 ( 1 ) κ= 2A L ​ ∂ω/"
+          },
+          {
+            "w": 513,
+            "sw": 698,
+            "scrolls": true,
+            "scrollContainer": null,
+            "outer": 515,
+            "text": "𝜅 ( 𝑇 , 𝜀 ) = 𝜅 0 ( 1 + 𝛼 𝜀 + 𝛽 𝜀 2 ) exp "
+          },
+          {
+            "w": 513,
+            "sw": 513,
+            "scrolls": false,
+            "scrollContainer": null,
+            "outer": 515,
+            "text": "𝑅 t h = \\SI 4.2 𝑒 6 \\kelvin \\per \\watt ± \\SI 0.3"
+          },
+          {
+            "w": 513,
+            "sw": 513,
+            "scrolls": false,
+            "scrollContainer": null,
+            "outer": 515,
+            "text": "<Failed to OCR Equation> reason: latex_low_confide"
+          }
+        ]
+      }
+    },
+    {
+      "name": "tablet 公式寬時在自己的區塊內捲動",
+      "ok": true,
+      "detail": [
+        {
+          "w": 513,
+          "sw": 513,
+          "scrolls": false,
+          "scrollContainer": null,
+          "outer": 515,
+          "text": "𝜅 = 𝐿 2 𝐴 𝜒 𝑇 ∂ 𝜔 / ∂ 𝑃 ( 1 ) κ= 2A L ​ ∂ω/"
+        },
+        {
+          "w": 513,
+          "sw": 698,
+          "scrolls": true,
+          "scrollContainer": null,
+          "outer": 515,
+          "text": "𝜅 ( 𝑇 , 𝜀 ) = 𝜅 0 ( 1 + 𝛼 𝜀 + 𝛽 𝜀 2 ) exp "
+        },
+        {
+          "w": 513,
+          "sw": 513,
+          "scrolls": false,
+          "scrollContainer": null,
+          "outer": 515,
+          "text": "𝑅 t h = \\SI 4.2 𝑒 6 \\kelvin \\per \\watt ± \\SI 0.3"
+        },
+        {
+          "w": 513,
+          "sw": 513,
+          "scrolls": false,
+          "scrollContainer": null,
+          "outer": 515,
+          "text": "<Failed to OCR Equation> reason: latex_low_confide"
+        }
+      ]
+    },
+    {
+      "name": "tablet 圖表圖片都載入",
+      "ok": true,
+      "detail": [
+        {
+          "kind": "figure",
+          "imgLoaded": true,
+          "natural": 1400,
+          "shown": 472,
+          "scale": 0.34,
+          "blockWidth": 513,
+          "outer": 515,
+          "blockOverflow": false,
+          "scrollRegion": null,
+          "caption": "Figure 1. In-plane thermal conductivity ",
+          "captionZh": false,
+          "mtLabel": false
+        },
+        {
+          "kind": "table",
+          "imgLoaded": true,
+          "natural": 2000,
+          "shown": 472,
+          "scale": 0.24,
+          "blockWidth": 513,
+          "outer": 515,
+          "blockOverflow": false,
+          "scrollRegion": null,
+          "caption": "w (µm) n κ(ε=0) κ(ε=0.8%) dκ/dε Λ_eff (µ",
+          "captionZh": false,
+          "mtLabel": false
+        }
+      ]
+    },
+    {
+      "name": "tablet 表格在自己的容器內捲動且可讀（縮放 ≥ 0.3）",
+      "ok": false,
+      "detail": [
+        {
+          "kind": "table",
+          "imgLoaded": true,
+          "natural": 2000,
+          "shown": 472,
+          "scale": 0.24,
+          "blockWidth": 513,
+          "outer": 515,
+          "blockOverflow": false,
+          "scrollRegion": null,
+          "caption": "w (µm) n κ(ε=0) κ(ε=0.8%) dκ/dε Λ_eff (µ",
+          "captionZh": false,
+          "mtLabel": false
+        }
+      ]
+    },
+    {
+      "name": "tablet 圖說附機器翻譯並標示",
+      "ok": false,
+      "detail": [
+        {
+          "kind": "figure",
+          "imgLoaded": true,
+          "natural": 1400,
+          "shown": 472,
+          "scale": 0.34,
+          "blockWidth": 513,
+          "outer": 515,
+          "blockOverflow": false,
+          "scrollRegion": null,
+          "caption": "Figure 1. In-plane thermal conductivity ",
+          "captionZh": false,
+          "mtLabel": false
+        },
+        {
+          "kind": "table",
+          "imgLoaded": true,
+          "natural": 2000,
+          "shown": 472,
+          "scale": 0.24,
+          "blockWidth": 513,
+          "outer": 515,
+          "blockOverflow": false,
+          "scrollRegion": null,
+          "caption": "w (µm) n κ(ε=0) κ(ε=0.8%) dκ/dε Λ_eff (µ",
+          "captionZh": false,
+          "mtLabel": false
+        }
+      ]
+    },
+    {
+      "name": "tablet 引文／網址段落不撐出欄位",
+      "ok": false,
+      "detail": [
+        {
+          "ref": "p2-b4",
+          "side": "original",
+          "own": 190,
+          "colOverflow": 170,
+          "rightOver": -22
+        },
+        {
+          "ref": "p2-b4",
+          "side": "translation",
+          "own": 228,
+          "colOverflow": 209,
+          "rightOver": -20
+        },
+        {
+          "ref": "p4-b5",
+          "side": "original",
+          "own": 0,
+          "colOverflow": 0,
+          "rightOver": -22
+        },
+        {
+          "ref": "p4-b5",
+          "side": "translation",
+          "own": 0,
+          "colOverflow": 0,
+          "rightOver": -20
+        },
+        {
+          "ref": "p4-b6",
+          "side": "original",
+          "own": 51,
+          "colOverflow": 31,
+          "rightOver": -22
+        },
+        {
+          "ref": "p4-b7",
+          "side": "original",
+          "own": 68,
+          "colOverflow": 48,
+          "rightOver": -22
+        },
+        {
+          "ref": "p4-b7",
+          "side": "translation",
+          "own": 86,
+          "colOverflow": 67,
+          "rightOver": -20
+        }
+      ]
+    },
+    {
+      "name": "tablet 每段譯文都看得到「機器翻譯」標示（並排看欄頭，上下排列每段自帶）",
+      "ok": true,
+      "detail": {
+        "sections": 12,
+        "sectionsWithTranslation": 11,
+        "sectionsLabelled": 11,
+        "translationHosts": 14,
+        "unlabelled": []
+      }
+    },
+    {
+      "name": "tablet 閱讀窗格寬度可讀（≥ 300px）",
+      "ok": true,
+      "detail": {
+        "matrixPane": [
+          535,
+          1132
+        ],
+        "auxPane": [
+          227,
+          1132
+        ],
+        "splitStacked": false,
+        "readerWidth": 535
+      }
+    },
+    {
+      "name": "tablet 頁碼標記 4 頁、順序正確、可跳頁",
+      "ok": false,
+      "detail": {
+        "markers": [
+          "Page 1",
+          "Page 2",
+          "Page 3",
+          "Page 4"
+        ],
+        "nav": false,
+        "navItems": [],
+        "outOfOrder": []
+      }
+    },
+    {
+      "name": "tablet 介面沒有簡體字或大陸用語",
+      "ok": true,
+      "detail": {
+        "simplified": [],
+        "mainland": [],
+        "uiEnglish": [
+          "Page 1",
+          "Page 2",
+          "Failed to OCR Equation",
+          "reason: latex_low_confidence",
+          "Page 3",
+          "Page 4"
+        ],
+        "headerLabels": [
+          "原文",
+          "中文翻譯（機器翻譯）"
+        ]
+      }
+    },
+    {
+      "name": "tablet 閱讀器沒有殘留英文介面字",
+      "ok": false,
+      "detail": [
+        "Page 1",
+        "Page 2",
+        "Failed to OCR Equation",
+        "reason: latex_low_confidence",
+        "Page 3",
+        "Page 4"
+      ]
+    },
+    {
+      "name": "tablet 選字動作列在視窗內、三個按鈕可見、不蓋住選取",
+      "ok": true,
+      "detail": {
+        "visible": true,
+        "left": 338,
+        "right": 722,
+        "top": 511,
+        "bottom": 547,
+        "width": 384,
+        "height": 37,
+        "vw": 820,
+        "vh": 1180,
+        "inViewport": true,
+        "overlapsSelection": false,
+        "buttons": 3,
+        "buttonsVisible": 3,
+        "note": "譯文：來源事實會改用整段原文"
+      }
+    },
+    {
+      "name": "tablet 可捲動的公式／表格區可用鍵盤聚焦",
+      "ok": false,
+      "detail": {
+        "scrollRegions": 1,
+        "focusable": 0,
+        "unfocusable": [
+          "equation-block mb-3 text-center"
+        ],
+        "regions": 0
+      }
+    },
+    {
+      "name": "phone 整頁沒有水平溢出",
+      "ok": true,
+      "detail": {
+        "scrollWidth": 390,
+        "clientWidth": 390,
+        "overflow": false
+      }
+    },
+    {
+      "name": "phone 閱讀窗格沒有水平溢出",
+      "ok": true,
+      "detail": {
+        "clientWidth": 234,
+        "scrollWidth": 234,
+        "overflow": false
+      }
+    },
+    {
+      "name": "phone 段落內容沒有撐出欄位（長網址／DOI／檔名）",
+      "ok": false,
+      "detail": [
+        {
+          "cls": "original-content selectable-text",
+          "excess": 12,
+          "width": 169,
+          "clippedBy": "bilingual-section mb-4:hidden",
+          "text": "¹ Department of Physics, National Synthetic University, Hsinchu 30013,"
+        },
+        {
+          "cls": "P",
+          "excess": 12,
+          "width": 169,
+          "clippedBy": "bilingual-section mb-4:hidden",
+          "text": "¹ Department of Physics, National Synthetic University, Hsinchu 30013,"
+        },
+        {
+          "cls": "translation-content selectable-text",
+          "excess": 33,
+          "width": 171,
+          "clippedBy": "bilingual-section mb-4:hidden",
+          "text": "¹ 國立合成大學物理學系，新竹 30013，臺灣。² 通訊作者：bowei.chen@example.invalid。³ 虛構材料研究所，愛"
+        },
+        {
+          "cls": "col-md-6",
+          "excess": 214,
+          "width": 210,
+          "clippedBy": "bilingual-section mb-4:hidden",
+          "text": "原文Ribbons were patterned by electron-beam lithography (PMMA 950K A4, 3"
+        },
+        {
+          "cls": "original-content selectable-text",
+          "excess": 235,
+          "width": 169,
+          "clippedBy": "bilingual-section mb-4:hidden",
+          "text": "Ribbons were patterned by electron-beam lithography (PMMA 950K A4, 300"
+        },
+        {
+          "cls": "P",
+          "excess": 235,
+          "width": 169,
+          "clippedBy": "bilingual-section mb-4:hidden",
+          "text": "Ribbons were patterned by electron-beam lithography (PMMA 950K A4, 300"
+        },
+        {
+          "cls": "col-md-6",
+          "excess": 253,
+          "width": 212,
+          "clippedBy": "bilingual-section mb-4:hidden",
+          "text": "中文翻譯（機器翻譯）微帶以電子束微影（PMMA 950K A4，300 nm）與氧電漿蝕刻定義圖形，接著在緩衝氫氟酸中釋放並以臨界點乾燥。應"
+        },
+        {
+          "cls": "translation-content selectable-text",
+          "excess": 273,
+          "width": 171,
+          "clippedBy": "bilingual-section mb-4:hidden",
+          "text": "微帶以電子束微影（PMMA 950K A4，300 nm）與氧電漿蝕刻定義圖形，接著在緩衝氫氟酸中釋放並以臨界點乾燥。應變由 2D 拉曼峰的"
+        },
+        {
+          "cls": "katex-display",
+          "excess": 5,
+          "width": 171,
+          "clippedBy": "equation-block mb-3 text-center:auto",
+          "text": "κ=L2A χT∂ω/∂P(1)\\kappa = \\frac{L}{2 A}\\,\\frac{\\chi_T}{\\partial \\omega "
+        },
+        {
+          "cls": "katex-display",
+          "excess": 507,
+          "width": 171,
+          "clippedBy": "equation-block mb-3 text-center:auto",
+          "text": "κ(T,ε)=κ0(1+αε+βε2)exp⁡ ⁣(−EakBT)+∑i=1NCi vi2 τi3[1−τiτi+τb(w)]−γ ∂ω2D"
+        },
+        {
+          "cls": "katex-display",
+          "excess": 284,
+          "width": 171,
+          "clippedBy": "equation-block mb-3 text-center:auto",
+          "text": "Rth=\\SI4.2e6\\kelvin\\per\\watt±\\SI0.3e6\\kelvin\\per\\wattR_{\\mathrm{th}} ="
+        },
+        {
+          "cls": "col-md-6",
+          "excess": 220,
+          "width": 210,
+          "clippedBy": "bilingual-section mb-4:hidden",
+          "text": "原文The width dependence is captured by a Fuchs–Sondheimer-type boundary"
+        }
+      ]
+    },
+    {
+      "name": "phone 每列原文與譯文同一 data-ref",
+      "ok": true,
+      "detail": []
+    },
+    {
+      "name": "phone 並排時原文與譯文同列頂端對齊、等高",
+      "ok": true,
+      "detail": []
+    },
+    {
+      "name": "phone 每個正文區塊都有原文錨點",
+      "ok": false,
+      "detail": [
+        "p1-b4:subtitle:Abstract",
+        "p2-b2:subtitle:2. Methods",
+        "p2-b3:subsubtitle:2.1 Sample fabrication a",
+        "p2-b7:body:(n = 12)"
+      ]
+    },
+    {
+      "name": "phone 每段有譯文的區塊都顯示譯文且帶同一錨點",
+      "ok": false,
+      "detail": {
+        "anchored": 14,
+        "expected": 23,
+        "notShown": [
+          "p1-b2:maintitle:懸空少層石墨烯微帶的應變可調",
+          "p1-b6:body:1. 緒論",
+          "p2-b2:subtitle:2. 方法",
+          "p2-b3:subsubtitle:2.1 樣本製作與應變校正",
+          "p2-b7:body:（n = 12）",
+          "p3-b2:title:3. 結果",
+          "p4-b2:body:4. 討論與結論",
+          "p4-b4:body:參考文獻"
+        ]
+      }
+    },
+    {
+      "name": "phone 原文逐字保留（不正規化符號與數字）",
+      "ok": true,
+      "detail": []
+    },
+    {
+      "name": "phone 缺譯段落明確標示",
+      "ok": false,
+      "detail": [
+        {
+          "ref": "p2-b9",
+          "page": "2",
+          "origRef": "p2-b9",
+          "transRef": null,
+          "stacked": true,
+          "topDiff": null,
+          "heightDiff": null,
+          "missingShown": false,
+          "missingText": "中文翻譯（機器翻譯）\n此段落暫無可用翻譯",
+          "mtLabelInRow": true
+        },
+        {
+          "ref": "p4-b6",
+          "page": "4",
+          "origRef": "p4-b6",
+          "transRef": null,
+          "stacked": true,
+          "topDiff": null,
+          "heightDiff": null,
+          "missingShown": false,
+          "missingText": "此段落暫無可用翻譯",
+          "mtLabelInRow": false
+        }
+      ]
+    },
+    {
+      "name": "phone 公式全部排版或改顯示原始 LaTeX，沒有 KaTeX 錯誤節點",
+      "ok": false,
+      "detail": {
+        "blocks": 4,
+        "rendered": 3,
+        "katexErrorNodes": 16,
+        "katexErrorText": [
+          "\\SI",
+          "\\SI",
+          "\\kelvin",
+          "\\kelvin",
+          "\\per",
+          "\\per",
+          "\\watt",
+          "\\watt",
+          "\\SI",
+          "\\SI",
+          "\\kelvin",
+          "\\kelvin",
+          "\\per",
+          "\\per",
+          "\\watt",
+          "\\watt"
+        ],
+        "fallbackShown": 0,
+        "items": [
+          {
+            "w": 212,
+            "sw": 212,
+            "scrolls": false,
+            "scrollContainer": null,
+            "outer": 214,
+            "text": "𝜅 = 𝐿 2 𝐴 𝜒 𝑇 ∂ 𝜔 / ∂ 𝑃 ( 1 ) κ= 2A L ​ ∂ω/"
+          },
+          {
+            "w": 212,
+            "sw": 698,
+            "scrolls": true,
+            "scrollContainer": null,
+            "outer": 214,
+            "text": "𝜅 ( 𝑇 , 𝜀 ) = 𝜅 0 ( 1 + 𝛼 𝜀 + 𝛽 𝜀 2 ) exp "
+          },
+          {
+            "w": 212,
+            "sw": 476,
+            "scrolls": true,
+            "scrollContainer": null,
+            "outer": 214,
+            "text": "𝑅 t h = \\SI 4.2 𝑒 6 \\kelvin \\per \\watt ± \\SI 0.3"
+          },
+          {
+            "w": 212,
+            "sw": 212,
+            "scrolls": false,
+            "scrollContainer": null,
+            "outer": 214,
+            "text": "<Failed to OCR Equation> reason: latex_low_confide"
+          }
+        ]
+      }
+    },
+    {
+      "name": "phone 公式寬時在自己的區塊內捲動",
+      "ok": true,
+      "detail": [
+        {
+          "w": 212,
+          "sw": 212,
+          "scrolls": false,
+          "scrollContainer": null,
+          "outer": 214,
+          "text": "𝜅 = 𝐿 2 𝐴 𝜒 𝑇 ∂ 𝜔 / ∂ 𝑃 ( 1 ) κ= 2A L ​ ∂ω/"
+        },
+        {
+          "w": 212,
+          "sw": 698,
+          "scrolls": true,
+          "scrollContainer": null,
+          "outer": 214,
+          "text": "𝜅 ( 𝑇 , 𝜀 ) = 𝜅 0 ( 1 + 𝛼 𝜀 + 𝛽 𝜀 2 ) exp "
+        },
+        {
+          "w": 212,
+          "sw": 476,
+          "scrolls": true,
+          "scrollContainer": null,
+          "outer": 214,
+          "text": "𝑅 t h = \\SI 4.2 𝑒 6 \\kelvin \\per \\watt ± \\SI 0.3"
+        },
+        {
+          "w": 212,
+          "sw": 212,
+          "scrolls": false,
+          "scrollContainer": null,
+          "outer": 214,
+          "text": "<Failed to OCR Equation> reason: latex_low_confide"
+        }
+      ]
+    },
+    {
+      "name": "phone 圖表圖片都載入",
+      "ok": true,
+      "detail": [
+        {
+          "kind": "figure",
+          "imgLoaded": true,
+          "natural": 1400,
+          "shown": 171,
+          "scale": 0.12,
+          "blockWidth": 212,
+          "outer": 214,
+          "blockOverflow": false,
+          "scrollRegion": null,
+          "caption": "Figure 1. In-plane thermal conductivity ",
+          "captionZh": false,
+          "mtLabel": false
+        },
+        {
+          "kind": "table",
+          "imgLoaded": true,
+          "natural": 2000,
+          "shown": 171,
+          "scale": 0.09,
+          "blockWidth": 212,
+          "outer": 214,
+          "blockOverflow": false,
+          "scrollRegion": null,
+          "caption": "w (µm) n κ(ε=0) κ(ε=0.8%) dκ/dε Λ_eff (µ",
+          "captionZh": false,
+          "mtLabel": false
+        }
+      ]
+    },
+    {
+      "name": "phone 表格在自己的容器內捲動且可讀（縮放 ≥ 0.3）",
+      "ok": false,
+      "detail": [
+        {
+          "kind": "table",
+          "imgLoaded": true,
+          "natural": 2000,
+          "shown": 171,
+          "scale": 0.09,
+          "blockWidth": 212,
+          "outer": 214,
+          "blockOverflow": false,
+          "scrollRegion": null,
+          "caption": "w (µm) n κ(ε=0) κ(ε=0.8%) dκ/dε Λ_eff (µ",
+          "captionZh": false,
+          "mtLabel": false
+        }
+      ]
+    },
+    {
+      "name": "phone 圖說附機器翻譯並標示",
+      "ok": false,
+      "detail": [
+        {
+          "kind": "figure",
+          "imgLoaded": true,
+          "natural": 1400,
+          "shown": 171,
+          "scale": 0.12,
+          "blockWidth": 212,
+          "outer": 214,
+          "blockOverflow": false,
+          "scrollRegion": null,
+          "caption": "Figure 1. In-plane thermal conductivity ",
+          "captionZh": false,
+          "mtLabel": false
+        },
+        {
+          "kind": "table",
+          "imgLoaded": true,
+          "natural": 2000,
+          "shown": 171,
+          "scale": 0.09,
+          "blockWidth": 212,
+          "outer": 214,
+          "blockOverflow": false,
+          "scrollRegion": null,
+          "caption": "w (µm) n κ(ε=0) κ(ε=0.8%) dκ/dε Λ_eff (µ",
+          "captionZh": false,
+          "mtLabel": false
+        }
+      ]
+    },
+    {
+      "name": "phone 引文／網址段落不撐出欄位",
+      "ok": false,
+      "detail": [
+        {
+          "ref": "p2-b4",
+          "side": "original",
+          "own": 235,
+          "colOverflow": 214,
+          "rightOver": -22
+        },
+        {
+          "ref": "p2-b4",
+          "side": "translation",
+          "own": 273,
+          "colOverflow": 253,
+          "rightOver": -20
+        },
+        {
+          "ref": "p4-b5",
+          "side": "original",
+          "own": 31,
+          "colOverflow": 10,
+          "rightOver": -22
+        },
+        {
+          "ref": "p4-b5",
+          "side": "translation",
+          "own": 44,
+          "colOverflow": 23,
+          "rightOver": -20
+        },
+        {
+          "ref": "p4-b6",
+          "side": "original",
+          "own": 96,
+          "colOverflow": 75,
+          "rightOver": -22
+        },
+        {
+          "ref": "p4-b7",
+          "side": "original",
+          "own": 113,
+          "colOverflow": 92,
+          "rightOver": -22
+        },
+        {
+          "ref": "p4-b7",
+          "side": "translation",
+          "own": 131,
+          "colOverflow": 111,
+          "rightOver": -20
+        }
+      ]
+    },
+    {
+      "name": "phone 每段譯文都看得到「機器翻譯」標示（並排看欄頭，上下排列每段自帶）",
+      "ok": false,
+      "detail": {
+        "sections": 12,
+        "sectionsWithTranslation": 11,
+        "sectionsLabelled": 11,
+        "translationHosts": 14,
+        "unlabelled": [
+          "p1-b8",
+          "p1-b9",
+          "p4-b7"
+        ]
+      }
+    },
+    {
+      "name": "phone 閱讀窗格寬度可讀（≥ 300px）",
+      "ok": false,
+      "detail": {
+        "matrixPane": [
+          234,
+          796
+        ],
+        "auxPane": [
+          98,
+          796
+        ],
+        "splitStacked": false,
+        "readerWidth": 234
+      }
+    },
+    {
+      "name": "phone 頁碼標記 4 頁、順序正確、可跳頁",
+      "ok": false,
+      "detail": {
+        "markers": [
+          "Page 1",
+          "Page 2",
+          "Page 3",
+          "Page 4"
+        ],
+        "nav": false,
+        "navItems": [],
+        "outOfOrder": []
+      }
+    },
+    {
+      "name": "phone 介面沒有簡體字或大陸用語",
+      "ok": true,
+      "detail": {
+        "simplified": [],
+        "mainland": [],
+        "uiEnglish": [
+          "Page 1",
+          "Page 2",
+          "Failed to OCR Equation",
+          "reason: latex_low_confidence",
+          "Page 3",
+          "Page 4"
+        ],
+        "headerLabels": [
+          "原文",
+          "中文翻譯（機器翻譯）"
+        ]
+      }
+    },
+    {
+      "name": "phone 閱讀器沒有殘留英文介面字",
+      "ok": false,
+      "detail": [
+        "Page 1",
+        "Page 2",
+        "Failed to OCR Equation",
+        "reason: latex_low_confidence",
+        "Page 3",
+        "Page 4"
+      ]
+    },
+    {
+      "name": "phone 選字動作列在視窗內、三個按鈕可見、不蓋住選取",
+      "ok": false,
+      "detail": {
+        "visible": true,
+        "left": -2,
+        "right": 382,
+        "top": 367,
+        "bottom": 404,
+        "width": 384,
+        "height": 37,
+        "vw": 390,
+        "vh": 844,
+        "inViewport": false,
+        "overlapsSelection": false,
+        "buttons": 3,
+        "buttonsVisible": 3,
+        "note": "譯文：來源事實會改用整段原文"
+      }
+    },
+    {
+      "name": "phone 可捲動的公式／表格區可用鍵盤聚焦",
+      "ok": false,
+      "detail": {
+        "scrollRegions": 2,
+        "focusable": 0,
+        "unfocusable": [
+          "equation-block mb-3 text-center",
+          "equation-block mb-3 text-center"
+        ],
+        "regions": 0
+      }
+    },
+    {
+      "name": "沒有頁面腳本錯誤",
+      "ok": true,
+      "detail": []
+    }
+  ],
+  "errors": [],
+  "finished": "2026-11-02T06:07:56.026Z",
+  "summary": {
+    "checks": 89,
+    "passed": 42,
+    "failed": 47,
+    "errors": 0
+  }
+}

@@ -1,0 +1,82 @@
+{
+  "phase": "before",
+  "checks": [],
+  "metrics": {
+    "legacy_latest_rendered": 1,
+    "request_payload": {
+      "pid": "STUDYMX-p",
+      "paper_ids": [
+        "mx_a_lowtemp",
+        "mx_b_annealing",
+        "mx_c_calibration",
+        "mx_d_position"
+      ]
+    },
+    "response_comparisons_order": [
+      "mx_b_annealing",
+      "mx_c_calibration",
+      "mx_d_position"
+    ],
+    "response_baseline": "mx_a_lowtemp",
+    "ui_headers": [
+      "維度",
+      "Paper A mx_a_lowtemp",
+      "Paper B mx_b_annealing",
+      "Synthesis Cross-paper Integration"
+    ],
+    "ui_rows": 5,
+    "ui_title": "已比較 2 篇文獻",
+    "papers_selected": 4,
+    "papers_visible_as_columns": 2,
+    "shows_not_reported_label": false,
+    "ranking_text_visible": false,
+    "na_cells": 1,
+    "stub_calls": [
+      {
+        "t": 1793599192.6511548,
+        "task": "task_6_comparison",
+        "format": "legacy",
+        "target": "mx_b_annealing",
+        "prompt_chars": 4352,
+        "markers": {
+          "annealing_methods": false,
+          "annealing_results": false,
+          "annealing_limitations": false,
+          "baseline_results": false
+        }
+      },
+      {
+        "t": 1793599192.6546462,
+        "task": "task_6_comparison",
+        "format": "legacy",
+        "target": "mx_c_calibration",
+        "prompt_chars": 2632,
+        "markers": {
+          "annealing_methods": false,
+          "annealing_results": false,
+          "annealing_limitations": false,
+          "baseline_results": true
+        }
+      },
+      {
+        "t": 1793599192.6556334,
+        "task": "task_6_comparison",
+        "format": "legacy",
+        "target": "mx_d_position",
+        "prompt_chars": 2206,
+        "markers": {
+          "annealing_methods": false,
+          "annealing_results": false,
+          "annealing_limitations": false,
+          "baseline_results": false
+        }
+      }
+    ]
+  },
+  "errors": [],
+  "screenshots": [
+    "<scratch>/r7matrix/before/before-00-legacy-latest.png",
+    "<scratch>/r7matrix/before/before-01-matrix-4-papers.png",
+    "<scratch>/r7matrix/before/before-02-matrix-4-papers-full.png"
+  ]
+}

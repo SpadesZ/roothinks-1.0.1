@@ -1,0 +1,72 @@
+{
+ "checks": [
+  {
+   "name": "R7 研究者用文獻庫介面匯入兩筆文獻（含中文標題與 DOI）",
+   "ok": true,
+   "detail": {
+    "before": 1,
+    "after": 3,
+    "dialogs": [
+     "匯入完成: +2 新增, 0 更新, 0 略過"
+    ]
+   }
+  },
+  {
+   "name": "R7 負向控制：格式錯誤的匯入被擋下並說明原因，文獻數不變",
+   "ok": true,
+   "detail": [
+    "JSON 解析失敗: SyntaxError: Expected property name or '}' in JSON at position 1 (line 1 column 2)"
+   ]
+  },
+  {
+   "name": "R7 匯入後可直接開啟雙語閱讀，譯文標示機器翻譯",
+   "ok": true,
+   "detail": null
+  },
+  {
+   "name": "R7 研究者自主：有不確定或缺資料時仍可匯出 DOCX",
+   "ok": true,
+   "detail": {
+    "status": 200,
+    "zip": true
+   }
+  },
+  {
+   "name": "R7 負向控制：外人讀不到文獻庫、論文、比較矩陣與段落出處，也不能匯入",
+   "ok": true,
+   "detail": {
+    "library": 403,
+    "papers": 403,
+    "matrix_history": 403,
+    "matrix_latest": 403,
+    "provenance": 403,
+    "import": 403
+   }
+  },
+  {
+   "name": "R7 負向控制：教授審閱身分不能匯入文獻（資料不變）",
+   "ok": true,
+   "detail": {
+    "status": 403,
+    "countAfter": 3
+   }
+  },
+  {
+   "name": "R7 教授審閱身分看不到研究矩陣（PA-01 提議中的範圍）",
+   "ok": true,
+   "detail": {
+    "status": 403
+   }
+  }
+ ],
+ "errors": [],
+ "dialogs": [
+  "匯入完成: +2 新增, 0 更新, 0 略過",
+  "JSON 解析失敗: SyntaxError: Expected property name or '}' in JSON at position 1 (line 1 column 2)"
+ ],
+ "summary": {
+  "checks": 7,
+  "failed": 0,
+  "errors": 0
+ }
+}

@@ -1,0 +1,420 @@
+{
+  "phase": "after",
+  "checks": [
+    {
+      "name": "舊記錄（R6 單一比較）載入後畫成 2 欄矩陣",
+      "ok": true,
+      "detail": [
+        {
+          "id": "mx_c_calibration",
+          "coverage": "舊版記錄：沒有記錄 AI 讀了哪些段落。"
+        },
+        {
+          "id": "mx_b_annealing",
+          "coverage": "舊版記錄：沒有記錄 AI 讀了哪些段落。"
+        }
+      ]
+    },
+    {
+      "name": "舊記錄標明未核對原文",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "name": "舊記錄的 N/A 顯示為未報告，當時的評析不顯示",
+      "ok": true,
+      "detail": {
+        "paper": "mx_b_annealing",
+        "status": "not_reported",
+        "badge": "未報告",
+        "text": "未報告\n帶入家教\n舊版記錄標為 N/A（可能只是當時沒讀到）\n有一方缺資料：不比較、不排名。",
+        "evidence": [],
+        "rejected": [],
+        "relation": "",
+        "withheld": "missing"
+      }
+    },
+    {
+      "name": "側欄順序＝勾選順序（不是清單排序），第一篇標基準",
+      "ok": true,
+      "detail": [
+        "mx_c_calibration",
+        "mx_b_annealing",
+        "mx_a_lowtemp",
+        "mx_d_position"
+      ]
+    },
+    {
+      "name": "可自填維度並勾選",
+      "ok": true,
+      "detail": [
+        "研究問題與目標",
+        "方法與系統設計",
+        "資料與實驗設定",
+        "結果與證據強度",
+        "限制與風險",
+        "樣本溫度"
+      ]
+    },
+    {
+      "name": "送出勾選順序、明示基準與所選維度",
+      "ok": true,
+      "detail": {
+        "pid": "STUDYMX-p",
+        "paper_ids": [
+          "mx_c_calibration",
+          "mx_b_annealing",
+          "mx_a_lowtemp",
+          "mx_d_position"
+        ],
+        "baseline_id": "mx_c_calibration",
+        "dimensions": [
+          "研究問題與目標",
+          "方法與系統設計",
+          "資料與實驗設定",
+          "結果與證據強度",
+          "限制與風險",
+          "樣本溫度"
+        ],
+        "criteria": "研究問題與目標、方法與系統設計、資料與實驗設定、結果與證據強度、限制與風險、樣本溫度"
+      }
+    },
+    {
+      "name": "伺服器保存成功",
+      "ok": true,
+      "detail": {
+        "status": 200,
+        "saved": true
+      }
+    },
+    {
+      "name": "4 篇論文全部成為欄位，順序＝勾選順序",
+      "ok": true,
+      "detail": [
+        "mx_c_calibration",
+        "mx_b_annealing",
+        "mx_a_lowtemp",
+        "mx_d_position"
+      ]
+    },
+    {
+      "name": "列＝所選 6 個維度（含自填）",
+      "ok": true,
+      "detail": [
+        "研究問題與目標",
+        "方法與系統設計",
+        "資料與實驗設定",
+        "結果與證據強度",
+        "限制與風險",
+        "樣本溫度"
+      ]
+    },
+    {
+      "name": "每篇都有比較依據（頁碼範圍與段數）",
+      "ok": true,
+      "detail": [
+        "比較依據：p.1–p.3 共 7 段（全部正文）。",
+        "比較依據：p.1–p.3 共 11 段（全部正文）。",
+        "比較依據：p.1–p.2 共 3 段（全部正文）。",
+        "比較依據：p.1–p.2 共 2 段（全部正文）。"
+      ]
+    },
+    {
+      "name": "標明 AI 協助、研究者判斷，引文不等於支持",
+      "ok": true,
+      "detail": "AI 協助整理與比較，判斷由你決定。 每格只根據 AI 讀到的段落；「原文中找到」只代表引文逐字存在於原文，不代表它支持該格的描述。缺資料的格子不比較、不排名。"
+    },
+    {
+      "name": "表格有 caption 說明欄列",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "name": "捏造的引文 0 次成為證據",
+      "ok": true,
+      "detail": []
+    },
+    {
+      "name": "捏造的引文只出現在「已排除」清單",
+      "ok": true,
+      "detail": [
+        "77 K — 太短，無法歸屬到特定位置",
+        "The improvement was replicated across five independent sample batches. — 原文中找不到這段文字",
+        "The authors acknowledge that no experiments were performed in this paper. — 原文中找不到這段文字"
+      ]
+    },
+    {
+      "name": "同一格真引文保留、可點回原文",
+      "ok": true,
+      "detail": {
+        "paper": "mx_b_annealing",
+        "status": "reported",
+        "badge": "有報告",
+        "text": "有報告\n帶入家教\n300 K 下 60 分鐘退火改善 18%，20 分鐘改善 9%；作者宣稱已在五批樣本重現。\np.3「the 60-minute anneal improved thermal response by 18 percent relative to the uncalibrated baseline」\n原文中找到；是否支持這格的描述由你判斷。\n已排除 1 段 AI 引文（不是證據）\nAI 描述的差異\n兩篇都在 300 K、以相對未校正基線的百分比報告；對照論文另外改變退火時間。",
+        "evidence": [
+          {
+            "ref": "p3-b2",
+            "text": "p.3「the 60-minute anneal improved thermal response by 18 percent relative to the uncalibrated baseline」"
+          }
+        ],
+        "rejected": [
+          "The improvement was replicated across five independent sample batches. — 原文中找不到這段文字"
+        ],
+        "relation": "AI 描述的差異\n兩篇都在 300 K、以相對未校正基線的百分比報告；對照論文另外改變退火時間。",
+        "withheld": ""
+      }
+    },
+    {
+      "name": "只有捏造引文的「有報告」降為不確定",
+      "ok": true,
+      "detail": {
+        "paper": "mx_d_position",
+        "status": "uncertain",
+        "badge": "不確定",
+        "text": "不確定\n帶入家教\nAI 說有報告，但沒有提供原文中找得到的引文\n作者承認本文沒有做任何實驗。\n已排除 1 段 AI 引文（不是證據）\nAI 描述的差異\n描述方式不同，細節請對照原文。",
+        "evidence": [],
+        "rejected": [
+          "The authors acknowledge that no experiments were performed in this paper. — 原文中找不到這段文字"
+        ],
+        "relation": "AI 描述的差異\n描述方式不同，細節請對照原文。",
+        "withheld": ""
+      }
+    },
+    {
+      "name": "缺資料顯示「未報告」",
+      "ok": true,
+      "detail": [
+        [
+          "mx_d_position",
+          "not_reported",
+          "未報告"
+        ],
+        [
+          "mx_d_position",
+          "not_reported",
+          "未報告"
+        ],
+        [
+          "mx_a_lowtemp",
+          "not_reported",
+          "未報告"
+        ]
+      ]
+    },
+    {
+      "name": "未報告的格子沒有任何差異描述或排名",
+      "ok": true,
+      "detail": [
+        [
+          "mx_d_position",
+          "",
+          "missing"
+        ],
+        [
+          "mx_d_position",
+          "",
+          "missing"
+        ],
+        [
+          "mx_d_position",
+          "",
+          "missing"
+        ],
+        [
+          "mx_a_lowtemp",
+          "",
+          "missing"
+        ]
+      ]
+    },
+    {
+      "name": "整個矩陣沒有任何由缺資料或不可比較推出的優劣排名",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "name": "條件不同標「不可比較」並附理由",
+      "ok": true,
+      "detail": {
+        "paper": "mx_a_lowtemp",
+        "status": "not_comparable",
+        "badge": "不可比較",
+        "text": "不可比較\n帶入家教\n量測溫度不同（77 K 對 300 K），而且單位不同（mW/K 對百分比），不能直接比較大小。\n77 K 下熱響應增加 0.8 mW/K。\np.2「The thermal response increased by 0.8 mW/K after calibration at 77 K.」\n原文中找到；是否支持這格的描述由你判斷。\n條件不同：不比較大小。",
+        "evidence": [
+          {
+            "ref": "p2-b4",
+            "text": "p.2「The thermal response increased by 0.8 mW/K after calibration at 77 K.」"
+          }
+        ],
+        "rejected": [],
+        "relation": "",
+        "withheld": "not_comparable"
+      }
+    },
+    {
+      "name": "AI 標錯段落的真引文改到實際段落並註明",
+      "ok": true,
+      "detail": [
+        {
+          "ref": "p3-b3",
+          "text": "p.3「The result may depend on the annealing time, which this study held constant.」"
+        }
+      ]
+    },
+    {
+      "name": "太短的引文被排除",
+      "ok": true,
+      "detail": [
+        "77 K — 太短，無法歸屬到特定位置"
+      ]
+    },
+    {
+      "name": "系統檢查列出找到與排除的引文數",
+      "ok": true,
+      "detail": "系統檢查（只檢查引文是否逐字存在）：原文中找到的引文 24 段、 已排除 3 段（找不到、太短或無法歸屬）；模型呼叫 3 次。"
+    },
+    {
+      "name": "自填維度沒有資料時標不確定，不補值",
+      "ok": true,
+      "detail": [
+        "uncertain",
+        "uncertain",
+        "uncertain",
+        "uncertain"
+      ]
+    },
+    {
+      "name": "長文字沒有被截斷（全文保存）",
+      "ok": true,
+      "detail": "；是否支持這格的描述由你判斷。\nAI 描述的差異\n描述方式不同，細節請對照原文。"
+    },
+    {
+      "name": "長文字可「展開」",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "name": "模型呼叫次數＝對照論文數（每篇一次）",
+      "ok": true,
+      "detail": 3
+    },
+    {
+      "name": "2,500 字之後的方法／結果／限制段落有送給比較器",
+      "ok": true,
+      "detail": {
+        "annealing_methods": true,
+        "annealing_results": true,
+        "annealing_limitations": true,
+        "baseline_results": true
+      }
+    },
+    {
+      "name": "鍵盤按證據開閱讀器並定位到同一段",
+      "ok": true,
+      "detail": {
+        "paper": "mx_b_annealing",
+        "mode": "quote"
+      }
+    },
+    {
+      "name": "重新整理後欄位順序不變",
+      "ok": true,
+      "detail": [
+        "mx_c_calibration",
+        "mx_b_annealing",
+        "mx_a_lowtemp",
+        "mx_d_position"
+      ]
+    },
+    {
+      "name": "重新整理後維度不變",
+      "ok": true,
+      "detail": [
+        "研究問題與目標",
+        "方法與系統設計",
+        "資料與實驗設定",
+        "結果與證據強度",
+        "限制與風險",
+        "樣本溫度"
+      ]
+    },
+    {
+      "name": "papers_comp 舊檔畫成 2 欄並標舊版",
+      "ok": true,
+      "detail": [
+        {
+          "id": "mx_c_calibration",
+          "coverage": "舊版記錄：沒有記錄 AI 讀了哪些段落。"
+        },
+        {
+          "id": "mx_a_lowtemp",
+          "coverage": "舊版記錄：沒有記錄 AI 讀了哪些段落。"
+        }
+      ]
+    },
+    {
+      "name": "窄螢幕可水平捲動且維度欄固定",
+      "ok": true,
+      "detail": {
+        "scrollable": true,
+        "scrolled": 400,
+        "before": 59,
+        "after": 59,
+        "pageOverflow": false
+      }
+    }
+  ],
+  "metrics": {
+    "request_payload": {
+      "pid": "STUDYMX-p",
+      "paper_ids": [
+        "mx_c_calibration",
+        "mx_b_annealing",
+        "mx_a_lowtemp",
+        "mx_d_position"
+      ],
+      "baseline_id": "mx_c_calibration",
+      "dimensions": [
+        "研究問題與目標",
+        "方法與系統設計",
+        "資料與實驗設定",
+        "結果與證據強度",
+        "限制與風險",
+        "樣本溫度"
+      ],
+      "criteria": "研究問題與目標、方法與系統設計、資料與實驗設定、結果與證據強度、限制與風險、樣本溫度"
+    },
+    "matrix_id": "mx_1793614771_e7e8bdec",
+    "columns": [
+      "mx_c_calibration",
+      "mx_b_annealing",
+      "mx_a_lowtemp",
+      "mx_d_position"
+    ],
+    "rows": [
+      "研究問題與目標",
+      "方法與系統設計",
+      "資料與實驗設定",
+      "結果與證據強度",
+      "限制與風險",
+      "樣本溫度"
+    ],
+    "model_calls_this_compare": 3,
+    "annealing_input_markers": {
+      "annealing_methods": true,
+      "annealing_results": true,
+      "annealing_limitations": true,
+      "baseline_results": true
+    }
+  },
+  "errors": [],
+  "screenshots": [
+    "<scratch>/r7acc/run1/matrix/after-00-legacy-record.png",
+    "<scratch>/r7acc/run1/matrix/after-01-sidebar-setup.png",
+    "<scratch>/r7acc/run1/matrix/after-02-matrix-4-papers.png",
+    "<scratch>/r7acc/run1/matrix/after-02b-matrix-4-papers-full.png",
+    "<scratch>/r7acc/run1/matrix/after-03-evidence-in-reader.png",
+    "<scratch>/r7acc/run1/matrix/after-04-reloaded.png",
+    "<scratch>/r7acc/run1/matrix/after-05-phone.png"
+  ]
+}
