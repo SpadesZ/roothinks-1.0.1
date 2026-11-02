@@ -927,7 +927,7 @@ def save_sections(pid):
     if not pid:
         return jsonify({'ok': False, 'message': 'Invalid pid'}), 404
 
-    # [R6] 章節結構是專案層設定：下面會整批刪除再重建 ManuSectionConfig（改名、刪章、排序），
+    # [R6／熱修 H9] 章節結構是專案層設定：下面會整批刪除再重建 ManuSectionConfig（改名、刪章、排序），
     # 因此需 editor 以上，與 2C 全篇總裝同一道門檻。before_request 只驗「是專案成員」——
     # 原本教授審閱身分、團隊 viewer、限定編輯（coauthor）都能把整份章節結構改掉。
     # 必須在任何 DB 異動之前擋下；路徑在 /manuscript/api/ 之下不走 CSRF 守衛，授權只能在這裡做。

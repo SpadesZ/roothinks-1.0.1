@@ -1,0 +1,23 @@
+{
+ "mode": "session",
+ "checks": [
+  {
+   "name": "session: 圖片載入（網址不帶 token）",
+   "ok": true,
+   "detail": {
+    "loaded": 4
+   }
+  },
+  {
+   "name": "session: 沒有任何請求網址帶 token",
+   "ok": true,
+   "detail": []
+  },
+  {
+   "name": "session: 確實發出過圖片請求",
+   "ok": true,
+   "detail": 36
+  }
+ ],
+ "requests": 36
+}
