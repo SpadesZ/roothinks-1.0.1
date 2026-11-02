@@ -326,3 +326,208 @@
 #evidence-notes-pane[hidden], #free-notes-pane[hidden] {
     display: none !important;
 }
+
+/* ---- R7 雙語閱讀器：長字換行、窄窗格上下排列、公式／表格捲動、機器翻譯標示、跳頁列 ----
+ * 實測依據（合成論文 synthetic_r7_reading，量測腳本 test/integration_e2e/reading_ui_r7_browser.cjs）：
+ *   - 長網址／DOI／檔名被 .bilingual-section 的 overflow:hidden 裁掉：1280px 寬切掉 67px、820px 切掉 228px、390px 切掉 273px。
+ *   - justify 在中英混排與 $\kappa$ 這類長字串旁把字距拉開（「降 幅 34.6% 。」）。
+ *   - 820px 平板閱讀窗格只有 535px 卻仍左右並排（每欄約 214px 文字）；390px 手機閱讀窗格 234px、AI 家教 98px（直書破圖）。
+ */
+#fulltext-content {
+    container-type: inline-size;
+    container-name: study-reader;
+}
+/* overflow-wrap 只改折行位置、不插入連字號：複製出來的網址／DOI 仍完整，不改動原文字元。 */
+#fulltext-content .original-content,
+#fulltext-content .translation-content,
+#fulltext-content .study-fragment,
+#fulltext-content .section-title-header,
+#fulltext-content .study-subtitle,
+#fulltext-content .figure-block p,
+#fulltext-content .table-block p {
+    overflow-wrap: anywhere;
+}
+#fulltext-content .study-anchor-row > [class*="col-"] {
+    min-width: 0;
+}
+/* 段落 inline style 寫死 text-align:justify，只能用 !important 蓋掉。 */
+#fulltext-content .original-content p,
+#fulltext-content .translation-content {
+    text-align: start !important;
+}
+#fulltext-content .study-fragment[data-side="original"] {
+    font-size: .95rem;
+    line-height: 1.75;
+    color: #2d3748;
+}
+#fulltext-content .study-fragment[data-side="translation"] {
+    font-size: 1.02rem;
+    line-height: 1.8;
+    color: #1a202c;
+}
+
+/* 機器翻譯標籤：在錨點元素之外、不可選取，選字只拿到譯文本身。 */
+.study-mt-badge {
+    display: inline-block;
+    margin-right: .4rem;
+    padding: 0 .35rem;
+    border-radius: 4px;
+    font-size: .7rem;
+    font-weight: 600;
+    color: #4c51bf;
+    background: #eef2ff;
+    vertical-align: .1em;
+    user-select: none;
+}
+.study-heading-trans {
+    margin-top: .25rem;
+    color: #4a5568;
+}
+.study-caption-trans {
+    color: #4a5568;
+}
+.study-translation-missing {
+    font-style: italic;
+}
+
+/* KaTeX 排不出來時的原始 LaTeX（見 study_view.js _equationFallbackHtml）。 */
+.study-equation-fallback {
+    display: block;
+    text-align: left;
+}
+.study-equation-fallback-note {
+    display: block;
+    margin-bottom: .35rem;
+    font-size: .8rem;
+    color: #9a3412;
+}
+.study-latex-source {
+    display: block;
+    padding: .5rem .75rem;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    font-size: .85rem;
+    color: #1a202c;
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+}
+.study-equation-ocr {
+    display: block;
+    margin-top: .35rem;
+    font-size: .8rem;
+    color: #4a5568;
+}
+
+/* 寬公式／表格在自己的區塊內捲動；可聚焦，焦點外框要看得到。 */
+.study-media-scroll {
+    max-width: 100%;
+    overflow-x: auto;
+}
+#fulltext-content [data-scroll-region]:focus-visible {
+    outline: 2px solid #2563eb;
+    outline-offset: 2px;
+}
+.study-figure-link {
+    display: inline-block;
+    max-width: 100%;
+    cursor: zoom-in;
+}
+
+/* 跳頁列：.fulltext-reader 的直接子層，整篇捲動時黏在閱讀窗格頂端。 */
+.study-page-nav {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    display: flex;
+    align-items: center;
+    gap: .35rem;
+    max-width: 1200px;
+    margin: 0 auto 1rem;
+    padding: .35rem .5rem;
+    overflow-x: auto;
+    background: rgba(255, 255, 255, .96);
+    border-bottom: 1px solid #e2e8f0;
+}
+.study-page-nav-label {
+    font-size: .8rem;
+    color: #718096;
+    white-space: nowrap;
+}
+.study-page-nav .btn {
+    min-width: 2rem;
+    padding: .1rem .45rem;
+}
+/* 捲到頂端的目標（頁界、段落列、圖表公式）留出跳頁列的高度，不被它蓋住。 */
+#fulltext-content .page-marker,
+#fulltext-content .study-anchor-row,
+#fulltext-content [data-ref] {
+    scroll-margin-top: 3rem;
+}
+#fulltext-content .page-marker:focus {
+    outline: none;
+}
+#fulltext-content .page-marker:focus-visible span {
+    outline: 2px solid #2563eb;
+}
+
+/* 選字動作列：窄螢幕時換行、不超出視窗（定位夾在 8px 內，見 _showSelectionToolbar）。 */
+.study-selection-toolbar {
+    flex-wrap: wrap;
+    max-width: calc(100vw - 16px);
+}
+
+/* 閱讀窗格（不是整個視窗）窄於 600px 時原文／譯文上下排列：依窗格寬而非 viewport，
+   Split 拉窄或平板直放都適用。上下排列時欄頭只在第一列，其餘列在譯文欄補「機器翻譯」標示。 */
+@container study-reader (max-width: 600px) {
+    #fulltext-content .study-anchor-row > .study-orig-col,
+    #fulltext-content .study-anchor-row > .study-trans-col {
+        flex: 0 0 100%;
+        width: 100%;
+        max-width: 100%;
+    }
+    #fulltext-content .study-anchor-row > .study-orig-col {
+        border-right: 0 !important;
+    }
+    #fulltext-content .study-anchor-row > .study-trans-col {
+        border-top: 1px dashed #e2e8f0;
+    }
+    #fulltext-content .study-anchor-row {
+        min-height: 0 !important;
+    }
+    #fulltext-content .study-anchor-row:not(.study-row-labelled) > .study-trans-col::before {
+        content: "機器翻譯";
+        display: inline-block;
+        margin-bottom: .35rem;
+        padding: 0 .35rem;
+        border-radius: 4px;
+        font-size: .7rem;
+        font-weight: 600;
+        color: #4c51bf;
+        background: #eef2ff;
+    }
+}
+
+/* 手機（< 768px）：閱讀／矩陣與 AI 家教上下排列。Split.js 會把 width 寫進 inline style，只能 !important 蓋掉；
+   左右拖曳把手在這個寬度沒有意義，隱藏。 */
+@media (max-width: 767.98px) {
+    #split-wrapper {
+        flex-direction: column;
+    }
+    #split-wrapper > #matrix-pane,
+    #split-wrapper > #aux-pane {
+        width: 100% !important;
+        min-height: 0;
+    }
+    #split-wrapper > #matrix-pane {
+        flex: 1 1 62%;
+    }
+    #split-wrapper > #aux-pane {
+        flex: 1 1 38%;
+        border-left: 0 !important;
+        border-top: 1px solid #dee2e6;
+    }
+    #split-wrapper > .gutter.gutter-horizontal {
+        display: none;
+    }
+}
