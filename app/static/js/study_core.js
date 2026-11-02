@@ -286,8 +286,8 @@ class StudyCore {
             const safePidJs = this.escapeJs(this.pid);
             const isActive = (p.paper_id === this.currentPaperId) ? 'active' : '';
             const statusBadge = p.is_ready 
-                ? `<span class="badge bg-success rounded-pill" style="font-size:0.5em;">Ready</span>`
-                : `<span class="badge bg-secondary rounded-pill" style="font-size:0.5em;">Wait</span>`;
+                ? `<span class="badge bg-success rounded-pill" style="font-size:0.5em;" title="全文與譯文已就緒，可以閱讀">可閱讀</span>`
+                : `<span class="badge bg-secondary rounded-pill" style="font-size:0.5em;" title="全文或譯文還在處理中">處理中</span>`;
             
             html += `
             <div class="list-group-item bg-transparent text-light border-secondary px-0 py-2 ${isActive}">

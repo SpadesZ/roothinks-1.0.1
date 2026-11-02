@@ -1,0 +1,100 @@
+/* Roothinks source maintenance contract
+ * 檔案路徑: app/static/css/study_matrix.css
+ * 模組定位: Study 研究矩陣（R7，study_matrix_view.js）專用樣式；study.css 屬閱讀器，矩陣樣式只放這裡。
+ * 維護邊界: 狀態一律同時有文字標籤（不只靠顏色）；窄螢幕水平捲動、第一欄（維度）固定；焦點框可見。
+ *           改這個檔要 bump study.html 裡 study_matrix.css 的 ?v=。
+ */
+.rt-matrix { padding: 12px 14px 24px; color: #212529; }
+.rt-matrix-head { margin-bottom: 8px; }
+.rt-matrix-title-row { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.rt-matrix-title { font-size: 1.1rem; font-weight: 700; color: #0b5ed7; margin: 0; }
+.rt-matrix-count { font-size: 0.8rem; background: #6c757d; color: #fff; border-radius: 10px; padding: 1px 8px; }
+.rt-matrix-notice, .rt-matrix-legacy, .rt-matrix-check {
+    font-size: 0.82rem; margin: 6px 0 0; padding: 6px 10px; border-radius: 6px; line-height: 1.5;
+}
+.rt-matrix-notice { background: #eef4ff; border-left: 3px solid #0d6efd; }
+.rt-matrix-legacy { background: #fff8e1; border-left: 3px solid #b58100; }
+.rt-matrix-check { background: #f6f6f6; border-left: 3px solid #6c757d; color: #495057; }
+.rt-matrix-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; padding: 24px; }
+
+/* 表格：水平捲動、第一欄固定（study.css 的 .roothinks-matrix 已有 sticky 欄列） */
+.rt-matrix-scroll { overflow: auto; max-height: 78vh; border: 1px solid #dee2e6; border-radius: 6px; margin-top: 10px; }
+.rt-matrix-scroll:focus-visible { outline: 3px solid #0d6efd; outline-offset: 2px; }
+.rt-matrix-table.roothinks-matrix { min-width: 0; width: max-content; max-width: none; }
+.rt-matrix-caption { caption-side: top; text-align: left; font-size: 0.8rem; color: #495057; padding: 6px 10px; }
+.rt-matrix-table .rt-dim-col { min-width: 120px; max-width: 160px; width: 140px; }
+.rt-matrix-table .rt-paper-col { min-width: 240px; max-width: 320px; width: 280px; text-align: left; vertical-align: top; height: auto; font-weight: 400; }
+.rt-matrix-table .rt-paper-col--baseline { background-color: #e7f0ff; }
+.rt-role { display: inline-block; font-size: 0.72rem; font-weight: 700; color: #fff; background: #0d6efd; border-radius: 4px; padding: 0 6px; margin-right: 4px; }
+.rt-role--compared { background: #6c757d; }
+.rt-paper-title { display: block; font-weight: 700; margin-top: 4px; overflow-wrap: anywhere; }
+.rt-paper-id { display: block; font-size: 0.7rem; color: #6c757d; }
+.rt-coverage { font-size: 0.74rem; font-weight: 400; color: #495057; margin-top: 4px; line-height: 1.4; }
+.rt-coverage-warn { color: #8a5a00; }
+.rt-coverage--none { color: #6c757d; font-style: italic; }
+.rt-col-failed { font-size: 0.74rem; color: #b02a37; margin-top: 4px; }
+
+/* 儲存格：不是整格可點（裡面有按鈕），取消 study.css 的整格 hover 效果 */
+.rt-matrix-table td.rt-cell { cursor: default; min-width: 240px; max-width: 320px; font-size: 0.85rem; line-height: 1.5; }
+.rt-matrix-table td.rt-cell:hover { background-color: inherit !important; box-shadow: none; }
+.rt-matrix-table td.rt-cell.active-context { background-color: #cfe2ff !important; }
+.rt-cell-top { display: flex; justify-content: space-between; align-items: center; gap: 6px; margin-bottom: 4px; }
+.rt-badge { display: inline-block; font-size: 0.74rem; font-weight: 700; border-radius: 4px; padding: 1px 6px; border: 1px solid transparent; }
+.rt-badge--reported { background: #e6f4ea; color: #146c2e; border-color: #9fd3ae; }
+.rt-badge--not_reported { background: #f1f3f5; color: #343a40; border-color: #adb5bd; border-style: dashed; }
+.rt-badge--uncertain { background: #fff4d6; color: #7a4d00; border-color: #e0b44c; }
+.rt-badge--not_comparable { background: #f3e8ff; color: #5a2a8a; border-color: #b991e0; }
+.rt-badge--failed { background: #fde8ea; color: #a01928; border-color: #e79aa3; }
+.rt-badge--legacy { background: #f8f9fa; color: #495057; border-color: #ced4da; }
+.rt-cell--not_reported { background: repeating-linear-gradient(135deg, #fafafa, #fafafa 6px, #f3f3f3 6px, #f3f3f3 12px); }
+.rt-ask { font-size: 0.72rem; border: 1px solid #ced4da; background: #fff; border-radius: 4px; padding: 0 6px; color: #495057; }
+.rt-ask:hover { background: #e9ecef; }
+.rt-reason { font-size: 0.78rem; color: #5c636a; margin-bottom: 4px; }
+.rt-text, .rt-relation { white-space: pre-wrap; overflow-wrap: anywhere; }
+.rt-clamped { display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
+.rt-expand { font-size: 0.75rem; border: 0; background: none; color: #0b5ed7; padding: 0; text-decoration: underline; }
+.rt-trunc { font-size: 0.74rem; color: #8a5a00; }
+.rt-label { display: block; font-size: 0.72rem; font-weight: 700; color: #5a2a8a; }
+.rt-relation { margin-top: 6px; padding-top: 6px; border-top: 1px dashed #ced4da; }
+.rt-withheld { margin-top: 6px; font-size: 0.76rem; color: #5c636a; border-top: 1px dashed #ced4da; padding-top: 4px; }
+.rt-judgement, .rt-disagree { font-size: 0.74rem; color: #8a5a00; margin-top: 4px; }
+.rt-source-pair { font-size: 0.7rem; color: #6c757d; margin-top: 4px; }
+.rt-evidence { list-style: none; padding: 0; margin: 6px 0 0; }
+.rt-evidence li { margin-bottom: 4px; }
+.rt-quote { display: block; width: 100%; text-align: left; font-size: 0.78rem; background: #f6fbf7; border: 1px solid #b7dfc2; border-radius: 4px; padding: 3px 6px; color: #1f3d2a; font-style: italic; }
+button.rt-quote:hover { background: #e3f3e8; }
+.rt-quote-where { font-style: normal; font-weight: 700; margin-right: 4px; color: #146c2e; }
+.rt-quote-note { display: block; font-size: 0.7rem; color: #6c757d; }
+.rt-quote-rule { font-size: 0.7rem; color: #6c757d; }
+.rt-rejected { margin-top: 4px; font-size: 0.74rem; color: #6c757d; }
+.rt-rejected ul { padding-left: 16px; margin: 2px 0 0; }
+.rt-matrix button:focus-visible, .rt-matrix summary:focus-visible, .rt-matrix-setup button:focus-visible { outline: 3px solid #0d6efd; outline-offset: 1px; }
+
+/* 比較設定（矩陣上方與側欄） */
+.rt-matrix-settings { margin-top: 8px; font-size: 0.82rem; border: 1px solid #dee2e6; border-radius: 6px; padding: 6px 10px; background: #fff; }
+.rt-matrix-settings summary { cursor: pointer; font-weight: 600; color: #0b5ed7; }
+.rt-dims { border: 0; padding: 0; margin: 6px 0; }
+.rt-dims legend { font-size: 0.82rem; font-weight: 700; margin-bottom: 4px; float: none; width: auto; }
+.rt-dim-options { display: flex; flex-wrap: wrap; gap: 4px 12px; }
+.rt-dim-option { display: inline-flex; align-items: center; gap: 4px; }
+.rt-dim-add { display: flex; gap: 6px; margin-top: 6px; }
+.rt-dim-add input { flex: 1 1 auto; min-width: 0; font-size: 0.8rem; padding: 2px 6px; border: 1px solid #adb5bd; border-radius: 4px; }
+.rt-hint { font-size: 0.72rem; color: #6c757d; margin: 4px 0 0; }
+.rt-order-current ol { margin: 2px 0 6px; padding-left: 20px; }
+.rt-matrix-setup { margin-top: 12px; padding: 10px; border: 1px solid #495057; border-radius: 6px; color: #e9ecef; font-size: 0.8rem; }
+.rt-matrix-setup .rt-hint { color: #ced4da; }
+.rt-setup-title { font-size: 0.85rem; font-weight: 700; margin: 0 0 6px; color: #fff; }
+.rt-order-head { font-weight: 700; margin-bottom: 4px; }
+.rt-order-list { padding-left: 18px; margin: 0 0 6px; }
+.rt-order-list li { margin-bottom: 4px; }
+.rt-order-title { overflow-wrap: anywhere; }
+.rt-order-actions { display: inline-flex; gap: 2px; margin-left: 4px; }
+.rt-order-actions button { font-size: 0.7rem; padding: 0 5px; border: 1px solid #6c757d; background: transparent; color: #e9ecef; border-radius: 3px; }
+.rt-order-actions button[disabled] { opacity: 0.35; }
+.rt-matrix-setup .rt-dim-add input { background: #212529; color: #fff; border-color: #6c757d; }
+
+@media (max-width: 768px) {
+    .rt-matrix { padding: 8px; }
+    .rt-matrix-table .rt-dim-col { min-width: 96px; width: 96px; }
+    .rt-matrix-table .rt-paper-col, .rt-matrix-table td.rt-cell { min-width: 210px; width: 210px; }
+}

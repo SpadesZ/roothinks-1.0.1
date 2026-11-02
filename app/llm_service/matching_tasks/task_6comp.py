@@ -1,11 +1,14 @@
 # Roothinks source maintenance contract
 # 檔案路徑: app/llm_service/matching_tasks/task_6comp.py
 # 模組定位: LLM task 業務層；組合特定任務 prompt，經 dispatcher 呼叫已綁定模型。
-# 主要責任: 比較多篇論文的指定面向並輸出有來源界線的對照結果。
+# 主要責任: 比較兩篇論文在研究者所選維度上的描述，要求逐字引文、明確狀態與可比性，並解析成結構化結果。
 # 上下游: matching task -> dispatcher -> LlmBus -> provider adapter；binding/usage 由 llm_match DB 與 usage store 支援。
+#         呼叫端 study_matrix.MatrixEngine 先依章節挑段落（帶 p{page}-b{n} 標籤），回來後由它逐字核對引文。
 # 維護邊界: 不得記錄 API key 或完整 prompt；provider error、usage、cache 與 cancel_event 身分不可在層間遺失或靜默降級。
-# 驗證: python -m pytest test/unit tests -q
-#路徑(app/llm_service/matching_tasks/task_6comp.py) #版本 v2.0-Academic #更版時間 20260208-0130
+#           本層不截斷模型文字、不補缺的維度、不判斷優劣；引文是否存在由 study 層核對。
+# 驗證: python -m pytest test/unit/test_study_matrix_r7.py test/unit/test_study_failure_states.py -q
+#路徑(app/llm_service/matching_tasks/task_6comp.py) #版本 v3.0 #更版時間 20261102
+import hashlib
 import json
 import re
 import logging
@@ -27,223 +30,259 @@ if not _file_logger.handlers:
     _file_logger.setLevel(logging.INFO)
     _file_logger.propagate = False
 
+DEFAULT_DIMENSIONS = [
+    "研究問題與目標",
+    "方法與系統設計",
+    "資料與實驗設定",
+    "結果與證據強度",
+    "限制與風險",
+]
+PROMPT_MARKER = "ROOTHINKS_MATRIX_PAIR/2"
+# 直接呼叫 compare_pair、沒經過 MatrixEngine 挑段落時的單篇上限（照實記在 prompt_meta，不靜默）。
+DIRECT_TEXT_LIMIT = 9000
+
+
 def _is_debug_enabled():
     if has_app_context():
         return bool(current_app.debug)
     return os.environ.get("FLASK_DEBUG", "0") == "1" or os.environ.get("FLASK_ENV", "").lower() == "development"
+
 
 def _debug_log(line):
     if not _is_debug_enabled():
         return
     _file_logger.info("%s", line)
 
+
+def dimension_id(label):
+    """維度 id 由文字決定（同一維度在不同記錄中 id 相同）；study_matrix 共用。"""
+    norm = re.sub(r"\s+", " ", str(label or "")).strip().lower()
+    return "dim-" + hashlib.sha1(norm.encode("utf-8")).hexdigest()[:10]
+
+
+def _spec(criteria, defaults):
+    """criteria 可為舊式字串（焦點，用預設維度）或 {label, dimensions:[{id,label}]}。"""
+    if isinstance(criteria, dict) and isinstance(criteria.get("dimensions"), list) and criteria["dimensions"]:
+        dims = []
+        for d in criteria["dimensions"]:
+            label = str((d.get("label") if isinstance(d, dict) else d) or "").strip()
+            if label:
+                dims.append({"id": (d.get("id") if isinstance(d, dict) and d.get("id") else dimension_id(label)), "label": label})
+        return str(criteria.get("label") or "").strip() or "、".join(d["label"] for d in dims), dims
+    return str(criteria or "General"), [{"id": dimension_id(label), "label": label} for label in defaults]
+
+
+def _norm_label(text):
+    return re.sub(r"[\s:：、，,.。()（）\[\]【】0-9]+", "", str(text or "")).lower()
+
+
 class Comparator:
     """
     [Task 6] 多文獻比較引擎 (Multi-Paper Comparison Engine)
     職責:
-    1. 接收兩篇論文的數據包 (Base vs Target)。
-    2. 組裝學術審閱級別的 Prompt。
-    3. 呼叫 LlmBus 執行推論。
-    4. 清洗並回傳標準化 JSON。
+    1. 接收兩篇論文的數據包 (Base vs Target)；text 是已挑選、帶位置標籤的段落。
+    2. 組裝提示詞：研究者選的維度、逐字引文、明確狀態、可比性；不評優劣。
+    3. 呼叫 LlmBus 執行推論（每對一次）。
+    4. 解析成 dimension_results；不截斷文字、不補缺的維度（缺的列在 missing_dimensions）。
     """
 
     def __init__(self):
         self.bus = llm_bus.get_bus()
-        self.default_dimensions = [
-            "研究問題與目標",
-            "方法與系統設計",
-            "資料與實驗設定",
-            "結果與證據強度",
-            "限制與風險",
-        ]
-        # 定義嚴格的輸出格式 (One-Shot Example in Prompt)
+        self.default_dimensions = list(DEFAULT_DIMENSIONS)
+        side = {"status": "reported | not_reported | uncertain",
+                "text": "這篇論文在此維度的具體作法或數據（繁體中文；not_reported 時留空）",
+                "quotes": [{"ref": "p2-b3", "quote": "從該篇段落逐字複製的原文句子"}],
+                "uncertain_reason": "status 為 uncertain 時說明原因"}
         self.output_schema = {
-            "comparison_points": [
-                {
-                    "dimension": "固定維度之一：研究問題與目標/方法與系統設計/資料與實驗設定/結果與證據強度/限制與風險",
-                    "baseline_view": "基準論文 (Paper A) 的具體作法或數據",
-                    "target_view": "對照論文 (Paper B) 的具體作法或數據",
-                    "synthesis": "兩者差異的學術評析 (Gap Analysis) 與優劣判斷",
-                    "significance": "此差異的重要性 (High/Medium/Low)"
-                }
-            ],
-            "overall_summary": "針對本次比較維度的總體結語 (100字內)"
+            "dimensions": [{
+                "dimension_id": "照抄 DIMENSIONS_JSON 的 id",
+                "baseline": side,
+                "target": side,
+                "comparability": {"status": "comparable | not_comparable | unclear",
+                                  "reason": "not_comparable 時必填：條件、母群、單位、指標或比較基線哪裡不同"},
+                "relation": "中性描述兩者差異（哪裡不同、在什麼條件下）；不評優劣、不排名；任一方 not_reported 時留空",
+            }],
+            "overall_summary": "整體差異的中性摘要（100 字內，不評優劣）",
         }
 
     def compare_pair(self, base_pkg, target_pkg, criteria):
         """
         執行單一配對比較
-        :param base_pkg: {id, title, text}
-        :param target_pkg: {id, title, text}
-        :param criteria: 使用者關注的比較維度 (e.g. "Methodology", "Experimental Results")
-        :return: JSON Result
+        :param base_pkg: {id, title, text, excerpt_blocks?, total_blocks?}
+        :param target_pkg: 同上
+        :param criteria: 舊式焦點字串，或 {"label": str, "dimensions": [{"id","label"}]}
+        :return: dict；成功時含 dimension_results（未核對引文），失敗時 status=failed
         """
-        # LOG TO FILE
         _debug_log(f"[compare_pair] START for {target_pkg['id']}")
-        
         task_name = "task_6_comparison"
-        
-        # 1. 組裝 Prompt
-        prompt = self._construct_prompt(base_pkg, target_pkg, criteria)
-        
-        # [DEBUG Log]
+        label, dims = _spec(criteria, self.default_dimensions)
+        prompt, meta = self._construct_prompt(base_pkg, target_pkg, label, dims)
         logger.info(f"[Task6.DEBUG] Starting comparison for {target_pkg['id']}")
-        
-        # 2. 透過 Bus 發送請求 (設有重試機制)
         success, response_text = self.bus.dispatch_task(task_name, prompt, max_retries=2)
         _debug_log(f"[compare_pair] dispatch_task returned: success={success}")
-        
         logger.info(f"[Task6.DEBUG] dispatch_task returned: success={success}, response_len={len(response_text) if isinstance(response_text, str) else 'N/A'}")
-        
+
         if not success:
             logger.warning("[Task6] provider failed for %s", target_pkg['id'])
-            # 字面統計只作診斷，不進五維正規化或聲稱可作科學比較。
+            # 字面統計只作診斷，不進維度正規化或聲稱可作科學比較。
             return {
                 "error": "provider_failed", "status": "failed", "quality_mode": "heuristic",
-                "target_paper_id": target_pkg['id'], "target_paper_title": target_pkg['title'],
+                "target_paper_id": target_pkg['id'], "target_paper_title": target_pkg.get('title'),
                 "comparison_points": [], "analysis": "模型比較失敗；僅有字元數診斷，不能作為研究結論。",
+                "reason": "模型比較失敗",
                 "diagnostics": {"baseline_chars": len(base_pkg.get('text', '')),
                                 "target_chars": len(target_pkg.get('text', ''))},
+                "prompt_meta": meta,
             }
         try:
             data = self._parse_json(response_text)
-            if not isinstance(data, dict) or not isinstance(data.get('comparison_points'), list) or not data['comparison_points']:
-                raise ValueError("Missing comparison points")
-            data['target_paper_id'] = target_pkg['id']
-            data['target_paper_title'] = target_pkg['title']
-            data = self._normalize_result(data, criteria, base_pkg, target_pkg)
-            data.update(status="completed", quality_mode="llm")
-            return data
+            results, missing = self._normalize_result(data, dims)
+            if not results:
+                raise ValueError("Missing comparison dimensions")
         except Exception:
             logger.exception("[Task6] invalid comparison response")
             return {"error": "invalid_model_response", "status": "failed", "quality_mode": "unavailable",
-                    "target_paper_id": target_pkg['id'], "comparison_points": [],
-                    "analysis": "模型回應無法解析，未完成科學比較。"}
+                    "target_paper_id": target_pkg['id'], "comparison_points": [], "reason": "模型回應無法解析",
+                    "analysis": "模型回應無法解析，未完成科學比較。", "prompt_meta": meta}
+        summary = str(data.get("overall_summary") or "").strip()
+        points = [{"dimension": r["label"], "dimension_id": r["dimension_id"],
+                   "baseline_view": r["baseline"].get("text") or "", "target_view": r["target"].get("text") or "",
+                   "synthesis": r.get("relation") or ""} for r in results]
+        return {
+            "status": "completed", "quality_mode": "llm",
+            "target_paper_id": target_pkg['id'], "target_paper_title": target_pkg.get('title'),
+            "criteria": label, "dimension_results": results, "missing_dimensions": missing,
+            "overall_summary": summary, "comparison_points": points,
+            "analysis": "\n\n".join(f"【{p['dimension']}】\n基準: {p['baseline_view']}\n對照: {p['target_view']}\n差異: {p['synthesis']}"
+                                    for p in points),
+            "prompt_meta": meta,
+        }
 
-    def _construct_prompt(self, base, target, criteria):
-        """
-        建構高學術價值的 Prompt
-        """
-        return f"""
-You are an expert academic reviewer for a top-tier journal (e.g., IEEE/Nature).
-Your task is to conduct a rigorous comparative analysis between two research papers focusing strictly on the dimension: "{criteria}".
+    def _excerpt(self, pkg):
+        text = str(pkg.get('text') or '')
+        if 'excerpt_blocks' in pkg:
+            return text, None
+        cut = text[:DIRECT_TEXT_LIMIT]
+        return cut, (len(text) if len(text) > DIRECT_TEXT_LIMIT else None)
+
+    def _construct_prompt(self, base, target, label, dims):
+        """建構提示詞；回傳 (prompt, meta)。meta 只記長度與段落數，不記內容。"""
+        base_text, base_cut = self._excerpt(base)
+        target_text, target_cut = self._excerpt(target)
+
+        def coverage_line(pkg):
+            if 'excerpt_blocks' in pkg:
+                return (f"These excerpts are the ONLY parts of this paper you can see "
+                        f"({pkg.get('excerpt_blocks')} of {pkg.get('total_blocks')} text blocks). "
+                        f"Text you were not given may still exist in the paper.")
+            return "This is the only text of this paper you can see."
+
+        dims_json = json.dumps([{"id": d["id"], "label": d["label"]} for d in dims], ensure_ascii=False)
+        prompt = f"""{PROMPT_MARKER}
+You assist a researcher who makes the final judgement. You compare and describe; you never decide which paper is better.
+BASELINE_PAPER_ID: {base['id']}
+TARGET_PAPER_ID: {target['id']}
+FOCUS: {label}
+DIMENSIONS_JSON: {dims_json}
 
 [Paper A (Baseline)]:
-Title: {base['title']}
-Content Snippet:
-{base['text'][:2500]} ... (truncated)
+Title: {base.get('title') or base['id']}
+{coverage_line(base)} Each line starts with its location label [ref | section].
+{base_text}
 
 [Paper B (Target)]:
-Title: {target['title']}
-Content Snippet:
-{target['text'][:2500]} ... (truncated)
+Title: {target.get('title') or target['id']}
+{coverage_line(target)} Each line starts with its location label [ref | section].
+{target_text}
 
-[Goal]:
-Compare Paper B against Paper A regarding "{criteria}". Identify specific differences, improvements, or regressions.
-Do not just summarize; perform a "Gap Analysis".
-
-[Output Requirement]:
-1. Language: Traditional Chinese (繁體中文).
-2. Format: STRICT JSON format only. No markdown text outside JSON.
-3. Schema:
-{json.dumps(self.output_schema, ensure_ascii=False, indent=4)}
-
-[Constraint]:
-- If information is missing in the text, state "N/A" in the view field but do not hallucinate.
-- The "synthesis" field must explain *why* the difference matters.
-- Use exactly 5 comparison points and keep each field concise (<=120 Chinese characters preferred).
-- The dimensions should follow this order exactly:
-  1) 研究問題與目標
-  2) 方法與系統設計
-  3) 資料與實驗設定
-  4) 結果與證據強度
-  5) 限制與風險
+[Rules]
+1. Answer every dimension in DIMENSIONS_JSON, in that order, copying its "id" into "dimension_id".
+2. For each paper and dimension choose a status:
+   - "reported": the excerpts state it. Give 1-3 quotes copied EXACTLY, character for character, from THAT paper's excerpts (at least 5 words each), with the location label (e.g. "p2-b3") in "ref". Never paraphrase inside "quote".
+   - "not_reported": the excerpts do not state it. Leave "text" empty. Do not guess or fill in from general knowledge.
+   - "uncertain": something related is stated but incomplete or ambiguous; explain in "uncertain_reason".
+3. "comparability": use "not_comparable" when conditions, populations, units, metrics or reference baselines differ, and give the concrete reason (e.g. "77 K vs 300 K", "% vs mW/K"). Use "unclear" if you cannot tell.
+4. "relation": neutral description of what differs and under which conditions. Do not say which paper is better, do not rank, do not score. Leave it empty if either paper is "not_reported".
+5. Language: Traditional Chinese (繁體中文) for text, reasons and relation; quotes stay in the original language.
+6. Output STRICT JSON only, no markdown, following this schema:
+{json.dumps(self.output_schema, ensure_ascii=False, indent=1)}
 """
+        meta = {"prompt_version": PROMPT_MARKER, "prompt_chars": len(prompt), "dimensions": len(dims),
+                "baseline_chars": len(base_text), "target_chars": len(target_text),
+                "baseline_blocks": base.get('excerpt_blocks'), "target_blocks": target.get('excerpt_blocks')}
+        if base_cut or target_cut:
+            meta["direct_text_cut"] = {"limit": DIRECT_TEXT_LIMIT, "baseline_full_chars": base_cut, "target_full_chars": target_cut}
+        return prompt, meta
 
-    def _normalize_result(self, data, criteria, base_pkg, target_pkg):
+    @staticmethod
+    def _side(raw):
+        raw = raw if isinstance(raw, dict) else {}
+        quotes = []
+        for q in raw.get("quotes") if isinstance(raw.get("quotes"), list) else []:
+            if isinstance(q, dict) and str(q.get("quote") or "").strip():
+                quotes.append({"ref": str(q.get("ref") or "").strip(), "quote": str(q.get("quote")).strip()})
+            elif isinstance(q, str) and q.strip():
+                quotes.append({"ref": "", "quote": q.strip()})
+        return {"status": str(raw.get("status") or "").strip(), "text": str(raw.get("text") or "").strip(),
+                "quotes": quotes, "uncertain_reason": str(raw.get("uncertain_reason") or "").strip()}
+
+    def _normalize_result(self, data, dims):
+        """把模型回覆對到研究者的維度；回傳 (results, 缺少的維度 id)。不截斷、不補值。"""
         if not isinstance(data, dict):
-            data = {}
-
-        raw_points = data.get('comparison_points')
-        if not isinstance(raw_points, list):
-            raw_points = []
-
-        by_dim = {}
-        for p in raw_points:
-            if not isinstance(p, dict):
+            raise ValueError("Model response is not an object")
+        items = data.get("dimensions")
+        if not isinstance(items, list) and isinstance(data.get("comparison_points"), list):
+            # 舊格式回覆：只有文字、沒有引文與狀態；狀態交給 study 層依「有無原文引文」決定。
+            items = []
+            for p in data["comparison_points"]:
+                if not isinstance(p, dict):
+                    continue
+                def old(view):
+                    view = str(view or "").strip()
+                    return {"status": "not_reported" if view.upper() in ("", "N/A", "NA") else "reported", "text": view}
+                items.append({"dimension": p.get("dimension"), "baseline": old(p.get("baseline_view")),
+                              "target": old(p.get("target_view")), "relation": p.get("synthesis")})
+        if not isinstance(items, list):
+            raise ValueError("Missing dimensions")
+        by_id, by_label = {}, {}
+        for item in items:
+            if not isinstance(item, dict):
                 continue
-            dim = str(p.get('dimension', '') or '').strip()
-            if dim:
-                by_dim[dim] = p
-
-        normalized = []
-        for dim in self.default_dimensions:
-            src = by_dim.get(dim)
-            if not src:
-                # try fuzzy match once
-                for k, v in by_dim.items():
-                    if dim[:2] in k or k[:2] in dim:
-                        src = v
-                        break
-
-            if src:
-                baseline_view = str(src.get('baseline_view', 'N/A') or 'N/A').strip()
-                target_view = str(src.get('target_view', 'N/A') or 'N/A').strip()
-                synthesis = str(src.get('synthesis', 'N/A') or 'N/A').strip()
-                significance = str(src.get('significance', 'Medium') or 'Medium').strip()
-            else:
-                baseline_view = 'N/A'
-                target_view = 'N/A'
-                synthesis = '資料不足，待補充比較證據。'
-                significance = 'Low'
-
-            normalized.append({
-                'dimension': dim,
-                'baseline_view': baseline_view[:220],
-                'target_view': target_view[:220],
-                'synthesis': synthesis[:260],
-                'significance': significance,
-            })
-
-        data['comparison_points'] = normalized
-        data['target_paper_id'] = target_pkg['id']
-        data['target_paper_title'] = target_pkg['title']
-        if not data.get('overall_summary'):
-            data['overall_summary'] = f"比較維度：{criteria}。已完成 {base_pkg['title']} 與 {target_pkg['title']} 的對照。"
-
-        analysis_parts = []
-        for point in normalized:
-            analysis_parts.append(
-                f"【{point['dimension']}】\n"
-                f"基準: {point['baseline_view']}\n"
-                f"對照: {point['target_view']}\n"
-                f"評析: {point['synthesis']}"
-            )
-        data['analysis'] = "\n\n".join(analysis_parts)
-        return data
+            if item.get("dimension_id"):
+                by_id.setdefault(str(item["dimension_id"]), item)
+            for key in ("label", "dimension"):
+                if item.get(key):
+                    by_label.setdefault(_norm_label(item[key]), item)
+        results, missing = [], []
+        for dim in dims:
+            src = by_id.get(dim["id"]) or by_label.get(_norm_label(dim["label"]))
+            if src is None:
+                # 只有在「唯一」包含關係時才對應，避免把別的維度錯配過來。
+                cands = [v for k, v in by_label.items() if k and (k in _norm_label(dim["label"]) or _norm_label(dim["label"]) in k)]
+                src = cands[0] if len(cands) == 1 else None
+            if src is None:
+                missing.append(dim["id"])
+                continue
+            comp = src.get("comparability") if isinstance(src.get("comparability"), dict) else {}
+            results.append({"dimension_id": dim["id"], "label": dim["label"],
+                            "baseline": self._side(src.get("baseline")), "target": self._side(src.get("target")),
+                            "comparability": {"status": str(comp.get("status") or "unclear").strip(),
+                                              "reason": str(comp.get("reason") or "").strip()},
+                            "relation": str(src.get("relation") or "").strip()})
+        return results, missing
 
     def _parse_json(self, text):
         """
         強健的 JSON 清洗器 (Anti-Hallucination / Anti-Markdown)
+        舊版遇到不帶 json 標記的 ``` 圍欄會取到空字串；改為取圍欄內容。
         """
-        text = text.strip()
-        
-        # 1. 移除 Markdown Code Block 標記
-        if "```json" in text:
-            text = text.split("```json")[1].split("```")[0]
-        elif "```" in text:
-            text = text.split("```")[0] # 簡單處理
-            
-        # 2. 嘗試尋找 JSON 的起止點 (處理前後廢話)
-        try:
-            start = text.find("{")
-            end = text.rfind("}") + 1
-            if start != -1 and end != -1:
-                text = text[start:end]
-        except Exception as e:
-            logger.warning("[task_6comp._parse_json] boundary trim failed: %s", e)
-
-        # 3. 載入
+        text = str(text or "").strip()
+        fence = re.search(r"```(?:json)?\s*(.*?)```", text, re.S)
+        if fence:
+            text = fence.group(1).strip()
+        start, end = text.find("{"), text.rfind("}")
+        if start != -1 and end > start:
+            text = text[start:end + 1]
         return json.loads(text)
 
 # 用於測試的 main block

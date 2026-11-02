@@ -38,7 +38,7 @@ from app.core_pro.storage_layout import list_literature_papers, resolve_literatu
 from app.core_pro.study import study_anchors, study_evidence_notes
 
 # [Upgrade] 引入新版 AI 引擎 (v2.0)
-from app.core_pro.study.study_matrix import MatrixEngine, matrix_outcome
+from app.core_pro.study.study_matrix import MatrixEngine, matrix_outcome, normalize_dimensions
 from app.llm_service.matching_tasks.task_7qachat import TutorEngine
 
 # 定義 Blueprint
@@ -1455,16 +1455,15 @@ def run_matrix_comparison():
         data = request.get_json(silent=True) or {}
         pid = _normalize_study_pid(data.get('pid'))
         target_ids = data.get('paper_ids', [])
-        criteria = data.get('criteria', 'General')
 
         if not pid:
             return jsonify({"ok": False, "error": "Invalid PID"}), 404
-        if not target_ids or len(target_ids) < 2:
+        if not isinstance(target_ids, list) or len(target_ids) < 2:
             return jsonify({"ok": False, "error": "請至少選擇 2 篇文獻進行比較。"}), 400
 
-        data_root = resolve_data_root()
-        papers_payload = []
-        
+        # R7：欄位順序＝研究者選的順序（不重排、不依完成先後）；基準明示（baseline_id，預設第一篇）。
+        # 不合法或重複的 id 不再靜默略過：記在 skipped_papers 回給前端並存進記錄。
+        ordered, skipped = [], []
         for p_id_obj in target_ids:
             # Handle both string IDs and object IDs
             if isinstance(p_id_obj, dict):
@@ -1474,8 +1473,31 @@ def run_matrix_comparison():
             try:
                 p_id = validate_id(p_id, "paper_id")
             except BadRequest:
+                skipped.append({"paper_id": str(p_id)[:120], "reason": "invalid_id"})
                 continue
-            
+            if p_id in ordered:
+                skipped.append({"paper_id": p_id, "reason": "duplicate"})
+                continue
+            ordered.append(p_id)
+        baseline_id = str(data.get('baseline_id') or '').strip()
+        if baseline_id:
+            if baseline_id not in ordered:
+                return jsonify({"ok": False, "error": "指定的基準論文不在所選文獻中。"}), 400
+            ordered.remove(baseline_id)
+            ordered.insert(0, baseline_id)
+        # 研究者選或自填的比較維度；沒送就是預設五維（舊呼叫只送 criteria 字串，行為不變）。
+        dims_raw = data.get('dimensions')
+        dim_labels = [(d.get('label') if isinstance(d, dict) else d) for d in dims_raw] if isinstance(dims_raw, list) else []
+        custom_dims = any(str(label or '').strip() for label in dim_labels)
+        dimensions = normalize_dimensions(dims_raw if custom_dims else None)
+        criteria = str(data.get('criteria') or '').strip()[:80] \
+            or ('、'.join(d['label'] for d in dimensions) if custom_dims else 'General')
+
+        data_root = resolve_data_root()
+        project_dir = safe_join_under(data_root, pid)
+        papers_payload = []
+
+        for p_id in ordered:
             paper_dir = resolve_literature_paper_dir(
                 data_root,
                 pid,
@@ -1483,55 +1505,37 @@ def run_matrix_comparison():
                 for_write=False,
                 migrate_legacy=True,
             )
-            fusion_path = safe_join_under(paper_dir, "05_interprets", "fusion", "full_text.json")
-            
             p_obj = {
                 "paper_id": p_id,
                 "metadata": {"title": p_id},
                 "content": "",
                 "summary": ""
             }
+            # 與閱讀器同一份全文（prefer=auto，同樣的 page／block 編號），引文核對後點了才能回到同一段。
+            try:
+                source = _read_fulltext_source(data_root, pid, p_id, paper_dir, 'auto')
+            except Exception as e:
+                logger.warning(f"[compare] Failed to load fulltext for {p_id}: {e}")
+                source = None
+            if source is not None:
+                fusion_data = source["data"] if isinstance(source.get("data"), dict) else {}
+                p_obj["metadata"]["title"] = fusion_data.get("title") or _resolve_fulltext_display_title(
+                    pid, p_id, fusion_data, project_dir)
+                p_obj["content"] = source.get("full_content") or ""
+                p_obj["pages"] = source.get("blocks") or []
+                p_obj["anchor_meta"] = {"pid": pid, "paper_id": p_id, "source": source["target_source"],
+                                        "source_sha256": source["source_sha256"]}
+                if fusion_data.get("summary"):
+                    p_obj["summary"] = fusion_data["summary"]
 
-            if os.path.exists(fusion_path):
-                try:
-                    fusion_data = load_json_locked(fusion_path, {})
-
-                    # 提取文獻標題
-                    if fusion_data.get("title"):
-                        p_obj["metadata"]["title"] = fusion_data["title"]
-                    elif fusion_data.get("paper_id"):
-                        p_obj["metadata"]["title"] = fusion_data["paper_id"]
-
-                    # 提取內容（可能是嵌套結構）
-                    content_raw = fusion_data.get("content", "")
-                    if isinstance(content_raw, list):
-                        # 結構: content = [{ page: N, blocks: [{ content: "..." }, ...] }, ...]
-                        text_blocks = []
-                        for page in content_raw:
-                            if isinstance(page, dict):
-                                blocks = page.get("blocks", [])
-                                for block in blocks:
-                                    if isinstance(block, dict) and block.get("content"):
-                                        text_blocks.append(block["content"])
-
-                        p_obj["content"] = "\n\n".join(text_blocks) if text_blocks else ""
-                    elif isinstance(content_raw, dict):
-                        p_obj["content"] = content_raw.get("text", json.dumps(content_raw, ensure_ascii=False))
-                    else:
-                        p_obj["content"] = str(content_raw)
-
-                    # 提取摘要
-                    if fusion_data.get("summary"):
-                        p_obj["summary"] = fusion_data["summary"]
-                except Exception as e:
-                    logger.warning(f"[compare] Failed to load fusion data for {p_id}: {e}")
-            
             papers_payload.append(p_obj)
 
         if len(papers_payload) < 2:
-             return jsonify({"ok": False, "error": "Insufficient data loaded."}), 400
+             return jsonify({"ok": False, "error": "Insufficient data loaded.", "skipped_papers": skipped}), 400
 
-        matrix_result = matrix_engine.generate_matrix(pid, papers_payload, criteria)
+        # 舊呼叫（沒送 dimensions）照舊傳字串；新呼叫傳 {label, dimensions}。每篇對照論文仍只呼叫模型一次。
+        criteria_arg = {"label": criteria, "dimensions": [d["label"] for d in dimensions]} if custom_dims else criteria
+        matrix_result = matrix_engine.generate_matrix(pid, papers_payload, criteria_arg)
         elapsed = round(time.time() - start_time, 2)
         
         if not isinstance(matrix_result, dict):
@@ -1564,6 +1568,12 @@ def run_matrix_comparison():
                 "elapsed": elapsed,
                 "display_name": f"{criteria} @ {created_at}",
                 "is_legacy": False,
+                # R7：記錄本身就說明欄位順序、基準與維度（重新整理或換裝置都一樣）。
+                "schema": matrix_result.get("schema") or "roothinks.study.matrix/1",
+                "paper_order": [p.get("paper_id", "") for p in papers_payload],
+                "baseline_id": papers_payload[0].get("paper_id", ""),
+                "dimensions": matrix_result.get("dimensions") or dimensions,
+                "skipped_papers": skipped,
                 "data": matrix_result,
             }
             display_name = record.get("display_name", "")
@@ -1591,6 +1601,7 @@ def run_matrix_comparison():
                 "elapsed": elapsed,
                 "matrix_id": matrix_id,
                 "display_name": display_name,
+                "skipped_papers": skipped,
             }
         ), (207 if outcome['status'] == 'partial' else 200)
 
@@ -1625,7 +1636,7 @@ def list_matrix_history(pid):
                     t = c[0] if c else {}
                     paper_titles = [
                         b.get('title') or b.get('id') or 'Paper A',
-                        t.get('target_title') or t.get('target') or t.get('id') or 'Paper B',
+                        t.get('target_paper_title') or t.get('target_title') or t.get('target') or t.get('id') or 'Paper B',
                     ]
 
                 items.append({
@@ -1636,6 +1647,10 @@ def list_matrix_history(pid):
                     'paper_titles': paper_titles,
                     'display_name': obj.get('display_name') or matrix_id,
                     'is_legacy': False,
+                    # R7：順序與篇數照記錄（舊記錄沒有這些欄位時以 paper_titles 推得）。
+                    'paper_count': len(obj.get('paper_order') or obj.get('paper_ids') or paper_titles),
+                    'baseline_id': obj.get('baseline_id') or ((obj.get('paper_ids') or [None])[0]),
+                    'dimensions': [d.get('label') for d in (obj.get('dimensions') or []) if isinstance(d, dict)],
                 })
             except Exception as e:
                 logger.warning(f"[matrix_history] failed to parse {filename}: {e}")
