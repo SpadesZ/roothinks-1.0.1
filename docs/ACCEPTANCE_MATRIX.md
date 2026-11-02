@@ -399,3 +399,13 @@ Owner 已改採本機主導；新隔離分支 `codex/py312-local-first-integrati
 | Socket 跨專案 pid 混用（112 次請求） | TESTED，0 發現 | `study_r6_evidence/socket-matrix-after.json` | — |
 | 出處對抗測試：跨專案 id、偽造位置、最差狀態不擋保存與匯出 | TESTED | `test_provenance_adversarial.py` | — |
 | 熱修＋R 堆疊整合 | TESTED | [發佈就緒評估](engineering/RELEASE_READINESS_R6_2026-11-01.md) | 合併與部署要 Owner 核准 |
+
+## R7（2026-11-02；`codex/study-r7-20261101`，未合併）
+
+| 面向 | 判定 | 證據 | 仍開放 |
+|---|---|---|---|
+| 多篇比較矩陣：每篇一欄、研究者順序、可選維度、狀態、缺資料不排名、引文逐字核對、比較依據 | 缺陷修補＋功能，TESTED（單元 15；瀏覽器 33／33） | `study_r7_evidence/matrix-audit.md`、`matrix-before.json`、`acceptance-matrix-after.json` | 模型比較品質 **NOT MEASURED** |
+| 雙語閱讀介面（16 個缺陷，4 種寬度） | 缺陷修補，TESTED（42／89 → 89／89） | `reading-defects.md`、`reading-before.json`、`acceptance-reading-after.json` | 行內數學仍是原始 LaTeX；表格沒有結構；翻譯品質 NOT MEASURED |
+| Flow B 混合專案日誌（R7 結構化出處＋熱修 H10） | 缺陷修補，TESTED（13 紅 → 23 綠；熱修 3.10 完整回歸只有 main 既有的 1 個失敗） | `flowb-log-tests-before.txt`、`flowb-log-tests-after.txt` | 專案 id 不分大小寫；共用元件只在 Flow B 呼叫點標全站 |
+| 資料庫遷移演練（合成代表性資料） | TESTED（13／13） | `migration-rehearsal.json`、`MIGRATION_REHEARSAL_R7_2026-11-02.md` | 正式資料副本、Postgres 未演練 |
+| 端到端驗收（匯入 → 閱讀 → 筆記 → 比較 → 寫作；負向控制、權限、研究者自主） | TESTED（69＋89＋33＋7） | `acceptance-*.json`、`r7_acceptance.sh` | 上傳 PDF 後的處理流程（Flow A／B）需要模型，未在此環境執行 |

@@ -1,6 +1,6 @@
 # Cloud primary 接手文件
 
-溝通及實作報告用繁體中文。**每完成一步就更新本文件。** 目前狀態：**R6 開發候選**（出處位置、引文核對、流程接縫、對抗測試，`codex/study-r6-20261101`）；安全熱修最新 `b3b935e`（含 H8、H9）待 Owner；整合分支 `codex/integration-hotfix-r6-20261101`。前一狀態：**安全第二輪完成**：熱修候選（從 `main`，`b80b94e`）與 R4 後續候選（`codex/study-r4-followup-20261028`）。都未合併、未部署、未輪替憑證，停在 Owner 決定點。規格與整體狀態以 [`docs/SAI.md`](../SAI.md) 為唯一入口。
+溝通及實作報告用繁體中文。**每完成一步就更新本文件。** 目前狀態：**R7 開發候選**（多篇比較矩陣、雙語閱讀、日誌出處、遷移演練、端到端驗收，`codex/study-r7-20261101`）；安全熱修最新 `8fd515f`（H1–H10）待 Owner；整合分支 `codex/integration-hotfix-r7-20261102`。都未合併、未部署、未輪替憑證。規格與整體狀態以 [`docs/SAI.md`](../SAI.md) 為唯一入口。
 
 最後完整驗證點：R6 `da27392`，1,777 通過／50 略過／0 失敗；瀏覽器 69／69。之前：R5 `bf5716e`，1,736 通過／50 略過／0 失敗；熱修 `b3b935e` 在 3.10 是 1,143 通過＋1 個 main 既有失敗。之前：R4 `457d887`，1,705 通過／50 略過／0 失敗（見下方 R4 段）；更早的 `aa8ff3e`（R2 資料防護）為 1,553 通過／50 略過／0 失敗。
 已推送個人倉庫（`7c905b5` 起）；推送前後核對，main、整合分支與其他所有分支的遠端 SHA 都沒變。
@@ -85,7 +85,29 @@ Flow B debug 輸出在 `DATA_ROOT` 不可用時不再寫到 repo `data/`（`Flow
 - 最終狀態：程式凍結 `4fb65e9`（完整回歸 1,620／50／0）；瀏覽器 40／40 於 `c100ac3`；驗證結果文件 `b70599f` 已推送並核對遠端，
   其後只有本接手文件的更新 commit。main、R1、py312 分支遠端 SHA 未變。
 
-## R6（2026-11-01，最新）
+## R7（2026-11-02，最新）
+
+- 分支 `codex/study-r7-20261101`（從 R6 `d5382c5`）；整合分支 `codex/integration-hotfix-r7-20261102`（R7＋熱修 `8fd515f`）。SAI §3.5。證據：`study_r7_evidence/`。
+- **比較矩陣**：
+  - 後端 `study_matrix.py`，紀錄格式 `roothinks.study.matrix/2`。比較器 `task_6comp.py` 的 prompt 要求逐字引文、狀態與可比性，不准排名。
+  - 每篇的字數預算由 `STUDY_MATRIX_PAPER_CHAR_BUDGET` 設定，預設 9,000。
+  - 前端 `study_matrix_view.js`；`study_view.renderMatrix` 只是轉呼叫。`study_core.runTask6` 會呼叫 `studyMatrixView.runFromSidebar`。
+  - 合成資料：`matrix_fixture_papers.py`，專案 `STUDYMX-p`，4 篇論文、舊紀錄、比較器替身。
+- **閱讀介面**：`study_view.js` 的閱讀器部分加上 `study.css` 的 R7 段。合成論文 `reading_ui_fixture_paper.py`（`synthetic_r7_reading`）；瀏覽器檢查 `reading_ui_r7_browser.cjs`。
+- **日誌出處**：
+  - `log_provenance.py`：`adopt_process_pid`、`global_scope`、`read_tail_lines`；只認行首的標記。
+  - `llm_usage.run_in_context`；Flow B 子程序要帶 `--pid`，而且要和環境變數一致才會採用。
+  - 熱修 H10：`literature_debug_routes._runtime_log_for_caller`，一般成員只拿行數。整合分支保留這條規則。
+- **遷移演練**：`scripts/repro/migration_rehearsal.py --main-tree <main checkout>`，約 3 分鐘，結果應是 13/13。不會在任何 checkout 建立 `data/`。
+- **端到端驗收**：
+  - `PY=<python> VENDOR=<vendor> NODE_PATH=<playwright> test/integration_e2e/r7_acceptance.sh <輸出目錄>`，約 6 分鐘，四段都要 exit 0。
+  - fixture 會用到兩個掛鉤：矩陣、閱讀論文。少了任何一個，相關的檢查都會失敗。
+- **整合分支**：H10 的衝突保留 R 堆疊的 `literature_bflow.py`。熱修測試的日誌夾具改成帶出處欄位的格式。
+- **注意**：
+  - 截圖（`*.png`）被 `.gitignore` 排除，只存 JSON 與 aria 快照。
+  - 同時跑多個助手會很快用完用量上限；這輪中斷過兩次，都從中斷點接續完成。
+
+## R6（2026-11-01）
 
 - 分支 `codex/study-r6-20261101`（從 R5 `81789fc`）。SAI §3.3／§3.4。證據：`study_r6_evidence/`。發佈：`RELEASE_READINESS_R6_2026-11-01.md`。
 - **段落出處位置**：`paragraph_provenance.layout()／make_anchor()／locate()／derive_legacy_anchor()／locations_for()`。
