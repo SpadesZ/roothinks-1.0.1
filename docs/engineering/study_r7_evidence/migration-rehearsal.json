@@ -1,0 +1,318 @@
+{
+ "main_tree_sha": "9655546",
+ "new_tree_sha": "d5382c5",
+ "work_dir": "<暫存目錄>",
+ "scenarios": {
+  "A_alembic_at_main_head": {
+   "seed": {
+    "ok": true,
+    "users": {
+     "owner": 1,
+     "editor": 2,
+     "viewer": 3,
+     "coauthor": 4,
+     "prof": 5,
+     "admin": 6
+    },
+    "filled": {
+     "config_kv": 3,
+     "evidence_segments": 3,
+     "chapter_comments": 3,
+     "mentor_comments": 3,
+     "mentor_review_items": 3,
+     "mentor_tasks": 3,
+     "metadata_index": 3,
+     "_skipped": [
+      "paq_surveys: IntegrityError"
+     ],
+     "paq_surveys": 1,
+     "project_collab_settings": 3,
+     "revision_logs": 3,
+     "user_sessions": 3,
+     "manu_projects": 3,
+     "manu_section_progress": 3,
+     "manu_members": 3,
+     "manu_section_locks": 3
+    },
+    "returncode": 0
+   },
+   "main_alembic_stamp": {
+    "ok": true,
+    "returncode": 0,
+    "tail": [
+     "INFO  [alembic.runtime.migration] Context impl SQLiteImpl.",
+     "INFO  [alembic.runtime.migration] Will assume non-transactional DDL.",
+     "INFO  [alembic.runtime.migration] Running stamp_revision  -> 0002_create_evidence_segments"
+    ]
+   },
+   "alembic_before": [
+    "0002_create_evidence_segments"
+   ],
+   "tables_with_rows": 17,
+   "tables": 17,
+   "manuscript_tables_with_rows": 5,
+   "manuscript_tables": 5,
+   "startup_new": {
+    "ok": true,
+    "returncode": 0
+   },
+   "alembic_upgrade": {
+    "ok": true,
+    "returncode": 0,
+    "tail": [
+     "INFO  [alembic.runtime.migration] Will assume non-transactional DDL.",
+     "INFO  [alembic.runtime.migration] Running upgrade 0002_create_evidence_segments -> 0003_chapter_review_events",
+     "INFO  [alembic.runtime.migration] Running upgrade 0003_chapter_review_events -> 0004_project_invitations"
+    ]
+   },
+   "alembic_after": [
+    "0004_project_invitations"
+   ],
+   "changed_existing_tables": [],
+   "new_tables": [
+    "academic_profiles",
+    "chapter_review_events",
+    "project_invitations"
+   ],
+   "dropped_tables": [],
+   "manuscript_changed": [],
+   "manuscript_new": [],
+   "manuscript_dropped": [],
+   "alembic_upgrade_again": {
+    "ok": true,
+    "returncode": 0,
+    "tail": [
+     "INFO  [alembic.runtime.migration] Context impl SQLiteImpl.",
+     "INFO  [alembic.runtime.migration] Will assume non-transactional DDL."
+    ]
+   },
+   "idempotent": true,
+   "smoke_new": {
+    "ok": true,
+    "login": 200,
+    "routes": 56,
+    "errors": [],
+    "status_counts": {
+     "200": 45,
+     "400": 5,
+     "403": 5,
+     "404": 1
+    },
+    "returncode": 0
+   },
+   "write_new_feature": {
+    "ok": true,
+    "status": 201,
+    "returncode": 0
+   },
+   "rollback_code_only_startup_main": {
+    "ok": true,
+    "returncode": 0
+   },
+   "rollback_code_only_smoke_main": {
+    "ok": true,
+    "login": 200,
+    "routes": 45,
+    "errors": [],
+    "status_counts": {
+     "200": 39,
+     "400": 4,
+     "403": 1,
+     "404": 1
+    },
+    "returncode": 0
+   },
+   "alembic_downgrade": {
+    "ok": false,
+    "returncode": 1,
+    "tail": [
+     "  File \"/home/user/roothinks-1.0.1/migrations/versions/0004_project_invitations.py\", line 19, in downgrade",
+     "    raise RuntimeError('邀請與學術背景歷史不可自動刪除；請先保存並確認復原方案。')",
+     "RuntimeError: 邀請與學術背景歷史不可自動刪除；請先保存並確認復原方案。"
+    ]
+   },
+   "restore_matches_seed": true
+  },
+  "B_never_stamped": {
+   "seed": {
+    "ok": true,
+    "users": {
+     "owner": 1,
+     "editor": 2,
+     "viewer": 3,
+     "coauthor": 4,
+     "prof": 5,
+     "admin": 6
+    },
+    "filled": {
+     "config_kv": 3,
+     "evidence_segments": 3,
+     "chapter_comments": 3,
+     "mentor_comments": 3,
+     "mentor_review_items": 3,
+     "mentor_tasks": 3,
+     "metadata_index": 3,
+     "_skipped": [
+      "paq_surveys: IntegrityError"
+     ],
+     "paq_surveys": 1,
+     "project_collab_settings": 3,
+     "revision_logs": 3,
+     "user_sessions": 3,
+     "manu_projects": 3,
+     "manu_section_progress": 3,
+     "manu_members": 3,
+     "manu_section_locks": 3
+    },
+    "returncode": 0
+   },
+   "alembic_before": null,
+   "startup_new": {
+    "ok": true,
+    "returncode": 0
+   },
+   "alembic_upgrade_without_stamp": {
+    "ok": false,
+    "returncode": 1,
+    "tail": [
+     "",
+     "]",
+     "(Background on this error at: https://sqlalche.me/e/21/e3q8)"
+    ]
+   },
+   "after_failed_upgrade_unchanged": true,
+   "alembic_stamp_main_head": {
+    "ok": true,
+    "returncode": 0,
+    "tail": [
+     "INFO  [alembic.runtime.migration] Context impl SQLiteImpl.",
+     "INFO  [alembic.runtime.migration] Will assume non-transactional DDL.",
+     "INFO  [alembic.runtime.migration] Running stamp_revision 0001_baseline_schema -> 0002_create_evidence_segments"
+    ]
+   },
+   "alembic_upgrade_after_stamp": {
+    "ok": true,
+    "returncode": 0,
+    "tail": [
+     "INFO  [alembic.runtime.migration] Will assume non-transactional DDL.",
+     "INFO  [alembic.runtime.migration] Running upgrade 0002_create_evidence_segments -> 0003_chapter_review_events",
+     "INFO  [alembic.runtime.migration] Running upgrade 0003_chapter_review_events -> 0004_project_invitations"
+    ]
+   },
+   "alembic_after": [
+    "0004_project_invitations"
+   ],
+   "changed_existing_tables": [],
+   "new_tables": [
+    "academic_profiles",
+    "chapter_review_events",
+    "project_invitations"
+   ],
+   "dropped_tables": [],
+   "smoke_new": {
+    "ok": true,
+    "login": 200,
+    "routes": 56,
+    "errors": [],
+    "status_counts": {
+     "200": 45,
+     "400": 5,
+     "403": 5,
+     "404": 1
+    },
+    "returncode": 0
+   }
+  },
+  "C_alembic_before_startup": {
+   "seed": {
+    "ok": true,
+    "users": {
+     "owner": 1,
+     "editor": 2,
+     "viewer": 3,
+     "coauthor": 4,
+     "prof": 5,
+     "admin": 6
+    },
+    "filled": {
+     "config_kv": 3,
+     "evidence_segments": 3,
+     "chapter_comments": 3,
+     "mentor_comments": 3,
+     "mentor_review_items": 3,
+     "mentor_tasks": 3,
+     "metadata_index": 3,
+     "_skipped": [
+      "paq_surveys: IntegrityError"
+     ],
+     "paq_surveys": 1,
+     "project_collab_settings": 3,
+     "revision_logs": 3,
+     "user_sessions": 3,
+     "manu_projects": 3,
+     "manu_section_progress": 3,
+     "manu_members": 3,
+     "manu_section_locks": 3
+    },
+    "returncode": 0
+   },
+   "alembic_upgrade": {
+    "ok": true,
+    "returncode": 0,
+    "tail": [
+     "INFO  [alembic.runtime.migration] Will assume non-transactional DDL.",
+     "INFO  [alembic.runtime.migration] Running upgrade 0002_create_evidence_segments -> 0003_chapter_review_events",
+     "INFO  [alembic.runtime.migration] Running upgrade 0003_chapter_review_events -> 0004_project_invitations"
+    ]
+   },
+   "startup_new": {
+    "ok": true,
+    "returncode": 0
+   },
+   "alembic_after": [
+    "0004_project_invitations"
+   ],
+   "changed_existing_tables": [],
+   "new_tables": [
+    "academic_profiles",
+    "chapter_review_events",
+    "project_invitations"
+   ],
+   "dropped_tables": [],
+   "smoke_new": {
+    "ok": true,
+    "login": 200,
+    "routes": 56,
+    "errors": [],
+    "status_counts": {
+     "200": 45,
+     "400": 5,
+     "403": 5,
+     "404": 1
+    },
+    "returncode": 0
+   }
+  }
+ },
+ "alembic_ini_default_url": "sqlite:///./instance/roothinks.db",
+ "app_default_db": "data/roothinks.db（或 DATABASE_URL）",
+ "verdict": {
+  "checks": {
+   "A 既有資料表不變": true,
+   "A 新增 3 張表": true,
+   "A alembic 到 0004": true,
+   "A 冪等": true,
+   "A 新程式無 5xx": true,
+   "A 新功能可寫入": true,
+   "A 只換回 main 程式也能啟動且無 5xx": true,
+   "A downgrade 依設計拒絕": true,
+   "A 備份還原後與升級前相同": true,
+   "B 未 stamp 直接 upgrade 會失敗（已知，需先 stamp）": true,
+   "B 失敗後既有資料不變": true,
+   "B stamp 0002 後 upgrade 成功且資料不變": true,
+   "C 先 alembic 後啟動也安全": true
+  },
+  "passed": 13,
+  "total": 13
+ }
+}

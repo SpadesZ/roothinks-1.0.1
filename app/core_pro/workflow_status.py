@@ -67,9 +67,13 @@ def build_workflow_status(data_root: str, pid: str, project=None, survey=None) -
     formal_pid = _formal_pid(pid)
     data_root = os.path.abspath(data_root)
 
-    labels = getattr(survey, "axis_labels", None) or {}
-    tags = getattr(survey, "axis_tags", None) or {}
-    cube = getattr(survey, "cube_data", None) or []
+    # R7：舊版或損壞的 PAQ 問卷欄位可能不是預期型別（例如字串）；狀態面板只顯示進度，不能因此整頁 500。
+    labels = getattr(survey, "axis_labels", None)
+    labels = labels if isinstance(labels, dict) else {}
+    tags = getattr(survey, "axis_tags", None)
+    tags = tags if isinstance(tags, dict) else {}
+    cube = getattr(survey, "cube_data", None)
+    cube = cube if isinstance(cube, list) else []
     axes_done = sum(1 for value in labels.values() if str(value or "").strip())
     tag_count = sum(len(v) for v in tags.values() if isinstance(v, list))
     cube_count = len(cube) if isinstance(cube, list) else 0
