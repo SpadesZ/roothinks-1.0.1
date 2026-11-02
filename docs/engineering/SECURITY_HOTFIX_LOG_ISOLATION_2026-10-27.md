@@ -184,7 +184,30 @@
   - `test_manuscript_sections_acl.py`（3 個）：修補前 viewer 與 coauthor 兩個測試失敗，修補後全過（3.12 與 3.10）。
   - 整合分支的寫入矩陣已補上真實的 `sections` 探測內容。
 
-## 11. 併入 R4／R5 的整合註記（2026-11-01，整合分支 `codex/integration-hotfix-r5-20261101`）
+## 11. 第六輪：Flow B 診斷快照的混合專案日誌（H10，2026-11-02）
+
+- **問題**：§2 寫明的殘餘風險「一行同時提到本專案與其他專案，仍會整行回傳」確認可利用，而且不只混合行。
+  - `main` 的全站日誌沒有結構化出處，快照只能用「文字提到本專案 pid（嚴格字界）＋ Flow B 關鍵字」挑行。文字無法證明一行屬於哪個專案。
+  - 紅測試（`test_flowb_log_r7_hotfix.py`，修補前 6 個失敗）證明以下四種**別的專案**的行都會給本專案的 owner／viewer／mentor 與專案 token：
+    1. 別的專案的輸出路徑中有一段等於本專案 pid（`/…/OTHER-p/literature/LOGA/…`）；
+    2. 同時列出兩個專案的佇列狀態行；
+    3. 別的專案的 traceback 續行，例外訊息提到本專案；
+    4. 別的專案把論文 id 取成本專案的 pid（paper_id 允許 `[A-Za-z0-9_.-]`，`LOGA-p` 是合法的論文 id）。
+  - 另外，快照的 `events_tail`（輸出檔路徑、子程序結果的 input/output 路徑）與 `process_log`（例外訊息）含**伺服器絕對路徑**。第一輪已因同一理由移除 `runtime_log.path`，這裡是漏網的同類資料。事件檔本身是每篇論文一個檔，**沒有**混入別的專案的事件。
+- **修補（選最小、最安全的做法）**：
+  - `literature_debug_routes.py`：`flowb_probe` 與 `recover_flowb` 回傳前呼叫 `require_system_admin()`。不是系統管理員 → `runtime_log` 只剩 `tail_hits: []`、`withheld_lines`（挑中的行數）與說明（完整日誌請管理員用 `runtime_log_tail`）。
+  - 系統管理員（session admin 或明確 `system_role: admin` 的 token）與開發模式（兩種認證都關）行為不變，仍拿到 pid 過濾後的行。管理員本來就能讀全站日誌，不擴大權限。
+  - `literature_bflow.py`：快照的 `tail_hits`、`events_tail`、`process_log` 中的伺服器絕對路徑縮成 `…/檔名`。
+  - **為什麼不改成更聰明的文字比對**：任何文字規則都能被路徑、論文 id 或混合行繞過；只有結構化出處（R 堆疊的 `[pid=…]`）能證明出處。熱修不帶入那套機制，所以一般成員一律不給原文。
+- **對研究者的影響**：無。三個除錯端點前端都沒有呼叫（§1）；`events_tail`、`db` 狀態、產物統計照常回傳。
+- **刻意改變的既有期待值**：`test_security_log_isolation.py` 的 H2 成員測試原本期待 owner／viewer／mentor 與專案 token 看到本專案的行。現在改為期待 `tail_hits == []`、`withheld_lines == 2`。並新增「已是成員的系統管理員只看到本專案的行」與「admin token 看到本專案的行」的檢查。其他 H1／H2 測試不變。
+- **驗證**：
+  - `test_flowb_log_r7_hotfix.py`（9 個）：修補前 6 失敗、3 通過（管理員與開發模式不變的檢查）；修補後 9／9 通過。
+  - `test_security_log_isolation.py`＋`test_log_exposure_audit.py`＋新測試：28 通過（Python 3.10）。
+  - Python 3.10 完整回歸：1,153 通過、1 失敗。失敗清單與未修補的 `main` **逐行相同**（同一個既有 user journey 失敗）。
+- **殘餘風險**：系統管理員從 `flowb_probe` 拿到的行仍是文字比對結果，可能含別的專案的行；管理員本來就能讀全站日誌，所以不是越權，但不要把這些行轉給一般成員。
+
+## 12. 併入 R 堆疊的整合註記（2026-11-01，整合分支 `codex/integration-hotfix-r5-20261101`）
 
 上面各節描述的是熱修分支（從 `main`）的作法。熱修併進 R5（`81789fc`）後，同一個安全性質在 R5 已有、而且較完整的實作，整合樹以 R5 為準：
 
@@ -194,3 +217,4 @@
 | H2 Flow B 快照過濾 | R5 結構化出處欄位 `[pid=…]`（`app/log_provenance.py`） | 取代熱修的「文字裡找 pid」：未標記的舊行一律排除、別的專案的行即使文字提到本 pid 也不給。`test_security_log_isolation.py` 的日誌改成帶出處欄位的格式，原斷言全保留，另加偽造提及與未標記舊行的排除檢查 |
 | H7 `check_and_save_block` 去除網址憑證 | R5 版：去除後交給 `check_and_save_json`（鎖內比對 `_rev`） | 去除憑證的步驟保留 |
 | H8 `cmd_load_chat` | R5 版：章節檢查＋審閱範圍檢查 | 熱修只有章節檢查；R5 另擋教授審閱身分（PA-01，提議中） |
+- R7 整合（2026-11-02，`codex/integration-hotfix-r7-20261102`）：H10 的成員規則保留（一般成員拿不到全站日誌原文）；R 堆疊的結構化出處過濾（R7 加強：所有出處一致才標專案、續行與換行偽造無效、共用元件標 `-`）決定管理員看到哪些行。`literature_bflow.py` 的衝突保留 R 堆疊版本；`_redact_server_paths` 兩邊相同，只留一份。

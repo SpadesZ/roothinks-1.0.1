@@ -18,6 +18,25 @@ from flask import jsonify, request
 from app.security import require_system_admin
 
 
+def _runtime_log_for_caller(snap):
+    """全站日誌原文只給系統管理員（H10）。
+
+    main 的全站日誌沒有結構化的專案出處，快照只能用「文字提到本專案 pid」挑行；文字無法證明出處：
+    別的專案的路徑、同時列出多個專案的佇列狀態行、traceback 續行、別的專案取名成本專案 pid 的論文，都會被挑中。
+    一般成員（session 專案成員、專案 token）只拿到挑中的行數與說明；系統管理員與開發模式（兩種認證都關）行為不變。
+    """
+    if require_system_admin() is None:
+        return snap
+    hits = (snap.get("runtime_log") or {}).get("tail_hits") or []
+    snap["runtime_log"] = {
+        "tail_hits": [],
+        "withheld_lines": len(hits),
+        "note": "全站執行日誌混有其他專案的紀錄，無法證明哪一行只屬於本專案；"
+                "完整日誌請由系統管理員從 /api/literature/debug/runtime_log_tail 讀取。",
+    }
+    return snap
+
+
 def register_debug_routes(literature_bp, deps):
     @literature_bp.route('/api/literature/debug/runtime_log_tail', methods=['GET'])
     def debug_runtime_log_tail():
@@ -66,7 +85,7 @@ def register_debug_routes(literature_bp, deps):
         if paper is None:
             return jsonify({"status": "error", "message": "Paper not found"}), 404
 
-        snap = deps._flowb_debug_snapshot(pid, paper_id, log_lines=lines)
+        snap = _runtime_log_for_caller(deps._flowb_debug_snapshot(pid, paper_id, log_lines=lines))
         return jsonify({"status": "success", "debug": snap})
 
     @literature_bp.route('/api/literature/debug/recover_flowb', methods=['POST'])
@@ -129,5 +148,5 @@ def register_debug_routes(literature_bp, deps):
         )
         deps._update_paper_status(pid, paper_id, deps.Paper.STATUS_FAILED, reason)
 
-        snap = deps._flowb_debug_snapshot(pid, paper_id, log_lines=120)
+        snap = _runtime_log_for_caller(deps._flowb_debug_snapshot(pid, paper_id, log_lines=120))
         return jsonify({"status": "success", "message": "Flow B recovered to failed/need-retry", "debug": snap})
