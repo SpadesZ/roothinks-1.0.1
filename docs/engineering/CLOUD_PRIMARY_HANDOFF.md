@@ -102,7 +102,7 @@ Flow B debug 輸出在 `DATA_ROOT` 不可用時不再寫到 repo `data/`（`Flow
 - **端到端驗收**：
   - `PY=<python> VENDOR=<vendor> NODE_PATH=<playwright> test/integration_e2e/r7_acceptance.sh <輸出目錄>`，約 6 分鐘，四段都要 exit 0。
   - fixture 會用到兩個掛鉤：矩陣、閱讀論文。少了任何一個，相關的檢查都會失敗。
-- **整合分支**：H10 的衝突保留 R 堆疊的 `literature_bflow.py`。熱修測試的日誌夾具改成帶出處欄位的格式。
+- **整合分支**：H10 的衝突保留 R 堆疊的 `literature_bflow.py`。熱修測試的日誌夾具改成帶出處欄位的格式。成員看日誌採 H10 規則，所以 `test_acl_cross_module.py` 的 Flow B 測試改成管理員檢查。完整回歸 `ea7772d` 是 1,848／50／0。
 - **注意**：
   - 截圖（`*.png`）被 `.gitignore` 排除，只存 JSON 與 aria 快照。
   - 同時跑多個助手會很快用完用量上限；這輪中斷過兩次，都從中斷點接續完成。
