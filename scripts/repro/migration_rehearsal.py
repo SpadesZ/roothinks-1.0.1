@@ -232,7 +232,7 @@ def run_sub(code_root, cmd, work, app_db, manu_db):
     result = json.loads(last[-1]) if last else {"ok": False}
     result["returncode"] = proc.returncode
     if proc.returncode != 0:
-        result["stderr_tail"] = proc.stderr.strip().splitlines()[-5:]
+        result["stderr_tail"] = [_scrub(l, code_root, work) for l in proc.stderr.strip().splitlines()[-5:]]
     return result
 
 
@@ -242,8 +242,13 @@ def run_alembic(code_root, work, app_db, *args):
                                                         "LECTURE_SYSTEM_LOG_FILE": str(Path(work) / "alembic-runtime.log"),
                                                         "FLASK_ENV": "development", "PYTHON_DOTENV_DISABLED": "1"}),
                           capture_output=True, text=True, timeout=600)
-    tail = (proc.stderr or proc.stdout).strip().splitlines()[-3:]
+    tail = [_scrub(l, code_root, work) for l in (proc.stderr or proc.stdout).strip().splitlines()[-3:]]
     return {"ok": proc.returncode == 0, "returncode": proc.returncode, "tail": tail}
+
+
+def _scrub(line, code_root, work):
+    """報告不放主機路徑：checkout 換成 <code>，暫存目錄換成 <work>。"""
+    return str(line).replace(str(code_root), "<code>").replace(str(work), "<work>")
 
 
 def diff(before, after):

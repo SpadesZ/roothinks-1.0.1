@@ -1,6 +1,6 @@
 {
  "main_tree_sha": "9655546",
- "new_tree_sha": "d5382c5",
+ "new_tree_sha": "c96e4d9",
  "work_dir": "<暫存目錄>",
  "scenarios": {
   "A_alembic_at_main_head": {
@@ -126,7 +126,7 @@
     "ok": false,
     "returncode": 1,
     "tail": [
-     "  File \"/home/user/roothinks-1.0.1/migrations/versions/0004_project_invitations.py\", line 19, in downgrade",
+     "  File \"<code>/migrations/versions/0004_project_invitations.py\", line 19, in downgrade",
      "    raise RuntimeError('邀請與學術背景歷史不可自動刪除；請先保存並確認復原方案。')",
      "RuntimeError: 邀請與學術背景歷史不可自動刪除；請先保存並確認復原方案。"
     ]
