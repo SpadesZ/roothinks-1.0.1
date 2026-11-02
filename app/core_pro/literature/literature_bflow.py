@@ -13,18 +13,45 @@
 #   - 讀取既有 artifact 時相容 legacy literature layout；寫入仍維持現有 canonical layout。
 #   - 不在此處重建 Paper PK 或改變 Flow A/B 狀態機。
 
+import contextvars
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
 import threading
 import time
+from contextlib import contextmanager
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Any, Callable
 
 from app.core_pro.storage_layout import resolve_literature_paper_dir
+
+# 伺服器絕對路徑（兩段以上；POSIX 或 Windows 磁碟機）。診斷快照只留最後一段檔名（R7 安全輪 e）。
+_ABS_SERVER_PATH = re.compile(r"(?<![\w.~:/\\-])(?:/|[A-Za-z]:[\\/]+)(?:[^\s/\\\"'<>|:]+[\\/]+)+[^\s/\\\"'<>|:]*")
+
+
+def _redact_server_paths(text: Any) -> str:
+    """把伺服器絕對路徑縮成「…/檔名」：一般成員看得到是哪個檔，看不到伺服器的目錄配置。"""
+    def _short(match):
+        tail = re.split(r"[\\/]+", match.group(0).rstrip("/\\"))[-1]
+        return "…/" + tail
+
+    return _ABS_SERVER_PATH.sub(_short, str(text or ""))
+
+
+@contextmanager
+def _shared_component_scope():
+    """共用元件（翻譯模型單例、執行緒池）的日誌不屬於任何專案，標成 [pid=-]（app/log_provenance.global_scope）。"""
+    try:
+        from app.log_provenance import global_scope
+    except Exception:
+        yield
+        return
+    with global_scope():
+        yield
 
 
 def _paper_dir(data_root: str, pid: str, paper_id: str, for_write: bool = False) -> str:
@@ -200,7 +227,8 @@ def run_translation_impl(deps: FlowBRouteDeps):
     # 指定引擎時先確認它真的能用，不要讓使用者等兩小時才發現引擎沒裝起來。
     if engine != "auto":
         try:
-            ok_engine, why = get_translator().engine_available(engine)
+            with _shared_component_scope():
+                ok_engine, why = get_translator().engine_available(engine)
         except Exception as e:
             ok_engine, why = False, str(e)
         if not ok_engine:
@@ -214,7 +242,12 @@ def run_translation_impl(deps: FlowBRouteDeps):
     except deps.BadRequest:
         return deps.jsonify({"status": "error", "message": "Invalid paper_id in request"}), 400
 
-    if not deps.FLOWB_SUBPROCESS_ENABLED and deps.get_nllb_translator() is None:
+    if not deps.FLOWB_SUBPROCESS_ENABLED:
+        with _shared_component_scope():
+            translator_ready = deps.get_nllb_translator() is not None
+    else:
+        translator_ready = True
+    if not translator_ready:
         return deps.jsonify({"status": "error", "message": "Flow B translator unavailable"}), 503
 
     requested_workers = max(1, int(os.environ.get("LITERATURE_MAX_WORKERS", "1")))
@@ -283,20 +316,27 @@ def run_translation_impl(deps: FlowBRouteDeps):
     app = deps.current_app._get_current_object()
 
     def _translation_worker(target_pid, target_paper_id, target_run_id, app_obj):
-        """薄殼：只負責掛上／清除 LLM 用量歸屬，實際工作在 _translation_worker_body。
+        """薄殼：在全新的空 contextvars.Context 裡掛上 LLM 用量／日誌出處歸屬，實際工作在 _translation_worker_body。
 
         [usage] 翻譯若落到 Gemini（超長文本會走雲端而非本機 NLLB）也要記到
         這一篇帳上，否則使用者看到的成本會少算。
-        清除**必須**在 finally：這些 worker 跑在 ThreadPoolExecutor 的池化
-        執行緒上，執行緒會被重複使用，不清的話下一個工作會被算到上一篇頭上。
+        這些 worker 跑在 ThreadPoolExecutor 的池化執行緒上，執行緒會被重複使用。
+        llm_usage.run_in_context 每個工作都從空的 context 開始、結束就丟掉：
+        看不到上一個工作（別的專案）留下的歸屬或繼承來的請求 context，也不會留給下一個工作（R7 安全輪 a）。
+        finally 仍清除這條執行緒自己的 context：別的元件若在這條池化執行緒上 set_context 後沒清，
+        之後在這條執行緒上沒有歸屬的工作也不會沿用那個專案。
         """
         try:
-            from app.llm_service.llm_usage import set_context, clear_context
+            from app.llm_service.llm_usage import clear_context, run_in_context
         except Exception:
-            return _translation_worker_body(target_pid, target_paper_id, target_run_id, app_obj)
+            return contextvars.Context().run(
+                _translation_worker_body, target_pid, target_paper_id, target_run_id, app_obj
+            )
         try:
-            set_context(target_pid, target_paper_id)
-            return _translation_worker_body(target_pid, target_paper_id, target_run_id, app_obj)
+            return run_in_context(
+                target_pid, target_paper_id,
+                _translation_worker_body, target_pid, target_paper_id, target_run_id, app_obj,
+            )
         finally:
             clear_context()
 
@@ -569,7 +609,8 @@ def run_translation_impl(deps: FlowBRouteDeps):
                         )
                         return
 
-                    local_translator = deps.get_nllb_translator()
+                    with _shared_component_scope():
+                        local_translator = deps.get_nllb_translator()
                     if local_translator is None:
                         deps._append_flow_event(
                             target_pid,
@@ -745,7 +786,8 @@ def run_translation_impl(deps: FlowBRouteDeps):
                 name=f"literature-flowb-{pid}-{pid_paper}-{int(time.time())}",
             ).start()
     else:
-        executor = deps._get_flowb_executor()
+        with _shared_component_scope():
+            executor = deps._get_flowb_executor()
         for pid_paper in queued_ids:
             run_id = str(run_ids.get(pid_paper, "") or "")
             executor.submit(_translation_worker, pid, pid_paper, run_id, app)
@@ -984,14 +1026,20 @@ def flowb_debug_snapshot(deps: FlowBRuntimeDeps, pid: str, paper_id: str, log_li
         pass
 
     runtime_log = deps._runtime_log_file_path()
-    runtime_rows = deps._tail_text_file(runtime_log, lines=max(100, int(log_lines * 2)), max_bytes=512000)
     # 全站日誌混有所有專案的紀錄。只依每行的結構化出處欄位 [pid=…]（app/log_provenance.py）挑出本專案的行，
-    # 不在訊息文字裡找 pid 子字串；沒有出處欄位的舊行一律不給（fail closed）。
-    from app.log_provenance import lines_for_project
+    # 不在訊息文字裡找 pid 子字串；沒有出處欄位的舊行、續行（traceback）與被切斷的第一行一律不給（fail closed）。
+    # 出處是 [pid=-] 的行（全站、共用元件、混合專案）只有系統管理員能從 runtime_log_tail 讀到。
+    from app.log_provenance import lines_for_project, read_tail_lines
+    runtime_rows = read_tail_lines(runtime_log, lines=max(100, int(log_lines * 2)), max_bytes=512000)
     own_rows, untagged_rows = lines_for_project(runtime_rows, pid)
     filters = [paper_id.lower(), "flow b", "run_translation", "processing_b", "translating_local", "judging_llm"]
     runtime_hits = [row for row in own_rows if any(k in row.lower() for k in filters)]
-    runtime_hits = runtime_hits[-max(20, min(int(log_lines), 400)) :]
+    runtime_hits = [_redact_server_paths(row) for row in runtime_hits[-max(20, min(int(log_lines), 400)) :]]
+    # 事件檔與 process_log 是本篇自己的資料，但含伺服器絕對路徑（輸出檔、子程序 stderr、模型快取）：只留檔名。
+    events_tail = [
+        _redact_server_paths(row)
+        for row in deps._tail_text_file(event_path, lines=max(20, min(int(log_lines), 400)))
+    ]
 
     return {
         "pid": pid,
@@ -999,7 +1047,7 @@ def flowb_debug_snapshot(deps: FlowBRuntimeDeps, pid: str, paper_id: str, log_li
         "db": {
             "interpretation_status": status_raw,
             "process_status": (paper.process_status or "") if paper else "",
-            "process_log": (paper.process_log or "") if paper else "",
+            "process_log": _redact_server_paths(paper.process_log or "") if paper else "",
             "updated_at": updated_at.isoformat() if isinstance(updated_at, datetime) else None,
             "age_sec": round(float(age_sec), 3) if age_sec is not None else None,
             "flowb_stale_sec": stale_sec,
@@ -1015,7 +1063,7 @@ def flowb_debug_snapshot(deps: FlowBRuntimeDeps, pid: str, paper_id: str, log_li
             "nllb_count": nllb_count,
             "judge_count": judge_count,
         },
-        "events_tail": deps._tail_text_file(event_path, lines=max(20, min(int(log_lines), 400))),
+        "events_tail": events_tail,
         "runtime_log": {
             # 伺服器檔案路徑不給一般成員。
             "tail_hits": runtime_hits,

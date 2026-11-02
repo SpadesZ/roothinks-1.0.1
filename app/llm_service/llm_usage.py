@@ -149,6 +149,23 @@ def clear_context() -> None:
     _ctx_paper.set(None)
 
 
+def run_in_context(pid: Optional[str], paper_id: Optional[str], fn, *args, **kwargs):
+    """在**全新的空** contextvars.Context 裡執行 fn，期間的歸屬是 (pid, paper_id)。
+
+    給池化執行緒上的背景工作（Flow B worker）用：
+      - 看不到這條執行緒先前留下的任何值（上一個工作沒清掉的歸屬、繼承來的請求 context、
+        Python 3.14 thread_inherit_context 或 greenlet 複製來的 Flask g），所以 B 的工作不會沿用 A 的出處；
+      - 結束後整個 context 丟掉，不靠 finally 清除也不會留給下一個工作。
+    日誌出處（app/log_provenance.py）同樣讀這個 contextvar。
+    """
+    def _body():
+        _ctx_pid.set(pid or None)
+        _ctx_paper.set(paper_id or None)
+        return fn(*args, **kwargs)
+
+    return contextvars.Context().run(_body)
+
+
 def propagate(fn):
     """包裝一個要丟到新執行緒執行的函式，讓它帶著目前的用量歸屬。
 

@@ -2,6 +2,8 @@
 # 目的：日誌的結構化專案出處（app/log_provenance.py）。
 #   - 授權成功的請求標成該專案；被拒絕的請求（外人帶別人的 pid）標成 [pid=-]，不能寫進別人的日誌視圖。
 #   - 背景工作用 llm_usage 的 contextvar；子程序用 ROOTHINKS_LOG_PID；都沒有就是 [pid=-]。
+#     R7 安全輪起，ROOTHINKS_LOG_PID 只有在子程序呼叫 adopt_process_pid()（Flow B runner CLI）後才生效；
+#     web 行程只是繼承了環境變數不會把行標成該專案（刻意的行為變更，見 test_flowb_log_r7_provenance.py）。
 #   - 過濾只看出處欄位：不看訊息文字、未標記的舊行一律排除、相近的 pid（ABC 與 ABC12、ABC_x）不互通、ABC 與 ABC-p 視為同一個。
 # 驗證：python -m pytest test/unit/test_log_provenance.py -q
 import logging
@@ -32,7 +34,12 @@ def test_background_context_and_env_fallback(monkeypatch):
     with llm_usage.usage_context("ABC-p", "paper"):
         assert "[pid=abc]: inside" in _format("inside")
     monkeypatch.setenv("ROOTHINKS_LOG_PID", "SUB1-p")
-    assert "[pid=sub1]: child" in _format("child")
+    assert "[pid=-]: inherited" in _format("inherited")
+    try:
+        lp.adopt_process_pid("SUB1-p")
+        assert "[pid=sub1]: child" in _format("child")
+    finally:
+        lp.adopt_process_pid(None)
 
 
 def test_filter_uses_structured_tag_only():

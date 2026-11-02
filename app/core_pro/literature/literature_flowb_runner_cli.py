@@ -43,8 +43,23 @@ def _parse_args() -> argparse.Namespace:
     return p.parse_args()
 
 
+def _adopt_log_project(pid: str) -> None:
+    """本子程序只處理一個專案：採用父程序放在 env dict 的 ROOTHINKS_LOG_PID 當日誌出處（app/log_provenance.py）。
+
+    環境變數與命令列 --pid 不是同一個專案時不採用（[pid=-]），避免繼承來的值把這個子程序的行標錯專案。
+    """
+    try:
+        from app.log_provenance import PID_ENV, adopt_process_pid, canonical_pid
+    except Exception:
+        return
+    env_pid = os.environ.get(PID_ENV)
+    same = bool(env_pid) and canonical_pid(env_pid) == canonical_pid(pid)
+    adopt_process_pid(env_pid if same else None)
+
+
 def main() -> int:
     args = _parse_args()
+    _adopt_log_project(args.pid)
     started = time.time()
     payload = {
         "ok": False,
